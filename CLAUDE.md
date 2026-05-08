@@ -135,14 +135,15 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
-## État courant — fin Conv #1 (2026-05-08)
+## État courant — fin Conv #2a (2026-05-08)
 
-- Branches/PRs : `main` initial, pas de branche conv.
-- Modules portés : `models.ts` (port complet de `models.py`),
-  `catalog.ts` (port de `catalog.py`), `exercises.json` copié.
-- Tests verts : **52 / 232** (33 models + 19 catalog).
-- Dernière commande de validation : `npm run test && npm run build` — OK.
-- Bloqueurs / TODO : `D:\coach-os-test` traîne à la racine de D (créé pour
-  test sandbox, à supprimer manuellement). Ajouter `gh` CLI un jour.
-- Prochaine conv prévue : **Conv #2a — Port formules pures**
-  (`prescription.ts`, `feedback.ts`, `volume.ts`, `selection.ts` + ~70 tests).
+- Modules portés : `models.ts`, `catalog.ts` (Conv #1) + `prescription.ts`,
+  `feedback.ts`, `volume.ts`, `selection.ts` (Conv #2a).
+- Helper test commun : `tests/unit/engine/_helpers.ts` (`startUserStub` qui
+  reproduit l'init volume de `start_user` — vrai `start_user` viendra Conv #2c).
+- Tests verts : **123 / 232** (33 models + 19 catalog + 46 prescription +
+  11 feedback + 8 volume + 6 selection).
+- Build : `npm run test && npm run build` — OK.
+- Bloqueurs : `D:\coach-os-test` à supprimer manuellement. `gh` CLI absent.
+- Prochaine conv prévue : **Conv #2b — Port programmation**
+  (`balance.ts` R1-R4, `split.ts`, `cycle_planner.ts`, ~80 tests).
