@@ -135,14 +135,19 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
-## État courant — fin Conv #2b (2026-05-09)
+## État courant — fin Conv #2c (2026-05-09)
 
-- Modules portés : Conv #2a + `balance.ts` (R1-R4), `split.ts` (6 splits +
-  `selectSplit`/`placeDaysInWeek`/`check48hRule`), `cycle_planner.ts`
-  (`generateCyclePlan` + `composeSession` + `rotateEmphasis`).
-- Tests verts : **206 / 232** (+83 : 22 balance + 31 split + 30 cycle_planner).
-- Build : `npm run test && npm run build` — OK.
-- Bloqueurs : `D:\coach-os-test` à supprimer manuellement. `gh` CLI absent.
-- Prochaine conv prévue : **Conv #2c — Programmes guidés + lifecycle + assemblage**
-  (`guided_programs.ts`, `lifecycle.ts`, `engine.ts`, `tools/parity-check.ts`,
-  cible 232 tests).
+- Moteur complet porté : Conv #2a/2b + `guided_programs.ts` (5 programmes V1 +
+  `fitGuidedProgram` + `pickSubstitution`), `lifecycle.ts` (bilan, recovery,
+  `applyUserActionAfterCycle`), `engine.ts` (API stable : `startUser`,
+  `generateSession`, `recordFeedback`, `endOfWeek`, `endOfCycle`).
+- Tests verts : **254** (+48 : 22 guided + 24 lifecycle + 2 e2e engine).
+- `npm run parity-check` : **OK sur 6 profils** (±1 kg / ±0.1 RPE) — baseline
+  Python dumpée par `prototype/scripts/dump_parity_baseline.py` →
+  `tools/parity-baseline/p{1..6}.json`.
+- Fixes appliqués : `pythonRound` exporté + utilisé dans `cycle_planner.ts` ;
+  `localeCompare` remplacé par comparaison codepoint dans `selection.ts`
+  (sinon ordre de tri divergent du Python sur `dif="élevé"` vs `"facile"`).
+- Build : `npm run test && npm run build && npm run parity-check` — OK.
+- Prochaine conv prévue : **Conv #3 — Persistance Dexie + state Zustand**.
+- Backlog connu : D1 push/pull ratio + D2 lengthened_bias à corriger en Conv #7.

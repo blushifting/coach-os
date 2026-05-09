@@ -168,7 +168,7 @@ export function pickCompoundsForMuscle(
   cands.sort((a, b) => {
     const lenDiff = Object.keys(b.muscles).length - Object.keys(a.muscles).length;
     if (lenDiff !== 0) return lenDiff;
-    return a.dif.localeCompare(b.dif);
+    return a.dif < b.dif ? -1 : a.dif > b.dif ? 1 : 0;
   });
   return cands.slice(0, n);
 }
@@ -214,7 +214,7 @@ export function pickIsolationsForMuscle(
     const kb = sortKey(b);
     if (ka[0] !== kb[0]) return ka[0] - kb[0];
     if (ka[1] !== kb[1]) return ka[1] - kb[1];
-    return ka[2].localeCompare(kb[2]);
+    return ka[2] < kb[2] ? -1 : ka[2] > kb[2] ? 1 : 0;
   });
   return cands.slice(0, n);
 }

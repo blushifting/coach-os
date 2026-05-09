@@ -1,0 +1,514 @@
+{
+  "profile_id": "p1",
+  "cycle_plan": {
+    "cycle_index": 1,
+    "rationale": "Custom Full Body 3×",
+    "days": [
+      {
+        "day_index": 0,
+        "label": "Full A",
+        "target_muscles_focus": [
+          "pectoraux",
+          "dos_largeur",
+          "ischios",
+          "biceps",
+          "abdos",
+          "deltos_lateraux",
+          "deltos_posterieurs"
+        ],
+        "exercises": [
+          {
+            "exercise_id": "deadlift_conv",
+            "base_sets": 3,
+            "progression": [
+              3,
+              4,
+              5,
+              6,
+              1
+            ],
+            "role": null,
+            "intensity_scheme": null,
+            "progression_rule": "israetel_volume"
+          },
+          {
+            "exercise_id": "chest_press_machine",
+            "base_sets": 4,
+            "progression": [
+              4,
+              5,
+              6,
+              7,
+              2
+            ],
+            "role": null,
+            "intensity_scheme": null,
+            "progression_rule": "israetel_volume"
+          },
+          {
+            "exercise_id": "pullup_assisted",
+            "base_sets": 5,
+            "progression": [
+              5,
+              6,
+              7,
+              8,
+              2
+            ],
+            "role": null,
+            "intensity_scheme": null,
+            "progression_rule": "israetel_volume"
+          },
+          {
+            "exercise_id": "cable_crunch",
+            "base_sets": 2,
+            "progression": [
+              2,
+              3,
+              4,
+              5,
+              1
+            ],
+            "role": null,
+            "intensity_scheme": null,
+            "progression_rule": "israetel_volume"
+          },
+          {
+            "exercise_id": "bb_curl",
+            "base_sets": 3,
+            "progression": [
+              3,
+              4,
+              5,
+              6,
+              1
+            ],
+            "role": null,
+            "intensity_scheme": null,
+            "progression_rule": "israetel_volume"
+          },
+          {
+            "exercise_id": "db_lateral_raise",
+            "base_sets": 2,
+            "progression": [
+              2,
+              3,
+              4,
+              5,
+              1
+            ],
+            "role": null,
+            "intensity_scheme": null,
+            "progression_rule": "israetel_volume"
+          },
+          {
+            "exercise_id": "crunch_machine",
+            "base_sets": 2,
+            "progression": [
+              2,
+              3,
+              4,
+              5,
+              1
+            ],
+            "role": null,
+            "intensity_scheme": null,
+            "progression_rule": "israetel_volume"
+          },
+          {
+            "exercise_id": "face_pull",
+            "base_sets": 2,
+            "progression": [
+              2,
+              3,
+              4,
+              5,
+              1
+            ],
+            "role": null,
+            "intensity_scheme": null,
+            "progression_rule": "israetel_volume"
+          }
+        ]
+      },
+      {
+        "day_index": 1,
+        "label": "Full B",
+        "target_muscles_focus": [
+          "pectoraux",
+          "quadriceps",
+          "ischios",
+          "deltos_lateraux",
+          "lombaires"
+        ],
+        "exercises": [
+          {
+            "exercise_id": "deadlift_conv",
+            "base_sets": 3,
+            "progression": [
+              3,
+              4,
+              5,
+              6,
+              1
+            ],
+            "role": null,
+            "intensity_scheme": null,
+            "progression_rule": "israetel_volume"
+          },
+          {
+            "exercise_id": "squat_bb_high",
+            "base_sets": 4,
+            "progression": [
+              4,
+              5,
+              6,
+              7,
+              2
+            ],
+            "role": null,
+            "intensity_scheme": null,
+            "progression_rule": "israetel_volume"
+          },
+          {
+            "exercise_id": "ohp_bb_standing",
+            "base_sets": 3,
+            "progression": [
+              3,
+              4,
+              5,
+              6,
+              1
+            ],
+            "role": null,
+            "intensity_scheme": null,
+            "progression_rule": "israetel_volume"
+          },
+          {
+            "exercise_id": "chest_press_machine",
+            "base_sets": 4,
+            "progression": [
+              4,
+              5,
+              6,
+              7,
+              2
+            ],
+            "role": null,
+            "intensity_scheme": null,
+            "progression_rule": "israetel_volume"
+          },
+          {
+            "exercise_id": "back_extension_45",
+            "base_sets": 2,
+            "progression": [
+              2,
+              3,
+              4,
+              5,
+              1
+            ],
+            "role": null,
+            "intensity_scheme": null,
+            "progression_rule": "israetel_volume"
+          }
+        ]
+      },
+      {
+        "day_index": 2,
+        "label": "Full C",
+        "target_muscles_focus": [
+          "dos_largeur",
+          "quadriceps",
+          "biceps",
+          "triceps",
+          "deltos_posterieurs"
+        ],
+        "exercises": [
+          {
+            "exercise_id": "squat_bb_high",
+            "base_sets": 4,
+            "progression": [
+              4,
+              5,
+              6,
+              7,
+              2
+            ],
+            "role": null,
+            "intensity_scheme": null,
+            "progression_rule": "israetel_volume"
+          },
+          {
+            "exercise_id": "pullup_assisted",
+            "base_sets": 5,
+            "progression": [
+              5,
+              6,
+              7,
+              8,
+              2
+            ],
+            "role": null,
+            "intensity_scheme": null,
+            "progression_rule": "israetel_volume"
+          },
+          {
+            "exercise_id": "dips_triceps",
+            "base_sets": 2,
+            "progression": [
+              2,
+              3,
+              4,
+              5,
+              1
+            ],
+            "role": null,
+            "intensity_scheme": null,
+            "progression_rule": "israetel_volume"
+          },
+          {
+            "exercise_id": "face_pull",
+            "base_sets": 2,
+            "progression": [
+              2,
+              3,
+              4,
+              5,
+              1
+            ],
+            "role": null,
+            "intensity_scheme": null,
+            "progression_rule": "israetel_volume"
+          },
+          {
+            "exercise_id": "bb_curl",
+            "base_sets": 3,
+            "progression": [
+              3,
+              4,
+              5,
+              6,
+              1
+            ],
+            "role": null,
+            "intensity_scheme": null,
+            "progression_rule": "israetel_volume"
+          }
+        ]
+      }
+    ],
+    "requires_calibration": false,
+    "warnings": []
+  },
+  "session_w1d0": {
+    "seance_date": "2026-01-05",
+    "week_in_cycle": 1,
+    "cycle_index": 1,
+    "rpe_target": 6.5,
+    "label": "Full A",
+    "items": [
+      {
+        "exercise_id": "deadlift_conv",
+        "sets": [
+          {
+            "exercise_id": "deadlift_conv",
+            "reps": 9,
+            "load_kg": 57.5,
+            "rpe_target": 7.0,
+            "rest_s": 240
+          },
+          {
+            "exercise_id": "deadlift_conv",
+            "reps": 9,
+            "load_kg": 57.5,
+            "rpe_target": 7.0,
+            "rest_s": 240
+          },
+          {
+            "exercise_id": "deadlift_conv",
+            "reps": 9,
+            "load_kg": 57.5,
+            "rpe_target": 7.0,
+            "rest_s": 240
+          }
+        ]
+      },
+      {
+        "exercise_id": "chest_press_machine",
+        "sets": [
+          {
+            "exercise_id": "chest_press_machine",
+            "reps": 9,
+            "load_kg": 40.0,
+            "rpe_target": 7.0,
+            "rest_s": 120
+          },
+          {
+            "exercise_id": "chest_press_machine",
+            "reps": 9,
+            "load_kg": 40.0,
+            "rpe_target": 7.0,
+            "rest_s": 120
+          },
+          {
+            "exercise_id": "chest_press_machine",
+            "reps": 9,
+            "load_kg": 40.0,
+            "rpe_target": 7.0,
+            "rest_s": 120
+          },
+          {
+            "exercise_id": "chest_press_machine",
+            "reps": 9,
+            "load_kg": 40.0,
+            "rpe_target": 7.0,
+            "rest_s": 120
+          }
+        ]
+      },
+      {
+        "exercise_id": "pullup_assisted",
+        "sets": [
+          {
+            "exercise_id": "pullup_assisted",
+            "reps": 9,
+            "load_kg": 45.0,
+            "rpe_target": 7.0,
+            "rest_s": 150
+          },
+          {
+            "exercise_id": "pullup_assisted",
+            "reps": 9,
+            "load_kg": 45.0,
+            "rpe_target": 7.0,
+            "rest_s": 150
+          },
+          {
+            "exercise_id": "pullup_assisted",
+            "reps": 9,
+            "load_kg": 45.0,
+            "rpe_target": 7.0,
+            "rest_s": 150
+          },
+          {
+            "exercise_id": "pullup_assisted",
+            "reps": 9,
+            "load_kg": 45.0,
+            "rpe_target": 7.0,
+            "rest_s": 150
+          },
+          {
+            "exercise_id": "pullup_assisted",
+            "reps": 9,
+            "load_kg": 45.0,
+            "rpe_target": 7.0,
+            "rest_s": 150
+          }
+        ]
+      },
+      {
+        "exercise_id": "cable_crunch",
+        "sets": [
+          {
+            "exercise_id": "cable_crunch",
+            "reps": 11,
+            "load_kg": 15.0,
+            "rpe_target": 6.0,
+            "rest_s": 60
+          },
+          {
+            "exercise_id": "cable_crunch",
+            "reps": 11,
+            "load_kg": 15.0,
+            "rpe_target": 6.0,
+            "rest_s": 60
+          }
+        ]
+      },
+      {
+        "exercise_id": "bb_curl",
+        "sets": [
+          {
+            "exercise_id": "bb_curl",
+            "reps": 11,
+            "load_kg": 20.0,
+            "rpe_target": 7.0,
+            "rest_s": 90
+          },
+          {
+            "exercise_id": "bb_curl",
+            "reps": 11,
+            "load_kg": 20.0,
+            "rpe_target": 7.0,
+            "rest_s": 90
+          },
+          {
+            "exercise_id": "bb_curl",
+            "reps": 11,
+            "load_kg": 20.0,
+            "rpe_target": 7.0,
+            "rest_s": 90
+          }
+        ]
+      },
+      {
+        "exercise_id": "db_lateral_raise",
+        "sets": [
+          {
+            "exercise_id": "db_lateral_raise",
+            "reps": 11,
+            "load_kg": 20.0,
+            "rpe_target": 6.0,
+            "rest_s": 60
+          },
+          {
+            "exercise_id": "db_lateral_raise",
+            "reps": 11,
+            "load_kg": 20.0,
+            "rpe_target": 6.0,
+            "rest_s": 60
+          }
+        ]
+      },
+      {
+        "exercise_id": "crunch_machine",
+        "sets": [
+          {
+            "exercise_id": "crunch_machine",
+            "reps": 11,
+            "load_kg": 15.0,
+            "rpe_target": 6.0,
+            "rest_s": 60
+          },
+          {
+            "exercise_id": "crunch_machine",
+            "reps": 11,
+            "load_kg": 15.0,
+            "rpe_target": 6.0,
+            "rest_s": 60
+          }
+        ]
+      },
+      {
+        "exercise_id": "face_pull",
+        "sets": [
+          {
+            "exercise_id": "face_pull",
+            "reps": 11,
+            "load_kg": 15.0,
+            "rpe_target": 6.0,
+            "rest_s": 60
+          },
+          {
+            "exercise_id": "face_pull",
+            "reps": 11,
+            "load_kg": 15.0,
+            "rpe_target": 6.0,
+            "rest_s": 60
+          }
+        ]
+      }
+    ]
+  }
+}

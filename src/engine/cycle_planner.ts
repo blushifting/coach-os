@@ -53,6 +53,7 @@ import {
   totalSets,
   MAX_TOTAL_SETS_PER_SESSION,
 } from './selection';
+import { pythonRound } from './prescription';
 
 // =============================================================================
 // Types intermédiaires
@@ -292,7 +293,7 @@ export function composeSession(
     // base_sets par exo : V_session / nb d'exos, arrondi >= 2
     let setsPerExo = Math.max(
       2,
-      Math.round(vSession / Math.max(1, allForMuscle.length)),
+      pythonRound(vSession / Math.max(1, allForMuscle.length)),
     );
     setsPerExo = Math.min(setsPerExo, MAX_SETS_PER_SESSION_PER_MUSCLE);
 

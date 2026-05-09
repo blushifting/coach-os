@@ -116,7 +116,7 @@ export function roundToIncrement(loadKg: number, incrementKg: number): number {
 }
 
 /** Reproduit `round()` Python (banker's rounding, half-to-even). */
-function pythonRound(x: number): number {
+export function pythonRound(x: number): number {
   const floor = Math.floor(x);
   const diff = x - floor;
   if (diff < 0.5) return floor;
