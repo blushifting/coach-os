@@ -64,8 +64,12 @@ synthétiques, vérifiée par `tools/parity-check.ts`.
 | Tests unitaires | Vitest 2 (env `node` par défaut) |
 | Lint/format | ESLint 9 (flat) + Prettier |
 
-À ajouter par les prochaines conv : Zustand (#3), Dexie (#3), Zod (#3),
-React Router (#4a), Playwright (#4b), vite-plugin-pwa (#9).
+| Persistance | Dexie 4 (IndexedDB) — schéma v1, 7 tables (cf. Conv #3) |
+| State | Zustand 5 — store unique, 4 sections logiques (cf. Conv #3) |
+| Validation IO | Zod 3 — schéma versionné de l'export/import JSON |
+
+À ajouter par les prochaines conv : React Router (#4a), Playwright (#4b),
+vite-plugin-pwa (#9).
 
 ## 5. Scripts npm
 
@@ -135,19 +139,26 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
-## État courant — fin Conv #2c (2026-05-09)
+## État courant — fin Conv #3 (2026-05-09)
 
-- Moteur complet porté : Conv #2a/2b + `guided_programs.ts` (5 programmes V1 +
-  `fitGuidedProgram` + `pickSubstitution`), `lifecycle.ts` (bilan, recovery,
-  `applyUserActionAfterCycle`), `engine.ts` (API stable : `startUser`,
-  `generateSession`, `recordFeedback`, `endOfWeek`, `endOfCycle`).
-- Tests verts : **254** (+48 : 22 guided + 24 lifecycle + 2 e2e engine).
-- `npm run parity-check` : **OK sur 6 profils** (±1 kg / ±0.1 RPE) — baseline
-  Python dumpée par `prototype/scripts/dump_parity_baseline.py` →
-  `tools/parity-baseline/p{1..6}.json`.
-- Fixes appliqués : `pythonRound` exporté + utilisé dans `cycle_planner.ts` ;
-  `localeCompare` remplacé par comparaison codepoint dans `selection.ts`
-  (sinon ordre de tri divergent du Python sur `dif="élevé"` vs `"facile"`).
-- Build : `npm run test && npm run build && npm run parity-check` — OK.
-- Prochaine conv prévue : **Conv #3 — Persistance Dexie + state Zustand**.
+- Couche persistance + state livrée. Architecture **hybride** : table
+  singleton `userState` (blob `SerializedUserState`, source de vérité du
+  moteur) + tables relationnelles append-only / dérivées (`sessions`,
+  `feedbacks`, `e1rmSnapshots`, `cycles`) écrites dans la même transaction
+  Dexie. Tables externalisées : `equipmentOverrides`, `userAddedExercises`.
+- Modules : `src/db/{schema,serialize,transactions}.ts` + 7 repositories ;
+  `src/io/{schema,export,import}.ts` (validation Zod versionnée v1) ;
+  `src/store/{index,selectors}.ts` (Zustand store unique, 4 sections logiques) ;
+  `src/hooks/useEngine.ts` (façade — bootstrap, startUser, generateAndStoreSession,
+  recordFeedbackAndCommit, endOfWeek, endOfCycle).
+- Toute mutation passe par `useEngine` (clone state → mute → tx multi-tables
+  → setState) — l'UI ne doit jamais appeler `setUserState` directement.
+- Tests verts : **290** (+36 : 4 serialize + 12 repos + 6 transactions + 9 io
+  + 4 store + 1 e2e). Critère de fin Conv #3 : test e2e "créer user → générer
+  session → feedback → relancer app → état restauré" passe.
+- Setup Vitest : `tests/setup.ts` injecte `fake-indexeddb/auto` et reset
+  DB + store entre chaque test. Fixtures partagées : `src/test-utils/fixtures.ts`
+  (`makeTestProfile`, `EQUIP_FULL`, `makeTestMuscleGoals`).
+- Build : `npm run test && npm run build && npm run parity-check && npm run lint` — OK.
+- Prochaine conv prévue : **Conv #4a — Squelette UI + composants partagés**.
 - Backlog connu : D1 push/pull ratio + D2 lengthened_bias à corriger en Conv #7.
