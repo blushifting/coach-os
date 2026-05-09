@@ -135,15 +135,14 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
-## État courant — fin Conv #2a (2026-05-08)
+## État courant — fin Conv #2b (2026-05-09)
 
-- Modules portés : `models.ts`, `catalog.ts` (Conv #1) + `prescription.ts`,
-  `feedback.ts`, `volume.ts`, `selection.ts` (Conv #2a).
-- Helper test commun : `tests/unit/engine/_helpers.ts` (`startUserStub` qui
-  reproduit l'init volume de `start_user` — vrai `start_user` viendra Conv #2c).
-- Tests verts : **123 / 232** (33 models + 19 catalog + 46 prescription +
-  11 feedback + 8 volume + 6 selection).
+- Modules portés : Conv #2a + `balance.ts` (R1-R4), `split.ts` (6 splits +
+  `selectSplit`/`placeDaysInWeek`/`check48hRule`), `cycle_planner.ts`
+  (`generateCyclePlan` + `composeSession` + `rotateEmphasis`).
+- Tests verts : **206 / 232** (+83 : 22 balance + 31 split + 30 cycle_planner).
 - Build : `npm run test && npm run build` — OK.
 - Bloqueurs : `D:\coach-os-test` à supprimer manuellement. `gh` CLI absent.
-- Prochaine conv prévue : **Conv #2b — Port programmation**
-  (`balance.ts` R1-R4, `split.ts`, `cycle_planner.ts`, ~80 tests).
+- Prochaine conv prévue : **Conv #2c — Programmes guidés + lifecycle + assemblage**
+  (`guided_programs.ts`, `lifecycle.ts`, `engine.ts`, `tools/parity-check.ts`,
+  cible 232 tests).

@@ -1,0 +1,484 @@
+/**
+ * Planification du cycle (custom) : génère un WeeklyTemplate à partir des MuscleGoals.
+ * Port 1:1 de prototype/coach_os/cycle_planner.py.
+ *
+ * Référence : recherche/09_programmation.md §5, §6, §9.
+ *
+ * Pipeline :
+ *   1. selectSplit → SplitTemplate
+ *   2. parameterizeSplit → DayMeta[] (muscles attribués à chaque jour)
+ *   3. composeSession par jour → DayTemplate (exos choisis, séries, progression)
+ *   4. resolveCapacityConflict → caps par séance respectés
+ *   5. WeeklyTemplate retourné
+ *
+ * L'algo NE calcule PAS les charges live ; ça reste à `buildPrescription` à
+ * chaque instanciation de séance.
+ */
+
+import type {
+  Catalog,
+} from './catalog';
+import type {
+  Exercise,
+  MuscleGoal,
+  PlannedExercise,
+  UserState,
+  WeeklyTemplate,
+} from './models';
+import {
+  Level,
+  MuscleObjective,
+  MuscleStatus,
+  ProgressionRule,
+  makePlannedExercise,
+  makeWeeklyTemplate,
+} from './models';
+import {
+  selectSplit,
+  muscleBelongsToSlot,
+  type SlotKind,
+  type SplitTemplate,
+} from './split';
+import {
+  effectiveVolumeBounds,
+  targetFrequency,
+  MAINTENANCE_MIN_SETS,
+  MAX_SETS_PER_SESSION_PER_MUSCLE,
+  DELOAD_FACTOR,
+} from './volume';
+import {
+  pickCompoundsForMuscle,
+  pickIsolationsForMuscle,
+  orderSession,
+  totalSets,
+  MAX_TOTAL_SETS_PER_SESSION,
+} from './selection';
+
+// =============================================================================
+// Types intermédiaires
+// =============================================================================
+
+/** Métadonnées d'un jour avant choix des exos (sortie de parameterizeSplit). */
+export interface DayMeta {
+  day_index: number;
+  label: string;
+  slot_kind: SlotKind;
+  target_muscles_focus: string[];
+}
+
+// =============================================================================
+// 1. Composition exos par muscle selon V_cible (cf. 09 §6.1)
+// =============================================================================
+
+/**
+ * Nombre d'exos à programmer par muscle selon le volume hebdo cible.
+ * Cf. 09 §6.1 :
+ *   - V ≤ 6  → 1 exo
+ *   - V 7-12 → 2 exos
+ *   - V 13-18 → 3 exos
+ *   - V > 18 → 4 exos
+ */
+export function exosCountForVolume(vSession: number): number {
+  if (vSession <= 6) return 1;
+  if (vSession <= 12) return 2;
+  if (vSession <= 18) return 3;
+  return 4;
+}
+
+/** Nb de compounds selon ratio par objectif (cf. 09 §6.2). */
+export function compoundCountForObjective(
+  nTotal: number,
+  objective: MuscleObjective,
+): number {
+  if (objective === MuscleObjective.FORCE) return nTotal;
+  if (objective === MuscleObjective.HYPERTROPHIE) {
+    // Banker's rounding pour parité Python (round(n*0.6)).
+    return Math.max(1, bankersRound(nTotal * 0.6));
+  }
+  if (objective === MuscleObjective.ENDURANCE) {
+    return Math.max(1, Math.trunc(nTotal / 2));
+  }
+  // MAINTIEN : sécurité.
+  return nTotal;
+}
+
+function bankersRound(x: number): number {
+  const floor = Math.floor(x);
+  const diff = x - floor;
+  if (diff < 0.5) return floor;
+  if (diff > 0.5) return floor + 1;
+  // exact .5 → arrondi vers le pair
+  return floor % 2 === 0 ? floor : floor + 1;
+}
+
+// =============================================================================
+// 2. Progression Israetel (cf. 09 §2.1, §3.3)
+// =============================================================================
+
+/**
+ * Progression hebdo en séries pour 1 exo, sur 5 semaines (4 + déload).
+ *   - w1 : baseSets
+ *   - w2-w4 : +1 série / sem, plafonné à vMaxPerExo
+ *   - w5 : déload, environ 50 % de base
+ */
+export function israetelProgression(
+  baseSets: number,
+  vMaxPerExo: number = MAX_SETS_PER_SESSION_PER_MUSCLE,
+): number[] {
+  const progression: number[] = [];
+  for (let w = 1; w <= 4; w += 1) {
+    progression.push(Math.min(vMaxPerExo, baseSets + (w - 1)));
+  }
+  const deload = Math.max(1, Math.trunc(baseSets * DELOAD_FACTOR));
+  progression.push(deload);
+  return progression;
+}
+
+// =============================================================================
+// 3. Paramétrisation : distribuer muscles sur jours du split (cf. 09 §9.2)
+// =============================================================================
+
+const STATUS_ORDER: Record<MuscleStatus, number> = {
+  [MuscleStatus.PRIORITAIRE]: 0,
+  [MuscleStatus.SUGGERE]: 1,
+  [MuscleStatus.NON_COUVERT]: 99,
+};
+
+/**
+ * Distribue les muscles prioritaires + suggérés sur les jours du split.
+ * Ordre de placement (cf. 09 §4.6) : statut PRIORITAIRE avant SUGGERE,
+ * puis priority_rank ascendant.
+ */
+export function parameterizeSplit(
+  split: SplitTemplate,
+  muscleGoals: Record<string, MuscleGoal>,
+  state: UserState,
+): DayMeta[] {
+  const daysMeta: DayMeta[] = split.slots.map((slot, i) => ({
+    day_index: i,
+    label: slot.label,
+    slot_kind: slot.kind,
+    target_muscles_focus: [],
+  }));
+
+  const sortedGoals = Object.entries(muscleGoals).slice().sort((a, b) => {
+    const sa = STATUS_ORDER[a[1].status];
+    const sb = STATUS_ORDER[b[1].status];
+    if (sa !== sb) return sa - sb;
+    return a[1].priority_rank - b[1].priority_rank;
+  });
+
+  for (const [muscle, goal] of sortedGoals) {
+    if (goal.status === MuscleStatus.NON_COUVERT) continue;
+    const freq =
+      goal.status === MuscleStatus.PRIORITAIRE ? targetFrequency(muscle, state) : 1;
+    if (freq === 0) continue;
+
+    const eligible = daysMeta.filter((d) => muscleBelongsToSlot(muscle, d.slot_kind));
+    if (eligible.length === 0) continue;
+    eligible.sort((a, b) => a.target_muscles_focus.length - b.target_muscles_focus.length);
+
+    let placed = 0;
+    for (const d of eligible) {
+      if (placed >= freq) break;
+      if (!d.target_muscles_focus.includes(muscle)) {
+        d.target_muscles_focus.push(muscle);
+        placed += 1;
+      }
+    }
+  }
+
+  return daysMeta;
+}
+
+// =============================================================================
+// 4. Composition d'une séance (cf. 09 §6, §9.2)
+// =============================================================================
+
+const ANGLE_KEYWORDS: ReadonlySet<string> = new Set([
+  'incline',
+  'decline',
+  'flat',
+  'vertical',
+  'horizontal',
+  'overhead',
+  'neutral',
+  'pronated',
+  'supinated',
+  'lengthened_bias',
+  'shortened_bias',
+]);
+
+function angleTags(ex: Exercise): Set<string> {
+  const out = new Set<string>();
+  for (const t of ex.tags) if (ANGLE_KEYWORDS.has(t)) out.add(t);
+  return out;
+}
+
+function topPriorityMuscleIn(
+  dayMeta: DayMeta,
+  state: UserState,
+): string | null {
+  const candidates: Array<readonly [number, string]> = [];
+  for (const m of dayMeta.target_muscles_focus) {
+    const g = state.muscle_goals[m];
+    if (g && g.status === MuscleStatus.PRIORITAIRE) {
+      candidates.push([g.priority_rank, m]);
+    }
+  }
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => a[0] - b[0]);
+  return candidates[0]![1];
+}
+
+/**
+ * Choisit les exos pour ce jour selon les muscles focus.
+ * Pour chaque muscle focus :
+ *   - Calcul du nb d'exos selon V_session
+ *   - Sélection compounds + isolations selon ratio par objectif
+ *   - Application lengthened_bias si Hypertrophie + 2+ exos
+ *   - Diversification d'angles
+ */
+export function composeSession(
+  dayMeta: DayMeta,
+  state: UserState,
+  catalog: Catalog,
+): import('./models').DayTemplate {
+  const chosenPlanned: PlannedExercise[] = [];
+  const chosenIds = new Set<string>();
+
+  for (const muscle of dayMeta.target_muscles_focus) {
+    const goal = state.muscle_goals[muscle];
+    if (!goal || goal.status === MuscleStatus.NON_COUVERT) continue;
+
+    const [vMin] = effectiveVolumeBounds(state, muscle);
+    const freq =
+      goal.status === MuscleStatus.PRIORITAIRE
+        ? Math.max(1, targetFrequency(muscle, state))
+        : 1;
+    const vSession = freq > 0 ? vMin / freq : vMin;
+    const nExos = exosCountForVolume(vSession);
+
+    // MAINTIEN ou SUGGERE : pas d'iso dédiée (cf. 09 §3.4).
+    const nCompounds =
+      goal.objective === MuscleObjective.MAINTIEN ||
+      goal.status === MuscleStatus.SUGGERE
+        ? nExos
+        : compoundCountForObjective(nExos, goal.objective);
+
+    const compounds = pickCompoundsForMuscle(muscle, nCompounds, state, catalog, {
+      excludeIds: chosenIds,
+    });
+
+    const nIsoNeeded = nExos - compounds.length;
+    const avoidAngles = new Set<string>();
+    for (const c of compounds) {
+      for (const t of angleTags(c)) avoidAngles.add(t);
+    }
+    const preferLengthened =
+      goal.objective === MuscleObjective.HYPERTROPHIE && nExos >= 2;
+    const isolations =
+      nIsoNeeded > 0
+        ? pickIsolationsForMuscle(muscle, nIsoNeeded, state, catalog, {
+            preferLengthened,
+            avoidAngles,
+            excludeIds: chosenIds,
+          })
+        : [];
+
+    const allForMuscle = [...compounds, ...isolations];
+    if (allForMuscle.length === 0) continue;
+
+    // base_sets par exo : V_session / nb d'exos, arrondi >= 2
+    let setsPerExo = Math.max(
+      2,
+      Math.round(vSession / Math.max(1, allForMuscle.length)),
+    );
+    setsPerExo = Math.min(setsPerExo, MAX_SETS_PER_SESSION_PER_MUSCLE);
+
+    for (const ex of allForMuscle) {
+      chosenPlanned.push(
+        makePlannedExercise({
+          exercise_id: ex.id,
+          base_sets: setsPerExo,
+          progression: israetelProgression(setsPerExo),
+          progression_rule: ProgressionRule.ISRAETEL_VOLUME,
+        }),
+      );
+      chosenIds.add(ex.id);
+    }
+  }
+
+  // Ordre dans la séance.
+  const exObjects = chosenPlanned.map((p) => catalog.get(p.exercise_id));
+  const priorityMuscle = topPriorityMuscleIn(dayMeta, state);
+  const orderedEx = orderSession(exObjects, priorityMuscle);
+  const idToPlanned = new Map<string, PlannedExercise>();
+  for (const p of chosenPlanned) idToPlanned.set(p.exercise_id, p);
+  const reordered = orderedEx.map((e) => idToPlanned.get(e.id)!);
+
+  return {
+    day_index: dayMeta.day_index,
+    label: dayMeta.label,
+    target_muscles_focus: [...dayMeta.target_muscles_focus],
+    exercises: reordered,
+  };
+}
+
+// =============================================================================
+// 5. Top-up maintenance (cf. 09 §3.4)
+// =============================================================================
+
+/**
+ * Pour chaque muscle SUGGERE, vérifie si volume incident suffit.
+ * Si pas, ajoute 1 exo isolation léger (base_sets=2) sur le 1er jour qui l'accepte.
+ */
+export function topUpMaintenance(
+  weeklyTemplate: WeeklyTemplate,
+  state: UserState,
+  catalog: Catalog,
+): void {
+  const incident: Record<string, number> = {};
+  for (const day of weeklyTemplate.days) {
+    for (const planned of day.exercises) {
+      const ex = catalog.get(planned.exercise_id);
+      for (const [muscle, coef] of Object.entries(ex.muscles)) {
+        incident[muscle] = (incident[muscle] ?? 0) + coef * planned.base_sets;
+      }
+    }
+  }
+
+  for (const [muscle, goal] of Object.entries(state.muscle_goals)) {
+    if (goal.status !== MuscleStatus.SUGGERE) continue;
+    const vTarget = effectiveVolumeBounds(state, muscle)[0];
+    if ((incident[muscle] ?? 0) >= vTarget) continue;
+
+    for (const day of weeklyTemplate.days) {
+      const excludeIds = new Set(day.exercises.map((p) => p.exercise_id));
+      const iso = pickIsolationsForMuscle(muscle, 1, state, catalog, { excludeIds });
+      if (iso.length === 0) continue;
+      const baseSets = Math.trunc(MAINTENANCE_MIN_SETS);
+      day.exercises.push(
+        makePlannedExercise({
+          exercise_id: iso[0]!.id,
+          base_sets: baseSets,
+          progression: israetelProgression(baseSets),
+          progression_rule: ProgressionRule.ISRAETEL_VOLUME,
+        }),
+      );
+      if (!day.target_muscles_focus.includes(muscle)) {
+        day.target_muscles_focus.push(muscle);
+      }
+      incident[muscle] = (incident[muscle] ?? 0) + baseSets;
+      break;
+    }
+  }
+}
+
+// =============================================================================
+// 6. Résolution conflits capacité (cf. 09 §5.6)
+// =============================================================================
+
+/**
+ * Si un jour dépasse le cap par séance, tronque en gardant les 1ers exos
+ * (ordre = compounds prioritaires d'abord). Sinon, ajoute warning.
+ */
+export function resolveCapacityConflict(
+  weeklyTemplate: WeeklyTemplate,
+  level: Level,
+  _state: UserState,
+): void {
+  const cap = MAX_TOTAL_SETS_PER_SESSION[level];
+  for (const day of weeklyTemplate.days) {
+    if (totalSets(day.exercises) <= cap) continue;
+    const kept: PlannedExercise[] = [];
+    let running = 0;
+    for (const p of day.exercises) {
+      if (running + p.base_sets > cap) continue;
+      kept.push(p);
+      running += p.base_sets;
+    }
+    if (running > cap || kept.length < day.exercises.length) {
+      day.exercises = kept;
+    }
+    if (totalSets(day.exercises) > cap) {
+      weeklyTemplate.warnings.push(
+        `Jour ${day.label} : volume cible > capacité (${totalSets(day.exercises)}>${cap}). ` +
+          `Ajouter une séance ou réduire les priorités.`,
+      );
+    }
+  }
+}
+
+// =============================================================================
+// 7. Rotation d'emphasis (cf. 09 §8.4)
+// =============================================================================
+
+export const EMPHASIS_PAIRS: ReadonlyArray<readonly [string, string]> = [
+  ['pectoraux', 'dos_largeur'],
+  ['pectoraux', 'dos_epaisseur'],
+  ['quadriceps', 'ischios'],
+  ['biceps', 'triceps'],
+  ['deltos_lateraux', 'deltos_posterieurs'],
+];
+
+/**
+ * Permute les rangs des PRIORITAIRES par paires antagonistes.
+ * Modifie `muscleGoals` in-place ET le retourne.
+ */
+export function rotateEmphasis(
+  muscleGoals: Record<string, MuscleGoal>,
+): Record<string, MuscleGoal> {
+  for (const [m1, m2] of EMPHASIS_PAIRS) {
+    const g1 = muscleGoals[m1];
+    const g2 = muscleGoals[m2];
+    if (
+      g1 &&
+      g2 &&
+      g1.status === MuscleStatus.PRIORITAIRE &&
+      g2.status === MuscleStatus.PRIORITAIRE
+    ) {
+      const tmp = g1.priority_rank;
+      g1.priority_rank = g2.priority_rank;
+      g2.priority_rank = tmp;
+    }
+  }
+  return muscleGoals;
+}
+
+// =============================================================================
+// 8. Point d'entrée : generateCyclePlan (cf. 09 §9.2)
+// =============================================================================
+
+/**
+ * Génère un WeeklyTemplate pour 1 cycle complet à partir des MuscleGoals.
+ * Pré-requis : `state.muscle_goals` doit être posé (par l'onboarding ou via
+ * Profile.objective + applyBalanceRules).
+ */
+export function generateCyclePlan(
+  state: UserState,
+  catalog: Catalog,
+): WeeklyTemplate {
+  const split = selectSplit(
+    state.profile.sessions_per_week,
+    state.muscle_goals,
+    state.profile.level,
+  );
+
+  const daysMeta = parameterizeSplit(split, state.muscle_goals, state);
+
+  const weekly = makeWeeklyTemplate({
+    cycle_index: state.cycle_index,
+    rationale: `Custom ${split.name}`,
+    days: [],
+  });
+
+  for (const dm of daysMeta) {
+    weekly.days.push(composeSession(dm, state, catalog));
+  }
+
+  topUpMaintenance(weekly, state, catalog);
+  resolveCapacityConflict(weekly, state.profile.level, state);
+
+  return weekly;
+}
