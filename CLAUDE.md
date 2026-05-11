@@ -68,8 +68,9 @@ synthétiques, vérifiée par `tools/parity-check.ts`.
 | State | Zustand 5 — store unique, 4 sections logiques (cf. Conv #3) |
 | Validation IO | Zod 3 — schéma versionné de l'export/import JSON |
 
-À ajouter par les prochaines conv : React Router (#4a), Playwright (#4b),
-vite-plugin-pwa (#9).
+| Routing | React Router 6 — `createBrowserRouter`, `basename` aligné sur `BASE_URL` |
+
+À ajouter par les prochaines conv : Playwright (#4b), vite-plugin-pwa (#9).
 
 ## 5. Scripts npm
 
@@ -139,26 +140,26 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
-## État courant — fin Conv #3 (2026-05-09)
+## État courant — fin Conv #4a (2026-05-11)
 
-- Couche persistance + state livrée. Architecture **hybride** : table
-  singleton `userState` (blob `SerializedUserState`, source de vérité du
-  moteur) + tables relationnelles append-only / dérivées (`sessions`,
-  `feedbacks`, `e1rmSnapshots`, `cycles`) écrites dans la même transaction
-  Dexie. Tables externalisées : `equipmentOverrides`, `userAddedExercises`.
-- Modules : `src/db/{schema,serialize,transactions}.ts` + 7 repositories ;
-  `src/io/{schema,export,import}.ts` (validation Zod versionnée v1) ;
-  `src/store/{index,selectors}.ts` (Zustand store unique, 4 sections logiques) ;
-  `src/hooks/useEngine.ts` (façade — bootstrap, startUser, generateAndStoreSession,
-  recordFeedbackAndCommit, endOfWeek, endOfCycle).
-- Toute mutation passe par `useEngine` (clone state → mute → tx multi-tables
-  → setState) — l'UI ne doit jamais appeler `setUserState` directement.
-- Tests verts : **290** (+36 : 4 serialize + 12 repos + 6 transactions + 9 io
-  + 4 store + 1 e2e). Critère de fin Conv #3 : test e2e "créer user → générer
-  session → feedback → relancer app → état restauré" passe.
-- Setup Vitest : `tests/setup.ts` injecte `fake-indexeddb/auto` et reset
-  DB + store entre chaque test. Fixtures partagées : `src/test-utils/fixtures.ts`
-  (`makeTestProfile`, `EQUIP_FULL`, `makeTestMuscleGoals`).
+- Squelette UI + composants partagés livrés. React Router 6 branché,
+  `main.tsx` monte `<RouterProvider>` (plus de `App.tsx`).
+- Arbo : `src/layout/{AppShell,TabbedLayout,Header,TabBar}.tsx`,
+  `src/components/{Button,Card,Sheet,Dialog,Stepper,HelpButton,HelpSheet,help-context}.tsx`,
+  `src/pages/{Onboarding,Programme,Seance,Progres,Catalogue,Profil,Dev}Page.tsx`,
+  `src/lib/{cn,help-glossary}.ts`, `src/router.tsx`.
+- Routes : `/` → redir `/programme` ; `/onboarding` (sans tab bar) ;
+  `/programme`, `/seance`, `/progres`, `/catalogue`, `/profil` (sous
+  `TabbedLayout` = Header + TabBar) ; `/dev` uniquement en
+  `import.meta.env.DEV`. Catch-all → `/programme`.
+- `HelpProvider` (context) monte un `HelpSheet` unique ; `<HelpButton topic="…"/>`
+  l'ouvre via `useHelp()`. Glossaire : 13 termes dans `help-glossary.ts`
+  (11 V2 + `vsSem1` + `prDuJour`).
+- Composants typés strict, FR partout, palette `anthracite-*` + `sang-*`
+  (Tailwind config inchangé). Safe-area iOS gérée via `env(safe-area-inset-*)`
+  dans Header / TabBar / Sheet.
+- Tests : **290 toujours verts** (aucun nouveau test cette conv — couche
+  UI sans logique métier ; QA visuelle = `/dev`).
 - Build : `npm run test && npm run build && npm run parity-check && npm run lint` — OK.
-- Prochaine conv prévue : **Conv #4a — Squelette UI + composants partagés**.
+- Prochaine conv prévue : **Conv #4b — Onboarding 4 étapes + dialogue R1-R4**.
 - Backlog connu : D1 push/pull ratio + D2 lengthened_bias à corriger en Conv #7.
