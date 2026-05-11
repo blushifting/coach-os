@@ -100,12 +100,13 @@ synthétiques, vérifiée par `tools/parity-check.ts`.
 - **Repo distant** : <https://github.com/blushifting/coach-os> (public, GitHub
   Pages cible : <https://blushifting.github.io/coach-os/>).
 - **Working dir local** : `D:\coach-os\` (à la racine de D, **hors OneDrive**).
-- **Multi-PCs** : `git push` avant fermeture, `git pull` avant ouverture.
-  Le repo distant est la vérité unique.
+- **Dev sur un seul PC** (le fixe). Le repo distant sert de **backup** et
+  de source pour GitHub Pages — pas de workflow multi-PCs actif.
+- **Push à chaque fin de conv** (`git push origin main`) : chaque conv
+  devient un checkpoint récupérable si le disque local meurt. Coût quasi
+  nul, assurance non-nulle.
 - **Commits** : atomiques par tâche, messages **en français**, pas de
   force-push sur `main`.
-- **Branche par conv** recommandée (`conv-N-titre`) avant de lancer la conv
-  Claude Code, merge après revue diff.
 
 ## 8. Anti-compaction (règles à appliquer dans chaque conv)
 
