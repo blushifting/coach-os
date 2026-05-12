@@ -4,7 +4,8 @@
  * - 4 étapes (Profil / Muscles / Équilibre / Programme).
  * - Navigation Précédent / Suivant avec garde-fous (étape 2 : ≥ 1 muscle).
  * - À la finalisation : `useEngine.startUser` (applyBalance=false puisqu'on a
- *   déjà arbitré les SUGGERE dans l'étape 3) puis navigation vers `/seance`.
+ *   déjà arbitré les SUGGERE dans l'étape 3) puis navigation vers `/seance-0`
+ *   (calibration des plafonds — Conv #4c).
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -97,7 +98,7 @@ export default function OnboardingPage() {
         applyBalance: false,
         programmeId: draft.programmeId,
       });
-      navigate('/seance', { replace: true });
+      navigate('/seance-0', { replace: true });
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Erreur inattendue';
       setError(msg);

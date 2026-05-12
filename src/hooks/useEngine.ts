@@ -14,6 +14,8 @@
 import { useMemo } from 'react';
 import { Catalog } from '@/engine/catalog';
 import * as engine from '@/engine/engine';
+import { generateCyclePlan } from '@/engine/cycle_planner';
+import { fitGuidedProgram, getGuidedProgram } from '@/engine/guided_programs';
 import type {
   MuscleGoal,
   Profile,
@@ -29,6 +31,7 @@ import {
   txEndOfWeek,
   txInitUser,
   txSaveSessionPlan,
+  txSaveUserStateOnly,
 } from '@/db/transactions';
 import { useCoachOsStore, type HistorySnapshot } from '@/store';
 
@@ -111,6 +114,107 @@ export async function startUser(args: StartUserArgs): Promise<UserState> {
   await refreshHistory();
   useCoachOsStore.setState({ userState: newState });
   return newState;
+}
+
+// =============================================================================
+// Séance 0 — génération du WeeklyTemplate Cycle 1 + commit calibration
+// =============================================================================
+
+export interface InitialCyclePlanResult {
+  /** `null` si un programme guidé est bloqué par l'équipement. */
+  state: UserState | null;
+  blocking: string[];
+}
+
+/**
+ * Génère et persiste le `WeeklyTemplate` Cycle 1.
+ *
+ * Mode guidé : `fitGuidedProgram(program, profile, equipment, plafonds={}, catalog)`.
+ *   Pose `requires_calibration=true` puisque les plafonds sont vides.
+ * Mode custom : `generateCyclePlan(state, catalog)`.
+ *
+ * Idempotent : ne régénère pas si `state.current_cycle_plan` est déjà posé.
+ */
+export async function generateInitialCyclePlan(): Promise<InitialCyclePlanResult> {
+  const catalog = requireCatalog();
+  const next = requireUserState();
+  if (next.current_cycle_plan !== null) {
+    useCoachOsStore.setState({ userState: next });
+    return { state: next, blocking: [] };
+  }
+
+  const programmeId = next.active_guided_program_id;
+  if (programmeId !== null) {
+    const program = getGuidedProgram(programmeId);
+    if (program === null) {
+      throw new Error(`Programme guidé inconnu : ${programmeId}`);
+    }
+    const equipment = new Set(next.profile.available_equip);
+    const { weekly, blocking } = fitGuidedProgram(
+      program,
+      next.profile,
+      equipment,
+      next.e1rm,
+      catalog,
+      next.cycle_index,
+    );
+    if (weekly === null) {
+      return { state: null, blocking };
+    }
+    next.current_cycle_plan = weekly;
+  } else {
+    next.current_cycle_plan = generateCyclePlan(next, catalog);
+  }
+
+  await txSaveUserStateOnly(next);
+  useCoachOsStore.setState({ userState: next });
+  return { state: next, blocking: [] };
+}
+
+export interface CommitInitialCalibrationArgs {
+  /** e1RM (valeur "totale", incluant BW pour bodyweight_loaded) par exercise_id. */
+  readonly e1rmByExerciseId: Readonly<Record<string, number>>;
+  /** Variantes choisies par l'utilisateur, à appliquer sur `current_cycle_plan`. */
+  readonly variantReplacements?: ReadonlyArray<{
+    readonly dayIndex: number;
+    readonly slotIndex: number;
+    readonly newExerciseId: string;
+  }>;
+}
+
+/**
+ * Commit final de la séance 0 : merge les e1RM, remplace les variantes choisies
+ * dans `current_cycle_plan`, et flip `requires_calibration=false`. Persiste.
+ */
+export async function commitInitialCalibration(
+  args: CommitInitialCalibrationArgs,
+): Promise<UserState> {
+  const next = requireUserState();
+  if (next.current_cycle_plan === null) {
+    throw new Error(
+      'current_cycle_plan non posé : appeler generateInitialCyclePlan() d\'abord.',
+    );
+  }
+
+  for (const r of args.variantReplacements ?? []) {
+    const day = next.current_cycle_plan.days[r.dayIndex];
+    if (day === undefined) continue;
+    const slot = day.exercises[r.slotIndex];
+    if (slot === undefined) continue;
+    slot.exercise_id = r.newExerciseId;
+  }
+
+  for (const [exId, val] of Object.entries(args.e1rmByExerciseId)) {
+    if (Number.isFinite(val) && val > 0) {
+      next.e1rm[exId] = val;
+    }
+  }
+
+  next.current_cycle_plan.requires_calibration = false;
+
+  await txSaveUserStateOnly(next);
+  useCoachOsStore.setState({ userState: next });
+  return next;
 }
 
 // =============================================================================
@@ -208,6 +312,8 @@ export interface EngineApi {
   bootstrap: typeof bootstrap;
   refreshHistory: typeof refreshHistory;
   startUser: typeof startUser;
+  generateInitialCyclePlan: typeof generateInitialCyclePlan;
+  commitInitialCalibration: typeof commitInitialCalibration;
   generateAndStoreSession: typeof generateAndStoreSession;
   recordFeedbackAndCommit: typeof recordFeedbackAndCommit;
   endOfWeek: typeof endOfWeek;
@@ -220,6 +326,8 @@ export function useEngine(): EngineApi {
       bootstrap,
       refreshHistory,
       startUser,
+      generateInitialCyclePlan,
+      commitInitialCalibration,
       generateAndStoreSession,
       recordFeedbackAndCommit,
       endOfWeek,

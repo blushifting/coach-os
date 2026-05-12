@@ -144,37 +144,40 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
-## État courant — fin Conv #4b (2026-05-12)
+## État courant — fin Conv #4c (2026-05-12)
 
-- **Onboarding 4 étapes livré** : `/onboarding` est un wizard fonctionnel
-  qui crée un `UserState` complet en DB et redirige vers `/seance`.
-- Arbo ajoutée : `src/pages/onboarding/{OnboardingPage,Step1Profile,Step2Muscles,Step3Balance,Step4Program}.tsx`,
-  `src/components/StepIndicator.tsx`, `src/lib/{onboarding-state,balance-reasons}.ts`.
-  `src/pages/OnboardingPage.tsx` est devenu un simple re-export.
-- Étape 1 : sexe / âge / poids / niveau / séances-sem / équipement (chips
-  groupées par catégorie + 3 presets : Salle complète / Maison basique /
-  Tout décocher).
-- Étape 2 : pool des 15 muscles canoniques, ajout par tap → liste rankée,
-  réorganisation par drag&drop (`@dnd-kit`), sélecteur d'objectif par
-  muscle (FORCE/HYPERTROPHIE/ENDURANCE/MAINTIEN). Bouton "Préset par défaut"
-  = full-body Hypertrophie (pectoraux, dos_largeur, quadriceps, fessiers,
-  deltos_lateraux) cf. 04 §3.1 ligne 108.
-- Étape 3 : dialogue R1-R4. On consomme `applyBalanceRules` (pure) côté UI,
-  les suggestions sont pré-cochées au passage 2→3, l'utilisateur peut
-  décocher → `NON_COUVERT` explicite. Chaque ligne affiche un badge R1/R2/R3/R4
-  + une phrase d'explication FR (`lib/balance-reasons.ts`).
-- Étape 4 : choix radio entre `Programme custom` (déduit du split) et les
-  5 programmes guidés (`ALL_GUIDED_PROGRAMS`). Warning si `sessions_per_week`
-  ne matche pas.
-- Garde-fou : `btn-next` étape 2 désactivé via message d'erreur si zéro
-  muscle PRIORITAIRE. Bouton "Précédent" désactivé à l'étape 1.
-- Câblage final : `useEngine.startUser({ profile, muscleGoals, applyBalance: false, programmeId })`.
-  L'`Objective` global du Profile est dérivé : majorité des PRIORITAIRE en
-  custom, premier `objectifs_principaux` en guidé.
-- Tests : **290 Vitest verts** (inchangés) + **4 Playwright e2e verts**
-  (parcours préset+custom, garde-fou, retour, programme guidé).
-- Stack : `@dnd-kit/{core,sortable,utilities}` + `@playwright/test`
-  installés. `playwright.config.ts` à la racine, tests dans `tests/playwright/`.
+- **Séance 0 (calibration 1RM) livrée** : `/seance-0` génère le
+  `WeeklyTemplate` Cycle 1 puis fait calibrer chaque exo clé, et redirige
+  vers `/programme` avec les e1RM en DB et `requires_calibration=false`.
+- Arbo : `src/pages/seance-0/{Seance0Page,CalibrationStep,VariantPickerSheet}.tsx`,
+  `src/lib/calibration.ts` (helpers purs : `pickCalibrationExercises`,
+  `alternativeVariantsFor`, `e1rmFromSubmaxTest`, `e1rmFromKnown1RM`,
+  `validateSubmaxInput`, `allowsKnown1RM`, `loadLabelFor`).
+- Sélection des exos à calibrer : mode guidé = `planned.role` commençant
+  par `main_` sans e1RM (cf. `hasRequiredPlafonds` + 09 §7.6) ; mode custom
+  (aucun `role`) = compounds `e1RM_applicable` sans e1RM. Dédupliqué par
+  `exercise_id` (un exo apparaissant plusieurs jours = 1 calibration).
+- UI 1 exo/écran (wizard) : toggle "Je connais mon 1RM" (uniquement pour
+  BARBELL / DUMBBELL / MACHINE_STACK / CABLE / BODYWEIGHT_LOADED) vs "Je
+  teste" (reps 3-8, RPE 6-10 par 0.5, validation `measurementIsReliable`).
+  Plafond estimé en live. Bouton "Changer de variante" → bottom sheet sur
+  le `groupe_substitution` filtré équipement (cf. 08 §107).
+- Câblage moteur (nouveau dans `useEngine.ts`) :
+  - `generateInitialCyclePlan()` : idempotent, appelle `fitGuidedProgram`
+    (guidé, plafonds={}) ou `generateCyclePlan` (custom). Pose
+    `state.current_cycle_plan`, persiste via `txSaveUserStateOnly`.
+  - `commitInitialCalibration({ e1rmByExerciseId, variantReplacements })` :
+    merge e1RM, applique tous les remplacements (toutes occurrences de
+    l'exo originel dans le weekly), flip `requires_calibration=false`,
+    persiste.
+- Redirection onboarding `/onboarding` → `/seance-0` (au lieu de `/seance`).
+- Si programme guidé incompatible équipement (`blocking` non vide), écran
+  dédié avec retour onboarding.
+- Tests : **290 Vitest verts** (inchangés) + **7 Playwright e2e verts**
+  (4 onboarding mis à jour pour `/seance-0` + 3 séance 0 : custom complet,
+  bouton Précédent, guidée Starting Strength).
 - Build : `npm run test && npm run build && npm run parity-check && npm run lint && npm run test:e2e` — OK.
-- Prochaine conv prévue : **Conv #4c — Séance 0 (calibration 1RM)**.
+- Prochaine conv prévue : **Conv #5 — Dashboard Programme + onglet Séance**.
 - Backlog connu : D1 push/pull ratio + D2 lengthened_bias à corriger en Conv #7.
+- Hors scope #4c laissé pour plus tard : `EquipmentOverride` (incréments
+  réels en salle) — UX d'édition à placer en Conv #6c (Profil).

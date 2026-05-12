@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
 
 /**
- * E2E onboarding (Conv #4b).
+ * E2E onboarding (Conv #4b, redirection finale mise à jour Conv #4c).
  *
  * Parcours complet : Profil → Muscles (préset) → Équilibre R1-R4 → Programme
- * → finalisation → /seance.
+ * → finalisation → /seance-0 (séance de calibration).
  *
  * Garde-fou aussi testé : impossible de passer 2 → 3 sans muscle sélectionné.
  */
@@ -58,7 +58,7 @@ test('parcours complet : préset par défaut → custom → /seance', async ({ p
 
   // Finaliser
   await page.getByTestId('btn-finish').click();
-  await expect(page).toHaveURL(/\/seance$/);
+  await expect(page).toHaveURL(/\/seance-0$/);
 });
 
 test('garde-fou : impossible d\'avancer étape 2 sans muscle', async ({ page }) => {
@@ -117,5 +117,5 @@ test('parcours avec programme guidé', async ({ page }) => {
   await page.getByTestId('program-ss').click();
   await expect(page.getByTestId('program-ss')).toHaveAttribute('aria-checked', 'true');
   await page.getByTestId('btn-finish').click();
-  await expect(page).toHaveURL(/\/seance$/);
+  await expect(page).toHaveURL(/\/seance-0$/);
 });

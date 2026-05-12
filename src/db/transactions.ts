@@ -142,6 +142,17 @@ export async function txEndOfWeek(state: UserState): Promise<void> {
 }
 
 // =============================================================================
+// Sauvegarde du seul UserState (séance 0 : current_cycle_plan + e1RM initiaux)
+// =============================================================================
+
+export async function txSaveUserStateOnly(state: UserState): Promise<void> {
+  const db = getDb();
+  await db.transaction('rw', [db.userState], async () => {
+    await putUserStateInTx(state);
+  });
+}
+
+// =============================================================================
 // Fin de cycle (sauve review + ferme cycle courant + ouvre suivant si avancé)
 // =============================================================================
 
