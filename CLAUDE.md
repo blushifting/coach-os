@@ -69,8 +69,10 @@ synthétiques, vérifiée par `tools/parity-check.ts`.
 | Validation IO | Zod 3 — schéma versionné de l'export/import JSON |
 
 | Routing | React Router 6 — `createBrowserRouter`, `basename` aligné sur `BASE_URL` |
+| Drag&drop | `@dnd-kit/core` + `sortable` + `utilities` (ranking onboarding, #4b) |
+| Tests e2e | Playwright (Chromium only, viewport 390×844, #4b) |
 
-À ajouter par les prochaines conv : Playwright (#4b), vite-plugin-pwa (#9).
+À ajouter par les prochaines conv : vite-plugin-pwa (#9).
 
 ## 5. Scripts npm
 
@@ -81,6 +83,7 @@ synthétiques, vérifiée par `tools/parity-check.ts`.
 | `npm run preview` | Sert le bundle dist/ |
 | `npm run test` | Vitest run (one-shot) |
 | `npm run test:watch` | Vitest watch |
+| `npm run test:e2e` | Playwright e2e (lance Vite dev auto via `webServer`) |
 | `npm run lint` | ESLint sur tout le repo |
 | `npm run format` | Prettier write src/ + tests/ |
 
@@ -141,26 +144,37 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
-## État courant — fin Conv #4a (2026-05-11)
+## État courant — fin Conv #4b (2026-05-12)
 
-- Squelette UI + composants partagés livrés. React Router 6 branché,
-  `main.tsx` monte `<RouterProvider>` (plus de `App.tsx`).
-- Arbo : `src/layout/{AppShell,TabbedLayout,Header,TabBar}.tsx`,
-  `src/components/{Button,Card,Sheet,Dialog,Stepper,HelpButton,HelpSheet,help-context}.tsx`,
-  `src/pages/{Onboarding,Programme,Seance,Progres,Catalogue,Profil,Dev}Page.tsx`,
-  `src/lib/{cn,help-glossary}.ts`, `src/router.tsx`.
-- Routes : `/` → redir `/programme` ; `/onboarding` (sans tab bar) ;
-  `/programme`, `/seance`, `/progres`, `/catalogue`, `/profil` (sous
-  `TabbedLayout` = Header + TabBar) ; `/dev` uniquement en
-  `import.meta.env.DEV`. Catch-all → `/programme`.
-- `HelpProvider` (context) monte un `HelpSheet` unique ; `<HelpButton topic="…"/>`
-  l'ouvre via `useHelp()`. Glossaire : 13 termes dans `help-glossary.ts`
-  (11 V2 + `vsSem1` + `prDuJour`).
-- Composants typés strict, FR partout, palette `anthracite-*` + `sang-*`
-  (Tailwind config inchangé). Safe-area iOS gérée via `env(safe-area-inset-*)`
-  dans Header / TabBar / Sheet.
-- Tests : **290 toujours verts** (aucun nouveau test cette conv — couche
-  UI sans logique métier ; QA visuelle = `/dev`).
-- Build : `npm run test && npm run build && npm run parity-check && npm run lint` — OK.
-- Prochaine conv prévue : **Conv #4b — Onboarding 4 étapes + dialogue R1-R4**.
+- **Onboarding 4 étapes livré** : `/onboarding` est un wizard fonctionnel
+  qui crée un `UserState` complet en DB et redirige vers `/seance`.
+- Arbo ajoutée : `src/pages/onboarding/{OnboardingPage,Step1Profile,Step2Muscles,Step3Balance,Step4Program}.tsx`,
+  `src/components/StepIndicator.tsx`, `src/lib/{onboarding-state,balance-reasons}.ts`.
+  `src/pages/OnboardingPage.tsx` est devenu un simple re-export.
+- Étape 1 : sexe / âge / poids / niveau / séances-sem / équipement (chips
+  groupées par catégorie + 3 presets : Salle complète / Maison basique /
+  Tout décocher).
+- Étape 2 : pool des 15 muscles canoniques, ajout par tap → liste rankée,
+  réorganisation par drag&drop (`@dnd-kit`), sélecteur d'objectif par
+  muscle (FORCE/HYPERTROPHIE/ENDURANCE/MAINTIEN). Bouton "Préset par défaut"
+  = full-body Hypertrophie (pectoraux, dos_largeur, quadriceps, fessiers,
+  deltos_lateraux) cf. 04 §3.1 ligne 108.
+- Étape 3 : dialogue R1-R4. On consomme `applyBalanceRules` (pure) côté UI,
+  les suggestions sont pré-cochées au passage 2→3, l'utilisateur peut
+  décocher → `NON_COUVERT` explicite. Chaque ligne affiche un badge R1/R2/R3/R4
+  + une phrase d'explication FR (`lib/balance-reasons.ts`).
+- Étape 4 : choix radio entre `Programme custom` (déduit du split) et les
+  5 programmes guidés (`ALL_GUIDED_PROGRAMS`). Warning si `sessions_per_week`
+  ne matche pas.
+- Garde-fou : `btn-next` étape 2 désactivé via message d'erreur si zéro
+  muscle PRIORITAIRE. Bouton "Précédent" désactivé à l'étape 1.
+- Câblage final : `useEngine.startUser({ profile, muscleGoals, applyBalance: false, programmeId })`.
+  L'`Objective` global du Profile est dérivé : majorité des PRIORITAIRE en
+  custom, premier `objectifs_principaux` en guidé.
+- Tests : **290 Vitest verts** (inchangés) + **4 Playwright e2e verts**
+  (parcours préset+custom, garde-fou, retour, programme guidé).
+- Stack : `@dnd-kit/{core,sortable,utilities}` + `@playwright/test`
+  installés. `playwright.config.ts` à la racine, tests dans `tests/playwright/`.
+- Build : `npm run test && npm run build && npm run parity-check && npm run lint && npm run test:e2e` — OK.
+- Prochaine conv prévue : **Conv #4c — Séance 0 (calibration 1RM)**.
 - Backlog connu : D1 push/pull ratio + D2 lengthened_bias à corriger en Conv #7.

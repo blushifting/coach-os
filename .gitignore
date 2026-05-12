@@ -18,6 +18,9 @@ out
 # Tests
 coverage
 .nyc_output
+test-results
+playwright-report
+playwright/.cache
 
 # Editor
 .vscode/*

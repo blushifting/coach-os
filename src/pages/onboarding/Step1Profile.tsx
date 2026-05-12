@@ -1,0 +1,225 @@
+/**
+ * Étape 1 de l'onboarding : profil utilisateur.
+ *
+ * Collecte : sexe, âge, poids, niveau, séances/sem, équipement (chips).
+ */
+
+import { Level, Sex } from '@/engine/models';
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { Stepper } from '@/components/Stepper';
+import { cn } from '@/lib/cn';
+import {
+  EQUIPMENT_CHIPS,
+  EQUIPMENT_PRESET_FULL_GYM,
+  EQUIPMENT_PRESET_HOME_BASIC,
+  activeChipIds,
+  toggleChip,
+  type EquipmentChip,
+  type OnboardingDraft,
+} from '@/lib/onboarding-state';
+
+interface Step1Props {
+  readonly draft: OnboardingDraft;
+  readonly onChange: (patch: Partial<OnboardingDraft>) => void;
+}
+
+export function Step1Profile({ draft, onChange }: Step1Props) {
+  const active = activeChipIds(draft.equipment);
+
+  return (
+    <div className="flex flex-col gap-5 p-4">
+      <h1 className="text-xl font-semibold text-white">Profil</h1>
+      <p className="text-sm text-anthracite-500">
+        Ces infos servent à calibrer ton volume cible et tes plafonds de départ.
+      </p>
+
+      {/* --- Sexe --- */}
+      <Card>
+        <div className="mb-3 text-sm font-medium text-white">Sexe</div>
+        <div className="flex gap-2" role="radiogroup" aria-label="Sexe">
+          <ChipRadio
+            label="Homme"
+            selected={draft.sex === Sex.HOMME}
+            onClick={() => onChange({ sex: Sex.HOMME })}
+            testId="sex-homme"
+          />
+          <ChipRadio
+            label="Femme"
+            selected={draft.sex === Sex.FEMME}
+            onClick={() => onChange({ sex: Sex.FEMME })}
+            testId="sex-femme"
+          />
+        </div>
+      </Card>
+
+      {/* --- Âge --- */}
+      <Card>
+        <div className="mb-3 text-sm font-medium text-white">Âge</div>
+        <Stepper
+          value={draft.age}
+          onChange={(v) => onChange({ age: v })}
+          min={14}
+          max={100}
+          suffix=" ans"
+        />
+      </Card>
+
+      {/* --- Poids --- */}
+      <Card>
+        <div className="mb-3 text-sm font-medium text-white">Poids</div>
+        <Stepper
+          value={draft.bodyweightKg}
+          onChange={(v) => onChange({ bodyweightKg: v })}
+          min={35}
+          max={200}
+          suffix=" kg"
+        />
+      </Card>
+
+      {/* --- Niveau --- */}
+      <Card>
+        <div className="mb-3 text-sm font-medium text-white">Niveau</div>
+        <div className="flex flex-col gap-2" role="radiogroup" aria-label="Niveau">
+          {[
+            { v: Level.DEBUTANT, lbl: 'Débutant', sub: '< 1 an de pratique régulière' },
+            { v: Level.INTERMEDIAIRE, lbl: 'Intermédiaire', sub: '1 à 3 ans' },
+            { v: Level.AVANCE, lbl: 'Avancé', sub: '3 ans et plus' },
+          ].map(({ v, lbl, sub }) => (
+            <button
+              key={v}
+              type="button"
+              role="radio"
+              aria-checked={draft.level === v}
+              data-testid={`level-${v}`}
+              onClick={() => onChange({ level: v })}
+              className={cn(
+                'flex flex-col items-start rounded-xl border px-3 py-2 text-left transition',
+                draft.level === v
+                  ? 'border-sang-600 bg-sang-900/30 text-white'
+                  : 'border-anthracite-700 bg-anthracite-900 text-anthracite-500 hover:text-white',
+              )}
+            >
+              <span className="text-sm font-medium">{lbl}</span>
+              <span className="text-xs">{sub}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* --- Séances/sem --- */}
+      <Card>
+        <div className="mb-3 text-sm font-medium text-white">Séances par semaine</div>
+        <Stepper
+          value={draft.sessionsPerWeek}
+          onChange={(v) => onChange({ sessionsPerWeek: v })}
+          min={2}
+          max={6}
+          suffix=" / sem"
+        />
+      </Card>
+
+      {/* --- Équipement --- */}
+      <Card>
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-sm font-medium text-white">Équipement disponible</span>
+        </div>
+        <div className="mb-3 flex gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() =>
+              onChange({ equipment: new Set(EQUIPMENT_PRESET_FULL_GYM) })
+            }
+            data-testid="equip-preset-gym"
+          >
+            Salle complète
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() =>
+              onChange({ equipment: new Set(EQUIPMENT_PRESET_HOME_BASIC) })
+            }
+            data-testid="equip-preset-home"
+          >
+            Maison basique
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onChange({ equipment: new Set() })}
+            data-testid="equip-preset-clear"
+          >
+            Tout décocher
+          </Button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {EQUIPMENT_CHIPS.map((chip) => (
+            <EquipChip
+              key={chip.id}
+              chip={chip}
+              selected={active.has(chip.id)}
+              onToggle={() =>
+                onChange({ equipment: toggleChip(draft.equipment, chip) })
+              }
+            />
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+interface ChipRadioProps {
+  readonly label: string;
+  readonly selected: boolean;
+  readonly onClick: () => void;
+  readonly testId?: string;
+}
+
+function ChipRadio({ label, selected, onClick, testId }: ChipRadioProps) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      data-testid={testId}
+      onClick={onClick}
+      className={cn(
+        'flex-1 rounded-xl border px-3 py-2 text-sm font-medium transition',
+        selected
+          ? 'border-sang-600 bg-sang-900/30 text-white'
+          : 'border-anthracite-700 bg-anthracite-900 text-anthracite-500 hover:text-white',
+      )}
+    >
+      {label}
+    </button>
+  );
+}
+
+interface EquipChipProps {
+  readonly chip: EquipmentChip;
+  readonly selected: boolean;
+  readonly onToggle: () => void;
+}
+
+function EquipChip({ chip, selected, onToggle }: EquipChipProps) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={selected}
+      data-testid={`equip-${chip.id}`}
+      onClick={onToggle}
+      className={cn(
+        'rounded-full border px-3 py-1.5 text-xs font-medium transition',
+        selected
+          ? 'border-sang-600 bg-sang-900/40 text-white'
+          : 'border-anthracite-700 bg-anthracite-900 text-anthracite-500 hover:text-white',
+      )}
+    >
+      {chip.label}
+    </button>
+  );
+}

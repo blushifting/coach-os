@@ -1,0 +1,144 @@
+/**
+ * Étape 4 de l'onboarding : choix d'un programme guidé ou du mode custom.
+ *
+ * Pour chaque programme guidé, on indique :
+ *  - nom + auteur,
+ *  - séances/sem (avec warning si ≠ choix profil),
+ *  - public cible,
+ *  - objectif principal.
+ *
+ * Le mode "custom" ne sélectionne aucun programmeId : le moteur génère un
+ * programme à partir des `muscle_goals` via split + cycle_planner.
+ */
+
+import { ALL_GUIDED_PROGRAMS } from '@/engine/guided_programs';
+import { Level, type GuidedProgram, type MuscleObjective } from '@/engine/models';
+import { Card } from '@/components/Card';
+import { cn } from '@/lib/cn';
+import { objectiveLabel } from '@/lib/balance-reasons';
+import type { OnboardingDraft } from '@/lib/onboarding-state';
+
+interface Step4Props {
+  readonly draft: OnboardingDraft;
+  readonly onChange: (patch: Partial<OnboardingDraft>) => void;
+}
+
+const LEVEL_LABEL_FR: Record<Level, string> = {
+  [Level.DEBUTANT]: 'Débutant',
+  [Level.INTERMEDIAIRE]: 'Intermédiaire',
+  [Level.AVANCE]: 'Avancé',
+};
+
+function levelsToFr(levels: readonly Level[]): string {
+  return levels.map((l) => LEVEL_LABEL_FR[l]).join(' / ');
+}
+
+function objectivesToFr(objs: readonly MuscleObjective[]): string {
+  return objs.map(objectiveLabel).join(' + ');
+}
+
+export function Step4Program({ draft, onChange }: Step4Props) {
+  return (
+    <div className="flex flex-col gap-4 p-4">
+      <h1 className="text-xl font-semibold text-white">Choix du programme</h1>
+      <p className="text-sm text-anthracite-500">
+        Pars sur un programme guidé éprouvé ou laisse l'app générer un programme
+        custom adapté à tes muscles cibles.
+      </p>
+
+      <ProgramRow
+        id={null}
+        title="Programme custom"
+        subtitle="Généré à partir de tes muscles cibles + objectifs"
+        meta={`${draft.sessionsPerWeek} séances / sem`}
+        selected={draft.programmeId === null}
+        onSelect={() => onChange({ programmeId: null })}
+      />
+
+      <div className="mt-2 text-xs uppercase tracking-wider text-anthracite-500">
+        Programmes guidés
+      </div>
+
+      {ALL_GUIDED_PROGRAMS.map((p: GuidedProgram) => {
+        const mismatch = p.sessions_per_week !== draft.sessionsPerWeek;
+        return (
+          <ProgramRow
+            key={p.id}
+            id={p.id}
+            title={p.name}
+            subtitle={`${p.author} — ${levelsToFr(p.public_cible)}`}
+            meta={`${p.sessions_per_week} séances / sem · ${objectivesToFr(p.objectifs_principaux)}`}
+            warning={
+              mismatch
+                ? `Ce programme demande ${p.sessions_per_week} séances/sem (tu as choisi ${draft.sessionsPerWeek}).`
+                : null
+            }
+            selected={draft.programmeId === p.id}
+            onSelect={() => onChange({ programmeId: p.id })}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+interface ProgramRowProps {
+  readonly id: string | null;
+  readonly title: string;
+  readonly subtitle: string;
+  readonly meta: string;
+  readonly warning?: string | null;
+  readonly selected: boolean;
+  readonly onSelect: () => void;
+}
+
+function ProgramRow({
+  id,
+  title,
+  subtitle,
+  meta,
+  warning,
+  selected,
+  onSelect,
+}: ProgramRowProps) {
+  const testId = id === null ? 'program-custom' : `program-${id}`;
+  return (
+    <Card
+      className={cn(
+        'cursor-pointer transition',
+        selected
+          ? 'border-sang-600 bg-sang-900/20'
+          : 'hover:border-anthracite-600',
+      )}
+      onClick={onSelect}
+      data-testid={testId}
+      role="radio"
+      aria-checked={selected}
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className={cn(
+            'mt-0.5 h-5 w-5 flex-shrink-0 rounded-full border-2 transition',
+            selected
+              ? 'border-sang-500 bg-sang-600'
+              : 'border-anthracite-600 bg-anthracite-900',
+          )}
+        >
+          {selected ? (
+            <div className="m-1 h-2 w-2 rounded-full bg-white" />
+          ) : null}
+        </div>
+        <div className="flex-1">
+          <div className="text-sm font-semibold text-white">{title}</div>
+          <div className="text-xs text-anthracite-500">{subtitle}</div>
+          <div className="mt-1 text-[11px] text-anthracite-500">{meta}</div>
+          {warning ? (
+            <div className="mt-2 rounded-lg border border-sang-700/60 bg-sang-900/20 px-2 py-1 text-[11px] text-sang-500">
+              ⚠ {warning}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </Card>
+  );
+}
