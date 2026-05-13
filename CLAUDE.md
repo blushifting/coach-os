@@ -144,40 +144,31 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
-## État courant — fin Conv #4c (2026-05-12)
+## État courant — fin Conv #5a (2026-05-13)
 
-- **Séance 0 (calibration 1RM) livrée** : `/seance-0` génère le
-  `WeeklyTemplate` Cycle 1 puis fait calibrer chaque exo clé, et redirige
-  vers `/programme` avec les e1RM en DB et `requires_calibration=false`.
-- Arbo : `src/pages/seance-0/{Seance0Page,CalibrationStep,VariantPickerSheet}.tsx`,
-  `src/lib/calibration.ts` (helpers purs : `pickCalibrationExercises`,
-  `alternativeVariantsFor`, `e1rmFromSubmaxTest`, `e1rmFromKnown1RM`,
-  `validateSubmaxInput`, `allowsKnown1RM`, `loadLabelFor`).
-- Sélection des exos à calibrer : mode guidé = `planned.role` commençant
-  par `main_` sans e1RM (cf. `hasRequiredPlafonds` + 09 §7.6) ; mode custom
-  (aucun `role`) = compounds `e1RM_applicable` sans e1RM. Dédupliqué par
-  `exercise_id` (un exo apparaissant plusieurs jours = 1 calibration).
-- UI 1 exo/écran (wizard) : toggle "Je connais mon 1RM" (uniquement pour
-  BARBELL / DUMBBELL / MACHINE_STACK / CABLE / BODYWEIGHT_LOADED) vs "Je
-  teste" (reps 3-8, RPE 6-10 par 0.5, validation `measurementIsReliable`).
-  Plafond estimé en live. Bouton "Changer de variante" → bottom sheet sur
-  le `groupe_substitution` filtré équipement (cf. 08 §107).
-- Câblage moteur (nouveau dans `useEngine.ts`) :
-  - `generateInitialCyclePlan()` : idempotent, appelle `fitGuidedProgram`
-    (guidé, plafonds={}) ou `generateCyclePlan` (custom). Pose
-    `state.current_cycle_plan`, persiste via `txSaveUserStateOnly`.
-  - `commitInitialCalibration({ e1rmByExerciseId, variantReplacements })` :
-    merge e1RM, applique tous les remplacements (toutes occurrences de
-    l'exo originel dans le weekly), flip `requires_calibration=false`,
-    persiste.
-- Redirection onboarding `/onboarding` → `/seance-0` (au lieu de `/seance`).
-- Si programme guidé incompatible équipement (`blocking` non vide), écran
-  dédié avec retour onboarding.
-- Tests : **290 Vitest verts** (inchangés) + **7 Playwright e2e verts**
-  (4 onboarding mis à jour pour `/seance-0` + 3 séance 0 : custom complet,
-  bouton Précédent, guidée Starting Strength).
+- **Dashboard Programme livré** : `/programme` affiche 4 widgets (streak /
+  séances cette sem / % cycle / prochain bilan) + calendrier condensé
+  5 sem × 7 jours avec badges de statut par jour + sheet "Planifier ce
+  jour" (stub — démarrage de séance reporté en 5b).
+- Arbo : `src/pages/programme/{ProgrammePage,Widgets,CondensedCalendar,DayCell,PlanDaySheet}.tsx`,
+  `src/pages/cycle-bilan/{CycleBilanPage,selectors}.ts(x)`,
+  `src/lib/dashboard.ts` (sélecteurs purs : `computeStreak`,
+  `computeCycleProgress`, `computeWeekSessions`, `nextCycleReviewDate`,
+  `isDeloadWeek`, `isCycleFinished`, `buildCalendarMatrix`).
+- Route `/cycle-bilan` ajoutée (TabbedLayout) : affiche adhérence,
+  volume, PR, Δ plafonds, muscles ; 3 boutons d'action (Continuer /
+  Ajuster / Changer) en stub pour 5b/6c. Lecture seule du dernier
+  `CycleReview` (state + fallback DB).
+- Streak = nb semaines consécutives avec ≥1 feedback (non punitif :
+  tolère la semaine en cours encore vide). % cycle = `done / planned * 100`
+  sur les `days.length × 5` séances. Calendrier ancré au lundi de la
+  semaine de `cycle.start_date`.
+- Tests : **323 Vitest** (290 + 33 nouveaux sur `lib/dashboard.ts`) +
+  **9 Playwright e2e** (4 onboarding + 3 séance 0 + 2 programme).
 - Build : `npm run test && npm run build && npm run parity-check && npm run lint && npm run test:e2e` — OK.
-- Prochaine conv prévue : **Conv #5 — Dashboard Programme + onglet Séance**.
-- Backlog connu : D1 push/pull ratio + D2 lengthened_bias à corriger en Conv #7.
-- Hors scope #4c laissé pour plus tard : `EquipmentOverride` (incréments
-  réels en salle) — UX d'édition à placer en Conv #6c (Profil).
+- Prochaine conv : **Conv #5b — onglet Séance** (exécution, feedback set
+  par set, câblage `generateAndStoreSession` / `recordFeedbackAndCommit`,
+  bilan fin de séance, et câblage réel des boutons stub de PlanDaySheet
+  et CycleBilan).
+- Backlog connu : D1 push/pull + D2 lengthened_bias → Conv #7 ;
+  `EquipmentOverride` → Conv #6c.

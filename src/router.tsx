@@ -3,7 +3,8 @@ import { AppShell } from '@/layout/AppShell';
 import { TabbedLayout } from '@/layout/TabbedLayout';
 import OnboardingPage from '@/pages/OnboardingPage';
 import Seance0Page from '@/pages/seance-0/Seance0Page';
-import ProgrammePage from '@/pages/ProgrammePage';
+import ProgrammePage from '@/pages/programme/ProgrammePage';
+import CycleBilanPage from '@/pages/cycle-bilan/CycleBilanPage';
 import SeancePage from '@/pages/SeancePage';
 import ProgresPage from '@/pages/ProgresPage';
 import CataloguePage from '@/pages/CataloguePage';
@@ -24,6 +25,7 @@ export const router = createBrowserRouter(
           element: <TabbedLayout />,
           children: [
             { path: 'programme', element: <ProgrammePage /> },
+            { path: 'cycle-bilan', element: <CycleBilanPage /> },
             { path: 'seance', element: <SeancePage /> },
             { path: 'progres', element: <ProgresPage /> },
             { path: 'catalogue', element: <CataloguePage /> },
