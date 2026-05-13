@@ -144,31 +144,35 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
-## État courant — fin Conv #5b (2026-05-13)
+## État courant — fin Conv #6a (2026-05-13)
 
-- **Onglet Séance livré** : `/seance` orchestre 3 états (A : liste de
-  démarrage `StartSessionList` ; B : `SessionRunner` saisie set par set
-  reps/load/RPE avec `record_feedback` ; C : `SessionSummary` volume +
-  Δ vs sem dernière + PR du jour). Picto par pattern (placeholders 2
-  lettres, refonte Conv #8). Sheet `ExerciseDetailSheet` (nom + muscles
-  + note).
-- Arbo : `src/pages/seance/{SeancePage,StartSessionList,SessionRunner,SetInput,SessionSummary,ExerciseDetailSheet,PatternIcon}.tsx`,
-  `src/lib/session-runner.ts` (purs : `initEntries`, `updateSetEntry`,
-  `buildSessionFeedback`, `computeSessionVolume`, `computeSessionSummary`,
-  `listDayCandidates`).
-- Câblage stubs Conv #5a : `PlanDaySheet` boutons "Démarrer" appellent
-  `generateAndStoreSession({dayIndex, seanceDate})` + nav `/seance` ;
-  `CycleBilanPage` "Continuer pareil" appelle `endOfCycle({})` + nav
-  `/programme`. "Ajuster" et "Changer" restent stubs → Conv #6c (édition
-  profil/programme).
-- Pas de timer (cf. 08 §115) ; pas de persistance des sets non validés
-  en cas de reload (acceptable V1, à revoir Conv #9 PWA).
-- Tests : **335 Vitest** (323 + 12 nouveaux sur `lib/session-runner.ts`)
-  + **12 Playwright e2e** (4 onboarding + 2 programme + 3 séance 0 +
-  3 séance).
+- **Onglet Progrès livré** : `/progres` orchestre 3 tabs Couverture /
+  Volume / Cycles (state local `tab`). Sélecteurs purs
+  `src/lib/progress.ts` :
+  - `computeCoverageThisWeek` → liste `MuscleCoverage` (statut +
+    intensity), basée sur les feedbacks de la semaine ISO courante
+    + `effectiveVolumeBounds`.
+  - `computeVolumeHistory` → `MuscleVolumeSeries[]` sur N=8 dernières
+    semaines, semaines vides incluses.
+  - `buildCycleHistory` → cycles terminés (avec review) du plus récent
+    au plus ancien, plafonds top 3, Δ volume + Δ top plafond vs cycle
+    précédent.
+- Arbo : `src/pages/ProgresPage.tsx` (page hôte + tabs),
+  `src/pages/progres/{CoverageView,VolumeView,CyclesView}.tsx`,
+  `src/lib/progress.ts`. Composants UI : grille de chips colorés par
+  statut (placeholder, silhouette propre prévue Conv #8), barres
+  verticales par muscle avec bande grise V_min→V_max, cards cycles
+  nommées par programme + dates.
+- Pas modifié : pages Programme / Séance / Cycle-Bilan, store, schéma
+  DB, moteur, catalog.
+- Hors scope laissé pour la suite : silhouette anatomique propre →
+  Conv #8 ; bootstrap au reload direct sur `/progres` → Conv #9 (PWA) ;
+  édition objectifs/programme → Conv #6c.
+- Tests : **356 Vitest** (335 + 21 nouveaux sur `lib/progress.ts`) +
+  **13 Playwright e2e** (+1 sur `/progres`, navigation SPA via TabBar).
 - Build : `npm run test && npm run build && npm run parity-check && npm run lint && npm run test:e2e` — OK.
-- Prochaine conv : **Conv #6a — Onglet Progrès** (Couverture / Volume /
-  Cycles).
+- Prochaine conv : **Conv #6b — Onglet Catalogue** (liste filtrable +
+  fuzzy search + descriptifs + audit "compound" sauvage).
 - Backlog connu : D1 push/pull + D2 lengthened_bias → Conv #7 ;
   `EquipmentOverride` + édition objectifs/programme + boutons "Ajuster"/
-  "Changer" du Bilan → Conv #6c.
+  "Changer" du Bilan → Conv #6c ; silhouette anatomique → Conv #8.
