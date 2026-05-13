@@ -1,5 +1,8 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Sheet } from '@/components/Sheet';
+import { useEngine } from '@/hooks/useEngine';
 import type { CalendarDay } from '@/lib/dashboard';
 import type { WeeklyTemplate } from '@/engine/models';
 
@@ -11,24 +14,36 @@ interface PlanDaySheetProps {
 }
 
 /**
- * Sheet "Planifier ou voir la séance de ce jour" — version 5a (MVP affichage).
+ * Sheet "Voir / planifier la séance de ce jour" (Conv #5a → câblage actif #5b).
  *
- * - Si le jour a déjà une séance (`completed` / `planned` / `skipped`) :
- *   affiche le label de la séance et le statut.
- * - Si le jour est libre (`free-future`) : propose les `DayTemplate` du cycle
- *   comme slots à planifier (boutons désactivés en 5a, câblage en 5b avec
- *   `useEngine.generateAndStoreSession` + navigation vers /seance).
- * - Jour passé sans séance (`rest-past`) : message neutre.
+ * - Jour déjà fait / programmé / sauté / passé : message d'état.
+ * - Jour libre futur : liste des `DayTemplate`, bouton "Démarrer" qui appelle
+ *   `generateAndStoreSession({dayIndex, seanceDate})` puis navigue vers
+ *   `/seance` (l'écran Séance bascule alors en État B exécution).
  */
 export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProps) {
+  const engine = useEngine();
+  const navigate = useNavigate();
+  const [pending, setPending] = useState<number | null>(null);
+
   if (day === null) return null;
 
-  const title = formatHumanDate(day.date);
+  async function startSession(dayIndex: number) {
+    if (day === null) return;
+    setPending(dayIndex);
+    try {
+      await engine.generateAndStoreSession({ dayIndex, seanceDate: day.date });
+      onClose();
+      navigate('/seance');
+    } finally {
+      setPending(null);
+    }
+  }
 
   return (
-    <Sheet open={open} onClose={onClose} title={title}>
+    <Sheet open={open} onClose={onClose} title={formatHumanDate(day.date)}>
       <div className="flex flex-col gap-4" data-testid="plan-day-sheet-content">
-        {renderBody(day, cyclePlan)}
+        {renderBody(day, cyclePlan, startSession, pending)}
         <Button
           variant="ghost"
           size="md"
@@ -43,7 +58,12 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
   );
 }
 
-function renderBody(day: CalendarDay, cyclePlan: WeeklyTemplate | null) {
+function renderBody(
+  day: CalendarDay,
+  cyclePlan: WeeklyTemplate | null,
+  startSession: (i: number) => void,
+  pending: number | null,
+) {
   if (day.status === 'completed') {
     return (
       <p className="text-sm text-anthracite-500" data-testid="day-status-text">
@@ -56,7 +76,7 @@ function renderBody(day: CalendarDay, cyclePlan: WeeklyTemplate | null) {
     return (
       <p className="text-sm text-anthracite-500" data-testid="day-status-text">
         Séance <strong className="text-white">{day.sessionLabel}</strong> déjà
-        programmée pour ce jour. Démarrage depuis l'onglet Séance (Conv #5b).
+        programmée. Rends-toi sur l'onglet Séance pour la commencer.
       </p>
     );
   }
@@ -95,12 +115,11 @@ function renderBody(day: CalendarDay, cyclePlan: WeeklyTemplate | null) {
               variant="secondary"
               size="md"
               fullWidth
-              disabled
+              disabled={pending !== null}
+              onClick={() => startSession(i)}
               data-testid={`plan-slot-${i}`}
-              title="Disponible Conv #5b"
             >
-              {d.label}
-              <span className="ml-2 text-xs text-anthracite-500">Conv #5b</span>
+              {pending === i ? 'Démarrage…' : d.label}
             </Button>
           </li>
         ))}

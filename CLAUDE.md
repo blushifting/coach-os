@@ -144,31 +144,31 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
-## État courant — fin Conv #5a (2026-05-13)
+## État courant — fin Conv #5b (2026-05-13)
 
-- **Dashboard Programme livré** : `/programme` affiche 4 widgets (streak /
-  séances cette sem / % cycle / prochain bilan) + calendrier condensé
-  5 sem × 7 jours avec badges de statut par jour + sheet "Planifier ce
-  jour" (stub — démarrage de séance reporté en 5b).
-- Arbo : `src/pages/programme/{ProgrammePage,Widgets,CondensedCalendar,DayCell,PlanDaySheet}.tsx`,
-  `src/pages/cycle-bilan/{CycleBilanPage,selectors}.ts(x)`,
-  `src/lib/dashboard.ts` (sélecteurs purs : `computeStreak`,
-  `computeCycleProgress`, `computeWeekSessions`, `nextCycleReviewDate`,
-  `isDeloadWeek`, `isCycleFinished`, `buildCalendarMatrix`).
-- Route `/cycle-bilan` ajoutée (TabbedLayout) : affiche adhérence,
-  volume, PR, Δ plafonds, muscles ; 3 boutons d'action (Continuer /
-  Ajuster / Changer) en stub pour 5b/6c. Lecture seule du dernier
-  `CycleReview` (state + fallback DB).
-- Streak = nb semaines consécutives avec ≥1 feedback (non punitif :
-  tolère la semaine en cours encore vide). % cycle = `done / planned * 100`
-  sur les `days.length × 5` séances. Calendrier ancré au lundi de la
-  semaine de `cycle.start_date`.
-- Tests : **323 Vitest** (290 + 33 nouveaux sur `lib/dashboard.ts`) +
-  **9 Playwright e2e** (4 onboarding + 3 séance 0 + 2 programme).
+- **Onglet Séance livré** : `/seance` orchestre 3 états (A : liste de
+  démarrage `StartSessionList` ; B : `SessionRunner` saisie set par set
+  reps/load/RPE avec `record_feedback` ; C : `SessionSummary` volume +
+  Δ vs sem dernière + PR du jour). Picto par pattern (placeholders 2
+  lettres, refonte Conv #8). Sheet `ExerciseDetailSheet` (nom + muscles
+  + note).
+- Arbo : `src/pages/seance/{SeancePage,StartSessionList,SessionRunner,SetInput,SessionSummary,ExerciseDetailSheet,PatternIcon}.tsx`,
+  `src/lib/session-runner.ts` (purs : `initEntries`, `updateSetEntry`,
+  `buildSessionFeedback`, `computeSessionVolume`, `computeSessionSummary`,
+  `listDayCandidates`).
+- Câblage stubs Conv #5a : `PlanDaySheet` boutons "Démarrer" appellent
+  `generateAndStoreSession({dayIndex, seanceDate})` + nav `/seance` ;
+  `CycleBilanPage` "Continuer pareil" appelle `endOfCycle({})` + nav
+  `/programme`. "Ajuster" et "Changer" restent stubs → Conv #6c (édition
+  profil/programme).
+- Pas de timer (cf. 08 §115) ; pas de persistance des sets non validés
+  en cas de reload (acceptable V1, à revoir Conv #9 PWA).
+- Tests : **335 Vitest** (323 + 12 nouveaux sur `lib/session-runner.ts`)
+  + **12 Playwright e2e** (4 onboarding + 2 programme + 3 séance 0 +
+  3 séance).
 - Build : `npm run test && npm run build && npm run parity-check && npm run lint && npm run test:e2e` — OK.
-- Prochaine conv : **Conv #5b — onglet Séance** (exécution, feedback set
-  par set, câblage `generateAndStoreSession` / `recordFeedbackAndCommit`,
-  bilan fin de séance, et câblage réel des boutons stub de PlanDaySheet
-  et CycleBilan).
+- Prochaine conv : **Conv #6a — Onglet Progrès** (Couverture / Volume /
+  Cycles).
 - Backlog connu : D1 push/pull + D2 lengthened_bias → Conv #7 ;
-  `EquipmentOverride` → Conv #6c.
+  `EquipmentOverride` + édition objectifs/programme + boutons "Ajuster"/
+  "Changer" du Bilan → Conv #6c.

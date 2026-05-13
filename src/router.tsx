@@ -5,7 +5,7 @@ import OnboardingPage from '@/pages/OnboardingPage';
 import Seance0Page from '@/pages/seance-0/Seance0Page';
 import ProgrammePage from '@/pages/programme/ProgrammePage';
 import CycleBilanPage from '@/pages/cycle-bilan/CycleBilanPage';
-import SeancePage from '@/pages/SeancePage';
+import SeancePage from '@/pages/seance/SeancePage';
 import ProgresPage from '@/pages/ProgresPage';
 import CataloguePage from '@/pages/CataloguePage';
 import ProfilPage from '@/pages/ProfilPage';

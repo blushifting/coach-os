@@ -1,6 +1,8 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { useEngine } from '@/hooks/useEngine';
 import { useCoachOsStore } from '@/store';
 import { selectCycles } from '@/store/selectors';
 import type { CycleReview } from '@/engine/models';
@@ -175,15 +177,34 @@ function ReviewWarnings({ review }: { review: CycleReview }) {
 }
 
 function ReviewActions({ review }: { review: CycleReview }) {
+  const engine = useEngine();
+  const navigate = useNavigate();
+  const [pending, setPending] = useState(false);
   const suggested = suggestedActionLabel(review.suggested_action);
+
+  async function continueAsIs() {
+    setPending(true);
+    try {
+      await engine.endOfCycle({});
+      navigate('/programme');
+    } finally {
+      setPending(false);
+    }
+  }
+
   return (
     <Card data-testid="bilan-actions" className="flex flex-col gap-2">
       <h2 className="text-sm font-semibold text-white">Et maintenant ?</h2>
       <p className="text-xs text-anthracite-500">Suggestion du moteur : {suggested}.</p>
       <div className="mt-2 flex flex-col gap-2">
-        <Button variant="primary" fullWidth disabled data-testid="action-continuer">
-          Continuer pareil
-          <span className="ml-2 text-xs opacity-70">Conv #5b</span>
+        <Button
+          variant="primary"
+          fullWidth
+          disabled={pending}
+          onClick={continueAsIs}
+          data-testid="action-continuer"
+        >
+          {pending ? 'Création du cycle suivant…' : 'Continuer pareil'}
         </Button>
         <Button variant="secondary" fullWidth disabled data-testid="action-ajuster">
           Ajuster les objectifs
@@ -191,7 +212,7 @@ function ReviewActions({ review }: { review: CycleReview }) {
         </Button>
         <Button variant="secondary" fullWidth disabled data-testid="action-changer">
           Changer de programme
-          <span className="ml-2 text-xs opacity-70">Conv #5b</span>
+          <span className="ml-2 text-xs opacity-70">Conv #6c</span>
         </Button>
       </div>
     </Card>
