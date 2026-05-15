@@ -71,8 +71,8 @@ synthétiques, vérifiée par `tools/parity-check.ts`.
 | Routing | React Router 6 — `createBrowserRouter`, `basename` aligné sur `BASE_URL` |
 | Drag&drop | `@dnd-kit/core` + `sortable` + `utilities` (ranking onboarding, #4b) |
 | Tests e2e | Playwright (Chromium only, viewport 390×844, #4b) |
-
-À ajouter par les prochaines conv : vite-plugin-pwa (#9).
+| PWA | `vite-plugin-pwa` 1.x (Workbox, autoUpdate, precache) — #9 |
+| Génération d'icônes | `@resvg/resvg-js` (dev) + `scripts/generate-icons.mjs` |
 
 ## 5. Scripts npm
 
@@ -86,6 +86,7 @@ synthétiques, vérifiée par `tools/parity-check.ts`.
 | `npm run test:e2e` | Playwright e2e (lance Vite dev auto via `webServer`) |
 | `npm run lint` | ESLint sur tout le repo |
 | `npm run format` | Prettier write src/ + tests/ |
+| `npm run generate-icons` | Régénère les PNG PWA depuis `public/icon*.svg` |
 
 ## 6. Préférences Azur
 
@@ -144,7 +145,58 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
-## État courant — fin Conv #8 (2026-05-15)
+## État courant — fin Conv #9 (2026-05-15)
+
+- **PWA installable + déploiement GitHub Pages livrés**. Le nom de marque
+  utilisateur devient **kotsh** (le repo et les identifiants internes
+  restent `coach-os` — nom de développement).
+- **vite-plugin-pwa 1.x** configuré (`vite.config.ts`) : registerType
+  `autoUpdate`, Workbox precache (25 entrées, ~886 kB), navigateFallback
+  vers `index.html`, scope/start_url/id = `/coach-os/`. Manifest généré
+  dans `dist/manifest.webmanifest`.
+- **Manifest** : `name`/`short_name` = `kotsh`, `display: standalone`,
+  `orientation: portrait`, `background_color`/`theme_color` =
+  `#0e0f12` (anthracite-950), `lang: fr`. iOS et Android capitaliseront
+  probablement *Kotsh* sous l'icône (comportement OS, non contrôlable).
+- **Icônes** : SVG source dans `public/icon.svg` + `public/icon-maskable.svg`
+  (lettre **K** anthracite-50 + point sang-700, fond anthracite-950, coins
+  arrondis 96px). Maskable safe zone = 70 % du viewBox. PNG générés via
+  `npm run generate-icons` (script `scripts/generate-icons.mjs` +
+  `@resvg/resvg-js`) en 192/512/maskable-512/apple-touch-180/favicon-32.
+- **index.html** : `<title>kotsh</title>`, meta `apple-mobile-web-app-*`
+  (capable, status-bar `black-translucent`, title `kotsh`), description,
+  liens icon/apple-touch-icon.
+- **Renommage UI** : `Header.tsx` fallback `'Coach OS'` → `'kotsh'`,
+  `io/import.ts` message d'erreur user-facing aligné. Les commentaires
+  JSDoc internes, le nom de classe `useCoachOsStore`, le nom de la DB
+  Dexie et le path `/coach-os/` sont **inchangés** — nom de dev.
+- **Fix bootstrap au reload direct** : `AppShell` appelle `bootstrap()`
+  au mount et affiche un splash (`data-testid="app-splash"`,
+  `aria-busy="true"`) tant que `bootstrapped === false`. Les appels
+  redondants dans `OnboardingPage`/`Seance0Page` sont laissés en place
+  (idempotents) pour ne pas modifier le périmètre Conv #4. Toutes les
+  routes reloadent désormais correctement.
+- **GitHub Actions** : `.github/workflows/deploy.yml`. Build à chaque
+  push sur `main` (Node 20, `npm ci`, `npm run build`), upload
+  `dist/` via `actions/upload-pages-artifact@v3`, déploiement via
+  `actions/deploy-pages@v4`. Permissions `pages: write` +
+  `id-token: write`, concurrency `pages` cancel-in-progress.
+  → Action requise côté repo : **Settings → Pages → Source = GitHub
+  Actions**.
+- **README** : section "Installation sur ton téléphone" (iOS Safari +
+  Android Chrome) ajoutée.
+- Tests : **396 Vitest** + **19 e2e** verts. `npm run build` OK
+  (25.5 kB CSS + 634 kB JS, SW + manifest générés).
+- **Critère de fin Conv #9** : `npm run build` + workflow prêts. Reste à
+  Azur : push sur `main`, activer Pages (Source = Actions), attendre
+  le workflow, ouvrir l'URL sur téléphone, installer.
+- Backlog inchangé pour la suite : `EquipmentOverride` UI + boutons
+  "Ajuster"/"Changer" du Bilan + régénération de cycle plan post-changement
+  profil.
+
+---
+
+## État Conv #8 (2026-05-15) — archive
 
 - **Polish visuel — pass thème + phrasé livré**.
 - **Thème** :
@@ -205,7 +257,4 @@ puis copier (cf. `prototype/README.md` pour l'historique).
   (25.4 kB CSS + Inter latin 48 kB + 626 kB JS).
 - Critère de fin Conv #8 **atteint** côté code. Revue visuelle Azur
   restante (`npm run dev`).
-- Backlog : `EquipmentOverride` UI + boutons "Ajuster"/"Changer" du
-  Bilan + régénération de cycle plan suite à changement profil → après
-  Conv #9 ; bootstrap au reload direct sur `/programme`, `/seance`,
-  `/progres`, `/catalogue`, `/profil` → Conv #9 (PWA).
+- Backlog Conv #8 (résolu en #9) : bootstrap au reload direct.

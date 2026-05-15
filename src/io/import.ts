@@ -22,7 +22,7 @@ export function parseExportPayload(raw: unknown): ExportPayload {
   const result = exportSchema.safeParse(raw);
   if (!result.success) {
     throw new ImportValidationError(
-      'Fichier d\'import Coach OS invalide.',
+      'Fichier d\'import kotsh invalide.',
       result.error.issues,
     );
   }
