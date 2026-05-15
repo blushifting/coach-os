@@ -14,8 +14,10 @@
 import { useMemo } from 'react';
 import { Catalog } from '@/engine/catalog';
 import * as engine from '@/engine/engine';
+import { applyBalanceRules } from '@/engine/balance';
 import { generateCyclePlan } from '@/engine/cycle_planner';
 import { fitGuidedProgram, getGuidedProgram } from '@/engine/guided_programs';
+import { initialVolumeBounds } from '@/engine/volume';
 import type {
   MuscleGoal,
   Profile,
@@ -23,7 +25,7 @@ import type {
   SessionPlan,
   UserState,
 } from '@/engine/models';
-import { getDb } from '@/db';
+import { getDb, resetDbInstance } from '@/db';
 import { loadUserState } from '@/db/repositories/userState.repo';
 import {
   txCommitSessionFeedback,
@@ -33,6 +35,7 @@ import {
   txSaveSessionPlan,
   txSaveUserStateOnly,
 } from '@/db/transactions';
+import { importFromJsonString } from '@/io/import';
 import { useCoachOsStore, type HistorySnapshot } from '@/store';
 
 function cloneState(s: UserState): UserState {
@@ -283,6 +286,103 @@ export interface EndOfCycleArgs {
   nextProgrammeId?: string | null;
 }
 
+// =============================================================================
+// Édition du profil (Conv #6c)
+// =============================================================================
+
+/**
+ * Remplace le `Profile` courant.
+ *
+ * Recalcule `volume_min` / `volume_max` parce qu'ils dépendent de
+ * sex / age / level (cf. `initialVolumeBounds`). Tout le reste (e1rm, history,
+ * muscle_goals, current_cycle_plan, équipement overrides…) est conservé.
+ *
+ * Note : ne régénère pas `current_cycle_plan` — la régénération éventuelle
+ * (changement de sessions_per_week / équipement qui invalide le plan) est
+ * laissée au flux Cycle-Bilan (`endOfCycle` puis nouveau `generateInitialCyclePlan`).
+ */
+export async function updateProfile(profile: Profile): Promise<UserState> {
+  const next = requireUserState();
+  next.profile = profile;
+  const [vMin, vMax] = initialVolumeBounds(profile);
+  next.volume_min = vMin;
+  next.volume_max = vMax;
+  await txSaveUserStateOnly(next);
+  useCoachOsStore.setState({ userState: next });
+  return next;
+}
+
+/**
+ * Remplace le `muscle_goals` courant et applique R1-R4 par-dessus.
+ * `newGoals` doit contenir au minimum les PRIORITAIRE choisis par l'utilisateur ;
+ * R1-R4 complète avec les SUGGERE manquants. Les NON_COUVERT explicites
+ * fournis dans `newGoals` sont respectés (cf. contrat `applyBalanceRules`).
+ */
+export async function updateMuscleGoals(
+  newGoals: Record<string, MuscleGoal>,
+): Promise<UserState> {
+  const next = requireUserState();
+  const goals: Record<string, MuscleGoal> = { ...newGoals };
+  for (const sg of applyBalanceRules(goals)) {
+    if (goals[sg.muscle] === undefined) {
+      goals[sg.muscle] = sg;
+    }
+  }
+  next.muscle_goals = goals;
+  await txSaveUserStateOnly(next);
+  useCoachOsStore.setState({ userState: next });
+  return next;
+}
+
+// =============================================================================
+// Reset complet (Conv #6c — bouton "Réinitialiser l'app")
+// =============================================================================
+
+/**
+ * Efface la DB IndexedDB de Coach OS + reset le store. Le catalogue reste
+ * en mémoire pour pouvoir relancer l'onboarding immédiatement.
+ *
+ * Après appel, `useCoachOsStore.getState().userState === null` et
+ * `bootstrapped === false` — l'app peut router vers `/onboarding`.
+ */
+export async function resetApp(): Promise<void> {
+  await getDb().delete();
+  resetDbInstance();
+  const catalog = useCoachOsStore.getState().catalog;
+  useCoachOsStore.setState({
+    userState: null,
+    currentSessionPlan: null,
+    currentSessionId: null,
+    history: { sessions: [], feedbacks: [], e1rmSnapshots: [], cycles: [] },
+    bootstrapped: false,
+    lastEndOfWeekReview: null,
+    lastCycleReview: null,
+    catalog,
+  });
+}
+
+// =============================================================================
+// Import JSON (Conv #6c — bouton "Importer mes données")
+// =============================================================================
+
+/**
+ * Importe un fichier JSON d'export Coach OS, remplace toute la DB, puis
+ * recharge le store depuis la DB. Lance `ImportValidationError` si invalide.
+ */
+export async function importDataFromJson(json: string): Promise<void> {
+  await importFromJsonString(json);
+  const [userState, history] = await Promise.all([loadUserState(), loadHistorySnapshot()]);
+  useCoachOsStore.setState({
+    userState,
+    history,
+    bootstrapped: true,
+    currentSessionPlan: null,
+    currentSessionId: null,
+    lastEndOfWeekReview: null,
+    lastCycleReview: null,
+  });
+}
+
 export async function endOfCycle(args: EndOfCycleArgs = {}) {
   const catalog = requireCatalog();
   const before = useCoachOsStore.getState().userState;
@@ -318,6 +418,10 @@ export interface EngineApi {
   recordFeedbackAndCommit: typeof recordFeedbackAndCommit;
   endOfWeek: typeof endOfWeek;
   endOfCycle: typeof endOfCycle;
+  updateProfile: typeof updateProfile;
+  updateMuscleGoals: typeof updateMuscleGoals;
+  resetApp: typeof resetApp;
+  importDataFromJson: typeof importDataFromJson;
 }
 
 export function useEngine(): EngineApi {
@@ -332,6 +436,10 @@ export function useEngine(): EngineApi {
       recordFeedbackAndCommit,
       endOfWeek,
       endOfCycle,
+      updateProfile,
+      updateMuscleGoals,
+      resetApp,
+      importDataFromJson,
     }),
     [],
   );

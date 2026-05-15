@@ -144,37 +144,46 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
-## État courant — fin Conv #6b (2026-05-15)
+## État courant — fin Conv #6c (2026-05-15)
 
-- **Onglet Catalogue livré** : `/catalogue` = barre de recherche fuzzy +
-  bouton "Filtres" (sheet) + liste de cards. Card → sheet de détail avec
-  descriptif 1-2 phrases, muscles primaires/synergistes, tags FR.
-- Sélecteurs purs `src/lib/catalog-filter.ts` :
-  - `applyFilters(catalog, filters)` : AND entre catégories
-    (muscles/patterns/charges/types/lengthenedBiasOnly), OR à l'intérieur.
-    Si `text` non vide, tri par score `Catalog.search_fuzzy` puis filtre.
-  - `buildDescription(ex)` : si `ex.note` non vide → la note (audit
-    manuel sur ambigus) ; sinon "{Polyarticulaire/Isolation} — {pattern}.
-    Cible {muscles primaires}.".
-  - Labels FR : `EXTYPE_LABEL_FR` (compound→Polyarticulaire), `PATTERN_LABEL_FR`,
-    `CHARGE_LABEL_FR`, `TAG_LABEL_FR`.
-- Arbo UI : `src/pages/CataloguePage.tsx` (page hôte) +
-  `src/pages/catalogue/{ExerciseCard,CatalogueDetailSheet,FiltersSheet,MiniSilhouette}.tsx`.
-  `MiniSilhouette` = placeholder SVG 24×40 à 3 zones (haut/tronc/bas)
-  bornées au cadre — refonte anatomique propre Conv #8.
-- **"compound" sauvage corrigé** : `ExerciseDetailSheet.tsx` (Séance) affichait
-  `{exercise.type} · {exercise.charge}` bruts → désormais via `extypeLabel` /
-  `chargeLabel`, et le composant utilise `buildDescription` partagée.
-- Pas modifié : pages Programme / Séance / Progrès / Cycle-Bilan, store,
-  schéma DB, moteur, catalog, `exercises.json`.
-- Hors scope laissé pour la suite : audit manuel des notes ambigus
-  (description générée OK par défaut) → Conv #7 ; édition objectifs/programme
-  → Conv #6c ; pictos pattern propres + silhouette anatomique → Conv #8.
-- Tests : **383 Vitest** (356 + 27 nouveaux sur `lib/catalog-filter.ts`) +
-  **14 Playwright e2e** (+1 sur `/catalogue`, navigation SPA via TabBar).
+- **Onglet Profil livré** : `/profil` = 4 sections empilées (Identité,
+  Objectifs musculaires, Aide, Données).
+- Sélecteurs purs `src/lib/profile-edit.ts` :
+  - `profileDraftFromState` / `goalsDraftFromState` : `UserState` → drafts UI.
+  - `buildProfileFromDraft` : appelle `makeProfile` (valide bornes 14-100,
+    sessions 2-6, poids > 0).
+  - `buildGoalsFromDraft(draft, explicitNonCovered)` : pose les PRIORITAIRE
+    (rank = i+1) + préserve les NON_COUVERT explicites. Les SUGGERE sont
+    recomposés par `applyBalanceRules` côté `updateMuscleGoals`.
+- Actions hook `src/hooks/useEngine.ts` (nouvelles) :
+  - `updateProfile(profile)` : remplace `state.profile`, recalcule
+    `volume_min`/`volume_max` via `initialVolumeBounds`, persist.
+  - `updateMuscleGoals(goals)` : `applyBalanceRules` par-dessus + persist.
+  - `resetApp()` : `db.delete()` + reset store + `bootstrapped=false`.
+    Catalogue conservé en mémoire pour relancer onboarding immédiatement.
+  - `importDataFromJson(json)` : `importFromJsonString` (déjà en place dans
+    `src/io/import.ts` depuis Conv #3) + rechargement du store.
+- Arbo UI : `src/pages/ProfilPage.tsx` + `src/pages/profil/{EditProfileSheet,
+  EditGoalsSheet,AideSheet}.tsx`. Réutilise widgets `Stepper`, chips
+  équipement et drag&drop ranking de l'onboarding.
+- Sheet Aide : 4 tutos de prise en main (onboarding / première séance /
+  feedback / cycle 4+1) + glossaire complet des **13 termes** de
+  `lib/help-glossary.ts`.
+- Export : `<a download>` JSON nommé `coach-os-export-YYYY-MM-DD.json`.
+  Import : `<input type="file">` caché + `parseExportJson` + `importPayload`
+  (atomique multi-tables). Reset : `Dialog` destructif avec message explicite,
+  puis `navigate('/onboarding')`.
+- Pas modifié : moteur, schéma DB, `exercises.json`, `io/` (déjà prêts),
+  composants partagés.
+- Tests : **393 Vitest** (383 + 10 nouveaux sur `lib/profile-edit.ts`) +
+  **19 Playwright e2e** (+5 sur `/profil` : édition+reload, export→modif→import,
+  reset+dialog, glossaire, édition objectifs).
 - Build : `npm run test && npm run build && npm run parity-check && npm run lint && npm run test:e2e` — OK.
-- Prochaine conv : **Conv #6c — Onglet Profil + Aide + Export/Import + Reset**.
+- Critère de fin Conv #6c **atteint** : exporter ses données → modifier →
+  importer le fichier → état restauré exact (vérifié e2e).
+- Prochaine conv : **Conv #7 — Polish algo (D1 push/pull + D2 lengthened_bias)**.
 - Backlog connu : D1 push/pull + D2 lengthened_bias → Conv #7 ;
-  `EquipmentOverride` + édition objectifs/programme + boutons "Ajuster"/
-  "Changer" du Bilan → Conv #6c ; silhouette anatomique → Conv #8 ;
+  `EquipmentOverride` UI + boutons "Ajuster"/"Changer" du Bilan + régénération
+  de cycle plan suite à changement profil → laissés à Conv #7-#8 (scope #6c
+  s'est tenu à édition simple sans regen) ; silhouette anatomique → Conv #8 ;
   bootstrap au reload direct → Conv #9 (PWA).
