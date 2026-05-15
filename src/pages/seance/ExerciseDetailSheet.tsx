@@ -1,5 +1,11 @@
 import { Sheet } from '@/components/Sheet';
 import type { Catalog } from '@/engine/catalog';
+import {
+  buildDescription,
+  chargeLabel,
+  extypeLabel,
+} from '@/lib/catalog-filter';
+import { muscleLabel } from '@/lib/progress';
 import { PatternIcon } from './PatternIcon';
 
 interface ExerciseDetailSheetProps {
@@ -37,9 +43,13 @@ export function ExerciseDetailSheet({
         <div className="flex items-center gap-3">
           <PatternIcon pattern={exercise.pattern} />
           <span className="text-xs uppercase tracking-wide text-anthracite-500">
-            {exercise.type} · {exercise.charge}
+            {extypeLabel(exercise.type)} · {chargeLabel(exercise.charge)}
           </span>
         </div>
+
+        <p className="text-sm leading-snug text-anthracite-300">
+          {buildDescription(exercise)}
+        </p>
 
         {muscles.length > 0 && (
           <div className="flex flex-col gap-1">
@@ -52,7 +62,7 @@ export function ExerciseDetailSheet({
                   key={m}
                   className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white"
                 >
-                  {m}
+                  {muscleLabel(m)}
                   <span className="ml-1 text-[10px] text-anthracite-500">
                     {(coef * 100).toFixed(0)}%
                   </span>
@@ -60,12 +70,6 @@ export function ExerciseDetailSheet({
               ))}
             </div>
           </div>
-        )}
-
-        {exercise.note !== '' && (
-          <p className="rounded-lg bg-anthracite-900 p-3 text-sm text-anthracite-500">
-            {exercise.note}
-          </p>
         )}
       </div>
     </Sheet>

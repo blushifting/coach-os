@@ -1,7 +1,137 @@
+import { useMemo, useState } from 'react';
+import { Card } from '@/components/Card';
+import type { Exercise } from '@/engine/models';
+import {
+  applyFilters,
+  EMPTY_FILTERS,
+  hasActiveFilters,
+  type CatalogFilters,
+} from '@/lib/catalog-filter';
+import { useCoachOsStore } from '@/store';
+import { CatalogueDetailSheet } from './catalogue/CatalogueDetailSheet';
+import { ExerciseCard } from './catalogue/ExerciseCard';
+import { FiltersSheet } from './catalogue/FiltersSheet';
+
+/**
+ * Onglet Catalogue (Conv #6b).
+ *
+ * Liste filtrable des ~141 exos. Recherche fuzzy (id / nom_fr / synonymes) +
+ * filtres (muscle / pattern / équipement / type / tag étirement). Card → sheet
+ * de détail avec descriptif 1-2 phrases (cf. `buildDescription`).
+ */
 export default function CataloguePage() {
+  const catalog = useCoachOsStore((s) => s.catalog);
+  const [filters, setFilters] = useState<CatalogFilters>(EMPTY_FILTERS);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [selected, setSelected] = useState<Exercise | null>(null);
+
+  const results = useMemo(() => {
+    if (catalog === null) return [];
+    return applyFilters(catalog, filters);
+  }, [catalog, filters]);
+
+  if (catalog === null) {
+    return (
+      <Card>
+        <p className="text-sm text-anthracite-500">Catalogue en chargement…</p>
+      </Card>
+    );
+  }
+
+  const active = hasActiveFilters(filters);
+  const countLabel =
+    results.length === 0
+      ? 'Aucun exercice'
+      : `${results.length} exercice${results.length > 1 ? 's' : ''}`;
+
   return (
-    <section>
-      <p className="text-anthracite-500">Vue catalogue — à venir (Conv #7).</p>
+    <section className="flex flex-col gap-3 pb-4" data-testid="catalogue-page">
+      <div className="flex flex-col gap-2">
+        <label className="sr-only" htmlFor="catalogue-search">
+          Rechercher un exercice
+        </label>
+        <input
+          id="catalogue-search"
+          type="search"
+          value={filters.text}
+          onChange={(e) => setFilters({ ...filters, text: e.target.value })}
+          placeholder="Rechercher (ex. développé, soulevé, squat…)"
+          autoComplete="off"
+          data-testid="catalogue-search"
+          className="w-full rounded-xl border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-sm text-white placeholder:text-anthracite-500 focus:border-sang-700 focus:outline-none"
+        />
+
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(true)}
+            data-testid="catalogue-filters-toggle"
+            className="flex items-center gap-2 rounded-lg border border-anthracite-700 bg-anthracite-900 px-3 py-1.5 text-sm text-white"
+          >
+            Filtres
+            {active && (
+              <span
+                data-testid="catalogue-filters-badge"
+                className="rounded-full bg-sang-900 px-1.5 text-[10px] text-white"
+              >
+                {activeChipsCount(filters)}
+              </span>
+            )}
+          </button>
+          <div className="flex items-center gap-2 text-xs text-anthracite-500">
+            <span data-testid="catalogue-count">{countLabel}</span>
+            {active && (
+              <button
+                type="button"
+                onClick={() => setFilters(EMPTY_FILTERS)}
+                data-testid="catalogue-clear"
+                className="underline hover:text-white"
+              >
+                Réinitialiser
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {results.length === 0 ? (
+        <Card data-testid="catalogue-empty">
+          <p className="text-sm text-anthracite-500">
+            Aucun exercice ne correspond à ces filtres. Essaie d'en retirer un ou
+            de modifier la recherche.
+          </p>
+        </Card>
+      ) : (
+        <ul className="flex flex-col gap-2" data-testid="catalogue-list">
+          {results.map((ex) => (
+            <li key={ex.id}>
+              <ExerciseCard exercise={ex} onClick={() => setSelected(ex)} />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <FiltersSheet
+        open={filtersOpen}
+        filters={filters}
+        onChange={setFilters}
+        onClose={() => setFiltersOpen(false)}
+      />
+      <CatalogueDetailSheet
+        open={selected !== null}
+        exercise={selected}
+        onClose={() => setSelected(null)}
+      />
     </section>
+  );
+}
+
+function activeChipsCount(f: CatalogFilters): number {
+  return (
+    f.muscles.length +
+    f.patterns.length +
+    f.charges.length +
+    f.types.length +
+    (f.lengthenedBiasOnly ? 1 : 0)
   );
 }

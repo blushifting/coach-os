@@ -144,35 +144,37 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
-## État courant — fin Conv #6a (2026-05-13)
+## État courant — fin Conv #6b (2026-05-15)
 
-- **Onglet Progrès livré** : `/progres` orchestre 3 tabs Couverture /
-  Volume / Cycles (state local `tab`). Sélecteurs purs
-  `src/lib/progress.ts` :
-  - `computeCoverageThisWeek` → liste `MuscleCoverage` (statut +
-    intensity), basée sur les feedbacks de la semaine ISO courante
-    + `effectiveVolumeBounds`.
-  - `computeVolumeHistory` → `MuscleVolumeSeries[]` sur N=8 dernières
-    semaines, semaines vides incluses.
-  - `buildCycleHistory` → cycles terminés (avec review) du plus récent
-    au plus ancien, plafonds top 3, Δ volume + Δ top plafond vs cycle
-    précédent.
-- Arbo : `src/pages/ProgresPage.tsx` (page hôte + tabs),
-  `src/pages/progres/{CoverageView,VolumeView,CyclesView}.tsx`,
-  `src/lib/progress.ts`. Composants UI : grille de chips colorés par
-  statut (placeholder, silhouette propre prévue Conv #8), barres
-  verticales par muscle avec bande grise V_min→V_max, cards cycles
-  nommées par programme + dates.
-- Pas modifié : pages Programme / Séance / Cycle-Bilan, store, schéma
-  DB, moteur, catalog.
-- Hors scope laissé pour la suite : silhouette anatomique propre →
-  Conv #8 ; bootstrap au reload direct sur `/progres` → Conv #9 (PWA) ;
-  édition objectifs/programme → Conv #6c.
-- Tests : **356 Vitest** (335 + 21 nouveaux sur `lib/progress.ts`) +
-  **13 Playwright e2e** (+1 sur `/progres`, navigation SPA via TabBar).
+- **Onglet Catalogue livré** : `/catalogue` = barre de recherche fuzzy +
+  bouton "Filtres" (sheet) + liste de cards. Card → sheet de détail avec
+  descriptif 1-2 phrases, muscles primaires/synergistes, tags FR.
+- Sélecteurs purs `src/lib/catalog-filter.ts` :
+  - `applyFilters(catalog, filters)` : AND entre catégories
+    (muscles/patterns/charges/types/lengthenedBiasOnly), OR à l'intérieur.
+    Si `text` non vide, tri par score `Catalog.search_fuzzy` puis filtre.
+  - `buildDescription(ex)` : si `ex.note` non vide → la note (audit
+    manuel sur ambigus) ; sinon "{Polyarticulaire/Isolation} — {pattern}.
+    Cible {muscles primaires}.".
+  - Labels FR : `EXTYPE_LABEL_FR` (compound→Polyarticulaire), `PATTERN_LABEL_FR`,
+    `CHARGE_LABEL_FR`, `TAG_LABEL_FR`.
+- Arbo UI : `src/pages/CataloguePage.tsx` (page hôte) +
+  `src/pages/catalogue/{ExerciseCard,CatalogueDetailSheet,FiltersSheet,MiniSilhouette}.tsx`.
+  `MiniSilhouette` = placeholder SVG 24×40 à 3 zones (haut/tronc/bas)
+  bornées au cadre — refonte anatomique propre Conv #8.
+- **"compound" sauvage corrigé** : `ExerciseDetailSheet.tsx` (Séance) affichait
+  `{exercise.type} · {exercise.charge}` bruts → désormais via `extypeLabel` /
+  `chargeLabel`, et le composant utilise `buildDescription` partagée.
+- Pas modifié : pages Programme / Séance / Progrès / Cycle-Bilan, store,
+  schéma DB, moteur, catalog, `exercises.json`.
+- Hors scope laissé pour la suite : audit manuel des notes ambigus
+  (description générée OK par défaut) → Conv #7 ; édition objectifs/programme
+  → Conv #6c ; pictos pattern propres + silhouette anatomique → Conv #8.
+- Tests : **383 Vitest** (356 + 27 nouveaux sur `lib/catalog-filter.ts`) +
+  **14 Playwright e2e** (+1 sur `/catalogue`, navigation SPA via TabBar).
 - Build : `npm run test && npm run build && npm run parity-check && npm run lint && npm run test:e2e` — OK.
-- Prochaine conv : **Conv #6b — Onglet Catalogue** (liste filtrable +
-  fuzzy search + descriptifs + audit "compound" sauvage).
+- Prochaine conv : **Conv #6c — Onglet Profil + Aide + Export/Import + Reset**.
 - Backlog connu : D1 push/pull + D2 lengthened_bias → Conv #7 ;
   `EquipmentOverride` + édition objectifs/programme + boutons "Ajuster"/
-  "Changer" du Bilan → Conv #6c ; silhouette anatomique → Conv #8.
+  "Changer" du Bilan → Conv #6c ; silhouette anatomique → Conv #8 ;
+  bootstrap au reload direct → Conv #9 (PWA).
