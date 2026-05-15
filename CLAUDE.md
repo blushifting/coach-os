@@ -144,46 +144,43 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
-## État courant — fin Conv #6c (2026-05-15)
+## État courant — fin Conv #7 (2026-05-15)
 
-- **Onglet Profil livré** : `/profil` = 4 sections empilées (Identité,
-  Objectifs musculaires, Aide, Données).
-- Sélecteurs purs `src/lib/profile-edit.ts` :
-  - `profileDraftFromState` / `goalsDraftFromState` : `UserState` → drafts UI.
-  - `buildProfileFromDraft` : appelle `makeProfile` (valide bornes 14-100,
-    sessions 2-6, poids > 0).
-  - `buildGoalsFromDraft(draft, explicitNonCovered)` : pose les PRIORITAIRE
-    (rank = i+1) + préserve les NON_COUVERT explicites. Les SUGGERE sont
-    recomposés par `applyBalanceRules` côté `updateMuscleGoals`.
-- Actions hook `src/hooks/useEngine.ts` (nouvelles) :
-  - `updateProfile(profile)` : remplace `state.profile`, recalcule
-    `volume_min`/`volume_max` via `initialVolumeBounds`, persist.
-  - `updateMuscleGoals(goals)` : `applyBalanceRules` par-dessus + persist.
-  - `resetApp()` : `db.delete()` + reset store + `bootstrapped=false`.
-    Catalogue conservé en mémoire pour relancer onboarding immédiatement.
-  - `importDataFromJson(json)` : `importFromJsonString` (déjà en place dans
-    `src/io/import.ts` depuis Conv #3) + rechargement du store.
-- Arbo UI : `src/pages/ProfilPage.tsx` + `src/pages/profil/{EditProfileSheet,
-  EditGoalsSheet,AideSheet}.tsx`. Réutilise widgets `Stepper`, chips
-  équipement et drag&drop ranking de l'onboarding.
-- Sheet Aide : 4 tutos de prise en main (onboarding / première séance /
-  feedback / cycle 4+1) + glossaire complet des **13 termes** de
-  `lib/help-glossary.ts`.
-- Export : `<a download>` JSON nommé `coach-os-export-YYYY-MM-DD.json`.
-  Import : `<input type="file">` caché + `parseExportJson` + `importPayload`
-  (atomique multi-tables). Reset : `Dialog` destructif avec message explicite,
-  puis `navigate('/onboarding')`.
-- Pas modifié : moteur, schéma DB, `exercises.json`, `io/` (déjà prêts),
-  composants partagés.
-- Tests : **393 Vitest** (383 + 10 nouveaux sur `lib/profile-edit.ts`) +
-  **19 Playwright e2e** (+5 sur `/profil` : édition+reload, export→modif→import,
-  reset+dialog, glossaire, édition objectifs).
+- **Polish algo D1 + D2 livré** : 6 profils synthétiques audités sans
+  dérive (`scripts/validate_program_against_literature.py`), parité
+  Python↔TS verte sur les 6 (`tools/parity-check.ts`).
+- **D1 — Push/Pull ratio** : `check_push_pull_ratio` du script de validation
+  modifié pour compter les **muscles PRIORITAIRES** (pec + deltos_lateraux /
+  dos_largeur + dos_epaisseur + deltos_posterieurs) au lieu du volume
+  incident. Cible utile élargie à 0.5-2.0 (cible idéale 0.7-1.5 reste
+  documentée). Le script tourne avec `state.muscle_goals` (post R1-R4).
+  Touche **uniquement le script Python** (pas de pendant TS). Spec maj
+  `09_programmation.md §4.2 R1`.
+- **D2a — Audit catalogue** : tags `lengthened_bias` ajoutés sur
+  `cable_kickback` (fessiers, full hip extension) et
+  `chest_supported_rear_fly` (deltos_posterieurs, scap retraction +
+  stretch). Propagation `prototype/data/` ↔ `src/data/exercises.json`.
+- **D2b — `enforceLengthenedBias`** (Python + TS) : post-pass cycle-level
+  dans `generate_cycle_plan`, après `top_up_maintenance`, avant
+  `resolve_capacity_conflict`. Pour chaque muscle HYPERTROPHIE avec ≥2
+  occurrences primaires sur le cycle, substitue la dernière isolation (à
+  défaut le dernier compound) par une iso `lengthened_bias` candidate, en
+  préservant `base_sets`/`progression`. Recalcule la cartographie à chaque
+  itération pour éviter qu'une substitution sur un compound partagé (ex.
+  deadlift_conv = fessiers + ischios) écrase la position d'un muscle
+  précédemment traité. Programmes guidés exempts (preset figé).
+- Tests : **234 pytest** (232 + 2 sur `enforce_lengthened_bias`) +
+  **396 Vitest** (393 + 3 sur `enforceLengthenedBias`) + **19 e2e**
+  (inchangés). Test `test_validation_literature` serré : push/pull
+  fourchette [0.5, 2.0] (avant [0.2, 3.0]) et lengthened_bias couverture
+  complète (avant : "au moins 1 profil sur 6").
 - Build : `npm run test && npm run build && npm run parity-check && npm run lint && npm run test:e2e` — OK.
-- Critère de fin Conv #6c **atteint** : exporter ses données → modifier →
-  importer le fichier → état restauré exact (vérifié e2e).
-- Prochaine conv : **Conv #7 — Polish algo (D1 push/pull + D2 lengthened_bias)**.
-- Backlog connu : D1 push/pull + D2 lengthened_bias → Conv #7 ;
-  `EquipmentOverride` UI + boutons "Ajuster"/"Changer" du Bilan + régénération
-  de cycle plan suite à changement profil → laissés à Conv #7-#8 (scope #6c
-  s'est tenu à édition simple sans regen) ; silhouette anatomique → Conv #8 ;
-  bootstrap au reload direct → Conv #9 (PWA).
+- Baselines parité régénérées (`tools/parity-baseline/*.json`).
+- Critère de fin Conv #7 **atteint** : 6/6 profils audités sans dérive D1
+  ni D2, parité Python↔TS verte.
+- Prochaine conv : **Conv #8 — Polish visuel + phrasé + pictos + silhouette**.
+- Backlog connu : `EquipmentOverride` UI + boutons "Ajuster"/"Changer" du
+  Bilan + régénération de cycle plan suite à changement profil → Conv #8 ;
+  silhouette anatomique propre + pictos pattern propres → Conv #8 ;
+  bootstrap au reload direct sur `/programme`, `/seance`, `/progres`,
+  `/catalogue`, `/profil` → Conv #9 (PWA).

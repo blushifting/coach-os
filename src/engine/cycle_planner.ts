@@ -26,10 +26,12 @@ import type {
   WeeklyTemplate,
 } from './models';
 import {
+  ExType,
   Level,
   MuscleObjective,
   MuscleStatus,
   ProgressionRule,
+  exercisePrimaires,
   makePlannedExercise,
   makeWeeklyTemplate,
 } from './models';
@@ -287,7 +289,7 @@ export function composeSession(
           })
         : [];
 
-    const allForMuscle = [...compounds, ...isolations];
+    const allForMuscle: Exercise[] = [...compounds, ...isolations];
     if (allForMuscle.length === 0) continue;
 
     // base_sets par exo : V_session / nb d'exos, arrondi >= 2
@@ -412,6 +414,78 @@ export function resolveCapacityConflict(
 }
 
 // =============================================================================
+// 6b. Garantie lengthened_bias cycle-level (cf. 09 §6.4, D2 Conv #7)
+// =============================================================================
+
+/**
+ * Post-pass cycle-level : pour chaque muscle Hypertrophie ayant ≥2 exos sur
+ * le cycle, garantit qu'au moins un porte le tag `lengthened_bias` si le
+ * catalogue en propose pour ce muscle (cf. 09 §6.4).
+ *
+ * Substitution : remplace en priorité une isolation, sinon le dernier
+ * compound. Préserve `base_sets`/`progression` pour ne pas perturber le
+ * volume hebdo cible. Recalcule la cartographie à chaque itération car les
+ * compounds partagés (ex. deadlift_conv = fessiers + ischios) peuvent voir
+ * leur position consommée par un muscle traité précédemment.
+ */
+export function enforceLengthenedBias(
+  weeklyTemplate: WeeklyTemplate,
+  state: UserState,
+  catalog: Catalog,
+): void {
+  const hypMuscles: string[] = [];
+  for (const [muscle, goal] of Object.entries(state.muscle_goals)) {
+    if (
+      goal.objective === MuscleObjective.HYPERTROPHIE &&
+      !hypMuscles.includes(muscle)
+    ) {
+      hypMuscles.push(muscle);
+    }
+  }
+
+  const cartography = (m: string): Array<[number, number, Exercise]> => {
+    const out: Array<[number, number, Exercise]> = [];
+    weeklyTemplate.days.forEach((day, di) => {
+      day.exercises.forEach((planned, pi) => {
+        const ex = catalog.get(planned.exercise_id);
+        if (exercisePrimaires(ex).includes(m)) {
+          out.push([di, pi, ex]);
+        }
+      });
+    });
+    return out;
+  };
+
+  for (const muscle of hypMuscles) {
+    const occurrences = cartography(muscle);
+    if (occurrences.length < 2) continue;
+    if (occurrences.some(([, , ex]) => ex.tags.includes('lengthened_bias'))) {
+      continue;
+    }
+    const allChosenIds = new Set<string>();
+    for (const day of weeklyTemplate.days) {
+      for (const p of day.exercises) allChosenIds.add(p.exercise_id);
+    }
+    const lbCands = pickIsolationsForMuscle(muscle, 1, state, catalog, {
+      preferLengthened: true,
+      excludeIds: allChosenIds,
+    }).filter((x) => x.tags.includes('lengthened_bias'));
+    if (lbCands.length === 0) continue;
+    const replacement = lbCands[0]!;
+    const isoOcc = occurrences.filter(([, , ex]) => ex.type === ExType.ISOLATION);
+    const target = isoOcc.length > 0 ? isoOcc[isoOcc.length - 1]! : occurrences[occurrences.length - 1]!;
+    const [di, pi] = target;
+    const old = weeklyTemplate.days[di]!.exercises[pi]!;
+    weeklyTemplate.days[di]!.exercises[pi] = makePlannedExercise({
+      exercise_id: replacement.id,
+      base_sets: old.base_sets,
+      progression: old.progression,
+      progression_rule: old.progression_rule,
+    });
+  }
+}
+
+// =============================================================================
 // 7. Rotation d'emphasis (cf. 09 §8.4)
 // =============================================================================
 
@@ -479,6 +553,7 @@ export function generateCyclePlan(
   }
 
   topUpMaintenance(weekly, state, catalog);
+  enforceLengthenedBias(weekly, state, catalog);
   resolveCapacityConflict(weekly, state.profile.level, state);
 
   return weekly;

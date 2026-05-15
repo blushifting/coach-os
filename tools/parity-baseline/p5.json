@@ -165,7 +165,7 @@
         ],
         "exercises": [
           {
-            "exercise_id": "deadlift_conv",
+            "exercise_id": "leg_curl_seated",
             "base_sets": 3,
             "progression": [
               3,
@@ -179,7 +179,7 @@
             "progression_rule": "israetel_volume"
           },
           {
-            "exercise_id": "squat_bb_high",
+            "exercise_id": "cable_kickback",
             "base_sets": 4,
             "progression": [
               4,

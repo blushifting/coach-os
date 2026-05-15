@@ -14,6 +14,7 @@ import {
   DayMeta,
   composeSession,
   compoundCountForObjective,
+  enforceLengthenedBias,
   exosCountForVolume,
   generateCyclePlan,
   israetelProgression,
@@ -364,6 +365,60 @@ describe('generateCyclePlan', () => {
     expect(plan.rationale.includes('Upper/Lower') || plan.rationale.includes('U/L')).toBe(
       true,
     );
+  });
+});
+
+// =============================================================================
+// 7b. enforceLengthenedBias (D2 Conv #7, cf. 09 §6.4)
+// =============================================================================
+
+describe('enforceLengthenedBias', () => {
+  it('substitue si HYP + ≥2 exos et aucun lengthened_bias', () => {
+    const state = stateInterH4x();
+    state.muscle_goals = {
+      fessiers: prio('fessiers', MuscleObjective.HYPERTROPHIE, 1),
+    };
+    const plan = generateCyclePlan(state, catalog);
+    const fessiersExos = plan.days.flatMap((d) =>
+      d.exercises
+        .map((p) => catalog.get(p.exercise_id))
+        .filter((ex) => exercisePrimaires(ex).includes('fessiers')),
+    );
+    if (fessiersExos.length >= 2) {
+      expect(fessiersExos.some((ex) => ex.tags.includes('lengthened_bias'))).toBe(
+        true,
+      );
+    }
+  });
+
+  it('no-op si objectif FORCE (pas de substitution forcée)', () => {
+    const state = stateInterH4x();
+    state.muscle_goals = {
+      pectoraux: prio('pectoraux', MuscleObjective.FORCE, 1),
+    };
+    const plan = generateCyclePlan(state, catalog);
+    const pecExos = plan.days.flatMap((d) =>
+      d.exercises
+        .map((p) => catalog.get(p.exercise_id))
+        .filter((ex) => exercisePrimaires(ex).includes('pectoraux')),
+    );
+    expect(pecExos.length).toBeGreaterThan(0);
+    // FORCE => essentiellement des compounds, pas de subst forcée par iso lengthened.
+    expect(
+      pecExos.every((ex) => ex.type === 'compound' || !ex.tags.includes('lengthened_bias')),
+    ).toBe(true);
+  });
+
+  it('idempotent : 2e appel ne change rien si déjà couvert', () => {
+    const state = stateInterH4x();
+    state.muscle_goals = {
+      fessiers: prio('fessiers', MuscleObjective.HYPERTROPHIE, 1),
+    };
+    const plan = generateCyclePlan(state, catalog);
+    const before = plan.days.map((d) => d.exercises.map((p) => p.exercise_id));
+    enforceLengthenedBias(plan, state, catalog);
+    const after = plan.days.map((d) => d.exercises.map((p) => p.exercise_id));
+    expect(after).toEqual(before);
   });
 });
 

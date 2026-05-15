@@ -143,7 +143,7 @@
         ],
         "exercises": [
           {
-            "exercise_id": "deadlift_conv",
+            "exercise_id": "leg_curl_seated",
             "base_sets": 3,
             "progression": [
               3,
@@ -185,7 +185,7 @@
             "progression_rule": "israetel_volume"
           },
           {
-            "exercise_id": "chest_press_machine",
+            "exercise_id": "db_fly_flat",
             "base_sets": 4,
             "progression": [
               4,
@@ -226,7 +226,7 @@
         ],
         "exercises": [
           {
-            "exercise_id": "squat_bb_high",
+            "exercise_id": "sissy_squat",
             "base_sets": 4,
             "progression": [
               4,
@@ -240,7 +240,7 @@
             "progression_rule": "israetel_volume"
           },
           {
-            "exercise_id": "pullup_assisted",
+            "exercise_id": "db_pullover",
             "base_sets": 5,
             "progression": [
               5,
@@ -282,7 +282,7 @@
             "progression_rule": "israetel_volume"
           },
           {
-            "exercise_id": "bb_curl",
+            "exercise_id": "incline_db_curl",
             "base_sets": 3,
             "progression": [
               3,

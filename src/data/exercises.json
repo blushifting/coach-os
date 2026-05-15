@@ -2611,7 +2611,9 @@
     "repos_s": 60,
     "dif": "facile",
     "e1RM_app": "partial",
-    "tags": [],
+    "tags": [
+      "lengthened_bias"
+    ],
     "note": ""
   },
   {
@@ -3185,7 +3187,8 @@
     "dif": "facile",
     "e1RM_app": "non",
     "tags": [
-      "torse_appuye"
+      "torse_appuye",
+      "lengthened_bias"
     ],
     "note": ""
   },
