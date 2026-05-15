@@ -1,103 +1,50 @@
 /**
- * Mini-silhouette placeholder pour les cards Catalogue (Conv #6b).
+ * Mini-silhouette pour les cards Catalogue — Conv #8b.
  *
- * Refonte propre en Conv #8 (silhouette anatomique muscle-par-muscle).
- * Pour l'instant : SVG schématique à 3 zones (haut / tronc / bas) qui
- * s'allument selon les muscles primaires de l'exo. Taille fixe 24×40 pour
- * garantir qu'on ne déborde jamais du cadre de la card.
+ * Wrapper compact autour de `AnatomicalSilhouette` (vue face uniquement),
+ * qui illumine :
+ *  - muscles primaires (coef ≥ 1.0) en `highlight` (rouge sang plein),
+ *  - synergistes (coef 0.5-0.99) en `synergist` (rouge sang sombre atténué).
+ *
+ * Taille calibrée pour rester dans le cadre des cards (~h-20 = 80 px).
  */
 
-import { cn } from '@/lib/cn';
-
-const UPPER_MUSCLES: ReadonlySet<string> = new Set([
-  'pectoraux',
-  'dos_largeur',
-  'dos_epaisseur',
-  'trapezes_hauts',
-  'deltos_lateraux',
-  'deltos_posterieurs',
-  'biceps',
-  'triceps',
-]);
-
-const CORE_MUSCLES: ReadonlySet<string> = new Set([
-  'abdos',
-  'obliques',
-  'lombaires',
-]);
-
-const LOWER_MUSCLES: ReadonlySet<string> = new Set([
-  'quadriceps',
-  'ischios',
-  'fessiers',
-  'mollets',
-]);
-
-export type SilhouetteZone = 'upper' | 'core' | 'lower';
-
-export function silhouetteZonesFor(muscles: readonly string[]): Set<SilhouetteZone> {
-  const out = new Set<SilhouetteZone>();
-  for (const m of muscles) {
-    if (UPPER_MUSCLES.has(m)) out.add('upper');
-    else if (CORE_MUSCLES.has(m)) out.add('core');
-    else if (LOWER_MUSCLES.has(m)) out.add('lower');
-  }
-  return out;
-}
+import {
+  AnatomicalSilhouette,
+  type SilhouetteStatus,
+} from '@/components/AnatomicalSilhouette';
+import type { Exercise } from '@/engine/models';
 
 interface MiniSilhouetteProps {
-  readonly muscles: readonly string[];
+  /** Exercice complet (lecture du dict `muscles` pour primaires + synergistes). */
+  readonly exercise?: Exercise;
+  /** Compat ancienne signature : liste de muscles primaires uniquement. */
+  readonly muscles?: readonly string[];
 }
 
-export function MiniSilhouette({ muscles }: MiniSilhouetteProps) {
-  const zones = silhouetteZonesFor(muscles);
-  const on = 'fill-sang-900';
-  const off = 'fill-anthracite-700';
+export function MiniSilhouette({ exercise, muscles }: MiniSilhouetteProps) {
+  const highlights: Record<string, SilhouetteStatus> = {};
+
+  if (exercise) {
+    for (const [m, coef] of Object.entries(exercise.muscles)) {
+      if (coef >= 1.0) {
+        highlights[m] = 'highlight';
+      } else if (coef >= 0.5) {
+        highlights[m] = 'synergist';
+      }
+    }
+  } else if (muscles) {
+    for (const m of muscles) {
+      highlights[m] = 'highlight';
+    }
+  }
 
   return (
-    <svg
-      viewBox="0 0 24 40"
-      width="24"
-      height="40"
-      aria-hidden="true"
-      data-testid="mini-silhouette"
-      className="shrink-0"
-    >
-      {/* tête (toujours neutre) */}
-      <circle cx="12" cy="4" r="3" className="fill-anthracite-600" />
-      {/* haut du corps : torse + bras schématiques */}
-      <rect
-        x="4"
-        y="8"
-        width="16"
-        height="11"
-        rx="2"
-        data-testid="silhouette-upper"
-        data-on={zones.has('upper')}
-        className={cn(zones.has('upper') ? on : off)}
-      />
-      {/* tronc / abdos */}
-      <rect
-        x="7"
-        y="20"
-        width="10"
-        height="6"
-        rx="1.5"
-        data-testid="silhouette-core"
-        data-on={zones.has('core')}
-        className={cn(zones.has('core') ? on : off)}
-      />
-      {/* bas du corps : jambes schématiques */}
-      <rect
-        x="5"
-        y="27"
-        width="14"
-        height="11"
-        rx="2"
-        data-testid="silhouette-lower"
-        data-on={zones.has('lower')}
-        className={cn(zones.has('lower') ? on : off)}
-      />
-    </svg>
+    <AnatomicalSilhouette
+      highlights={highlights}
+      view="auto"
+      className="h-20 w-auto shrink-0"
+      testId="mini-silhouette"
+    />
   );
 }

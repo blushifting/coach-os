@@ -144,43 +144,68 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
-## État courant — fin Conv #7 (2026-05-15)
+## État courant — fin Conv #8 (2026-05-15)
 
-- **Polish algo D1 + D2 livré** : 6 profils synthétiques audités sans
-  dérive (`scripts/validate_program_against_literature.py`), parité
-  Python↔TS verte sur les 6 (`tools/parity-check.ts`).
-- **D1 — Push/Pull ratio** : `check_push_pull_ratio` du script de validation
-  modifié pour compter les **muscles PRIORITAIRES** (pec + deltos_lateraux /
-  dos_largeur + dos_epaisseur + deltos_posterieurs) au lieu du volume
-  incident. Cible utile élargie à 0.5-2.0 (cible idéale 0.7-1.5 reste
-  documentée). Le script tourne avec `state.muscle_goals` (post R1-R4).
-  Touche **uniquement le script Python** (pas de pendant TS). Spec maj
-  `09_programmation.md §4.2 R1`.
-- **D2a — Audit catalogue** : tags `lengthened_bias` ajoutés sur
-  `cable_kickback` (fessiers, full hip extension) et
-  `chest_supported_rear_fly` (deltos_posterieurs, scap retraction +
-  stretch). Propagation `prototype/data/` ↔ `src/data/exercises.json`.
-- **D2b — `enforceLengthenedBias`** (Python + TS) : post-pass cycle-level
-  dans `generate_cycle_plan`, après `top_up_maintenance`, avant
-  `resolve_capacity_conflict`. Pour chaque muscle HYPERTROPHIE avec ≥2
-  occurrences primaires sur le cycle, substitue la dernière isolation (à
-  défaut le dernier compound) par une iso `lengthened_bias` candidate, en
-  préservant `base_sets`/`progression`. Recalcule la cartographie à chaque
-  itération pour éviter qu'une substitution sur un compound partagé (ex.
-  deadlift_conv = fessiers + ischios) écrase la position d'un muscle
-  précédemment traité. Programmes guidés exempts (preset figé).
-- Tests : **234 pytest** (232 + 2 sur `enforce_lengthened_bias`) +
-  **396 Vitest** (393 + 3 sur `enforceLengthenedBias`) + **19 e2e**
-  (inchangés). Test `test_validation_literature` serré : push/pull
-  fourchette [0.5, 2.0] (avant [0.2, 3.0]) et lengthened_bias couverture
-  complète (avant : "au moins 1 profil sur 6").
-- Build : `npm run test && npm run build && npm run parity-check && npm run lint && npm run test:e2e` — OK.
-- Baselines parité régénérées (`tools/parity-baseline/*.json`).
-- Critère de fin Conv #7 **atteint** : 6/6 profils audités sans dérive D1
-  ni D2, parité Python↔TS verte.
-- Prochaine conv : **Conv #8 — Polish visuel + phrasé + pictos + silhouette**.
-- Backlog connu : `EquipmentOverride` UI + boutons "Ajuster"/"Changer" du
-  Bilan + régénération de cycle plan suite à changement profil → Conv #8 ;
-  silhouette anatomique propre + pictos pattern propres → Conv #8 ;
-  bootstrap au reload direct sur `/programme`, `/seance`, `/progres`,
-  `/catalogue`, `/profil` → Conv #9 (PWA).
+- **Polish visuel — pass thème + phrasé livré**.
+- **Thème** :
+  - Police **Inter Variable** (`@fontsource-variable/inter`) chargée
+    localement (offline-ready pour Conv #9). Chargement subsetté par
+    `unicode-range` côté navigateur : seul `inter-latin-wght-normal`
+    (~48 kB) est rapatrié en pratique.
+  - **Tabular nums** activés globalement via `font-feature-settings` au
+    `:root` — les colonnes de chiffres (poids, séries, RPE, %) ne sautent
+    plus.
+  - **Palette étendue** : `tailwind.config.ts` ajoute `anthracite.50-400`
+    et `sang.400/950`. Les tons 500-950 sont **inchangés** — aucun
+    composant existant ne régresse. Texte par défaut passe à
+    `anthracite-100` (au lieu de blanc plein), plus doux à l'œil.
+  - **Grain SVG subtil** (turbulence + opacité 0.05) en pseudo-élément
+    `body::before` fixed, derrière tout, casse l'aspect plat des aplats
+    anthracite sans être perceptible consciemment.
+  - **Hiérarchie typographique de base** dans `@layer base`
+    (`index.css`) : `h1` = `text-xl tracking-tight`, `h2` = `text-base`,
+    `h3` = `text-sm`. Les composants restent libres d'override.
+  - `Header` titre passe à `text-xl tracking-tight` + bordure basse
+    `anthracite-800/60`.
+  - `Card` gagne un `shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]`
+    qui détache subtilement les cards du fond.
+- **Phrasé** : audit complet réalisé. Le tutoiement est constant et le
+  glossaire (`lib/help-glossary.ts`) couvre déjà les termes signalés en
+  retours V2 (`vs sem1`, `PR du jour`, `RPE`, etc.). "Compound" déjà
+  mappé en "Polyarticulaire" dans l'UI (`catalog-filter.ts`). Seule
+  correction : `engine/guided_programs.ts:689` "votre équipement" →
+  "ton équipement" (incohérence de tutoiement résiduelle).
+- **Pictos pattern moteurs** (`pages/seance/PatternIcon.tsx`) : refonte
+  complète. Chaque pattern (squat, hinge, lunge, push-h, push-v, pull-h,
+  pull-v, isolation, core) a son glyphe SVG inline distinct
+  (stroke-currentColor, viewBox 24×24, line-cap round). Plus de pastilles
+  2-lettres. Testid `pattern-icon-${pattern}` conservé.
+- **Silhouette anatomique** : nouveau composant partagé
+  `src/components/AnatomicalSilhouette.tsx` (face + dos, 6 statuts :
+  off / low / ok / high / highlight / synergist). Polygones extraits du
+  projet **react-body-highlighter** (MIT © 2020 GV79,
+  <https://github.com/giavinh79/react-body-highlighter>) — copyright
+  préservé dans le header du fichier. Mapping Coach OS via
+  `CO_TO_FACE` / `CO_TO_BACK`. Le muscle `dos_largeur` (lats), absent
+  de RBH, a 2 polygones custom maison. Les SOLEUS RBH ont été retirés
+  pour aligner la hauteur face/dos ; un scaleY = 195.5/200 est
+  appliqué au dos pour aligner précisément chevilles + bassin.
+  - Prop `view`: `'both' | 'face' | 'back' | 'auto'`. En mode `auto`,
+    `pickBestSide` choisit la vue qui met le plus en valeur les muscles
+    highlightés (primaire pondéré ×3, synergiste ×1).
+- **CoverageView** (`pages/progres/CoverageView.tsx`) : silhouette
+  face+dos `view="both"` en tête (h-48), grille de chips conservée en
+  dessous pour les chiffres précis (séries vs V_min-V_max).
+- **MiniSilhouette** (`pages/catalogue/MiniSilhouette.tsx`) : wrapper
+  `AnatomicalSilhouette view="auto"` (face ou dos selon les muscles
+  travaillés). Highlights primaires (coef ≥ 1.0) + synergistes
+  (coef ≥ 0.5) lus directement depuis `exercise.muscles`. Signature
+  acceptant `exercise` (utilisé partout) ou `muscles` (legacy).
+- Tests : **396 Vitest** + **19 e2e** verts. `npm run build` OK
+  (25.4 kB CSS + Inter latin 48 kB + 626 kB JS).
+- Critère de fin Conv #8 **atteint** côté code. Revue visuelle Azur
+  restante (`npm run dev`).
+- Backlog : `EquipmentOverride` UI + boutons "Ajuster"/"Changer" du
+  Bilan + régénération de cycle plan suite à changement profil → après
+  Conv #9 ; bootstrap au reload direct sur `/programme`, `/seance`,
+  `/progres`, `/catalogue`, `/profil` → Conv #9 (PWA).

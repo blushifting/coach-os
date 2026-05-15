@@ -1,3 +1,7 @@
+/* Inter via Fontsource — chargée à côté du bundle (offline-ready, anticipation
+ * Conv #9 PWA). Variable, weights 400/500/600/700, latin uniquement. */
+@import '@fontsource-variable/inter';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,14 +9,47 @@
 @layer base {
   :root {
     color-scheme: dark;
+    /* Tabular nums activés globalement : les chiffres (poids, séries, RPE,
+     * pourcentages) s'alignent en colonne sans saut visuel. */
+    font-feature-settings: 'cv11', 'ss01', 'tnum';
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+
+  html,
   body {
-    font-family:
-      ui-sans-serif,
-      system-ui,
-      -apple-system,
-      'Segoe UI',
-      Roboto,
-      sans-serif;
+    font-family: theme('fontFamily.sans');
+    background-color: theme('colors.anthracite.950');
+    color: theme('colors.anthracite.100');
+  }
+
+  /* Grain subtil sur le fond. ::before plutôt que sur body pour éviter le
+   * blend-mode sur tous les enfants. Pointer-events none, derrière tout. */
+  body {
+    position: relative;
+    min-height: 100vh;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: theme('backgroundImage.grain');
+    background-size: 240px 240px;
+    opacity: 0.6;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* Hiérarchie typographique de base. Les composants restent libres
+   * d'override via className — c'est juste un défaut plus lisible. */
+  h1 {
+    @apply text-xl font-semibold tracking-tight text-white;
+  }
+  h2 {
+    @apply text-base font-semibold tracking-tight text-white;
+  }
+  h3 {
+    @apply text-sm font-semibold text-white;
   }
 }

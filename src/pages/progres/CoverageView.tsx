@@ -1,5 +1,10 @@
 import { Card } from '@/components/Card';
 import { HelpButton } from '@/components/HelpButton';
+import {
+  AnatomicalSilhouette,
+  statusToSilhouette,
+  type SilhouetteStatus,
+} from '@/components/AnatomicalSilhouette';
 import { cn } from '@/lib/cn';
 import {
   muscleLabel,
@@ -12,11 +17,11 @@ interface CoverageViewProps {
 }
 
 /**
- * Heatmap "couverture cette semaine" — placeholder fonctionnel V1.
+ * Heatmap "couverture cette semaine" — Conv #8b.
  *
- * Refonte silhouette anatomique propre prévue Conv #8 (cf. 08 §527-532).
- * En attendant, on affiche une grille de chips muscles colorés selon le
- * statut (volume hebdo réalisé vs V_min/V_max).
+ * Silhouette anatomique face + dos colorée par muscle selon le statut
+ * (sous-min / ok / dépassement / non travaillé), complétée par une grille
+ * de chips qui exposent les chiffres précis (séries réalisées vs V_min-V_max).
  */
 export function CoverageView({ coverage }: CoverageViewProps) {
   // Exclut les muscles "hors_scope" du quadrillage principal pour réduire le
@@ -36,6 +41,11 @@ export function CoverageView({ coverage }: CoverageViewProps) {
     );
   }
 
+  const highlights: Record<string, SilhouetteStatus> = {};
+  for (const c of coverage) {
+    highlights[c.muscle] = statusToSilhouette(c.status);
+  }
+
   return (
     <section className="flex flex-col gap-3" data-testid="coverage-view">
       <header className="flex items-center justify-between">
@@ -43,13 +53,21 @@ export function CoverageView({ coverage }: CoverageViewProps) {
         <HelpButton topic="volumeHebdo" />
       </header>
 
+      <Card className="flex justify-center" data-testid="coverage-silhouette">
+        <AnatomicalSilhouette
+          highlights={highlights}
+          className="h-48 w-auto"
+          testId="coverage-silhouette-svg"
+        />
+      </Card>
+
+      <Legend />
+
       <Card className="grid grid-cols-2 gap-2" data-testid="coverage-grid">
         {inScope.map((m) => (
           <MuscleChip key={m.muscle} item={m} />
         ))}
       </Card>
-
-      <Legend />
 
       {outOfScope.length > 0 && (
         <details className="text-xs text-anthracite-500">

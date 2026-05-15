@@ -39,7 +39,7 @@ export function CatalogueDetailSheet({
     <Sheet open={open} onClose={onClose} title={exercise.nom_fr}>
       <div className="flex flex-col gap-4" data-testid="catalogue-detail-content">
         <div className="flex items-start gap-3">
-          <MiniSilhouette muscles={primaires} />
+          <MiniSilhouette exercise={exercise} />
           <div className="flex flex-1 flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
               <PatternIcon pattern={exercise.pattern} size="sm" />

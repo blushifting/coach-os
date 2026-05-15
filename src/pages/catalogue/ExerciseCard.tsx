@@ -26,7 +26,7 @@ export function ExerciseCard({ exercise, onClick }: ExerciseCardProps) {
       data-testid={`exercise-card-${exercise.id}`}
       className="flex w-full items-start gap-3 rounded-2xl border border-anthracite-700 bg-anthracite-800 p-3 text-left transition hover:border-anthracite-600 active:bg-anthracite-700"
     >
-      <MiniSilhouette muscles={primaires} />
+      <MiniSilhouette exercise={exercise} />
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="flex items-start justify-between gap-2">
           <span className="truncate text-sm font-medium text-white">

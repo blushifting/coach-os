@@ -686,7 +686,7 @@ export function fitGuidedProgram(
         if (!canon.is_replaceable) {
           blocking.push(
             `${canon.role} requis (${canon.preferred_id}), ` +
-            `pas de substitution dispo avec votre équipement`,
+            `pas de substitution dispo avec ton équipement`,
           );
           continue;
         }
