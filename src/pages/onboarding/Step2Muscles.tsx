@@ -30,6 +30,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { MUSCLES, MuscleObjective, type Muscle } from '@/engine/models';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { HelpButton } from '@/components/HelpButton';
 import { cn } from '@/lib/cn';
 import { muscleLabel, objectiveLabel } from '@/lib/balance-reasons';
 import {
@@ -101,7 +102,10 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <h1 className="text-xl font-semibold text-white">Muscles cibles</h1>
+      <h1 className="flex items-center gap-2 text-xl font-semibold text-white">
+        Muscles cibles
+        <HelpButton topic="deltoides" label="Aide : deltoïdes" />
+      </h1>
       <p className="text-sm text-anthracite-300">
         Choisis tes muscles prioritaires et leur ordre d'importance. Glisse pour
         réorganiser. Tu pourras toujours modifier plus tard.

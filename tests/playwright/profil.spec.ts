@@ -162,7 +162,7 @@ test('profil : réinitialisation + dialog → /welcome → /onboarding', async (
   await expect(page).toHaveURL(/\/onboarding$/);
 });
 
-test('profil : sheet Aide affiche les 13 entrées du glossaire', async ({
+test('profil : sheet Aide affiche les 14 entrées du glossaire', async ({
   page,
 }) => {
   await runOnboardingAndCalibration(page);
@@ -185,6 +185,7 @@ test('profil : sheet Aide affiche les 13 entrées du glossaire', async ({
     'hypertrophie',
     'vsSem1',
     'prDuJour',
+    'deltoides',
   ];
   for (const t of topics) {
     await expect(page.getByTestId(`aide-glossaire-${t}`)).toBeVisible();

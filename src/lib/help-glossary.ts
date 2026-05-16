@@ -11,7 +11,8 @@ export type HelpTopic =
   | 'amplitude'
   | 'hypertrophie'
   | 'vsSem1'
-  | 'prDuJour';
+  | 'prDuJour'
+  | 'deltoides';
 
 export interface HelpEntry {
   readonly title: string;
@@ -81,5 +82,19 @@ export const HELP_GLOSSARY: Readonly<Record<HelpTopic, HelpEntry>> = {
   prDuJour: {
     title: 'PR du jour',
     body: "Record personnel de la séance : meilleure performance (charge × reps × RPE) atteinte aujourd'hui sur un exercice, comparée à toutes les séances précédentes.",
+  },
+  deltoides: {
+    title: 'Pourquoi 2 deltoïdes seulement (lat + post) ?',
+    body:
+      "Le deltoïde a 3 chefs : antérieur, latéral, postérieur. Côté cible, " +
+      "Kotsh ne suit que latéraux et postérieurs — pas les antérieurs. " +
+      "Raison : les antérieurs sont saturés en continu par tout exo de " +
+      "pectoraux (développé couché, dips, pompes…) et de presse verticale. " +
+      "En ajouter un quota séparé créerait du sur-volume systémique. " +
+      "À l'inverse, les postérieurs sont sous-développés chez quasi tous " +
+      "les pratiquants — Kotsh les ajoute automatiquement en Maintien dès " +
+      "que tu travailles pectoraux, deltos latéraux ou triceps (règle " +
+      "scientifique R4, Cools 2014 — prévention du conflit sous-acromial, " +
+      "blessure d'épaule la plus fréquente en muscu).",
   },
 };

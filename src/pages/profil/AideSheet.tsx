@@ -78,6 +78,7 @@ const GLOSSARY_ORDER: readonly HelpTopic[] = [
   'hypertrophie',
   'vsSem1',
   'prDuJour',
+  'deltoides',
 ];
 
 export function AideSheet({ open, onClose }: AideSheetProps) {
