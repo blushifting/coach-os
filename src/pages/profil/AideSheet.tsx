@@ -40,16 +40,17 @@ const TUTORIALS: readonly Tutorial[] = [
     title: 'Première séance (calibration)',
     body:
       "La séance 0 te demande de tester 1 ou 2 séries proches de l'échec sur chaque " +
-      "exercice clé. Tu rentres le poids, le nombre de reps et ton RPE perçu (effort de " +
-      "6 à 10). L'app en déduit ton plafond (e1RM) pour chaque exo via la formule " +
-      "d'Epley étendue, et calibre tes charges de travail pour le reste du cycle.",
+      "exercice clé. Tu rentres le poids, le nombre de reps et ton effort perçu (sur 10 — " +
+      "c'est ce qu'on appelle aussi RPE dans le jargon muscu). L'app en déduit ton plafond " +
+      "(charge max pour 1 rep) pour chaque exo via la formule d'Epley étendue, et calibre " +
+      "tes charges de travail pour le reste du cycle.",
   },
   {
     id: 'feedback',
     title: 'Donner du feedback à la fin de chaque séance',
     body:
-      'Pour chaque série, tu indiques combien de reps tu as faites et ton RPE perçu. ' +
-      "L'app ajuste automatiquement le plafond, repère les plateaux, et adapte les " +
+      "Pour chaque série, tu indiques combien de reps tu as faites et ton effort perçu " +
+      "(sur 10). L'app ajuste automatiquement le plafond, repère les plateaux, et adapte les " +
       "charges de la séance suivante. Pas besoin de tenir un journal séparé.",
   },
   {

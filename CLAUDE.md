@@ -145,7 +145,45 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
-## État courant — fin Conv #10a (2026-05-16)
+## État courant — fin Conv #10b (2026-05-16)
+
+- **Vocabulaire grand public + bulles d'aide systématiques.**
+- Mapping UI retenu (le code interne garde `rpe`/`e1rm` — c'est seulement
+  la couche d'affichage qui est traduite) :
+  - **RPE → Effort** (sur 10) — labels, sélecteurs, textes
+  - **1RM / e1RM → plafond** (charge max pour 1 rep)
+  - **déload** conservé mais bulle d'aide systématique
+  - **polyarticulaire / isolation / cycle / volume hebdo / vminmax** :
+    bulles d'aide existantes ré-exploitées (glossary `HELP_GLOSSARY`
+    inchangé en clés, titres + bodies enrichis pour `rpe`, `plafond`,
+    `deload`).
+- Fichiers touchés :
+  - `lib/help-glossary.ts` : `rpe.title` → "Effort", bodies de `rpe`,
+    `plafond`, `deload` réécrits en vocabulaire simple avec mention du
+    jargon technique entre parenthèses.
+  - `pages/seance/SetInput.tsx` : label "RPE" → "Effort" (testid
+    `input-rpe-${i}` inchangé pour ne pas casser les tests).
+  - `pages/seance/SessionRunner.tsx` : "RPE cible {n}" → "Effort cible
+    {n}/10" + `HelpButton topic="rpe"`.
+  - `pages/seance-0/CalibrationStep.tsx` : tab "Je connais mon 1RM" →
+    "Je connais mon plafond", label "RPE perçu" → "Effort perçu" +
+    `HelpButton`, options du select "RPE {r}" → "Effort {r}/10",
+    `HelpButton topic="plafond"` sur la ligne "Plafond estimé".
+  - `pages/seance-0/Seance0Page.tsx` IntroBanner reformulé en
+    vocabulaire simple + `HelpButton topic="plafond"`.
+  - `pages/profil/AideSheet.tsx` : tutos "première séance" et
+    "feedback" reformulés (RPE → effort perçu sur 10).
+  - `pages/programme/Widgets.tsx` : `WidgetTile` accepte un prop
+    optionnel `helpTopic`. Tile "Cycle" reçoit `helpTopic="cycle"`.
+- Tests : **396 Vitest + 19 e2e** verts. `npm run build` OK
+  (26.2 kB CSS + 639 kB JS).
+- Backlog Conv #10 : #10c refonte Séance 0 (exo par exo, calibration
+  + 1-2 séries normales avant suivant), #10d catalogue (fiche détaillée
+  + aliases + remplacement libre par muscle).
+
+---
+
+## État Conv #10a (2026-05-16) — archive
 
 - **Écran de bienvenue + shell mobile-first livrés**. Au premier lancement
   ou après reset (userState === null), redirection vers `/welcome` —
@@ -169,9 +207,6 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 - Tests : **396 Vitest + 19 e2e** verts (test reset mis à jour pour
   passer par `/welcome` → `/onboarding`). `npm run build` OK
   (26.2 kB CSS + 638 kB JS).
-- Backlog Conv #10 : #10b vocabulaire + bulles d'aide, #10c refonte
-  Séance 0, #10d catalogue (fiche détaillée + aliases + remplacement
-  libre).
 
 ---
 

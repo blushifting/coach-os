@@ -21,19 +21,30 @@ export interface HelpEntry {
 export const HELP_GLOSSARY: Readonly<Record<HelpTopic, HelpEntry>> = {
   plafond: {
     title: 'Plafond',
-    body: "Charge max estimée pour 1 répétition (e1RM). Calculée par la formule d'Epley étendue à partir de tes meilleures séries — pas besoin de tester un vrai 1RM, c'est plus sûr et tout aussi précis.",
+    body:
+      "Charge max estimée pour 1 répétition sur un exo donné — aussi appelée 1RM ou e1RM dans le jargon muscu. " +
+      "Calculée automatiquement par l'app à partir de tes meilleures séries (formule d'Epley étendue) : " +
+      "pas besoin de tester un vrai 1RM à chaque fois, c'est plus sûr et tout aussi précis. " +
+      "Le plafond se met à jour à chaque séance et sert à calculer tes charges de travail.",
   },
   rpe: {
-    title: 'RPE',
-    body: "Rate of Perceived Exertion. Échelle 6 à 10 d'effort perçu en fin de série. RPE 8 = il te restait 2 reps en réserve. RPE 10 = échec total.",
+    title: 'Effort',
+    body:
+      "Note l'intensité ressentie en fin de série, sur une échelle de 6 à 10. " +
+      "Effort 8/10 = il te restait 2 reps en réserve. Effort 10/10 = échec total (impossible de faire une rep de plus). " +
+      "C'est ce que les coachs appellent RPE (Rate of Perceived Exertion). " +
+      "kotsh s'en sert pour ajuster automatiquement tes charges : si l'effort est plus bas que prévu, on monte ; s'il est plus haut, on baisse.",
   },
   cycle: {
     title: 'Cycle',
     body: "Bloc de 4 semaines de progression + 1 semaine allégée (déload). Au bout de chaque cycle, l'app te propose un bilan.",
   },
   deload: {
-    title: 'Déload',
-    body: 'Semaine à volume divisé par 2 et RPE plafonné à 6. Sert à faire redescendre la fatigue accumulée sans perdre les gains.',
+    title: 'Déload (semaine allégée)',
+    body:
+      "Dernière semaine de chaque cycle : moitié moins de séries et effort plafonné à 6/10. " +
+      "Sert à faire redescendre la fatigue accumulée sans perdre les gains. " +
+      "C'est volontairement facile — l'objectif est de récupérer pour repartir frais au cycle suivant.",
   },
   poly: {
     title: 'Polyarticulaire',

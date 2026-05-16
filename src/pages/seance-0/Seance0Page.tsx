@@ -18,6 +18,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { HelpButton } from '@/components/HelpButton';
 import {
   bootstrap,
   commitInitialCalibration,
@@ -240,13 +241,16 @@ export default function Seance0Page() {
 function IntroBanner({ total }: { readonly total: number }) {
   return (
     <Card className="mx-4 mt-4" data-testid="seance0-intro">
-      <h1 className="text-lg font-semibold text-white">
+      <h1 className="flex items-center gap-2 text-lg font-semibold text-white">
         Séance 0 — Calibration
+        <HelpButton topic="plafond" label="Aide : plafond" />
       </h1>
       <p className="mt-2 text-sm text-anthracite-300">
-        On mesure ton plafond sur {total} exo{total > 1 ? 's' : ''} clé{total > 1 ? 's' : ''} du programme.
-        Pour chacun, choisis ta variante préférée puis indique ton 1RM connu
-        ou fais un test (5 reps à RPE 8 typiquement).
+        On mesure ton <span className="font-medium text-white">plafond</span>{' '}
+        (charge max pour 1 rep) sur {total} exo{total > 1 ? 's' : ''} clé
+        {total > 1 ? 's' : ''} du programme. Pour chacun, choisis ta variante
+        préférée, puis indique ton plafond connu ou fais un test rapide (5 reps
+        à un effort de 8/10 environ).
       </p>
     </Card>
   );

@@ -13,6 +13,7 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { HelpButton } from '@/components/HelpButton';
 import { VariantPickerSheet } from './VariantPickerSheet';
 import {
   SUBMAX_REPS_MAX,
@@ -168,7 +169,7 @@ export function CalibrationStep({
                 : 'text-anthracite-500 hover:text-white')
             }
           >
-            Je connais mon 1RM
+            Je connais mon plafond
           </button>
           <button
             type="button"
@@ -245,8 +246,12 @@ export function CalibrationStep({
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label htmlFor="submax-rpe" className="text-sm text-anthracite-300">
-                RPE perçu (reps en réserve)
+              <label
+                htmlFor="submax-rpe"
+                className="flex items-center gap-1.5 text-sm text-anthracite-300"
+              >
+                Effort perçu (reps en réserve)
+                <HelpButton topic="rpe" label="Aide : effort perçu" />
               </label>
               <select
                 id="submax-rpe"
@@ -257,7 +262,7 @@ export function CalibrationStep({
               >
                 {rpeOptions.map((r) => (
                   <option key={r} value={r}>
-                    RPE {r.toString()} ({Math.max(0, 10 - r)} reps en réserve)
+                    Effort {r.toString()}/10 ({Math.max(0, 10 - r)} reps en réserve)
                   </option>
                 ))}
               </select>
@@ -278,10 +283,11 @@ export function CalibrationStep({
         {liveE1rm !== null && liveE1rm > 0 ? (
           <p
             data-testid="live-e1rm"
-            className="mt-3 text-sm text-anthracite-300"
+            className="mt-3 flex items-center gap-1.5 text-sm text-anthracite-300"
           >
             Plafond estimé :{' '}
             <span className="font-semibold text-white">{liveE1rm.toFixed(1)} kg</span>
+            <HelpButton topic="plafond" label="Aide : plafond" />
           </p>
         ) : null}
       </Card>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { HelpButton } from '@/components/HelpButton';
 import type { Catalog } from '@/engine/catalog';
 import type { SessionPlan } from '@/engine/models';
 import {
@@ -45,8 +46,9 @@ export function SessionRunner({
           <span className="text-xs uppercase tracking-wide text-anthracite-500">
             Séance — {plan.label}
           </span>
-          <span className="text-sm text-white">
-            Cycle {plan.cycle_index} · S{plan.week_in_cycle} · RPE cible {plan.rpe_target}
+          <span className="flex items-center gap-1.5 text-sm text-white">
+            Cycle {plan.cycle_index} · S{plan.week_in_cycle} · Effort cible {plan.rpe_target}/10
+            <HelpButton topic="rpe" label="Aide : effort cible" />
           </span>
         </div>
         <div className="flex flex-col items-end gap-0.5">

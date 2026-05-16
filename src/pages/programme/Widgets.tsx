@@ -1,5 +1,7 @@
 import { Card } from '@/components/Card';
+import { HelpButton } from '@/components/HelpButton';
 import { cn } from '@/lib/cn';
+import type { HelpTopic } from '@/lib/help-glossary';
 import type { CycleProgress, WeekSessions } from '@/lib/dashboard';
 
 interface WidgetsProps {
@@ -34,6 +36,7 @@ export function Widgets({
       <WidgetTile
         testId="widget-cycle-pct"
         label="Cycle"
+        helpTopic="cycle"
         value={`${cycleProgress.pct}`}
         unit="%"
         hint={
@@ -61,12 +64,24 @@ interface WidgetTileProps {
   readonly unit: string;
   readonly hint: string;
   readonly progressPct?: number;
+  readonly helpTopic?: HelpTopic;
 }
 
-function WidgetTile({ testId, label, value, unit, hint, progressPct }: WidgetTileProps) {
+function WidgetTile({
+  testId,
+  label,
+  value,
+  unit,
+  hint,
+  progressPct,
+  helpTopic,
+}: WidgetTileProps) {
   return (
     <Card className="flex flex-col gap-1" data-testid={testId}>
-      <span className="text-xs uppercase tracking-wide text-anthracite-500">{label}</span>
+      <span className="flex items-center gap-1 text-xs uppercase tracking-wide text-anthracite-500">
+        {label}
+        {helpTopic && <HelpButton topic={helpTopic} label={`Aide : ${label}`} />}
+      </span>
       <div className="flex items-baseline gap-1">
         <span className="text-2xl font-semibold text-white tabular-nums">{value}</span>
         {unit !== '' && <span className="text-sm text-anthracite-500">{unit}</span>}

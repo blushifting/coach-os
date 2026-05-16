@@ -48,7 +48,7 @@ export function SetInput({ index, entry, onChange }: SetInputProps) {
       />
 
       <label className="flex flex-col gap-0.5 text-[10px] uppercase tracking-wide text-anthracite-500">
-        RPE
+        Effort
         <select
           data-testid={`input-rpe-${index}`}
           value={entry.rpe.toString()}
