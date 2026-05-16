@@ -9,7 +9,7 @@ import { expect, test, type Page } from '@playwright/test';
  *  - export → buffer JSON capturé
  *  - modification post-export (poids différent)
  *  - import du buffer → poids revient à la valeur d'origine
- *  - bouton Réinitialiser → dialog confirmation → /onboarding (DB vide)
+ *  - bouton Réinitialiser → dialog confirmation → /welcome → /onboarding (DB vide)
  *  - sheet Aide affiche les 13 entrées du glossaire
  */
 
@@ -148,13 +148,16 @@ test('profil : export → modification → import restaure l\'état', async ({
   await expect(page.getByTestId('profil-identity-summary')).toContainText('82 kg');
 });
 
-test('profil : réinitialisation + dialog → /onboarding', async ({ page }) => {
+test('profil : réinitialisation + dialog → /welcome → /onboarding', async ({ page }) => {
   await runOnboardingAndCalibration(page);
   await goToProfil(page);
 
   await page.getByTestId('profil-reset').click();
   // Le Dialog est un role="dialog" avec un bouton "Tout effacer"
   await page.getByRole('button', { name: 'Tout effacer' }).click();
+  await expect(page).toHaveURL(/\/welcome$/);
+  // En mode dev (Vite), `isInstalledOrDev()` renvoie true → bouton Commencer.
+  await page.getByTestId('welcome-start').click();
   await expect(page).toHaveURL(/\/onboarding$/);
 });
 

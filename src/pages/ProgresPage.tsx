@@ -55,7 +55,7 @@ export default function ProgresPage() {
   }, [userState, catalog, history]);
 
   if (userState === null) {
-    return <Navigate to="/onboarding" replace />;
+    return <Navigate to="/welcome" replace />;
   }
   if (data === null) return null;
 

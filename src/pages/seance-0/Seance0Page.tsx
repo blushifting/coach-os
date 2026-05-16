@@ -151,7 +151,7 @@ export default function Seance0Page() {
   if (phase === 'loading') {
     return (
       <div
-        className="flex min-h-dvh items-center justify-center bg-anthracite-950 text-anthracite-300"
+        className="flex flex-1 items-center justify-center bg-anthracite-950 text-anthracite-300"
         data-testid="seance0-loading"
       >
         Préparation de ta séance 0…
@@ -162,7 +162,7 @@ export default function Seance0Page() {
   if (phase === 'blocked') {
     return (
       <div
-        className="flex min-h-dvh flex-col gap-4 bg-anthracite-950 p-6"
+        className="flex flex-1 flex-col gap-4 overflow-y-auto bg-anthracite-950 p-6"
         data-testid="seance0-blocked"
       >
         <h2 className="text-xl font-semibold text-white">
@@ -183,7 +183,7 @@ export default function Seance0Page() {
   if (currentItem === null || currentExercise === null || catalog === null || userState === null) {
     return (
       <div
-        className="flex min-h-dvh items-center justify-center bg-anthracite-950 text-anthracite-300"
+        className="flex flex-1 items-center justify-center bg-anthracite-950 text-anthracite-300"
         data-testid="seance0-empty"
       >
         Aucune calibration à faire.
@@ -193,7 +193,7 @@ export default function Seance0Page() {
 
   return (
     <div
-      className="flex min-h-dvh flex-col bg-anthracite-950"
+      className="flex flex-1 flex-col overflow-y-auto bg-anthracite-950"
       data-testid="seance0-page"
       data-step={stepIndex + 1}
       data-total={items.length}

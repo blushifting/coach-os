@@ -55,7 +55,7 @@ export default function SeancePage() {
   }, [userState]);
 
   if (userState === null) {
-    return <Navigate to="/onboarding" replace />;
+    return <Navigate to="/welcome" replace />;
   }
   if (!isInitialized) {
     return <Navigate to="/seance-0" replace />;

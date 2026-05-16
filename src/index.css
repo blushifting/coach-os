@@ -17,18 +17,29 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* Hauteur fixe au document : le scroll est confiné aux conteneurs internes
+   * (cf. `AppShell` + `<main overflow-y-auto>` de `TabbedLayout`). Combiné à
+   * `overscroll-behavior: none`, ça neutralise le pull-to-refresh natif des
+   * navigateurs mobiles et donne le ressenti "app installée" même en PWA.
+   * `touch-action: pan-x pan-y` autorise le swipe horizontal/vertical interne
+   * (sliders, sheets, scrollables) tout en bloquant le pinch-zoom du body. */
   html,
   body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
     font-family: theme('fontFamily.sans');
     background-color: theme('colors.anthracite.950');
     color: theme('colors.anthracite.100');
+  }
+  #root {
+    height: 100%;
   }
 
   /* Grain subtil sur le fond. ::before plutôt que sur body pour éviter le
    * blend-mode sur tous les enfants. Pointer-events none, derrière tout. */
   body {
     position: relative;
-    min-height: 100vh;
   }
   body::before {
     content: '';

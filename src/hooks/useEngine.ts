@@ -343,7 +343,13 @@ export async function updateMuscleGoals(
  * en mémoire pour pouvoir relancer l'onboarding immédiatement.
  *
  * Après appel, `useCoachOsStore.getState().userState === null` et
- * `bootstrapped === false` — l'app peut router vers `/onboarding`.
+ * `bootstrapped === true` (DB en état propre et vide) — l'app peut router
+ * vers `/welcome` sans repasser par le splash.
+ *
+ * Note (Conv #10a) : on garde volontairement `bootstrapped: true`. Mettre
+ * `bootstrapped: false` ici déclenchait le `SplashScreen` d'`AppShell`,
+ * mais `bootstrap()` n'y est appelé qu'au mount initial (deps `[]`) — donc
+ * le splash restait figé jusqu'à un rafraîchissement complet de la page.
  */
 export async function resetApp(): Promise<void> {
   await getDb().delete();
@@ -354,7 +360,7 @@ export async function resetApp(): Promise<void> {
     currentSessionPlan: null,
     currentSessionId: null,
     history: { sessions: [], feedbacks: [], e1rmSnapshots: [], cycles: [] },
-    bootstrapped: false,
+    bootstrapped: true,
     lastEndOfWeekReview: null,
     lastCycleReview: null,
     catalog,

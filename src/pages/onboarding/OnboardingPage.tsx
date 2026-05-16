@@ -125,7 +125,7 @@ export default function OnboardingPage() {
 
   return (
     <div
-      className="flex min-h-dvh flex-1 flex-col bg-anthracite-950"
+      className="flex h-full flex-1 flex-col bg-anthracite-950"
       data-testid="onboarding-page"
       data-step={step}
     >

@@ -47,7 +47,7 @@ export default function ProgrammePage() {
   }, [userState, history]);
 
   if (userState === null) {
-    return <Navigate to="/onboarding" replace />;
+    return <Navigate to="/welcome" replace />;
   }
   if (userState.current_cycle_plan === null || userState.current_cycle_plan.requires_calibration) {
     return <Navigate to="/seance-0" replace />;

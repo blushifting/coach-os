@@ -139,7 +139,7 @@ export default function ProfilPage() {
     setBusy('reset');
     try {
       await resetApp();
-      navigate('/onboarding');
+      navigate('/welcome');
     } finally {
       setBusy(null);
     }

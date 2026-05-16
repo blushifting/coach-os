@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppShell } from '@/layout/AppShell';
 import { TabbedLayout } from '@/layout/TabbedLayout';
+import WelcomeScreen from '@/pages/WelcomeScreen';
 import OnboardingPage from '@/pages/OnboardingPage';
 import Seance0Page from '@/pages/seance-0/Seance0Page';
 import ProgrammePage from '@/pages/programme/ProgrammePage';
@@ -19,6 +20,7 @@ export const router = createBrowserRouter(
       element: <AppShell />,
       children: [
         { index: true, element: <Navigate to="/programme" replace /> },
+        { path: 'welcome', element: <WelcomeScreen /> },
         { path: 'onboarding', element: <OnboardingPage /> },
         { path: 'seance-0', element: <Seance0Page /> },
         {

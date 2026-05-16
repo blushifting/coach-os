@@ -13,7 +13,7 @@ export function AppShell() {
 
   return (
     <HelpProvider>
-      <div className="flex min-h-dvh flex-col bg-anthracite-950 text-white">
+      <div className="flex h-dvh flex-col overflow-hidden bg-anthracite-950 text-white">
         {bootstrapped ? <Outlet /> : <SplashScreen />}
       </div>
     </HelpProvider>

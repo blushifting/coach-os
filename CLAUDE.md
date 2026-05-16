@@ -145,7 +145,37 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
-## État courant — fin Conv #9 (2026-05-15)
+## État courant — fin Conv #10a (2026-05-16)
+
+- **Écran de bienvenue + shell mobile-first livrés**. Au premier lancement
+  ou après reset (userState === null), redirection vers `/welcome` —
+  logo K + "kotsh" + pitch *"Ta muscu, ajustée à ton effort réel"*.
+- **Bouton conditionnel** : "Installer l'app" si dans navigateur (déclenche
+  `beforeinstallprompt` natif ou ouvre un sheet d'instructions iOS / autres),
+  "Commencer" si en standalone. `import.meta.env.DEV` traité comme installé
+  pour ne pas bloquer dev/e2e. Module : `src/lib/install-prompt.ts`.
+- **Fix bug reset** : `resetApp()` garde `bootstrapped: true` — l'ancien
+  `bootstrapped: false` figeait le splash car `bootstrap()` n'est appelé
+  qu'au mount initial d'`AppShell` (deps `[]`). Reset navigue vers
+  `/welcome` au lieu de `/onboarding`.
+- **Shell mobile** : `html/body { height: 100%; overflow: hidden;
+  overscroll-behavior: none }` (kill pull-to-refresh), `AppShell` passe
+  à `h-dvh overflow-hidden`. Tous les wrappers `min-h-dvh` des pages
+  hors `TabbedLayout` remplacés par `flex-1` / `h-full` + scroll interne
+  via `overflow-y-auto`. La `TabBar` reste accessible en bas en
+  permanence (sibling de `<main>` flex-1).
+- Redirections `userState === null` repointées vers `/welcome` :
+  ProgrammePage, SeancePage, ProgresPage, ProfilPage (post-reset).
+- Tests : **396 Vitest + 19 e2e** verts (test reset mis à jour pour
+  passer par `/welcome` → `/onboarding`). `npm run build` OK
+  (26.2 kB CSS + 638 kB JS).
+- Backlog Conv #10 : #10b vocabulaire + bulles d'aide, #10c refonte
+  Séance 0, #10d catalogue (fiche détaillée + aliases + remplacement
+  libre).
+
+---
+
+## État Conv #9 (2026-05-15) — archive
 
 - **PWA installable + déploiement GitHub Pages livrés**. Le nom de marque
   utilisateur devient **kotsh** (le repo et les identifiants internes
