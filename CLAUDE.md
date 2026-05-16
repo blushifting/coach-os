@@ -200,6 +200,18 @@ optionnellement les séries de travail réalisées ; brancher le moteur de
 prescription pour générer 1-2 séries cible après le commit du plafond ;
 réutiliser `SetInput` pour la saisie. Tests : `seance0.spec.ts` à étendre.
 
+**Polish trivial à bundle dans #10c (ou conv libre)** :
+- Boutons "← Précédent" / "Suivant →" de l'onboarding
+  (`pages/onboarding/OnboardingPage.tsx` lignes ~154-180) : actuellement
+  "Précédent" wrap sur 2 lignes (label sous la flèche) car le bouton est
+  trop étroit. Ajouter `whitespace-nowrap` sur le composant Button (ou
+  via prop). Remplacer aussi les flèches `←` / `→` typographiques par
+  des SVG inline alignés verticalement avec le texte (les caractères
+  Unicode rendent mal selon la fonte). Toucher `components/Button.tsx`
+  (whitespace-nowrap par défaut) + remplacer les chevrons dans
+  `OnboardingPage.tsx`, `CalibrationStep.tsx`, et tout autre écran avec
+  navigation précédent/suivant.
+
 **#10d — Catalogue (items 5, 6, 7 dump initial)** — après #10c.
 1. **Fiche exo** (`pages/catalogue/CatalogueDetailSheet.tsx` + `ExerciseCard.tsx`) :
    silhouette `AnatomicalSilhouette` au premier plan, grand format centré ;
