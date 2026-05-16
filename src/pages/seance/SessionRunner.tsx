@@ -7,6 +7,7 @@ import type { SessionPlan } from '@/engine/models';
 import {
   countDoneSets,
   countPlannedSets,
+  formatRest,
   type SessionEntries,
   updateSetEntry,
 } from '@/lib/session-runner';
@@ -78,7 +79,7 @@ export function SessionRunner({
                       {ex?.nom_fr ?? item.exercise_id}
                     </span>
                     <span className="text-xs text-anthracite-300">
-                      {doneCount}/{entrySets.length} séries — repos {item.sets[0]?.rest_s ?? 0}s
+                      {doneCount}/{entrySets.length} séries — repos {formatRest(item.sets[0]?.rest_s ?? 0)}
                     </span>
                   </div>
                   <button

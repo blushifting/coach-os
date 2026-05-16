@@ -145,7 +145,54 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
-## État courant — fin Conv #10c (2026-05-16)
+## État courant — fin Conv #10c' (2026-05-16)
+
+Bug fix bundle suite retours d'usage post-#10c :
+
+- **Bug reprise Séance 0 en mode custom** : si l'utilisateur quittait l'app
+  entre la fin de l'onboarding et la Séance 0, à la réouverture la
+  redirection vers `/seance-0` ne se faisait pas — `ProgrammePage`
+  s'appuie sur `current_cycle_plan.requires_calibration`, mais
+  `generateCyclePlan` (custom) laissait ce flag à `false` (seul
+  `fitGuidedProgram` le posait). Fix dans
+  `hooks/useEngine.ts:generateInitialCyclePlan` : après la branche
+  custom, on appelle `pickCalibrationExercises` et on flip
+  `requires_calibration=true` si la liste est non vide.
+- **Bug drag-and-drop onboarding** : sur mobile, le drag de réorganisation
+  des muscles prioritaires (`Step2Muscles` / `@dnd-kit/core`
+  `PointerSensor`) ne déclenchait pas — le touch était consommé comme
+  scroll natif. Fix : `touch-none` (Tailwind → `touch-action: none`)
+  sur le bouton drag handle.
+- **Bug silhouette fessiers** : exos qui ne ciblent que les fessiers
+  (ex : kickback poulie, hip thrust) affichaient la face. `fessiers`
+  était mappé à la fois dans `CO_TO_FACE` (`abductors`) et `CO_TO_BACK`
+  (`gluteal+abductor`) → égalité de score → `pickBestSide` retournait
+  `face` par défaut. Fix : retrait de `fessiers` de `CO_TO_FACE`.
+  Les fessiers ne sont plus highlightés que côté dos — cohérent avec
+  l'anatomie.
+- **UX repos** : `SessionRunner.tsx` affichait `repos 90s`. Nouveau
+  helper `formatRest(seconds)` exporté depuis `lib/session-runner.ts` :
+  < 60 s → `45 s`, multiple de 60 → `2 min`, sinon → `1 min 30 s`.
+- **Bug orthographe "Cible le les pectoraux"** : `buildDescription`
+  (`lib/catalog-filter.ts`) préfixait par `'le'`/`'les'` alors que
+  `muscleLabel` renvoie déjà le label avec article ("les pectoraux",
+  "le dos en largeur"). Résultat : "Cible le les pectoraux." → réparé
+  en supprimant le préfixe.
+
+Tests : **396 Vitest + 20 e2e** verts, aucune régression.
+`npm run build` OK (27.5 kB CSS / 643 kB JS).
+
+**Point deltos antérieurs (laissé en l'état, choix scientifique)** :
+Azur a remonté l'asymétrie `deltos_lateraux` + `deltos_posterieurs`
+sans `deltos_anterieurs` dans les muscles cibles. C'est volontaire —
+`deltos_anterieurs` est dans `SYNERGISTES_SANS_QUOTA` (cf. `models.ts:144`)
+parce qu'il est saturé par tout push horizontal (pectoraux). Le compter
+en quota séparé créerait du sur-volume systémique. Le catalogue
+reflète bien ça : aucun exo n'a `deltos_anterieurs` comme **seul**
+primaire — toujours en duo avec `deltos_lateraux` (presses verticales).
+Pas de fix code, doc/réponse seulement.
+
+## État Conv #10c (2026-05-16) — archive
 
 - **Refonte Séance 0** : chaque exo de calibration enchaîne maintenant
   2 phases sur le même écran. Phase **measure** = test plafond (1RM connu

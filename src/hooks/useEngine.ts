@@ -18,6 +18,7 @@ import { applyBalanceRules } from '@/engine/balance';
 import { generateCyclePlan } from '@/engine/cycle_planner';
 import { fitGuidedProgram, getGuidedProgram } from '@/engine/guided_programs';
 import { initialVolumeBounds } from '@/engine/volume';
+import { pickCalibrationExercises } from '@/lib/calibration';
 import type {
   MuscleGoal,
   Profile,
@@ -167,6 +168,18 @@ export async function generateInitialCyclePlan(): Promise<InitialCyclePlanResult
     next.current_cycle_plan = weekly;
   } else {
     next.current_cycle_plan = generateCyclePlan(next, catalog);
+    // Custom : si des compounds n'ont pas encore d'e1RM, on doit passer par
+    // Séance 0. Sans ce flip, `ProgrammePage` ne redirigeait pas vers
+    // `/seance-0` si l'utilisateur quittait l'app entre l'onboarding et la
+    // calibration (bug remonté Conv #10c').
+    const calibList = pickCalibrationExercises(
+      next.current_cycle_plan,
+      next.e1rm,
+      catalog,
+    );
+    if (calibList.length > 0) {
+      next.current_cycle_plan.requires_calibration = true;
+    }
   }
 
   await txSaveUserStateOnly(next);

@@ -103,13 +103,12 @@ export function buildDescription(ex: Exercise): string {
   }
   const typ = extypeLabel(ex.type);
   const pat = patternLabel(ex.pattern).toLowerCase();
-  const primaires = exercisePrimaires(ex).map(muscleLabel);
+  // `muscleLabel` renvoie déjà le label avec article ("les pectoraux",
+  // "le dos en largeur"). On ne préfixe donc pas par "le"/"les" ici, sinon
+  // on obtient "Cible le les pectoraux" (bug remonté Conv #10c').
+  const primaires = exercisePrimaires(ex).map((m) => muscleLabel(m).toLowerCase());
   const cible =
-    primaires.length === 0
-      ? ''
-      : ` Cible ${primaires.length === 1 ? 'le' : 'les'} ${joinFr(
-          primaires.map((m) => m.toLowerCase()),
-        )}.`;
+    primaires.length === 0 ? '' : ` Cible ${joinFr(primaires)}.`;
   return `${typ} — ${pat}.${cible}`.trim();
 }
 

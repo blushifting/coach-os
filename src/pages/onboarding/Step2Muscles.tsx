@@ -237,7 +237,9 @@ function SortablePriorityRow({
           {...listeners}
           aria-label="Déplacer"
           data-testid={`drag-${priority.muscle}`}
-          className="flex h-9 w-9 cursor-grab items-center justify-center rounded-lg text-anthracite-300 hover:text-white active:cursor-grabbing"
+          // touch-none indispensable : sans ça, le navigateur traite le touch
+          // comme un scroll et le PointerSensor ne reçoit pas l'événement.
+          className="flex h-9 w-9 cursor-grab touch-none items-center justify-center rounded-lg text-anthracite-300 hover:text-white active:cursor-grabbing"
         >
           ⋮⋮
         </button>

@@ -215,8 +215,12 @@ const CO_TO_FACE: Record<string, readonly string[]> = {
   triceps: FACE_POLYS.triceps,
   abdos: FACE_POLYS.abs,
   obliques: FACE_POLYS.obliques,
-  // `abductors` couvre la portion visible des fessiers/hanches de face.
-  fessiers: FACE_POLYS.abductors,
+  // Note : `fessiers` est volontairement absent ici. Le glute est visible
+  // côté dos uniquement (cf. CO_TO_BACK.fessiers) → `pickBestSide` bascule
+  // automatiquement vers la vue dos pour les exos qui ciblent les fessiers
+  // (ex : kickback poulie, hip thrust). Avant Conv #10c', les fessiers
+  // étaient aussi mappés sur `FACE_POLYS.abductors` → égalité face/dos →
+  // pickBestSide retournait `face` par défaut → mauvaise vue.
   quadriceps: FACE_POLYS.quadriceps,
   mollets: FACE_POLYS.calves,
 };

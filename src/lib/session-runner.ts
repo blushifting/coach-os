@@ -22,6 +22,26 @@ import type {
 import type { FeedbackRow } from '@/db/schema';
 
 // =============================================================================
+// Formats d'affichage UI
+// =============================================================================
+
+/**
+ * Formate un temps de repos en secondes vers une chaîne lisible :
+ * - < 60 s   → `45 s`
+ * - 60 s     → `1 min`
+ * - multiple → `2 min`
+ * - sinon    → `1 min 30 s`
+ */
+export function formatRest(seconds: number): string {
+  const total = Math.max(0, Math.round(seconds));
+  if (total < 60) return `${total} s`;
+  const m = Math.floor(total / 60);
+  const s = total - m * 60;
+  if (s === 0) return `${m} min`;
+  return `${m} min ${s} s`;
+}
+
+// =============================================================================
 // État local UI : saisie set par set
 // =============================================================================
 
