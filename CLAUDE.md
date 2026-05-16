@@ -176,6 +176,48 @@ puis copier (cf. `prototype/README.md` pour l'historique).
   modifs comportementales → Vitest + build ; suite e2e complète
   uniquement en toute fin de conv si structurel touché.
 
+### Backlog Conv #10 — à reprendre en nouvelle conv
+
+**#10c — Refonte Séance 0 (item 3 dump initial Azur)** — *à faire avant #10d.*
+Actuel : `pages/seance-0/Seance0Page.tsx` + `CalibrationStep.tsx` font passer
+chaque exo clé l'un après l'autre en mode test plafond pur (1RM connu ou
+test sous-max), sans série de travail normale derrière. Azur a remonté que
+ce format n'est pas pratique :
+> "C'est pas pratique de faire d'abord tester les plafonds uniquement, ça
+> oblige à aller faire plusieurs petits exos courts, on va plutôt faire une
+> séance 0 normale qui contient les mêmes exos clés du programme, pour chaque
+> exo on teste le plafond puis on fait 1 ou 2 séries avant de passer au suivant,
+> histoire de bien calibrer."
+
+Format cible : pour chaque exo de la liste de calibration, **test plafond
+PUIS 1-2 séries normales** (charges déduites du plafond fraîchement mesuré,
+RPE cible ≈ 8) avant de passer au suivant. La séance 0 doit ressembler à une
+vraie séance qui calibre, pas à un sondage. Pédagogie renforcée à chaque
+étape (vocabulaire #10b déjà en place, à réutiliser).
+
+Pistes d'implémentation : étendre `CalibrationStepValue` pour porter
+optionnellement les séries de travail réalisées ; brancher le moteur de
+prescription pour générer 1-2 séries cible après le commit du plafond ;
+réutiliser `SetInput` pour la saisie. Tests : `seance0.spec.ts` à étendre.
+
+**#10d — Catalogue (items 5, 6, 7 dump initial)** — après #10c.
+1. **Fiche exo** (`pages/catalogue/CatalogueDetailSheet.tsx` + `ExerciseCard.tsx`) :
+   silhouette `AnatomicalSilhouette` au premier plan, grand format centré ;
+   descriptif détaillé dessous (exécution, erreurs courantes, muscles
+   primaires/synergistes, matériel, variantes). Actuellement silhouette
+   trop petite et description riquiqui.
+2. **Aliases** : ajouter `aliases: string[]` sur chaque entrée de
+   `src/data/exercises.json` (et côté Python `prototype/data/exercises.json`
+   en miroir, parité). Recherche du catalogue (`catalog-filter.ts`) doit
+   matcher sur le nom + tous les aliases. Origine : Azur cherche un exo
+   sous un nom différent → ne le trouve pas.
+3. **Remplacement libre** : actuellement `alternativeVariantsFor`
+   (`lib/calibration.ts`) ne propose que les variantes du même *pattern*.
+   Azur veut pouvoir remplacer un exo pecs par un autre exo pecs même si
+   c'est pas le même pattern de mouvement (équipement différent, schéma
+   différent). Élargir le filtre à "muscle primaire en commun" avec un
+   toggle "voir tous les exos ciblant X".
+
 ---
 
 ## État Conv #10b (2026-05-16) — archive
