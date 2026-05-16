@@ -6,18 +6,44 @@
 import type { Exercise, ExerciseDict } from './models';
 import { E1RMApp, ExType, exerciseFromDict, exercisePrimaires } from './models';
 import rawExercises from '../data/exercises.json';
+import { EXERCISE_SYNONYMES } from '../data/exercise-synonymes';
 
 /**
  * Charge tous les exercices depuis le JSON embarqué.
  *
  * Le résultat est mémoïsé pour ne pas re-parser à chaque appel — équivalent du
  * `@lru_cache` Python.
+ *
+ * Les synonymes du JSON (vides pour la quasi-totalité des entrées) sont
+ * complétés par `EXERCISE_SYNONYMES` (cf. `data/exercise-synonymes.ts`).
+ * Origine : Azur cherchait "DC", "bench press", "SDT", … sans les trouver
+ * (Conv #10d). On enrichit ici plutôt que dans le JSON pour ne pas dupliquer
+ * la table entre `src/data/` et `prototype/data/` ; la parité Python reste
+ * triviale puisque la recherche fuzzy est UI-only.
  */
 let _cached: readonly Exercise[] | null = null;
 
 export function loadExercises(): readonly Exercise[] {
   if (_cached === null) {
-    _cached = (rawExercises as unknown as ExerciseDict[]).map(exerciseFromDict);
+    _cached = (rawExercises as unknown as ExerciseDict[])
+      .map(exerciseFromDict)
+      .map((ex) => {
+        const extra = EXERCISE_SYNONYMES[ex.id];
+        if (extra === undefined || extra.length === 0) return ex;
+        // Merge sans doublons (case-insensitive). On garde les synonymes du
+        // JSON d'abord (1 seul aujourd'hui, mais c'est la source de vérité),
+        // puis on ajoute les aliases manquants.
+        const seen = new Set(ex.synonymes.map((s) => s.toLowerCase()));
+        const merged = [...ex.synonymes];
+        for (const s of extra) {
+          const key = s.toLowerCase();
+          if (!seen.has(key)) {
+            merged.push(s);
+            seen.add(key);
+          }
+        }
+        return { ...ex, synonymes: merged };
+      });
   }
   return _cached;
 }
@@ -135,25 +161,57 @@ export class Catalog {
     return out;
   }
 
-  /** Recherche très simple par sous-chaîne (ID, nom_fr, synonymes). */
+  /**
+   * Recherche très simple par sous-chaîne (ID, nom_fr, synonymes).
+   *
+   * Normalisation : minuscules + fold accents (`développé` matche `developpe`).
+   * Multi-tokens : la requête est splittée sur les espaces, on ne garde que
+   * les exos dont **tous** les tokens matchent au moins un champ. Le score
+   * agrège les matches (100 ID exact, 50 ID substring, 30 nom, 20 synonyme).
+   */
   search_fuzzy(query: string, limit = 10): Exercise[] {
-    const q = query.toLowerCase().trim();
+    const q = foldText(query);
+    if (q === '') return [];
+    const tokens = q.split(/\s+/).filter((t) => t.length > 0);
+    if (tokens.length === 0) return [];
+
     const scored: Array<[number, Exercise]> = [];
     for (const x of this._all) {
-      let score = 0;
-      const idLower = x.id.toLowerCase();
-      if (q === idLower) score += 100;
-      else if (idLower.includes(q)) score += 50;
-      if (x.nom_fr.toLowerCase().includes(q)) score += 30;
-      for (const s of x.synonymes) {
-        if (s.toLowerCase().includes(q)) {
-          score += 20;
+      const idFolded = foldText(x.id);
+      const nomFolded = foldText(x.nom_fr);
+      const synFolded = x.synonymes.map(foldText);
+
+      let total = 0;
+      let allMatched = true;
+      for (const tok of tokens) {
+        let tokScore = 0;
+        if (tok === idFolded) tokScore = 100;
+        else if (idFolded.includes(tok)) tokScore = 50;
+        if (nomFolded.includes(tok)) tokScore = Math.max(tokScore, 30);
+        for (const s of synFolded) {
+          if (s.includes(tok)) {
+            tokScore = Math.max(tokScore, 20);
+            break;
+          }
+        }
+        if (tokScore === 0) {
+          allMatched = false;
           break;
         }
+        total += tokScore;
       }
-      if (score > 0) scored.push([score, x]);
+      if (allMatched && total > 0) scored.push([total, x]);
     }
     scored.sort(([a], [b]) => b - a);
     return scored.slice(0, limit).map(([, x]) => x);
   }
+}
+
+/** Minuscules + fold des accents (`é` → `e`). */
+function foldText(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .trim();
 }

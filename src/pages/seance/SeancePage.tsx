@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useEngine } from '@/hooks/useEngine';
 import { useCoachOsStore } from '@/store';
+import type { SessionPlan } from '@/engine/models';
 import {
   buildSessionFeedback,
   computeSessionSummary,
@@ -40,12 +41,42 @@ export default function SeancePage() {
   } | null>(null);
 
   // (Re)initialise les entrées quand le plan en cours change.
+  // Cas particuliers (Conv #10d) :
+  //  - Plan ↦ null : on vide.
+  //  - Nouveau plan, ou structure différente (nb d'items) : on initialise tout.
+  //  - Plan muté (remplacement d'un exo) : on garde les lignes déjà saisies des
+  //    exos inchangés et on ne réinitialise QUE les lignes de l'exo remplacé.
+  //    Sinon cocher une série puis remplacer un exo perdrait toutes les saisies
+  //    en cours.
+  const prevPlanRef = useRef<SessionPlan | null>(null);
   useEffect(() => {
+    const prev = prevPlanRef.current;
+    prevPlanRef.current = currentSessionPlan;
     if (currentSessionPlan === null) {
       setEntries([]);
-    } else {
-      setEntries(initEntries(currentSessionPlan));
+      return;
     }
+    if (prev === null || prev.items.length !== currentSessionPlan.items.length) {
+      setEntries(initEntries(currentSessionPlan));
+      return;
+    }
+    setEntries((current) =>
+      currentSessionPlan.items.map((item, i) => {
+        const prevItem = prev.items[i];
+        const currentRow = current[i];
+        const expectedLen = item.sets.length;
+        const exoChanged = prevItem?.exercise_id !== item.exercise_id;
+        if (exoChanged || currentRow === undefined || currentRow.length !== expectedLen) {
+          return item.sets.map((s) => ({
+            reps: s.reps,
+            load_kg: s.load_kg,
+            rpe: s.rpe_target,
+            done: false,
+          }));
+        }
+        return currentRow;
+      }),
+    );
   }, [currentSessionPlan]);
 
   const isInitialized = useMemo(() => {

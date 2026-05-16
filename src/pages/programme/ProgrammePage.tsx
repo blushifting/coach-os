@@ -30,6 +30,7 @@ export default function ProgrammePage() {
   const history = useCoachOsStore((s) => s.history);
   const [openDay, setOpenDay] = useState<CalendarDay | null>(null);
 
+  const catalog = useCoachOsStore((s) => s.catalog);
   const dashboard = useMemo(() => {
     if (userState === null) return null;
     return {
@@ -43,9 +44,11 @@ export default function ProgrammePage() {
         history.cycles,
         history.sessions,
         history.feedbacks,
+        new Date(),
+        catalog,
       ),
     };
-  }, [userState, history]);
+  }, [userState, history, catalog]);
 
   if (userState === null) {
     return <Navigate to="/welcome" replace />;

@@ -29,12 +29,14 @@ import type {
 import { getDb, resetDbInstance } from '@/db';
 import { loadUserState } from '@/db/repositories/userState.repo';
 import {
+  txCancelSession,
   txCommitSessionFeedback,
   txEndOfCycle,
   txEndOfWeek,
   txInitUser,
   txSaveSessionPlan,
   txSaveUserStateOnly,
+  txUpdateSessionPlan,
 } from '@/db/transactions';
 import { importFromJsonString } from '@/io/import';
 import { useCoachOsStore, type HistorySnapshot } from '@/store';
@@ -242,20 +244,132 @@ export interface GenerateSessionArgs {
   seanceDate: string;
 }
 
-export async function generateAndStoreSession(
+/**
+ * Crée le `SessionPlan` pour un jour du `current_cycle_plan` et le persiste en
+ * DB (status='planned'). **Ne charge pas** la séance dans `currentSessionPlan` —
+ * c'est pour ça qu'on a aussi `loadPlannedSessionForRunner` (cf. #10d : on
+ * sépare programmation et démarrage).
+ *
+ * Idempotent côté `seance_date` : si une session existe déjà pour cette date,
+ * on la remplace pour permettre la re-planification (mais on garde l'ancien id).
+ */
+export async function planSessionForDay(
   args: GenerateSessionArgs,
 ): Promise<{ plan: SessionPlan; sessionId: number }> {
   const catalog = requireCatalog();
   const next = requireUserState();
   const plan = engine.generateSession(next, catalog, args.dayIndex, args.seanceDate);
   const sessionId = await txSaveSessionPlan(plan, next);
+  useCoachOsStore.setState({ userState: next });
+  await refreshHistory();
+  return { plan, sessionId };
+}
+
+/**
+ * Charge une séance déjà planifiée (`status='planned'`) dans le runner. Refuse
+ * si `seance_date` ≠ date du jour : on ne peut **pas** avancer dans une séance
+ * un autre jour que celui pour lequel elle est prévue (cf. Conv #10d).
+ *
+ * Retourne `{plan, sessionId}` ; si la date diffère, lève une `Error` avec un
+ * message FR clair pour qu'on puisse l'afficher dans l'UI si besoin.
+ */
+export async function loadPlannedSessionForRunner(
+  sessionId: number,
+): Promise<{ plan: SessionPlan; sessionId: number }> {
+  const today = new Date();
+  const todayKey =
+    today.getFullYear() +
+    '-' +
+    String(today.getMonth() + 1).padStart(2, '0') +
+    '-' +
+    String(today.getDate()).padStart(2, '0');
+  const row = await getDb().sessions.get(sessionId);
+  if (row === undefined) {
+    throw new Error(`Séance ${sessionId} introuvable.`);
+  }
+  if (row.seance_date !== todayKey) {
+    throw new Error(
+      `Cette séance est prévue le ${row.seance_date}, on est le ${todayKey}. ` +
+      `Tu pourras la démarrer le jour prévu.`,
+    );
+  }
   useCoachOsStore.setState({
-    userState: next,
+    currentSessionPlan: row.plan,
+    currentSessionId: sessionId,
+  });
+  return { plan: row.plan, sessionId };
+}
+
+/**
+ * Compat : programme + démarre immédiatement (typiquement "commencer maintenant"
+ * pour aujourd'hui). Combine `planSessionForDay` + `loadPlannedSessionForRunner`.
+ */
+export async function generateAndStoreSession(
+  args: GenerateSessionArgs,
+): Promise<{ plan: SessionPlan; sessionId: number }> {
+  const { plan, sessionId } = await planSessionForDay(args);
+  useCoachOsStore.setState({
     currentSessionPlan: plan,
     currentSessionId: sessionId,
   });
-  await refreshHistory();
   return { plan, sessionId };
+}
+
+// =============================================================================
+// Conv #10d — Remplacement d'un exo pendant la séance en cours.
+// =============================================================================
+
+export interface ReplaceSessionExerciseArgs {
+  readonly itemIndex: number;
+  readonly newExerciseId: string;
+}
+
+export async function replaceSessionExercise(
+  args: ReplaceSessionExerciseArgs,
+): Promise<SessionPlan> {
+  const catalog = requireCatalog();
+  const store = useCoachOsStore.getState();
+  const plan = store.currentSessionPlan;
+  const sessionId = store.currentSessionId;
+  if (plan === null) {
+    throw new Error('Aucune séance en cours : currentSessionPlan est null.');
+  }
+  const next = requireUserState();
+  const newPlan = engine.replaceSessionItem(
+    plan,
+    args.itemIndex,
+    args.newExerciseId,
+    next,
+    catalog,
+  );
+  if (sessionId !== null) {
+    await txUpdateSessionPlan(sessionId, newPlan, next);
+  } else {
+    await txSaveUserStateOnly(next);
+  }
+  useCoachOsStore.setState({
+    userState: next,
+    currentSessionPlan: newPlan,
+  });
+  await refreshHistory();
+  return newPlan;
+}
+
+// =============================================================================
+// Conv #10d — Annulation d'une séance planifiée (pas encore commencée).
+// =============================================================================
+
+export async function cancelPlannedSession(sessionId: number): Promise<void> {
+  const store = useCoachOsStore.getState();
+  await txCancelSession(sessionId);
+  // Si on annule la séance actuellement en cours dans le store, on la déconnecte.
+  if (store.currentSessionId === sessionId) {
+    useCoachOsStore.setState({
+      currentSessionPlan: null,
+      currentSessionId: null,
+    });
+  }
+  await refreshHistory();
 }
 
 // =============================================================================
@@ -434,6 +548,10 @@ export interface EngineApi {
   generateInitialCyclePlan: typeof generateInitialCyclePlan;
   commitInitialCalibration: typeof commitInitialCalibration;
   generateAndStoreSession: typeof generateAndStoreSession;
+  planSessionForDay: typeof planSessionForDay;
+  loadPlannedSessionForRunner: typeof loadPlannedSessionForRunner;
+  replaceSessionExercise: typeof replaceSessionExercise;
+  cancelPlannedSession: typeof cancelPlannedSession;
   recordFeedbackAndCommit: typeof recordFeedbackAndCommit;
   endOfWeek: typeof endOfWeek;
   endOfCycle: typeof endOfCycle;
@@ -452,6 +570,10 @@ export function useEngine(): EngineApi {
       generateInitialCyclePlan,
       commitInitialCalibration,
       generateAndStoreSession,
+      planSessionForDay,
+      loadPlannedSessionForRunner,
+      replaceSessionExercise,
+      cancelPlannedSession,
       recordFeedbackAndCommit,
       endOfWeek,
       endOfCycle,

@@ -100,6 +100,7 @@ export function CalibrationStep({
   const [phase, setPhase] = useState<Phase>('measure');
   const [currentEx, setCurrentEx] = useState<Exercise>(exercise);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const allowsKnown = allowsKnown1RM(currentEx.charge);
   const [mode, setMode] = useState<Mode>(allowsKnown ? 'known' : 'submax');
   const [knownLoad, setKnownLoad] = useState<string>('');
@@ -112,8 +113,8 @@ export function CalibrationStep({
   const [workEntries, setWorkEntries] = useState<readonly SetEntry[]>([]);
 
   const alternatives = useMemo(
-    () => alternativeVariantsFor(currentEx.id, equipment, catalog),
-    [currentEx.id, equipment, catalog],
+    () => alternativeVariantsFor(currentEx.id, equipment, catalog, { expand: expanded }),
+    [currentEx.id, equipment, catalog, expanded],
   );
 
   function handlePickVariant(newExId: string) {
@@ -457,6 +458,8 @@ export function CalibrationStep({
         open={sheetOpen}
         currentExerciseId={currentEx.id}
         alternatives={alternatives}
+        expanded={expanded}
+        onToggleExpand={() => setExpanded((v) => !v)}
         onPick={handlePickVariant}
         onClose={() => setSheetOpen(false)}
       />

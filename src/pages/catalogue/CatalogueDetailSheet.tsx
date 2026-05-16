@@ -1,16 +1,19 @@
+import type { ReactNode } from 'react';
 import { Sheet } from '@/components/Sheet';
+import { AnatomicalSilhouette, type SilhouetteStatus } from '@/components/AnatomicalSilhouette';
 import { exercisePrimaires, exerciseSynergistes } from '@/engine/models';
 import type { Exercise } from '@/engine/models';
 import {
   buildDescription,
   chargeLabel,
+  equipLabel,
   extypeLabel,
   patternLabel,
   tagLabel,
 } from '@/lib/catalog-filter';
 import { muscleLabel } from '@/lib/progress';
+import { formatRest } from '@/lib/session-runner';
 import { PatternIcon } from '@/pages/seance/PatternIcon';
-import { MiniSilhouette } from './MiniSilhouette';
 
 interface CatalogueDetailSheetProps {
   readonly open: boolean;
@@ -19,8 +22,11 @@ interface CatalogueDetailSheetProps {
 }
 
 /**
- * Sheet de détail Catalogue — descriptif, muscles primaires/synergistes,
- * type/charge/pattern en FR, tags reconnus. Cf. plan Conv #6b.
+ * Sheet de détail Catalogue — Conv #10d.
+ *
+ * Refonte : silhouette grande face+dos centrée en haut, descriptif riche
+ * dessous (muscles primaires/synergistes, matériel, repos / reps recommandées,
+ * difficulté, variantes tag).
  */
 export function CatalogueDetailSheet({
   open,
@@ -35,38 +41,49 @@ export function CatalogueDetailSheet({
     .map((t) => [t, tagLabel(t)] as const)
     .filter((entry): entry is readonly [string, string] => entry[1] !== null);
 
+  const highlights: Record<string, SilhouetteStatus> = {};
+  for (const [m, coef] of Object.entries(exercise.muscles)) {
+    if (coef >= 1.0) highlights[m] = 'highlight';
+    else if (coef >= 0.5) highlights[m] = 'synergist';
+  }
+
+  const repsRange = exercise.reps_hyp;
+  const repsForce = exercise.reps_force;
+
   return (
     <Sheet open={open} onClose={onClose} title={exercise.nom_fr}>
       <div className="flex flex-col gap-4" data-testid="catalogue-detail-content">
-        <div className="flex items-start gap-3">
-          <MiniSilhouette exercise={exercise} />
-          <div className="flex flex-1 flex-col gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <PatternIcon pattern={exercise.pattern} size="sm" />
-              <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
-                {extypeLabel(exercise.type)}
-              </span>
-              <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
-                {chargeLabel(exercise.charge)}
-              </span>
-              <span className="text-xs text-anthracite-300">
-                {patternLabel(exercise.pattern)}
-              </span>
-            </div>
-            <p
-              className="text-sm leading-snug text-anthracite-300"
-              data-testid="catalogue-detail-description"
-            >
-              {buildDescription(exercise)}
-            </p>
-          </div>
+        <div className="flex justify-center">
+          <AnatomicalSilhouette
+            highlights={highlights}
+            view="both"
+            className="h-56 w-auto"
+            testId="catalogue-detail-silhouette"
+          />
         </div>
 
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <PatternIcon pattern={exercise.pattern} size="sm" />
+          <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
+            {extypeLabel(exercise.type)}
+          </span>
+          <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
+            {patternLabel(exercise.pattern)}
+          </span>
+          <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
+            {chargeLabel(exercise.charge)}
+          </span>
+        </div>
+
+        <p
+          className="text-sm leading-relaxed text-anthracite-100"
+          data-testid="catalogue-detail-description"
+        >
+          {buildDescription(exercise)}
+        </p>
+
         {primaires.length > 0 && (
-          <div className="flex flex-col gap-1">
-            <span className="text-xs uppercase tracking-wide text-anthracite-300">
-              Muscles principaux
-            </span>
+          <Section label="Muscles principaux">
             <div className="flex flex-wrap gap-1" data-testid="catalogue-muscles-primaires">
               {primaires.map((m) => (
                 <span
@@ -77,14 +94,11 @@ export function CatalogueDetailSheet({
                 </span>
               ))}
             </div>
-          </div>
+          </Section>
         )}
 
         {synergistes.length > 0 && (
-          <div className="flex flex-col gap-1">
-            <span className="text-xs uppercase tracking-wide text-anthracite-300">
-              Synergistes
-            </span>
+          <Section label="Synergistes">
             <div className="flex flex-wrap gap-1" data-testid="catalogue-muscles-synergistes">
               {synergistes.map((m) => (
                 <span
@@ -95,14 +109,56 @@ export function CatalogueDetailSheet({
                 </span>
               ))}
             </div>
-          </div>
+          </Section>
+        )}
+
+        <Section label="Recommandations">
+          <ul
+            className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-anthracite-100"
+            data-testid="catalogue-recommandations"
+          >
+            <li className="flex justify-between">
+              <span className="text-anthracite-300">Reps hypertrophie</span>
+              <span className="tabular-nums">
+                {repsRange[0]}–{repsRange[1]}
+              </span>
+            </li>
+            {repsForce !== null && (
+              <li className="flex justify-between">
+                <span className="text-anthracite-300">Reps force</span>
+                <span className="tabular-nums">
+                  {repsForce[0]}–{repsForce[1]}
+                </span>
+              </li>
+            )}
+            <li className="flex justify-between">
+              <span className="text-anthracite-300">Repos</span>
+              <span className="tabular-nums">{formatRest(exercise.repos_s)}</span>
+            </li>
+            <li className="flex justify-between">
+              <span className="text-anthracite-300">Difficulté</span>
+              <span>{exercise.dif || '—'}</span>
+            </li>
+          </ul>
+        </Section>
+
+        {exercise.equip.length > 0 && (
+          <Section label="Matériel requis">
+            <div className="flex flex-wrap gap-1" data-testid="catalogue-equip">
+              {exercise.equip.map((e) => (
+                <span
+                  key={e}
+                  className="rounded border border-anthracite-700 px-2 py-0.5 text-xs text-anthracite-100"
+                >
+                  {equipLabel(e)}
+                </span>
+              ))}
+            </div>
+          </Section>
         )}
 
         {tags.length > 0 && (
-          <div className="flex flex-col gap-1">
-            <span className="text-xs uppercase tracking-wide text-anthracite-300">
-              Variantes
-            </span>
+          <Section label="Variantes">
             <div className="flex flex-wrap gap-1" data-testid="catalogue-tags">
               {tags.map(([key, label]) => (
                 <span
@@ -113,9 +169,24 @@ export function CatalogueDetailSheet({
                 </span>
               ))}
             </div>
-          </div>
+          </Section>
         )}
       </div>
     </Sheet>
+  );
+}
+
+function Section({
+  label,
+  children,
+}: {
+  readonly label: string;
+  readonly children: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-xs uppercase tracking-wide text-anthracite-300">{label}</span>
+      {children}
+    </div>
   );
 }

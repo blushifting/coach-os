@@ -51,7 +51,8 @@ function Legend() {
       <LegendDot color="bg-sang-800/60 border-sang-700" label="fait" />
       <LegendDot color="bg-anthracite-700 border-anthracite-600" label="prévue" />
       <LegendDot color="bg-anthracite-800/60 border-dashed border-anthracite-700" label="libre" />
-      <span className="ml-1">D = déload</span>
+      <LegendDot color="bg-amber-900/20 border-amber-800/60" label="repos recommandé" />
+      <span className="ml-1">D = déload · Z = repos recommandé</span>
     </div>
   );
 }

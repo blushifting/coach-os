@@ -145,7 +145,73 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
-## État courant — fin Conv #10c' (2026-05-16)
+## État courant — fin Conv #10d (2026-05-16)
+
+Bundle Catalogue + Séance + Planning (dump initial Azur + ajout en cours
+de conv) :
+
+- **Aliases / synonymes d'exos** : nouveau module
+  `src/data/exercise-synonymes.ts` (Record id → string[]) mergé au chargement
+  par `loadExercises()`. Couvre abréviations FR (DC, SDT, RDL, OHP, GHR, …)
+  et noms anglais usuels (bench press, squat, deadlift, …) sur ~110/141 exos.
+  `Catalog.search_fuzzy` retravaillé : fold accents (`developpé` ↔ `developpe`)
+  + match multi-tokens (tous les tokens doivent matcher au moins un champ).
+  Le JSON `src/data/exercises.json` reste inchangé — pas de duplication avec
+  `prototype/data/exercises.json`. Parité Python triviale (recherche UI-only).
+- **Élargissement `alternativeVariantsFor`** (`lib/calibration.ts`) : nouveau
+  paramètre `options.expand`. Mode strict (défaut) = même `subst`. Mode
+  élargi = tout exo qui partage ≥1 muscle primaire. Toggle "Voir tous les
+  exos ciblant ce muscle" dans `VariantPickerSheet` (sheet refactorée pour
+  porter `expanded` + `onToggleExpand` + `title` configurable).
+- **Fiche exo détaillée** : `CatalogueDetailSheet` et `ExerciseDetailSheet`
+  refondues sur la même structure — silhouette face+dos `view="both"`
+  centrée en tête (h-44 à h-56), chips type/pattern/charge, description,
+  muscles primaires (chips sang), synergistes (chips anthracite), bloc
+  "Recommandations" (reps hyper/force, repos, difficulté), matériel requis
+  (nouveau `equipLabel` dans `catalog-filter.ts` : 30 codes equip → labels
+  FR humains), variantes/tags.
+- **Remplacement d'exo pendant la séance** : nouvelle fonction
+  `replaceSessionItem` dans `engine/engine.ts` (recalcule la prescription
+  avec `buildPrescription` pour le nouvel exo, conserve le nb de séries),
+  exposée via `useEngine.replaceSessionExercise` (persiste via nouveau
+  `txUpdateSessionPlan`). `ExerciseDetailSheet` accepte un prop `onReplace`
+  optionnel → si fourni, affiche bouton "Remplacer cet exo" qui ouvre un
+  `VariantPickerSheet` (mode `expand=true` par défaut). `SessionRunner`
+  câble le callback. `SeancePage` utilise `useRef` pour préserver les
+  entries cochées des autres exos lors du remplacement.
+- **Lock séance hors-jour + mode preview** : sépare planification et
+  démarrage. Nouvelles fonctions `useEngine.planSessionForDay` (crée + persiste
+  status=planned, **ne charge pas** le store) et `loadPlannedSessionForRunner`
+  (lit depuis DB, refuse si `seance_date !== today`). `PlanDaySheet` refondue :
+  free-future → "Programmer" (pour jour futur) ou "Programmer et commencer"
+  (pour today) ; planned today → preview exos + "Démarrer la séance" ; planned
+  future → preview read-only + "Annuler la séance" ; planned past → "non faite"
+  + "Annuler". `generateAndStoreSession` (compat) = plan + load combinés.
+- **Annulation de séance planifiée** : nouveau `txCancelSession` (delete
+  row) + `useEngine.cancelPlannedSession`. Bouton "Annuler cette séance"
+  dans `PlanDaySheet` pour tout jour planned.
+- **Recommandations repos sur la vue semainière** : `CalendarDay` étendu
+  avec `restSuggested: boolean` + `recentMuscles: readonly string[]`.
+  `buildCalendarMatrix` reçoit un nouveau param optionnel `catalog: Catalog | null`
+  pour calculer les muscles primaires de la veille. Affichage dans `DayCell`
+  (overlay amber + lettre Z) pour les jours `free-future` dont la veille est
+  active. `PlanDaySheet` montre un avertissement "RestWarning" listant les
+  muscles travaillés hier.
+- Tests : **411 Vitest** verts (+15 nouveaux : 5 catalog search fuzzy aliases,
+  5 calibration alternativeVariantsFor expand/strict, 2 engine replaceSessionItem,
+  3 dashboard restSuggested). `npm run build` OK (27.8 kB CSS +1.3 / 664 kB JS
+  +21.6). Suite e2e Playwright **non relancée** dans cette conv (stratégie
+  "structurel touché en fin de conv seulement") — à valider en suivant si
+  régression remontée.
+- **API engine** Conv #10d (durable) : `engine.replaceSessionItem(plan, idx,
+  newExId, state, catalog) → SessionPlan` ; `db/transactions.txUpdateSessionPlan`,
+  `txCancelSession`.
+- **API useEngine** Conv #10d (durable) : `planSessionForDay`,
+  `loadPlannedSessionForRunner`, `replaceSessionExercise`, `cancelPlannedSession`.
+  `generateAndStoreSession` reste exposée (compat) mais c'est désormais une
+  composition `planSessionForDay + load` pour démarrage immédiat.
+
+## État Conv #10c' (2026-05-16) — archive
 
 Bug fix bundle suite retours d'usage post-#10c :
 

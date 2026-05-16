@@ -15,6 +15,8 @@
  */
 
 import type { UserState, WeeklyTemplate } from '@/engine/models';
+import { exercisePrimaires } from '@/engine/models';
+import type { Catalog } from '@/engine/catalog';
 import type { CycleRow, FeedbackRow, SessionRow } from '@/db/schema';
 
 export const CYCLE_LENGTH_WEEKS = 5;
@@ -180,6 +182,19 @@ export interface CalendarDay {
   readonly isDeload: boolean;
   readonly sessionLabel: string | null;
   readonly sessionId: number | null;
+  /**
+   * `true` si la veille (J-1) contient une séance planifiée ou faite. Sert
+   * d'indicateur "repos recommandé" sur la vue semainière (Conv #10d). Seuls
+   * les jours `free-future` exposent cet indicateur visuellement.
+   */
+  readonly restSuggested: boolean;
+  /**
+   * Muscles primaires travaillés la veille (J-1), si une séance y existe et
+   * que le catalog est fourni à `buildCalendarMatrix`. Vide sinon. Permet à
+   * `PlanDaySheet` d'afficher un avertissement "tu as travaillé X hier" et
+   * de suggérer une séance ciblant d'autres muscles.
+   */
+  readonly recentMuscles: readonly string[];
 }
 
 export interface CalendarMatrix {
@@ -203,6 +218,7 @@ export function buildCalendarMatrix(
   sessions: ReadonlyArray<Pick<SessionRow, 'seance_date' | 'status' | 'plan' | 'id'>>,
   feedbacks: ReadonlyArray<Pick<FeedbackRow, 'seance_date'>>,
   now: Date = new Date(),
+  catalog: Catalog | null = null,
 ): CalendarMatrix | null {
   const cycle = cycles.find((c) => c.cycle_index === state.cycle_index);
   if (cycle === undefined) return null;
@@ -215,14 +231,30 @@ export function buildCalendarMatrix(
   for (const f of feedbacks) feedbackDates.add(f.seance_date);
   const sessionByDate = new Map<
     string,
-    { status: string; label: string; id: number | null }
+    { status: string; label: string; id: number | null; plan: SessionRow['plan'] }
   >();
   for (const s of sessions) {
     sessionByDate.set(s.seance_date, {
       status: s.status,
       label: s.plan.label,
       id: s.id ?? null,
+      plan: s.plan,
     });
+  }
+
+  function musclesOfSession(plan: SessionRow['plan']): string[] {
+    if (catalog === null) return [];
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const item of plan.items) {
+      if (!catalog.has(item.exercise_id)) continue;
+      for (const m of exercisePrimaires(catalog.get(item.exercise_id))) {
+        if (seen.has(m)) continue;
+        seen.add(m);
+        out.push(m);
+      }
+    }
+    return out;
   }
 
   const weeks: CalendarDay[][] = [];
@@ -248,6 +280,19 @@ export function buildCalendarMatrix(
         status = isPast ? 'rest-past' : 'free-future';
       }
 
+      // Repos recommandé : si la veille a une séance prévue ou faite.
+      const prevDate = dateKey(addDays(date, -1));
+      const prevSess = sessionByDate.get(prevDate);
+      const prevHasFeedback = feedbackDates.has(prevDate);
+      const prevIsActive =
+        prevSess !== undefined &&
+        (prevSess.status === 'planned' ||
+          prevSess.status === 'completed' ||
+          prevHasFeedback);
+      const restSuggested = prevIsActive && status === 'free-future';
+      const recentMuscles =
+        prevIsActive && prevSess !== undefined ? musclesOfSession(prevSess.plan) : [];
+
       row.push({
         date: key,
         weekInCycle: w + 1,
@@ -257,6 +302,8 @@ export function buildCalendarMatrix(
         isDeload: w + 1 === DELOAD_WEEK_INDEX,
         sessionLabel,
         sessionId,
+        restSuggested,
+        recentMuscles,
       });
     }
     weeks.push(row);

@@ -416,4 +416,45 @@ describe('buildCalendarMatrix', () => {
     expect(todays).toHaveLength(1);
     expect(todays[0]!.date).toBe('2026-05-13');
   });
+
+  // Conv #10d — restSuggested
+  it('restSuggested=true sur un jour libre futur dont la veille est planifiée', () => {
+    const state = makeState({ cycle_index: 1 });
+    const cycles: CycleRow[] = [
+      { cycle_index: 1, start_date: '2026-05-11', end_date: null, programme_id: null, review: null },
+    ];
+    const sessions = [makeSession('2026-05-15', 'planned', 'Tirer')];
+    const m = buildCalendarMatrix(state, cycles, sessions, [], parseDateKey('2026-05-13'));
+    // 2026-05-16 = samedi (jour suivant le vendredi planifié)
+    const cell = m!.weeks[0]![5]!;
+    expect(cell.date).toBe('2026-05-16');
+    expect(cell.status).toBe('free-future');
+    expect(cell.restSuggested).toBe(true);
+  });
+
+  it('restSuggested=false si la veille n\'a pas de séance', () => {
+    const state = makeState({ cycle_index: 1 });
+    const cycles: CycleRow[] = [
+      { cycle_index: 1, start_date: '2026-05-11', end_date: null, programme_id: null, review: null },
+    ];
+    const m = buildCalendarMatrix(state, cycles, [], [], parseDateKey('2026-05-13'));
+    for (const cell of m!.weeks.flat()) {
+      expect(cell.restSuggested).toBe(false);
+    }
+  });
+
+  it('restSuggested=false si le jour est lui-même planned ou completed', () => {
+    const state = makeState({ cycle_index: 1 });
+    const cycles: CycleRow[] = [
+      { cycle_index: 1, start_date: '2026-05-11', end_date: null, programme_id: null, review: null },
+    ];
+    const sessions = [
+      makeSession('2026-05-15', 'planned', 'Tirer'),
+      makeSession('2026-05-16', 'planned', 'Pousser', 2),
+    ];
+    const m = buildCalendarMatrix(state, cycles, sessions, [], parseDateKey('2026-05-13'));
+    const cell = m!.weeks[0]![5]!; // 2026-05-16
+    expect(cell.status).toBe('planned');
+    expect(cell.restSuggested).toBe(false); // déjà planifié → pas de suggestion
+  });
 });

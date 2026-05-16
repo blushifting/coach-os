@@ -232,6 +232,71 @@ export function generateSession(
   };
 }
 
+/**
+ * Remplace l'exo à `itemIndex` d'un `SessionPlan` existant par `newExerciseId`,
+ * en recalculant la prescription (charges / reps / RPE) avec `buildPrescription`
+ * pour le nouvel exo et en conservant le nombre de séries.
+ *
+ * Mute `state` pour bootstrapper `state.e1rm[newExerciseId]` si absent (même
+ * logique que `generateSession`). Retourne un NOUVEAU `SessionPlan` — l'appelant
+ * persiste l'ancien `sessionId` avec ce nouveau plan.
+ *
+ * Origine Conv #10d : Azur veut pouvoir remplacer un exo pendant la séance
+ * si une machine n'est pas dispo. Plus permissif que la sélection initiale —
+ * le candidat peut venir d'un autre pattern (cf. `alternativeVariantsFor`
+ * mode `expand=true`).
+ */
+export function replaceSessionItem(
+  plan: SessionPlan,
+  itemIndex: number,
+  newExerciseId: string,
+  state: UserState,
+  catalog: Catalog,
+): SessionPlan {
+  if (itemIndex < 0 || itemIndex >= plan.items.length) {
+    throw new Error(`item_index=${itemIndex} hors plage [0, ${plan.items.length})`);
+  }
+  const newEx = catalog.get(newExerciseId);
+  const oldItem = plan.items[itemIndex]!;
+  const nSets = Math.max(1, oldItem.sets.length);
+
+  const e1rmTotal = bootstrapE1rmIfMissing(state, newEx);
+  if (!(newEx.id in state.e1rm)) {
+    state.e1rm[newEx.id] = e1rmTotal;
+  }
+  const prescription: SetPrescription = buildPrescription(
+    newEx, e1rmTotal, state.profile, state.current_week_in_cycle,
+    {
+      muscleGoals:
+        Object.keys(state.muscle_goals).length > 0 ? state.muscle_goals : null,
+      recoveryMode: state.recovery_mode,
+      state,
+    },
+  );
+  const newSets: SetPrescription[] = [];
+  for (let i = 0; i < nSets; i++) newSets.push(prescription);
+
+  const newItems = plan.items.map((it, i) =>
+    i === itemIndex ? { exercise_id: newEx.id, sets: newSets } : it,
+  );
+
+  // RPE moyen ré-agrégé (en cas de cible RPE différente entre exos).
+  const rpeAvg = newItems.length === 0
+    ? plan.rpe_target
+    : newItems.reduce((acc, it) => acc + (it.sets[0]?.rpe_target ?? plan.rpe_target), 0) /
+      newItems.length;
+
+  for (const m of exercisePrimaires(newEx)) {
+    state.last_used_for_muscle[m] = newEx.id;
+  }
+
+  return {
+    ...plan,
+    items: newItems,
+    rpe_target: rpeAvg,
+  };
+}
+
 // =============================================================================
 // 4. Génération d'une séance — voie legacy
 // =============================================================================

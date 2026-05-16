@@ -85,6 +85,41 @@ export async function txSaveSessionPlan(
 }
 
 // =============================================================================
+// Mise à jour d'un SessionPlan déjà persisté (Conv #10d : remplacement d'exo
+// en cours de séance).
+// =============================================================================
+
+export async function txUpdateSessionPlan(
+  sessionId: number,
+  plan: SessionPlan,
+  state: UserState,
+): Promise<void> {
+  const db = getDb();
+  await db.transaction('rw', [db.userState, db.sessions], async () => {
+    await db.sessions.update(sessionId, {
+      plan,
+      seance_date: plan.seance_date,
+      week_in_cycle: plan.week_in_cycle,
+      cycle_index: plan.cycle_index,
+    });
+    await putUserStateInTx(state);
+  });
+}
+
+// =============================================================================
+// Annulation d'une séance planifiée (Conv #10d).
+// Supprime la ligne `sessions` correspondante. Pas d'effet sur le blob
+// `userState` (les e1RM bootstrap éventuellement créés restent — bénins).
+// =============================================================================
+
+export async function txCancelSession(sessionId: number): Promise<void> {
+  const db = getDb();
+  await db.transaction('rw', [db.sessions], async () => {
+    await db.sessions.delete(sessionId);
+  });
+}
+
+// =============================================================================
 // Commit d'un feedback de séance (avec snapshot e1RM des exos touchés)
 // =============================================================================
 

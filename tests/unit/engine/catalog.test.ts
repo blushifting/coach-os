@@ -151,4 +151,31 @@ describe('Catalog.search_fuzzy', () => {
   it('renvoie vide si rien ne matche', () => {
     expect(cat.search_fuzzy('xyzzy_unknown_term', 10)).toEqual([]);
   });
+
+  // Conv #10d : enrichissement synonymes + fold accents + multi-tokens.
+
+  it('matche les synonymes injectés (DC → développé couché)', () => {
+    const res = cat.search_fuzzy('DC', 5);
+    expect(res.map((x) => x.id)).toContain('bench_bb');
+  });
+
+  it('matche bench press → développé couché barre', () => {
+    const res = cat.search_fuzzy('bench press', 5);
+    expect(res.map((x) => x.id)).toContain('bench_bb');
+  });
+
+  it('ignore les accents (developpe → développé)', () => {
+    const res = cat.search_fuzzy('developpe couche', 5);
+    expect(res.map((x) => x.id)).toContain('bench_bb');
+  });
+
+  it('match SDT → soulevé de terre', () => {
+    const res = cat.search_fuzzy('SDT', 5);
+    expect(res.map((x) => x.id)).toContain('deadlift_conv');
+  });
+
+  it('match RDL → romanian deadlift', () => {
+    const res = cat.search_fuzzy('RDL', 5);
+    expect(res.map((x) => x.id)).toContain('rdl_bb');
+  });
 });

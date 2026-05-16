@@ -87,6 +87,45 @@ export function tagLabel(tag: string): string | null {
   return TAG_LABEL_FR[tag] ?? null;
 }
 
+/** Code équipement (cf. `EQUIPMENT_CHIPS`) → libellé FR humain pour la fiche exo. */
+export const EQUIP_LABEL_FR: Record<string, string> = {
+  bb_oly: 'Barre olympique',
+  rack: 'Rack à squat',
+  db: 'Haltères',
+  bench_flat: 'Banc plat',
+  bench_incl: 'Banc inclinable',
+  bench_decl: 'Banc déclinable',
+  pull_bar: 'Barre de traction',
+  assisted_pullup: 'Machine de traction assistée',
+  dip_bar: 'Barres parallèles (dips)',
+  cable_low: 'Poulie basse',
+  cable_high: 'Poulie haute',
+  cable_double: 'Poulies doubles',
+  smith: 'Smith machine',
+  lat_pulldown: 'Tirage poulie haute',
+  seated_row: 'Tirage horizontal assis',
+  chest_press: 'Développé pectoraux machine',
+  pec_deck: 'Pec deck',
+  lateral_machine: 'Machine élévations latérales',
+  preacher: 'Banc Scott',
+  leg_press: 'Presse à cuisses',
+  hack_squat: 'Hack squat',
+  leg_curl_lying: 'Leg curl couché',
+  leg_curl_seated: 'Leg curl assis',
+  leg_extension: 'Leg extension',
+  glute_machine: 'Machine fessiers',
+  calf_standing: 'Mollets debout',
+  calf_seated: 'Mollets assis',
+  reverse_hyper: 'Reverse hyper',
+  glute_ham: 'Glute-ham raise',
+  back_extension: 'Banc à lombaires',
+  ab_wheel: 'Roue abdominale',
+};
+
+export function equipLabel(code: string): string {
+  return EQUIP_LABEL_FR[code] ?? code;
+}
+
 // =============================================================================
 // Description courte (1-2 phrases)
 // =============================================================================

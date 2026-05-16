@@ -10,6 +10,7 @@ import {
   endOfWeek,
   generateSession,
   recordFeedback,
+  replaceSessionItem,
   startUser,
 } from '@/engine/engine';
 import { generateCyclePlan } from '@/engine/cycle_planner';
@@ -101,5 +102,44 @@ describe('Engine e2e', () => {
     expect(state.cycle_index).toBe(cycleAvant + 1);
     expect(state.current_cycle_plan).not.toBeNull();
     expect(state.current_week_in_cycle).toBe(1);
+  });
+});
+
+// =============================================================================
+// Conv #10d — replaceSessionItem
+// =============================================================================
+
+describe('replaceSessionItem', () => {
+  it('remplace l\'exo à l\'index donné en conservant le nombre de séries', () => {
+    const p = profile();
+    const goals = bootstrapMuscleGoalsFromProfile(p, [
+      'pectoraux', 'dos_largeur', 'quadriceps', 'ischios',
+    ]);
+    const state = startUser(p, catalog, { muscleGoals: goals });
+    state.current_cycle_plan = generateCyclePlan(state, catalog);
+
+    const plan = generateSession(state, catalog, 0, '2026-01-05');
+    const oldItem = plan.items[0]!;
+    const nSets = oldItem.sets.length;
+    const replacementId = oldItem.exercise_id === 'bench_bb' ? 'bench_db' : 'bench_bb';
+
+    const newPlan = replaceSessionItem(plan, 0, replacementId, state, catalog);
+    expect(newPlan.items[0]!.exercise_id).toBe(replacementId);
+    expect(newPlan.items[0]!.sets.length).toBe(nSets);
+    // Les autres items sont inchangés
+    for (let i = 1; i < plan.items.length; i++) {
+      expect(newPlan.items[i]!.exercise_id).toBe(plan.items[i]!.exercise_id);
+    }
+    // L'ancien plan n'a pas muté (retour d'un NOUVEAU plan).
+    expect(plan.items[0]!.exercise_id).toBe(oldItem.exercise_id);
+  });
+
+  it('lève si itemIndex hors plage', () => {
+    const p = profile();
+    const goals = bootstrapMuscleGoalsFromProfile(p, ['pectoraux']);
+    const state = startUser(p, catalog, { muscleGoals: goals });
+    state.current_cycle_plan = generateCyclePlan(state, catalog);
+    const plan = generateSession(state, catalog, 0, '2026-01-05');
+    expect(() => replaceSessionItem(plan, 999, 'bench_bb', state, catalog)).toThrow();
   });
 });

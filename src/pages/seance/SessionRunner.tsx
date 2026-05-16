@@ -4,6 +4,7 @@ import { Card } from '@/components/Card';
 import { HelpButton } from '@/components/HelpButton';
 import type { Catalog } from '@/engine/catalog';
 import type { SessionPlan } from '@/engine/models';
+import { useEngine } from '@/hooks/useEngine';
 import {
   countDoneSets,
   countPlannedSets,
@@ -36,7 +37,8 @@ export function SessionRunner({
   onFinish,
   finishing,
 }: SessionRunnerProps) {
-  const [detailExId, setDetailExId] = useState<string | null>(null);
+  const engine = useEngine();
+  const [detail, setDetail] = useState<{ exerciseId: string; itemIndex: number } | null>(null);
   const done = countDoneSets(entries);
   const total = countPlannedSets(entries);
 
@@ -86,7 +88,7 @@ export function SessionRunner({
                     type="button"
                     aria-label={`Détail ${ex?.nom_fr ?? item.exercise_id}`}
                     data-testid={`btn-detail-${i}`}
-                    onClick={() => setDetailExId(item.exercise_id)}
+                    onClick={() => setDetail({ exerciseId: item.exercise_id, itemIndex: i })}
                     className="h-7 w-7 rounded-full bg-anthracite-700 text-xs text-anthracite-300 hover:text-white"
                   >
                     i
@@ -123,10 +125,20 @@ export function SessionRunner({
       </Button>
 
       <ExerciseDetailSheet
-        open={detailExId !== null}
-        exerciseId={detailExId}
+        open={detail !== null}
+        exerciseId={detail?.exerciseId ?? null}
         catalog={catalog}
-        onClose={() => setDetailExId(null)}
+        onClose={() => setDetail(null)}
+        onReplace={
+          detail === null
+            ? undefined
+            : async (newExId) => {
+                await engine.replaceSessionExercise({
+                  itemIndex: detail.itemIndex,
+                  newExerciseId: newExId,
+                });
+              }
+        }
       />
     </div>
   );

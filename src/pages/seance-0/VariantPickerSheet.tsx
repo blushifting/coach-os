@@ -6,25 +6,49 @@ interface VariantPickerSheetProps {
   readonly open: boolean;
   readonly currentExerciseId: string;
   readonly alternatives: readonly Exercise[];
+  readonly expanded: boolean;
+  readonly onToggleExpand: () => void;
   readonly onPick: (newExerciseId: string) => void;
   readonly onClose: () => void;
+  /** Étiquette du sheet — "Changer de variante" en séance 0, "Remplacer l'exercice" en séance. */
+  readonly title?: string;
 }
 
 export function VariantPickerSheet({
   open,
   currentExerciseId,
   alternatives,
+  expanded,
+  onToggleExpand,
   onPick,
   onClose,
+  title = 'Changer de variante',
 }: VariantPickerSheetProps) {
   return (
-    <Sheet open={open} onClose={onClose} title="Changer de variante">
+    <Sheet open={open} onClose={onClose} title={title}>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <span className="text-xs text-anthracite-300">
+          {expanded
+            ? 'Tous les exos ciblant le(s) même(s) muscle(s).'
+            : 'Variantes proches (même mouvement).'}
+        </span>
+        <button
+          type="button"
+          onClick={onToggleExpand}
+          data-testid="btn-toggle-expand"
+          className="rounded-lg border border-anthracite-700 px-2 py-1 text-xs text-anthracite-300 hover:text-white"
+        >
+          {expanded ? 'Voir seulement les variantes' : 'Voir tous les exos ciblant ce muscle'}
+        </button>
+      </div>
       {alternatives.length === 0 ? (
         <p
           className="text-sm text-anthracite-300"
           data-testid="variant-picker-empty"
         >
-          Aucune variante alternative dispo avec ton équipement.
+          {expanded
+            ? 'Aucun remplaçant ne correspond à ton équipement.'
+            : 'Aucune variante alternative dispo avec ton équipement.'}
         </p>
       ) : (
         <ul className="max-h-[60vh] overflow-y-auto" data-testid="variant-picker-list">

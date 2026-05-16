@@ -14,6 +14,9 @@ const STATUS_BASE: Record<CalendarDay['status'], string> = {
   'free-future': 'bg-anthracite-800/60 border-dashed border-anthracite-700 text-anthracite-300',
 };
 
+const REST_SUGGESTED_OVERLAY =
+  'bg-amber-900/20 border-amber-800/60 text-amber-100';
+
 const STATUS_BADGE_LABEL: Record<CalendarDay['status'], string> = {
   completed: 'fait',
   planned: 'prévue',
@@ -34,10 +37,12 @@ export function DayCell({ day, onClick }: DayCellProps) {
       className={cn(
         'flex aspect-square flex-col items-center justify-center gap-0.5 rounded-lg border text-xs transition active:scale-95',
         STATUS_BASE[day.status],
+        day.restSuggested && REST_SUGGESTED_OVERLAY,
         day.isToday && 'ring-2 ring-sang-500',
         day.isDeload && 'opacity-90',
       )}
-      aria-label={`${day.date} — ${STATUS_BADGE_LABEL[day.status] || (day.isDeload ? 'déload' : 'repos')}`}
+      data-rest-suggested={day.restSuggested ? 'true' : 'false'}
+      aria-label={`${day.date} — ${STATUS_BADGE_LABEL[day.status] || (day.restSuggested ? 'repos recommandé' : day.isDeload ? 'déload' : 'repos')}`}
     >
       <span className="text-[10px] uppercase tracking-wide leading-none">
         {WEEKDAY_LABELS[day.dayOfWeek]}
@@ -45,6 +50,9 @@ export function DayCell({ day, onClick }: DayCellProps) {
       <span className="text-sm font-semibold tabular-nums leading-none">{dayOfMonth}</span>
       {day.isDeload && day.status !== 'completed' && (
         <span className="text-[9px] uppercase tracking-wide text-sang-500 leading-none">D</span>
+      )}
+      {day.restSuggested && !day.isDeload && (
+        <span className="text-[9px] uppercase tracking-wide text-amber-400 leading-none">Z</span>
       )}
     </button>
   );
