@@ -1,9 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="kotsh">
   <rect width="512" height="512" fill="#0e0f12"/>
-  <g transform="translate(256 256) scale(0.7) translate(-256 -256)" fill="none" stroke="#e7e9ed" stroke-width="56" stroke-linecap="round" stroke-linejoin="round">
-    <line x1="172" y1="128" x2="172" y2="384"/>
-    <line x1="172" y1="256" x2="356" y2="128"/>
-    <line x1="172" y1="256" x2="356" y2="384"/>
+  <g transform="translate(256 256) scale(0.7) translate(-256 -256)">
+    <circle cx="356" cy="128" r="54" fill="#7a1a25"/>
+    <g fill="none" stroke="#e7e9ed" stroke-width="56" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="172" y1="128" x2="172" y2="384"/>
+      <polyline points="172,256 291,192 356,128"/>
+      <line x1="172" y1="256" x2="356" y2="384"/>
+    </g>
   </g>
-  <circle cx="326" cy="346" r="10" fill="#7a1a25"/>
 </svg>
