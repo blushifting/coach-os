@@ -130,7 +130,7 @@ export function EditGoalsSheet({
     <Sheet open={open} onClose={onClose} title="Modifier mes objectifs">
       <div className="max-h-[75dvh] overflow-y-auto pr-1">
         <div className="flex flex-col gap-4">
-          <p className="text-sm text-anthracite-500">
+          <p className="text-sm text-anthracite-300">
             Réorganise tes muscles prioritaires (glisser-déposer) et change leur
             objectif. Les muscles d'équilibre sont recomposés automatiquement.
           </p>
@@ -140,7 +140,7 @@ export function EditGoalsSheet({
               <span className="text-sm font-medium text-white">
                 Mes priorités
               </span>
-              <span className="text-xs text-anthracite-500">
+              <span className="text-xs text-anthracite-300">
                 {priorities.length} sélectionné{priorities.length > 1 ? 's' : ''}
               </span>
             </div>
@@ -148,7 +148,7 @@ export function EditGoalsSheet({
             {priorities.length === 0 ? (
               <div
                 data-testid="profil-goals-empty"
-                className="rounded-lg border border-dashed border-anthracite-700 px-3 py-6 text-center text-sm text-anthracite-500"
+                className="rounded-lg border border-dashed border-anthracite-700 px-3 py-6 text-center text-sm text-anthracite-300"
               >
                 Aucun muscle prioritaire. Ajoute-en ci-dessous.
               </div>
@@ -195,7 +195,7 @@ export function EditGoalsSheet({
                     data-testid={`profil-goal-add-${m}`}
                     className={cn(
                       'rounded-full border border-anthracite-700 bg-anthracite-900 px-3 py-1.5',
-                      'text-xs font-medium text-anthracite-500 transition hover:text-white',
+                      'text-xs font-medium text-anthracite-300 transition hover:text-white',
                     )}
                   >
                     + {muscleLabel(m)}
@@ -276,7 +276,7 @@ function SortableGoalRow({
           {...listeners}
           aria-label="Déplacer"
           data-testid={`profil-goal-drag-${priority.muscle}`}
-          className="flex h-9 w-9 cursor-grab items-center justify-center rounded-lg text-anthracite-500 hover:text-white active:cursor-grabbing"
+          className="flex h-9 w-9 cursor-grab items-center justify-center rounded-lg text-anthracite-300 hover:text-white active:cursor-grabbing"
         >
           ⋮⋮
         </button>
@@ -291,7 +291,7 @@ function SortableGoalRow({
           onClick={onRemove}
           aria-label="Retirer"
           data-testid={`profil-goal-remove-${priority.muscle}`}
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-anthracite-500 hover:text-sang-500"
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-anthracite-300 hover:text-sang-500"
         >
           ✕
         </button>
@@ -307,7 +307,7 @@ function SortableGoalRow({
               'flex-1 rounded-lg border px-2 py-1 text-[11px] font-medium transition',
               priority.objective === obj
                 ? 'border-sang-600 bg-sang-900/30 text-white'
-                : 'border-anthracite-700 bg-anthracite-800 text-anthracite-500 hover:text-white',
+                : 'border-anthracite-700 bg-anthracite-800 text-anthracite-300 hover:text-white',
             )}
           >
             {objectiveLabel(obj)}

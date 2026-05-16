@@ -29,7 +29,7 @@ export function TabBar() {
               className={({ isActive }) =>
                 cn(
                   'flex h-full w-full items-center justify-center text-xs font-medium transition',
-                  isActive ? 'text-sang-500' : 'text-anthracite-500 hover:text-white',
+                  isActive ? 'text-sang-500' : 'text-anthracite-300 hover:text-white',
                 )
               }
             >

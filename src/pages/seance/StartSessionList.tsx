@@ -25,7 +25,7 @@ export function StartSessionList({
   if (plan === null) {
     return (
       <Card data-testid="no-plan-card">
-        <p className="text-sm text-anthracite-500">
+        <p className="text-sm text-anthracite-300">
           Aucun programme posé pour le moment.
         </p>
       </Card>
@@ -42,7 +42,7 @@ export function StartSessionList({
     <Card className="flex flex-col gap-3" data-testid="start-session-list">
       <header className="flex flex-col gap-0.5">
         <h2 className="text-sm font-semibold text-white">Démarrer une séance</h2>
-        <p className="text-xs text-anthracite-500">
+        <p className="text-xs text-anthracite-300">
           Choisis le jour à faire — pas forcément dans l'ordre.
         </p>
       </header>
@@ -60,7 +60,7 @@ export function StartSessionList({
               <span className="flex w-full items-center justify-between">
                 <span>{c.label}</span>
                 {c.doneCountThisWeek > 0 && (
-                  <span className="text-xs text-anthracite-500">
+                  <span className="text-xs text-anthracite-300">
                     fait {c.doneCountThisWeek > 1 ? `×${c.doneCountThisWeek}` : ''} cette sem.
                   </span>
                 )}

@@ -41,7 +41,7 @@ export function Step4Program({ draft, onChange }: Step4Props) {
   return (
     <div className="flex flex-col gap-4 p-4">
       <h1 className="text-xl font-semibold text-white">Choix du programme</h1>
-      <p className="text-sm text-anthracite-500">
+      <p className="text-sm text-anthracite-300">
         Pars sur un programme guidé éprouvé ou laisse l'app générer un programme
         custom adapté à tes muscles cibles.
       </p>
@@ -55,7 +55,7 @@ export function Step4Program({ draft, onChange }: Step4Props) {
         onSelect={() => onChange({ programmeId: null })}
       />
 
-      <div className="mt-2 text-xs uppercase tracking-wider text-anthracite-500">
+      <div className="mt-2 text-xs uppercase tracking-wider text-anthracite-300">
         Programmes guidés
       </div>
 
@@ -130,8 +130,8 @@ function ProgramRow({
         </div>
         <div className="flex-1">
           <div className="text-sm font-semibold text-white">{title}</div>
-          <div className="text-xs text-anthracite-500">{subtitle}</div>
-          <div className="mt-1 text-[11px] text-anthracite-500">{meta}</div>
+          <div className="text-xs text-anthracite-300">{subtitle}</div>
+          <div className="mt-1 text-[11px] text-anthracite-300">{meta}</div>
           {warning ? (
             <div className="mt-2 rounded-lg border border-sang-700/60 bg-sang-900/20 px-2 py-1 text-[11px] text-sang-500">
               ⚠ {warning}

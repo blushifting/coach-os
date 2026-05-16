@@ -23,7 +23,7 @@ export function VolumeView({ series }: VolumeViewProps) {
   if (series.length === 0) {
     return (
       <Card data-testid="volume-empty">
-        <p className="text-sm text-anthracite-500">
+        <p className="text-sm text-anthracite-300">
           Aucune donnée de volume — termine une séance pour voir tes barres.
         </p>
       </Card>
@@ -49,7 +49,7 @@ export function VolumeView({ series }: VolumeViewProps) {
       <Card padded={false} className="overflow-hidden">
         <div className="grid grid-cols-[110px_1fr] items-center gap-x-3 gap-y-2 p-3">
           <div />
-          <div className="flex justify-between text-[9px] text-anthracite-500">
+          <div className="flex justify-between text-[9px] text-anthracite-300">
             {weekLabels.map((lbl, i) => (
               <span key={i}>{lbl}</span>
             ))}
@@ -61,7 +61,7 @@ export function VolumeView({ series }: VolumeViewProps) {
         </div>
       </Card>
 
-      <p className="text-[10px] text-anthracite-500">
+      <p className="text-[10px] text-anthracite-300">
         Bande grise = cible <span className="font-medium text-anthracite-400">V_min → V_max</span>.
         Une barre dans la zone grise = volume idéal. Sous : sous-dosé. Au-dessus : sur-volume.
       </p>

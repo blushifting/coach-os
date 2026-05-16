@@ -27,7 +27,7 @@ export function SetInput({ index, entry, onChange }: SetInputProps) {
           : 'border-anthracite-700 bg-anthracite-900',
       )}
     >
-      <span className="text-xs text-anthracite-500">S{index + 1}</span>
+      <span className="text-xs text-anthracite-300">S{index + 1}</span>
 
       <NumField
         testId={`input-reps-${index}`}
@@ -47,7 +47,7 @@ export function SetInput({ index, entry, onChange }: SetInputProps) {
         onChange={(v) => onChange({ load_kg: v })}
       />
 
-      <label className="flex flex-col gap-0.5 text-[10px] uppercase tracking-wide text-anthracite-500">
+      <label className="flex flex-col gap-0.5 text-[10px] uppercase tracking-wide text-anthracite-300">
         Effort
         <select
           data-testid={`input-rpe-${index}`}
@@ -72,7 +72,7 @@ export function SetInput({ index, entry, onChange }: SetInputProps) {
           'flex h-8 w-8 items-center justify-center rounded-full transition active:scale-95',
           entry.done
             ? 'bg-sang-700 text-white'
-            : 'bg-anthracite-700 text-anthracite-500 hover:text-white',
+            : 'bg-anthracite-700 text-anthracite-300 hover:text-white',
         )}
       >
         ✓
@@ -92,7 +92,7 @@ interface NumFieldProps {
 
 function NumField({ testId, label, value, step, min, onChange }: NumFieldProps) {
   return (
-    <label className="flex flex-col gap-0.5 text-[10px] uppercase tracking-wide text-anthracite-500">
+    <label className="flex flex-col gap-0.5 text-[10px] uppercase tracking-wide text-anthracite-300">
       {label}
       <input
         data-testid={testId}

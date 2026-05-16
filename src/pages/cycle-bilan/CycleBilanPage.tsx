@@ -29,14 +29,14 @@ export default function CycleBilanPage() {
         <h1 className="text-xl font-semibold text-white">
           {review === null ? 'Bilan de cycle' : `Bilan du cycle ${review.cycle_index}`}
         </h1>
-        <p className="text-sm text-anthracite-500">
+        <p className="text-sm text-anthracite-300">
           Récap de ton cycle, puis choisis la suite.
         </p>
       </header>
 
       {review === null ? (
         <Card data-testid="bilan-empty">
-          <p className="text-sm text-anthracite-500">
+          <p className="text-sm text-anthracite-300">
             Aucun bilan disponible pour le moment. Termine un cycle complet pour
             voir s'afficher tes plafonds, PR, et l'adhérence.
           </p>
@@ -74,7 +74,7 @@ function ReviewKeyMetrics({ review }: { review: CycleReview }) {
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-xs uppercase tracking-wide text-anthracite-500">{label}</span>
+      <span className="text-xs uppercase tracking-wide text-anthracite-300">{label}</span>
       <span className="text-lg font-semibold text-white tabular-nums">{value}</span>
     </div>
   );
@@ -86,7 +86,7 @@ function ReviewPlafonds({ review }: { review: CycleReview }) {
     return (
       <Card data-testid="bilan-plafonds">
         <h2 className="mb-1 text-sm font-semibold text-white">Plafonds</h2>
-        <p className="text-xs text-anthracite-500">Aucune variation enregistrée.</p>
+        <p className="text-xs text-anthracite-300">Aucune variation enregistrée.</p>
       </Card>
     );
   }
@@ -100,14 +100,14 @@ function ReviewPlafonds({ review }: { review: CycleReview }) {
             className="flex items-center justify-between text-sm"
             data-testid={`plafond-${exId}`}
           >
-            <span className="text-anthracite-500">{exId}</span>
+            <span className="text-anthracite-300">{exId}</span>
             <span
               className={
                 delta > 0
                   ? 'tabular-nums text-white'
                   : delta < 0
                   ? 'tabular-nums text-sang-500'
-                  : 'tabular-nums text-anthracite-500'
+                  : 'tabular-nums text-anthracite-300'
               }
             >
               {delta > 0 ? '+' : ''}
@@ -144,7 +144,7 @@ function MuscleRow({
   if (muscles.length === 0) return null;
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-xs uppercase tracking-wide text-anthracite-500">{label}</span>
+      <span className="text-xs uppercase tracking-wide text-anthracite-300">{label}</span>
       <div className="flex flex-wrap gap-1">
         {muscles.map((m) => (
           <span
@@ -167,7 +167,7 @@ function ReviewWarnings({ review }: { review: CycleReview }) {
   return (
     <Card data-testid="bilan-warnings" className="border-sang-700 bg-sang-900/30">
       <h2 className="mb-1 text-sm font-semibold text-white">À noter</h2>
-      <ul className="list-inside list-disc text-xs text-anthracite-500">
+      <ul className="list-inside list-disc text-xs text-anthracite-300">
         {review.warnings.map((w, i) => (
           <li key={i}>{w}</li>
         ))}
@@ -195,7 +195,7 @@ function ReviewActions({ review }: { review: CycleReview }) {
   return (
     <Card data-testid="bilan-actions" className="flex flex-col gap-2">
       <h2 className="text-sm font-semibold text-white">Et maintenant ?</h2>
-      <p className="text-xs text-anthracite-500">Suggestion du moteur : {suggested}.</p>
+      <p className="text-xs text-anthracite-300">Suggestion du moteur : {suggested}.</p>
       <div className="mt-2 flex flex-col gap-2">
         <Button
           variant="primary"

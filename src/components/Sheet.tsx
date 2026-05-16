@@ -43,7 +43,7 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
               type="button"
               onClick={onClose}
               aria-label="Fermer"
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-anthracite-800 text-anthracite-500 hover:text-white"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-anthracite-800 text-anthracite-300 hover:text-white"
             >
               ×
             </button>

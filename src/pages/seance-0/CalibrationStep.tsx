@@ -135,7 +135,7 @@ export function CalibrationStep({
       data-testid="calibration-step"
       data-exercise-id={currentEx.id}
     >
-      <div className="text-xs uppercase tracking-wide text-anthracite-500">
+      <div className="text-xs uppercase tracking-wide text-anthracite-300">
         Exo {progress.index} / {progress.total}
       </div>
       <h2 className="text-xl font-semibold text-white">{currentEx.nom_fr}</h2>
@@ -166,7 +166,7 @@ export function CalibrationStep({
               'rounded-lg px-3 py-2 text-sm font-medium transition disabled:opacity-40 ' +
               (mode === 'known'
                 ? 'bg-sang-700 text-white'
-                : 'text-anthracite-500 hover:text-white')
+                : 'text-anthracite-300 hover:text-white')
             }
           >
             Je connais mon plafond
@@ -181,7 +181,7 @@ export function CalibrationStep({
               'rounded-lg px-3 py-2 text-sm font-medium transition ' +
               (mode === 'submax'
                 ? 'bg-sang-700 text-white'
-                : 'text-anthracite-500 hover:text-white')
+                : 'text-anthracite-300 hover:text-white')
             }
           >
             Je teste

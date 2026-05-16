@@ -33,7 +33,7 @@ export default function CataloguePage() {
   if (catalog === null) {
     return (
       <Card>
-        <p className="text-sm text-anthracite-500">Catalogue en chargement…</p>
+        <p className="text-sm text-anthracite-300">Catalogue en chargement…</p>
       </Card>
     );
   }
@@ -58,7 +58,7 @@ export default function CataloguePage() {
           placeholder="Rechercher (ex. développé, soulevé, squat…)"
           autoComplete="off"
           data-testid="catalogue-search"
-          className="w-full rounded-xl border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-sm text-white placeholder:text-anthracite-500 focus:border-sang-700 focus:outline-none"
+          className="w-full rounded-xl border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-sm text-white placeholder:text-anthracite-300 focus:border-sang-700 focus:outline-none"
         />
 
         <div className="flex items-center justify-between">
@@ -78,7 +78,7 @@ export default function CataloguePage() {
               </span>
             )}
           </button>
-          <div className="flex items-center gap-2 text-xs text-anthracite-500">
+          <div className="flex items-center gap-2 text-xs text-anthracite-300">
             <span data-testid="catalogue-count">{countLabel}</span>
             {active && (
               <button
@@ -96,7 +96,7 @@ export default function CataloguePage() {
 
       {results.length === 0 ? (
         <Card data-testid="catalogue-empty">
-          <p className="text-sm text-anthracite-500">
+          <p className="text-sm text-anthracite-300">
             Aucun exercice ne correspond à ces filtres. Essaie d'en retirer un ou
             de modifier la recherche.
           </p>

@@ -66,7 +66,7 @@ function renderBody(
 ) {
   if (day.status === 'completed') {
     return (
-      <p className="text-sm text-anthracite-500" data-testid="day-status-text">
+      <p className="text-sm text-anthracite-300" data-testid="day-status-text">
         Séance <strong className="text-white">{day.sessionLabel}</strong> faite.{' '}
         {day.isDeload && <span className="text-sang-500">(déload)</span>}
       </p>
@@ -74,7 +74,7 @@ function renderBody(
   }
   if (day.status === 'planned') {
     return (
-      <p className="text-sm text-anthracite-500" data-testid="day-status-text">
+      <p className="text-sm text-anthracite-300" data-testid="day-status-text">
         Séance <strong className="text-white">{day.sessionLabel}</strong> déjà
         programmée. Rends-toi sur l'onglet Séance pour la commencer.
       </p>
@@ -82,14 +82,14 @@ function renderBody(
   }
   if (day.status === 'skipped') {
     return (
-      <p className="text-sm text-anthracite-500" data-testid="day-status-text">
+      <p className="text-sm text-anthracite-300" data-testid="day-status-text">
         Séance sautée — pas d'action disponible ici.
       </p>
     );
   }
   if (day.status === 'rest-past') {
     return (
-      <p className="text-sm text-anthracite-500" data-testid="day-status-text">
+      <p className="text-sm text-anthracite-300" data-testid="day-status-text">
         Jour de repos passé. Aucune séance enregistrée.
       </p>
     );
@@ -97,14 +97,14 @@ function renderBody(
   // free-future
   if (cyclePlan === null || cyclePlan.days.length === 0) {
     return (
-      <p className="text-sm text-anthracite-500" data-testid="day-status-text">
+      <p className="text-sm text-anthracite-300" data-testid="day-status-text">
         Aucun programme posé pour le moment.
       </p>
     );
   }
   return (
     <div className="flex flex-col gap-2" data-testid="day-status-text">
-      <p className="text-sm text-anthracite-500">
+      <p className="text-sm text-anthracite-300">
         Choisis une séance à planifier ce jour
         {day.isDeload && <span className="text-sang-500"> (semaine de déload)</span>} :
       </p>

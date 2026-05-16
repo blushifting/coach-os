@@ -24,7 +24,7 @@ export function CyclesView({ items, catalog }: CyclesViewProps) {
   if (items.length === 0) {
     return (
       <Card data-testid="cycles-empty">
-        <p className="text-sm text-anthracite-500">
+        <p className="text-sm text-anthracite-300">
           Aucun cycle terminé pour le moment. Le premier bilan apparaîtra ici à
           la fin de ton cycle en cours.
         </p>
@@ -57,7 +57,7 @@ function CycleCard({ item, catalog }: CycleCardProps) {
     >
       <div className="flex flex-col gap-0.5">
         <span className="text-sm font-semibold text-white">{title}</span>
-        <span className="text-xs text-anthracite-500">
+        <span className="text-xs text-anthracite-300">
           {formatCycleDates(item.startDate, item.endDate)}
         </span>
       </div>
@@ -83,7 +83,7 @@ function CycleCard({ item, catalog }: CycleCardProps) {
 
       {item.plafondsTop.length > 0 && (
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] uppercase tracking-wide text-anthracite-500">
+          <span className="text-[10px] uppercase tracking-wide text-anthracite-300">
             Progressions plafonds
           </span>
           <ul className="flex flex-col gap-1">
@@ -96,7 +96,7 @@ function CycleCard({ item, catalog }: CycleCardProps) {
                 <span
                   className={cn(
                     'tabular-nums',
-                    delta > 0 ? 'text-emerald-400' : delta < 0 ? 'text-sang-500' : 'text-anthracite-500',
+                    delta > 0 ? 'text-emerald-400' : delta < 0 ? 'text-sang-500' : 'text-anthracite-300',
                   )}
                 >
                   {formatDelta(delta)} kg
@@ -120,7 +120,7 @@ interface MetricProps {
 function Metric({ label, value, delta }: MetricProps) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[10px] uppercase tracking-wide text-anthracite-500">
+      <span className="text-[10px] uppercase tracking-wide text-anthracite-300">
         {label}
       </span>
       <span className="text-sm font-semibold text-white tabular-nums">{value}</span>
@@ -132,7 +132,7 @@ function Metric({ label, value, delta }: MetricProps) {
               ? 'text-emerald-400'
               : delta < 0
                 ? 'text-sang-500'
-                : 'text-anthracite-500',
+                : 'text-anthracite-300',
           )}
         >
           {formatDelta(delta)} vs cycle préc.

@@ -43,7 +43,7 @@ export function SessionRunner({
     <div className="flex flex-col gap-3" data-testid="session-runner">
       <Card data-testid="session-progress" className="flex items-center justify-between">
         <div className="flex flex-col gap-0.5">
-          <span className="text-xs uppercase tracking-wide text-anthracite-500">
+          <span className="text-xs uppercase tracking-wide text-anthracite-300">
             Séance — {plan.label}
           </span>
           <span className="flex items-center gap-1.5 text-sm text-white">
@@ -52,7 +52,7 @@ export function SessionRunner({
           </span>
         </div>
         <div className="flex flex-col items-end gap-0.5">
-          <span className="text-xs text-anthracite-500">Séries</span>
+          <span className="text-xs text-anthracite-300">Séries</span>
           <span className="tabular-nums text-white">
             {done} / {total}
           </span>
@@ -77,7 +77,7 @@ export function SessionRunner({
                     <span className="text-sm font-semibold text-white">
                       {ex?.nom_fr ?? item.exercise_id}
                     </span>
-                    <span className="text-xs text-anthracite-500">
+                    <span className="text-xs text-anthracite-300">
                       {doneCount}/{entrySets.length} séries — repos {item.sets[0]?.rest_s ?? 0}s
                     </span>
                   </div>
@@ -86,7 +86,7 @@ export function SessionRunner({
                     aria-label={`Détail ${ex?.nom_fr ?? item.exercise_id}`}
                     data-testid={`btn-detail-${i}`}
                     onClick={() => setDetailExId(item.exercise_id)}
-                    className="h-7 w-7 rounded-full bg-anthracite-700 text-xs text-anthracite-500 hover:text-white"
+                    className="h-7 w-7 rounded-full bg-anthracite-700 text-xs text-anthracite-300 hover:text-white"
                   >
                     i
                   </button>

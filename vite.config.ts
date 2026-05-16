@@ -19,8 +19,8 @@ export default defineConfig({
         id: '/coach-os/',
         scope: '/coach-os/',
         start_url: '/coach-os/',
-        name: 'kotsh',
-        short_name: 'kotsh',
+        name: 'Kotsh',
+        short_name: 'Kotsh',
         description:
           "Coach de musculation autorégulée par RPE — 100 % local, hors-ligne.",
         lang: 'fr',

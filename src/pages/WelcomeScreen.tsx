@@ -78,7 +78,7 @@ export default function WelcomeScreen() {
         />
         <div className="flex flex-col gap-4">
           <h1 className="text-4xl font-semibold tracking-tight text-white">
-            kotsh
+            Kotsh
           </h1>
           <p className="text-lg font-medium text-anthracite-100">
             Ta muscu, ajustée à ton effort réel.
@@ -112,7 +112,7 @@ export default function WelcomeScreen() {
               Installer l'app
             </Button>
             <p className="text-xs text-anthracite-400">
-              kotsh fonctionne mieux installée sur ton téléphone.
+              Kotsh fonctionne mieux installée sur ton téléphone.
             </p>
           </>
         )}
@@ -121,7 +121,7 @@ export default function WelcomeScreen() {
       <Sheet
         open={showIOSHelp}
         onClose={() => setShowIOSHelp(false)}
-        title="Installer kotsh sur iPhone"
+        title="Installer Kotsh sur iPhone"
       >
         <ol className="space-y-3 text-sm text-anthracite-200">
           <li>
@@ -141,7 +141,7 @@ export default function WelcomeScreen() {
           <li>
             <span className="font-semibold text-white">3.</span> Touche{' '}
             <span className="font-semibold text-white">Ajouter</span>, puis
-            ouvre l'icône kotsh depuis ton écran d'accueil.
+            ouvre l'icône Kotsh depuis ton écran d'accueil.
           </li>
         </ol>
         <p className="mt-4 text-xs text-anthracite-400">
@@ -152,7 +152,7 @@ export default function WelcomeScreen() {
       <Sheet
         open={showGenericHelp}
         onClose={() => setShowGenericHelp(false)}
-        title="Installer kotsh"
+        title="Installer Kotsh"
       >
         <ol className="space-y-3 text-sm text-anthracite-200">
           <li>
@@ -172,7 +172,7 @@ export default function WelcomeScreen() {
           </li>
           <li>
             <span className="font-semibold text-white">3.</span> Confirme,
-            puis ouvre kotsh depuis ton écran d'accueil.
+            puis ouvre Kotsh depuis ton écran d'accueil.
           </li>
         </ol>
       </Sheet>

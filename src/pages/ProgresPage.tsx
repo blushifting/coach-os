@@ -78,7 +78,7 @@ export default function ProgresPage() {
               'flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition',
               tab === t.id
                 ? 'bg-anthracite-700 text-white'
-                : 'text-anthracite-500 hover:text-white',
+                : 'text-anthracite-300 hover:text-white',
             )}
           >
             {t.label}

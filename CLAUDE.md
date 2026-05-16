@@ -145,7 +145,40 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
-## État courant — fin Conv #10b (2026-05-16)
+## État courant — fin Conv #10b' (2026-05-16)
+
+- **Marque "Kotsh" capitalisée** dans toute l'UI : manifest PWA
+  (`vite.config.ts` name/short_name), `index.html` title +
+  apple-mobile-web-app-title, fallback Header, h1 WelcomeScreen, titres
+  sheets d'installation, body glossaire (rpe), message d'erreur import.
+  Le repo + identifiants internes (`coach-os`, `useCoachOsStore`,
+  Dexie) restent inchangés (nom de dev).
+- **Palette éclaircie** : `text-anthracite-500` (#454a52, gris foncé
+  difficile à lire) remplacé par `text-anthracite-300` (#9aa0aa) sur
+  les 126 occurrences du codebase. Aucune autre couleur palette
+  modifiée — `anthracite-500` n'était utilisé qu'en texte.
+- **Texture / relief** :
+  - **Card** : bordure passe de `border-anthracite-700` à
+    `border-anthracite-600/60` (un poil plus claire et translucide),
+    shadow inset blanc renforcé (0.03 → 0.06) + ajout d'un shadow
+    extérieur 1px noir 40 % pour détacher les cards du fond.
+  - **Button primary** : ajout d'un ring sang
+    (`ring-1 ring-sang-500/40`) + shadow inset blanc 12 % +
+    shadow extérieur noir 40 % → relief net, contourage visible.
+  - **Button secondary** : bordure passe de `anthracite-600` à
+    `anthracite-500` + petit inset 5 %.
+  - **Button danger** : ring sang-600/40.
+  - **Grain SVG** : opacité 0.6 → 0.9 dans `index.css` body::before
+    (la texture du fond devient juste perceptible consciemment).
+- Tests : skip Vitest/e2e car cosmétique pur (renommages + classes
+  Tailwind). `npm run build` OK (26.5 kB CSS + 639 kB JS, +0.3 kB CSS).
+- **Stratégie tests** (durable) : modifs cosmétiques → build seul ;
+  modifs comportementales → Vitest + build ; suite e2e complète
+  uniquement en toute fin de conv si structurel touché.
+
+---
+
+## État Conv #10b (2026-05-16) — archive
 
 - **Vocabulaire grand public + bulles d'aide systématiques.**
 - Mapping UI retenu (le code interne garde `rpe`/`e1rm` — c'est seulement

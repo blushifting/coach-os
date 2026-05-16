@@ -9,9 +9,9 @@ interface DayCellProps {
 const STATUS_BASE: Record<CalendarDay['status'], string> = {
   completed: 'bg-sang-800/60 border-sang-700 text-white',
   planned: 'bg-anthracite-700 border-anthracite-600 text-white',
-  skipped: 'bg-anthracite-900 border-anthracite-800 text-anthracite-500 line-through',
-  'rest-past': 'bg-anthracite-900 border-anthracite-800 text-anthracite-500',
-  'free-future': 'bg-anthracite-800/60 border-dashed border-anthracite-700 text-anthracite-500',
+  skipped: 'bg-anthracite-900 border-anthracite-800 text-anthracite-300 line-through',
+  'rest-past': 'bg-anthracite-900 border-anthracite-800 text-anthracite-300',
+  'free-future': 'bg-anthracite-800/60 border-dashed border-anthracite-700 text-anthracite-300',
 };
 
 const STATUS_BADGE_LABEL: Record<CalendarDay['status'], string> = {

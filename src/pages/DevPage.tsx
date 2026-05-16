@@ -11,7 +11,7 @@ import { HELP_GLOSSARY } from '@/lib/help-glossary';
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-3">
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-anthracite-500">{title}</h2>
+      <h2 className="text-xs font-semibold uppercase tracking-wider text-anthracite-300">{title}</h2>
       {children}
     </section>
   );
@@ -27,7 +27,7 @@ export default function DevPage() {
     <div className="space-y-8 pb-8">
       <header>
         <h1 className="text-2xl font-semibold">Dev — catalogue composants</h1>
-        <p className="mt-1 text-sm text-anthracite-500">
+        <p className="mt-1 text-sm text-anthracite-300">
           Page accessible en dev uniquement. Sert de référence visuelle / QA.
         </p>
       </header>
@@ -74,7 +74,7 @@ export default function DevPage() {
           </Button>
         </div>
         <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Titre du Sheet">
-          <p className="text-sm text-anthracite-500">
+          <p className="text-sm text-anthracite-300">
             Contenu du drawer. Glisse depuis le bas, ferme au clic extérieur ou Échap.
           </p>
         </Sheet>

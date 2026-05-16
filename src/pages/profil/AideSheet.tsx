@@ -86,7 +86,7 @@ export function AideSheet({ open, onClose }: AideSheetProps) {
       <div className="max-h-[75dvh] overflow-y-auto pr-1">
         <div className="flex flex-col gap-5">
           <section data-testid="aide-tutos">
-            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wide text-anthracite-500">
+            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wide text-anthracite-300">
               Prise en main
             </h4>
             <div className="flex flex-col gap-2">
@@ -97,8 +97,8 @@ export function AideSheet({ open, onClose }: AideSheetProps) {
                   className="group rounded-xl border border-anthracite-700 bg-anthracite-900"
                 >
                   <summary className="cursor-pointer list-none px-3 py-2.5 text-sm font-medium text-white">
-                    <span className="mr-2 text-anthracite-500 group-open:hidden">▸</span>
-                    <span className="mr-2 hidden text-anthracite-500 group-open:inline">
+                    <span className="mr-2 text-anthracite-300 group-open:hidden">▸</span>
+                    <span className="mr-2 hidden text-anthracite-300 group-open:inline">
                       ▾
                     </span>
                     {t.title}
@@ -112,7 +112,7 @@ export function AideSheet({ open, onClose }: AideSheetProps) {
           </section>
 
           <section data-testid="aide-glossaire">
-            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wide text-anthracite-500">
+            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wide text-anthracite-300">
               Glossaire
             </h4>
             <div className="flex flex-col gap-2">

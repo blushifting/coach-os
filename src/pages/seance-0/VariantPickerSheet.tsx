@@ -21,7 +21,7 @@ export function VariantPickerSheet({
     <Sheet open={open} onClose={onClose} title="Changer de variante">
       {alternatives.length === 0 ? (
         <p
-          className="text-sm text-anthracite-500"
+          className="text-sm text-anthracite-300"
           data-testid="variant-picker-empty"
         >
           Aucune variante alternative dispo avec ton équipement.
@@ -38,7 +38,7 @@ export function VariantPickerSheet({
                 className="w-full rounded-xl border border-anthracite-700 bg-anthracite-800 px-4 py-3 text-left transition hover:border-sang-700 active:scale-[0.99] disabled:opacity-50"
               >
                 <div className="font-medium text-white">{alt.nom_fr}</div>
-                <div className="mt-0.5 text-xs text-anthracite-500">
+                <div className="mt-0.5 text-xs text-anthracite-300">
                   {alt.equip.length > 0 ? alt.equip.join(', ') : 'Poids du corps'}
                 </div>
               </button>

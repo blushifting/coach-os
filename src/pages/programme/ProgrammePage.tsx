@@ -68,7 +68,7 @@ export default function ProgrammePage() {
           <Card className="flex items-center justify-between border-sang-700 bg-sang-900/40">
             <div className="flex flex-col gap-0.5">
               <span className="text-sm font-semibold text-white">Cycle terminé</span>
-              <span className="text-xs text-anthracite-500">
+              <span className="text-xs text-anthracite-300">
                 Voir le bilan et choisir la suite
               </span>
             </div>
@@ -81,7 +81,7 @@ export default function ProgrammePage() {
 
       {dashboard.matrix === null ? (
         <Card data-testid="no-cycle-card">
-          <p className="text-sm text-anthracite-500">
+          <p className="text-sm text-anthracite-300">
             Le cycle n'est pas encore initialisé. Termine la séance 0 pour démarrer.
           </p>
         </Card>

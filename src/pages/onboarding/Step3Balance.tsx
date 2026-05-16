@@ -48,7 +48,7 @@ export function Step3Balance({ draft, onChange }: Step3Props) {
   return (
     <div className="flex flex-col gap-4 p-4">
       <h1 className="text-xl font-semibold text-white">Équilibre musculaire</h1>
-      <p className="text-sm text-anthracite-500">
+      <p className="text-sm text-anthracite-300">
         D'après tes priorités, on te suggère d'ajouter ces muscles en maintien
         (volume minimum) pour éviter les déséquilibres. Décoche ceux que tu ne
         veux pas travailler.
@@ -94,13 +94,13 @@ export function Step3Balance({ draft, onChange }: Step3Props) {
                         <span
                           className={cn(
                             'rounded-full border px-2 py-0.5 text-[10px] font-medium',
-                            'border-anthracite-600 bg-anthracite-800 text-anthracite-500',
+                            'border-anthracite-600 bg-anthracite-800 text-anthracite-300',
                           )}
                         >
                           {RULE_BADGES[reason.rule] ?? reason.rule}
                         </span>
                       </div>
-                      <p className="mt-1 text-xs text-anthracite-500">
+                      <p className="mt-1 text-xs text-anthracite-300">
                         {reason.text}
                       </p>
                     </div>

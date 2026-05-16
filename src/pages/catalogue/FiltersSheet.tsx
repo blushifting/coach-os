@@ -156,7 +156,7 @@ export function FiltersSheet({
 function Section({ title, children }: { readonly title: string; readonly children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-2">
-      <h4 className="text-xs uppercase tracking-wide text-anthracite-500">{title}</h4>
+      <h4 className="text-xs uppercase tracking-wide text-anthracite-300">{title}</h4>
       <div className="flex flex-wrap gap-1.5">{children}</div>
     </section>
   );

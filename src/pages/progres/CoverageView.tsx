@@ -33,7 +33,7 @@ export function CoverageView({ coverage }: CoverageViewProps) {
   if (inScope.length === 0) {
     return (
       <Card data-testid="coverage-empty">
-        <p className="text-sm text-anthracite-500">
+        <p className="text-sm text-anthracite-300">
           Aucun muscle ciblé pour le moment. Définis tes objectifs depuis l'onglet
           Profil.
         </p>
@@ -70,7 +70,7 @@ export function CoverageView({ coverage }: CoverageViewProps) {
       </Card>
 
       {outOfScope.length > 0 && (
-        <details className="text-xs text-anthracite-500">
+        <details className="text-xs text-anthracite-300">
           <summary className="cursor-pointer">
             Muscles hors objectifs ({outOfScope.length})
           </summary>
@@ -100,18 +100,18 @@ function MuscleChip({ item }: { readonly item: MuscleCoverage }) {
         <span className={cn('text-lg font-semibold tabular-nums', tone.text)}>
           {item.sets.toFixed(1)}
         </span>
-        <span className="text-[10px] text-anthracite-500">
+        <span className="text-[10px] text-anthracite-300">
           / {item.vMin.toFixed(0)}–{item.vMax.toFixed(0)}
         </span>
       </div>
-      <span className="text-[10px] text-anthracite-500">{STATUS_LABEL[item.status]}</span>
+      <span className="text-[10px] text-anthracite-300">{STATUS_LABEL[item.status]}</span>
     </div>
   );
 }
 
 function Legend() {
   return (
-    <div className="flex flex-wrap gap-2 text-[10px] text-anthracite-500">
+    <div className="flex flex-wrap gap-2 text-[10px] text-anthracite-300">
       {(['non_travaille', 'sous_min', 'ok', 'depassement'] as const).map((s) => (
         <span key={s} className="flex items-center gap-1">
           <span
@@ -143,7 +143,7 @@ const STATUS_TONE: Record<CoverageStatus, ToneClasses> = {
   non_travaille: {
     border: 'border-anthracite-700',
     bg: 'bg-anthracite-900',
-    text: 'text-anthracite-500',
+    text: 'text-anthracite-300',
     dot: 'bg-anthracite-600',
   },
   sous_min: {
@@ -167,7 +167,7 @@ const STATUS_TONE: Record<CoverageStatus, ToneClasses> = {
   hors_scope: {
     border: 'border-anthracite-700',
     bg: 'bg-anthracite-900',
-    text: 'text-anthracite-500',
+    text: 'text-anthracite-300',
     dot: 'bg-anthracite-700',
   },
 };

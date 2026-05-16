@@ -137,7 +137,7 @@ export function EditProfileSheet({
                     'flex flex-col items-start rounded-xl border px-3 py-2 text-left transition',
                     draft.level === v
                       ? 'border-sang-600 bg-sang-900/30 text-white'
-                      : 'border-anthracite-700 bg-anthracite-900 text-anthracite-500 hover:text-white',
+                      : 'border-anthracite-700 bg-anthracite-900 text-anthracite-300 hover:text-white',
                   )}
                 >
                   <span className="text-sm font-medium">{lbl}</span>
@@ -230,7 +230,7 @@ export function EditProfileSheet({
                       'rounded-full border px-3 py-1.5 text-xs font-medium transition',
                       selected
                         ? 'border-sang-600 bg-sang-900/40 text-white'
-                        : 'border-anthracite-700 bg-anthracite-900 text-anthracite-500 hover:text-white',
+                        : 'border-anthracite-700 bg-anthracite-900 text-anthracite-300 hover:text-white',
                     )}
                   >
                     {chip.label}
@@ -288,7 +288,7 @@ function ChipRadio({ label, selected, onClick, testId }: ChipRadioProps) {
         'flex-1 rounded-xl border px-3 py-2 text-sm font-medium transition',
         selected
           ? 'border-sang-600 bg-sang-900/30 text-white'
-          : 'border-anthracite-700 bg-anthracite-900 text-anthracite-500 hover:text-white',
+          : 'border-anthracite-700 bg-anthracite-900 text-anthracite-300 hover:text-white',
       )}
     >
       {label}

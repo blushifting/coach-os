@@ -22,7 +22,7 @@ export function parseExportPayload(raw: unknown): ExportPayload {
   const result = exportSchema.safeParse(raw);
   if (!result.success) {
     throw new ImportValidationError(
-      'Fichier d\'import kotsh invalide.',
+      'Fichier d\'import Kotsh invalide.',
       result.error.issues,
     );
   }

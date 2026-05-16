@@ -61,7 +61,7 @@ export function ExerciseCard({ exercise, onClick }: ExerciseCardProps) {
             </span>
           ))}
           {primaires.length > 2 && (
-            <span className="text-[10px] text-anthracite-500">
+            <span className="text-[10px] text-anthracite-300">
               +{primaires.length - 2}
             </span>
           )}

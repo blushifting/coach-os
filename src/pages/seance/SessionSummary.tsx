@@ -20,7 +20,7 @@ export function SessionSummary({ label, data, catalog, onClose }: SessionSummary
     <div className="flex flex-col gap-3" data-testid="session-summary">
       <Card>
         <div className="flex flex-col gap-1">
-          <span className="text-xs uppercase tracking-wide text-anthracite-500">
+          <span className="text-xs uppercase tracking-wide text-anthracite-300">
             Séance terminée — {label}
           </span>
           <span className="text-lg font-semibold text-white">
@@ -54,7 +54,7 @@ export function SessionSummary({ label, data, catalog, onClose }: SessionSummary
       <Card data-testid="summary-prs" className="flex flex-col gap-2">
         <h3 className="text-sm font-semibold text-white">PR du jour</h3>
         {data.prs.length === 0 ? (
-          <p className="text-xs text-anthracite-500">
+          <p className="text-xs text-anthracite-300">
             Pas de plafond cassé aujourd'hui — c'est normal, ça vient.
           </p>
         ) : (
@@ -100,7 +100,7 @@ function Metric({
 }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-xs uppercase tracking-wide text-anthracite-500">{label}</span>
+      <span className="text-xs uppercase tracking-wide text-anthracite-300">{label}</span>
       <span
         className={
           tone === 'positive'

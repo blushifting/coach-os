@@ -78,15 +78,15 @@ function WidgetTile({
 }: WidgetTileProps) {
   return (
     <Card className="flex flex-col gap-1" data-testid={testId}>
-      <span className="flex items-center gap-1 text-xs uppercase tracking-wide text-anthracite-500">
+      <span className="flex items-center gap-1 text-xs uppercase tracking-wide text-anthracite-300">
         {label}
         {helpTopic && <HelpButton topic={helpTopic} label={`Aide : ${label}`} />}
       </span>
       <div className="flex items-baseline gap-1">
         <span className="text-2xl font-semibold text-white tabular-nums">{value}</span>
-        {unit !== '' && <span className="text-sm text-anthracite-500">{unit}</span>}
+        {unit !== '' && <span className="text-sm text-anthracite-300">{unit}</span>}
       </div>
-      <span className="text-xs text-anthracite-500">{hint}</span>
+      <span className="text-xs text-anthracite-300">{hint}</span>
       {progressPct !== undefined && (
         <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-anthracite-700">
           <div

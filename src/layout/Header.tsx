@@ -11,7 +11,7 @@ const TITLES: Record<string, string> = {
 
 export function Header() {
   const { pathname } = useLocation();
-  const title = TITLES[pathname] ?? 'kotsh';
+  const title = TITLES[pathname] ?? 'Kotsh';
 
   return (
     <header

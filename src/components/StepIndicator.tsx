@@ -31,7 +31,7 @@ export function StepIndicator({ current, total, labels }: StepIndicatorProps) {
         })}
       </div>
       {labels && labels.length === total ? (
-        <div className="mt-2 flex justify-between text-[11px] text-anthracite-500">
+        <div className="mt-2 flex justify-between text-[11px] text-anthracite-300">
           {labels.map((lbl, idx) => (
             <span
               key={lbl}
@@ -45,7 +45,7 @@ export function StepIndicator({ current, total, labels }: StepIndicatorProps) {
           ))}
         </div>
       ) : (
-        <div className="mt-2 text-xs text-anthracite-500">
+        <div className="mt-2 text-xs text-anthracite-300">
           Étape <span className="text-white font-medium">{current}</span> sur {total}
         </div>
       )}

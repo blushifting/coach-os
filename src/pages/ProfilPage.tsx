@@ -70,7 +70,7 @@ export default function ProfilPage() {
   if (userState === null) {
     return (
       <section className="p-2">
-        <p className="text-sm text-anthracite-500">
+        <p className="text-sm text-anthracite-300">
           Profil non initialisé. Lance l'onboarding pour démarrer.
         </p>
       </section>
@@ -213,7 +213,7 @@ export default function ProfilPage() {
           </Button>
         </div>
         {goalsDraft.priorities.length === 0 ? (
-          <p className="text-sm text-anthracite-500">
+          <p className="text-sm text-anthracite-300">
             Aucun muscle prioritaire pour l'instant.
           </p>
         ) : (
@@ -233,7 +233,7 @@ export default function ProfilPage() {
                   </span>
                   {muscleLabel(p.muscle)}
                 </span>
-                <span className="text-xs text-anthracite-500">
+                <span className="text-xs text-anthracite-300">
                   {objectiveLabel(p.objective)}
                 </span>
               </li>
@@ -242,7 +242,7 @@ export default function ProfilPage() {
         )}
         {goalsDraft.acceptedSuggestions.size > 0 && (
           <div
-            className="mt-3 text-xs text-anthracite-500"
+            className="mt-3 text-xs text-anthracite-300"
             data-testid="profil-suggested-summary"
           >
             Équilibre : {[...goalsDraft.acceptedSuggestions].map(muscleLabel).join(', ')}.
@@ -262,7 +262,7 @@ export default function ProfilPage() {
             Ouvrir
           </Button>
         </div>
-        <p className="mt-1 text-xs text-anthracite-500">
+        <p className="mt-1 text-xs text-anthracite-300">
           Tutos de prise en main + glossaire des 13 termes utilisés dans l'app.
         </p>
       </Card>
@@ -271,7 +271,7 @@ export default function ProfilPage() {
         <div className="mb-2 text-sm font-semibold text-white">
           Mes données
         </div>
-        <p className="mb-3 text-xs text-anthracite-500">
+        <p className="mb-3 text-xs text-anthracite-300">
           Tout reste sur ton téléphone (IndexedDB). Exporte régulièrement pour
           ne rien perdre.
         </p>
@@ -369,7 +369,7 @@ interface SummaryRowProps {
 function SummaryRow({ label, value, wide = false }: SummaryRowProps) {
   return (
     <div className={wide ? 'col-span-2 flex justify-between' : 'flex justify-between'}>
-      <dt className="text-anthracite-500">{label}</dt>
+      <dt className="text-anthracite-300">{label}</dt>
       <dd className="text-right font-medium text-white">{value}</dd>
     </div>
   );

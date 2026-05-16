@@ -13,7 +13,7 @@ export function HelpSheet({ topic, onClose }: HelpSheetProps) {
   return (
     <Sheet open={entry !== null} onClose={onClose} title={entry?.title}>
       {entry && (
-        <p className="text-sm leading-relaxed text-anthracite-500">{entry.body}</p>
+        <p className="text-sm leading-relaxed text-anthracite-300">{entry.body}</p>
       )}
     </Sheet>
   );

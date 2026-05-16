@@ -48,7 +48,7 @@ export function Dialog({
       >
         <h3 className="text-lg font-semibold text-white">{title}</h3>
         {description && (
-          <div className="mt-2 text-sm leading-relaxed text-anthracite-500">{description}</div>
+          <div className="mt-2 text-sm leading-relaxed text-anthracite-300">{description}</div>
         )}
         <div className="mt-5 flex gap-2">
           <Button variant="secondary" fullWidth onClick={onCancel}>

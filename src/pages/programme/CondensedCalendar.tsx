@@ -20,7 +20,7 @@ export function CondensedCalendar({
         <h2 className="text-sm font-semibold text-white">
           Cycle {matrix.cycleIndex} — semaine {Math.min(currentWeekInCycle, 5)}/5
         </h2>
-        <span className="text-xs text-anthracite-500">
+        <span className="text-xs text-anthracite-300">
           {formatRange(matrix.cycleStart, matrix.cycleEnd)}
         </span>
       </header>
@@ -47,7 +47,7 @@ export function CondensedCalendar({
 
 function Legend() {
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-anthracite-500">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-anthracite-300">
       <LegendDot color="bg-sang-800/60 border-sang-700" label="fait" />
       <LegendDot color="bg-anthracite-700 border-anthracite-600" label="prévue" />
       <LegendDot color="bg-anthracite-800/60 border-dashed border-anthracite-700" label="libre" />

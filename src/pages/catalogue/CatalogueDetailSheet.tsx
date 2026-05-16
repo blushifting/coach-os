@@ -49,7 +49,7 @@ export function CatalogueDetailSheet({
               <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
                 {chargeLabel(exercise.charge)}
               </span>
-              <span className="text-xs text-anthracite-500">
+              <span className="text-xs text-anthracite-300">
                 {patternLabel(exercise.pattern)}
               </span>
             </div>
@@ -64,7 +64,7 @@ export function CatalogueDetailSheet({
 
         {primaires.length > 0 && (
           <div className="flex flex-col gap-1">
-            <span className="text-xs uppercase tracking-wide text-anthracite-500">
+            <span className="text-xs uppercase tracking-wide text-anthracite-300">
               Muscles principaux
             </span>
             <div className="flex flex-wrap gap-1" data-testid="catalogue-muscles-primaires">
@@ -82,7 +82,7 @@ export function CatalogueDetailSheet({
 
         {synergistes.length > 0 && (
           <div className="flex flex-col gap-1">
-            <span className="text-xs uppercase tracking-wide text-anthracite-500">
+            <span className="text-xs uppercase tracking-wide text-anthracite-300">
               Synergistes
             </span>
             <div className="flex flex-wrap gap-1" data-testid="catalogue-muscles-synergistes">
@@ -100,7 +100,7 @@ export function CatalogueDetailSheet({
 
         {tags.length > 0 && (
           <div className="flex flex-col gap-1">
-            <span className="text-xs uppercase tracking-wide text-anthracite-500">
+            <span className="text-xs uppercase tracking-wide text-anthracite-300">
               Variantes
             </span>
             <div className="flex flex-wrap gap-1" data-testid="catalogue-tags">

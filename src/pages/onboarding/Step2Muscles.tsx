@@ -102,7 +102,7 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
   return (
     <div className="flex flex-col gap-4 p-4">
       <h1 className="text-xl font-semibold text-white">Muscles cibles</h1>
-      <p className="text-sm text-anthracite-500">
+      <p className="text-sm text-anthracite-300">
         Choisis tes muscles prioritaires et leur ordre d'importance. Glisse pour
         réorganiser. Tu pourras toujours modifier plus tard.
       </p>
@@ -131,13 +131,13 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
       <Card>
         <div className="mb-2 flex items-center justify-between">
           <span className="text-sm font-medium text-white">Tes priorités</span>
-          <span className="text-xs text-anthracite-500">
+          <span className="text-xs text-anthracite-300">
             {draft.priorities.length} sélectionné{draft.priorities.length > 1 ? 's' : ''}
           </span>
         </div>
 
         {draft.priorities.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-anthracite-700 px-3 py-6 text-center text-sm text-anthracite-500">
+          <div className="rounded-lg border border-dashed border-anthracite-700 px-3 py-6 text-center text-sm text-anthracite-300">
             Aucun muscle pour l'instant. Ajoute-en ci-dessous ou utilise le préset.
           </div>
         ) : (
@@ -169,7 +169,7 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
       <Card>
         <div className="mb-3 text-sm font-medium text-white">Ajouter un muscle</div>
         {available.length === 0 ? (
-          <div className="text-xs text-anthracite-500">
+          <div className="text-xs text-anthracite-300">
             Tous les muscles canoniques sont sélectionnés.
           </div>
         ) : (
@@ -182,7 +182,7 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
                 data-testid={`add-${m}`}
                 className={cn(
                   'rounded-full border border-anthracite-700 bg-anthracite-900 px-3 py-1.5',
-                  'text-xs font-medium text-anthracite-500 transition hover:text-white',
+                  'text-xs font-medium text-anthracite-300 transition hover:text-white',
                 )}
               >
                 + {muscleLabel(m)}
@@ -237,7 +237,7 @@ function SortablePriorityRow({
           {...listeners}
           aria-label="Déplacer"
           data-testid={`drag-${priority.muscle}`}
-          className="flex h-9 w-9 cursor-grab items-center justify-center rounded-lg text-anthracite-500 hover:text-white active:cursor-grabbing"
+          className="flex h-9 w-9 cursor-grab items-center justify-center rounded-lg text-anthracite-300 hover:text-white active:cursor-grabbing"
         >
           ⋮⋮
         </button>
@@ -250,7 +250,7 @@ function SortablePriorityRow({
           onClick={onRemove}
           aria-label="Retirer"
           data-testid={`remove-${priority.muscle}`}
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-anthracite-500 hover:text-sang-500"
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-anthracite-300 hover:text-sang-500"
         >
           ✕
         </button>
@@ -266,7 +266,7 @@ function SortablePriorityRow({
               'flex-1 rounded-lg border px-2 py-1 text-[11px] font-medium transition',
               priority.objective === obj
                 ? 'border-sang-600 bg-sang-900/30 text-white'
-                : 'border-anthracite-700 bg-anthracite-800 text-anthracite-500 hover:text-white',
+                : 'border-anthracite-700 bg-anthracite-800 text-anthracite-300 hover:text-white',
             )}
           >
             {objectiveLabel(obj)}
