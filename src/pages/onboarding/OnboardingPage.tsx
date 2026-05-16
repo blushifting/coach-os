@@ -11,6 +11,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
+import { ChevronLeft, ChevronRight } from '@/components/icons';
 import { StepIndicator } from '@/components/StepIndicator';
 import { ALL_GUIDED_PROGRAMS } from '@/engine/guided_programs';
 import { bootstrap, startUser } from '@/hooks/useEngine';
@@ -159,7 +160,8 @@ export default function OnboardingPage() {
             disabled={step === 1 || submitting}
             data-testid="btn-prev"
           >
-            ← Précédent
+            <ChevronLeft />
+            Précédent
           </Button>
           {isLastStep ? (
             <Button
@@ -179,7 +181,8 @@ export default function OnboardingPage() {
               fullWidth
               data-testid="btn-next"
             >
-              Suivant →
+              Suivant
+              <ChevronRight />
             </Button>
           )}
         </div>

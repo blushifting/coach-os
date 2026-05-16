@@ -46,6 +46,8 @@ async function runOnboardingAndCalibration(page: Page): Promise<void> {
     await page.getByTestId('input-submax-reps').fill('5');
     await page.getByTestId('input-submax-rpe').selectOption('8');
     await page.getByTestId('btn-next').click();
+    // Phase work : passe l'exo sans cocher de série.
+    await page.getByTestId('btn-work-next').click();
   }
   await expect(page).toHaveURL(/\/programme$/);
 }

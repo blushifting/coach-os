@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { Card } from '@/components/Card';
+import { ChevronRight } from '@/components/icons';
 import { useCoachOsStore } from '@/store';
 import {
   buildCalendarMatrix,
@@ -72,9 +73,7 @@ export default function ProgrammePage() {
                 Voir le bilan et choisir la suite
               </span>
             </div>
-            <span className="text-sang-500" aria-hidden="true">
-              →
-            </span>
+            <ChevronRight className="text-sang-500" />
           </Card>
         </Link>
       )}

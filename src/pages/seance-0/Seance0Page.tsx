@@ -1,5 +1,5 @@
 /**
- * Séance 0 — Calibration des plafonds 1RM (Conv #4c).
+ * Séance 0 — Calibration des plafonds 1RM + séries de travail (Conv #4c, refondu #10c).
  *
  * Au mount :
  *   1. `bootstrap()` (idempotent — utile en arrivée directe sur /seance-0).
@@ -9,12 +9,18 @@
  * Si la liste est vide (déjà tout calibré, ou reprise après tab fermé) →
  * redirige vers `/programme`.
  *
- * Si la liste est non vide → wizard 1 exo/écran (CalibrationStep). À la fin,
- * `commitInitialCalibration({ e1rmByExerciseId, variantReplacements })` puis
- * redirection vers `/programme` (dashboard, Conv #5).
+ * Si la liste est non vide → wizard 1 exo/écran (CalibrationStep) en 2 phases :
+ *  - mesure du plafond (test 1RM connu ou submax)
+ *  - 2 séries de travail (charges dérivées du plafond via `buildPrescription`).
+ *
+ * À la fin : `commitInitialCalibration({e1rm, variantReplacements})` puis,
+ * si au moins une série de travail a été cochée "fait",
+ * `recordFeedbackAndCommit({label: "Séance 0", sets})` pour alimenter
+ * l'historique et raffiner les e1RM via le moteur. Puis redirection
+ * vers `/programme`.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -23,15 +29,32 @@ import {
   bootstrap,
   commitInitialCalibration,
   generateInitialCyclePlan,
+  recordFeedbackAndCommit,
 } from '@/hooks/useEngine';
 import { useCoachOsStore } from '@/store';
 import { pickCalibrationExercises, type CalibrationItem } from '@/lib/calibration';
-import type { WeeklyTemplate } from '@/engine/models';
-import { CalibrationStep, type CalibrationStepValue } from './CalibrationStep';
+import { buildPrescription } from '@/engine/prescription';
+import type {
+  Exercise,
+  SessionFeedback,
+  SetFeedback,
+  WeeklyTemplate,
+} from '@/engine/models';
+import {
+  CalibrationStep,
+  type CalibrationStepValue,
+  type WorkingPrescription,
+} from './CalibrationStep';
 
 type Phase = 'loading' | 'blocked' | 'ready' | 'committing' | 'done';
 
 type StepResult = CalibrationStepValue;
+
+const WORKING_SETS_COUNT = 2;
+
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 export default function Seance0Page() {
   const navigate = useNavigate();
@@ -86,6 +109,31 @@ export default function Seance0Page() {
     return catalog.get(currentItem.exerciseId);
   }, [currentItem, catalog]);
 
+  const buildWorkingPrescription = useCallback(
+    (e1rmTotal: number, exercise: Exercise): WorkingPrescription => {
+      const state = useCoachOsStore.getState().userState;
+      if (state === null) {
+        return { reps: 5, load_kg: 0, rpe_target: 8 };
+      }
+      const presc = buildPrescription(
+        exercise,
+        e1rmTotal,
+        state.profile,
+        state.current_week_in_cycle,
+        {
+          muscleGoals: state.muscle_goals,
+          state,
+        },
+      );
+      return {
+        reps: presc.reps,
+        load_kg: presc.load_kg,
+        rpe_target: presc.rpe_target,
+      };
+    },
+    [],
+  );
+
   function handleStepCommit(value: StepResult) {
     if (currentItem === null) return;
     const next = { ...results, [currentItem.exerciseId]: value };
@@ -115,6 +163,7 @@ export default function Seance0Page() {
       slotIndex: number;
       newExerciseId: string;
     }> = [];
+    const feedbackSets: SetFeedback[] = [];
 
     for (const it of items) {
       const r = allResults[it.exerciseId];
@@ -134,13 +183,34 @@ export default function Seance0Page() {
           }
         }
       }
+      for (const ws of r.workingSets) {
+        feedbackSets.push({
+          exercise_id: r.finalExerciseId,
+          reps_done: ws.reps_done,
+          load_kg: ws.load_kg,
+          rpe_perceived: ws.rpe_perceived,
+        });
+      }
     }
 
     try {
-      await commitInitialCalibration({
+      const stateAfter = await commitInitialCalibration({
         e1rmByExerciseId,
         variantReplacements: replacements,
       });
+
+      if (feedbackSets.length > 0) {
+        const feedback: SessionFeedback = {
+          seance_date: todayIso(),
+          week_in_cycle: stateAfter.current_week_in_cycle,
+          cycle_index: stateAfter.cycle_index,
+          rpe_target: 8,
+          sets: feedbackSets,
+          label: 'Séance 0',
+        };
+        await recordFeedbackAndCommit(feedback);
+      }
+
       setPhase('done');
       navigate('/programme', { replace: true });
     } catch (e) {
@@ -212,8 +282,11 @@ export default function Seance0Page() {
         bodyweightKg={userState.profile.bodyweight_kg}
         progress={{ index: stepIndex + 1, total: items.length }}
         canGoBack={stepIndex > 0 && phase !== 'committing'}
+        isLastStep={stepIndex + 1 === items.length}
+        workingSetsCount={WORKING_SETS_COUNT}
         onBack={handleBack}
         onCommit={handleStepCommit}
+        buildWorkingPrescription={buildWorkingPrescription}
       />
 
       {phase === 'committing' ? (
@@ -246,13 +319,12 @@ function IntroBanner({ total }: { readonly total: number }) {
         <HelpButton topic="plafond" label="Aide : plafond" />
       </h1>
       <p className="mt-2 text-sm text-anthracite-300">
-        On mesure ton <span className="font-medium text-white">plafond</span>{' '}
-        (charge max pour 1 rep) sur {total} exo{total > 1 ? 's' : ''} clé
-        {total > 1 ? 's' : ''} du programme. Pour chacun, choisis ta variante
-        préférée, puis indique ton plafond connu ou fais un test rapide (5 reps
-        à un effort de 8/10 environ).
+        On va calibrer {total} exo{total > 1 ? 's' : ''} clé
+        {total > 1 ? 's' : ''} de ton programme. Pour chacun : on mesure ton{' '}
+        <span className="font-medium text-white">plafond</span> (test rapide
+        ou valeur connue), puis tu fais 2 séries de travail à effort 8/10
+        — comme une vraie séance qui calibre.
       </p>
     </Card>
   );
 }
-

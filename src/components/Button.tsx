@@ -41,7 +41,7 @@ export function Button({
     <button
       type={type}
       className={cn(
-        'inline-flex items-center justify-center font-medium transition active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100',
+        'inline-flex items-center justify-center gap-1.5 whitespace-nowrap font-medium transition active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100',
         VARIANT_CLASSES[variant],
         SIZE_CLASSES[size],
         fullWidth && 'w-full',

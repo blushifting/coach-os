@@ -145,7 +145,64 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
-## État courant — fin Conv #10b' (2026-05-16)
+## État courant — fin Conv #10c (2026-05-16)
+
+- **Refonte Séance 0** : chaque exo de calibration enchaîne maintenant
+  2 phases sur le même écran. Phase **measure** = test plafond (1RM connu
+  ou submax, comme avant). Phase **work** = 2 séries de travail
+  pré-remplies via `buildPrescription(exercise, e1rm, profile, week, {muscleGoals, state})`
+  (charges déduites du plafond fraîchement mesuré, RPE cible selon
+  `targetRpeForExercise`). L'user ajuste, coche « ✓ » ce qu'il a fait,
+  puis « Exo suivant ». Navigation : en **work**, « Modifier le plafond »
+  rebascule en **measure** (même exo) ; en **measure**, « Précédent »
+  revient à l'exo précédent. La phase est exposée via
+  `data-phase="measure"|"work"` sur `[data-testid=calibration-step]`.
+- **Persistance feedback** : à la finalisation,
+  `Seance0Page.finalize()` appelle `commitInitialCalibration` puis,
+  si au moins 1 série est cochée, `recordFeedbackAndCommit` avec un
+  `SessionFeedback {label: "Séance 0"}`. Le moteur raffine les e1RM
+  via Epley sur ces séries → calibration plus fine que le seul test
+  plafond. L'historique commence donc avec une vraie séance.
+- **Nouveaux testids** : `btn-work-back`, `btn-work-next`,
+  `work-recap`, et `set-row-*` (réutilisés de SetInput) en phase work.
+  L'attribut `data-phase` sur `calibration-step` permet d'assert la
+  phase. Tous les `fillSubmaxAndNext` des spec e2e ont été mis à jour
+  pour cliquer `btn-next` puis `btn-work-next` (skip working sets).
+- **Polish bundle** :
+  - `Button` gagne `whitespace-nowrap` + `gap-1.5` par défaut →
+    plus de wrap "Précédent" sur 2 lignes.
+  - Nouveau module `src/components/icons.tsx` : `ChevronLeft` /
+    `ChevronRight` (SVG 16×16 currentColor, strokeWidth 1.75,
+    `align-text-bottom`). Remplacent les Unicode `←`/`→` dans
+    `OnboardingPage` (Précédent / Suivant), `CalibrationStep` (les 4
+    boutons primary/secondary des 2 phases) et `ProgrammePage`
+    (chevron du bandeau "Cycle terminé").
+- Tests : **396 Vitest + 20 e2e** verts (1 nouveau spec couvre la
+  phase work). `npm run build` OK (27.5 kB CSS +0.9 / 643 kB JS +4).
+- **Nouveau type public** : `CalibrationWorkingSet` exporté depuis
+  `CalibrationStep.tsx`. `CalibrationStepValue` étend désormais avec
+  un champ `workingSets: ReadonlyArray<CalibrationWorkingSet>`.
+
+### Backlog Conv #10 — à reprendre en nouvelle conv
+
+**#10d — Catalogue (items 5, 6, 7 dump initial)** — à faire maintenant.
+1. **Fiche exo** (`pages/catalogue/CatalogueDetailSheet.tsx` + `ExerciseCard.tsx`) :
+   silhouette `AnatomicalSilhouette` au premier plan, grand format centré ;
+   descriptif détaillé dessous (exécution, erreurs courantes, muscles
+   primaires/synergistes, matériel, variantes). Actuellement silhouette
+   trop petite et description riquiqui.
+2. **Aliases** : ajouter `aliases: string[]` sur chaque entrée de
+   `src/data/exercises.json` (et côté Python `prototype/data/exercises.json`
+   en miroir, parité). Recherche du catalogue (`catalog-filter.ts`) doit
+   matcher sur le nom + tous les aliases.
+3. **Remplacement libre** : actuellement `alternativeVariantsFor`
+   (`lib/calibration.ts`) ne propose que les variantes du même *pattern*.
+   Élargir à "muscle primaire en commun" avec un toggle "voir tous les
+   exos ciblant X".
+
+---
+
+## État Conv #10b' (2026-05-16) — archive
 
 - **Marque "Kotsh" capitalisée** dans toute l'UI : manifest PWA
   (`vite.config.ts` name/short_name), `index.html` title +
