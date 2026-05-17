@@ -145,6 +145,70 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
+## État courant — fin Conv #11a (2026-05-17)
+
+Bundle séance & inter-séance + fix Progrès (1er morceau du 2e dump Azur) :
+
+- **Cochage séquentiel des séries** (`pages/seance/SetInput.tsx`) : nouveau prop
+  `checkLocked` câblé dans `SessionRunner` (`j > 0 && !entrySets[j-1].done`).
+  Le bouton ✓ est désactivé (curseur not-allowed + style gris) tant que la
+  série précédente n'est pas validée. Les inputs reps/charge/effort restent
+  éditables — on peut renseigner d'avance. `data-locked` exposé sur la row.
+- **Dette de volume hebdo** (`state.weekly_volume_debt: Record<string, number>`) :
+  - Nouveau champ sur `UserState` (`models.ts` + `makeUserState`), sérialisé/
+    désérialisé en optional (rétrocompat anciens blobs + exports JSON).
+  - `engine.applyMissedVolumeToDebt(state, catalog, plan, feedback)` :
+    accumule `setsManques = prescrits - faits` par muscle primaire de chaque
+    exo. Appelé depuis `recordFeedback(..., {plan})`.
+  - `consumeWeeklyDebt(plan, state, catalog)` (private, appelé en fin de
+    `generateSession`) : pour chaque muscle avec dette, ajoute des séries
+    aux exos qui le couvrent en primaire. Cap par exo = `max(1, ceil(0.3 ×
+    base_sets))`. Décrémente la dette de chaque muscle primaire des exos
+    modifiés. Pas explicite côté UI — c'est juste un rattrapage silencieux
+    sur les séances restantes de la semaine.
+  - `endOfWeek` reset `weekly_volume_debt = {}` (un manque ponctuel n'est
+    pas grave en RPE-based, on repart propre).
+  - `useEngine.recordFeedbackAndCommit` passe `currentSessionPlan` au moteur.
+- **Rotation forcée A→B→C** (`pages/seance/StartSessionList.tsx`) : les jours
+  déjà faits cette semaine sont `disabled` tant qu'il reste un autre jour
+  non fait (`lockedThisWeek`). Quand tous ont été faits ≥1 fois,
+  déverrouillage global pour permettre un 2e tour. Header reformulé pour
+  refléter l'état. `data-locked` exposé. `PlanDaySheet` non touché — la
+  programmation de jour futur reste libre (semaine prochaine).
+- **Bug barres V_min/V_max illisibles dans Progrès** : la "bande grise"
+  `anthracite-700/60` se fondait dans le fond `anthracite-900` (contraste
+  quasi nul). Remplacée par **2 lignes pointillées horizontales** qui
+  traversent toute la ligne du muscle : `border-dashed sang-400/80` pour
+  V_max, `border-dashed anthracite-200/60` pour V_min. Légende sous le
+  tableau refondue avec swatches. Nouveaux testids `vmin-line-${muscle}` /
+  `vmax-line-${muscle}`.
+- **Équilibrage A/B/C non touché** : analyse code = custom équilibre par
+  construction (chaque muscle traité indépendamment via `composeSession`),
+  guidé hérite de l'asymétrie choisie par le concepteur du programme. À
+  reprendre seulement si Azur valide un cas concret d'asymétrie injustifiée.
+- **Schéma Zod export** (`io/schema.ts`) : `weekly_volume_debt` ajouté en
+  `.optional()` pour rétrocompat avec exports antérieurs à Conv #11a.
+- Tests : **415 Vitest verts** (+4 nouveaux : applyMissedVolumeToDebt
+  accumule par muscle, consumeWeeklyDebt applique le cap, endOfWeek reset
+  debt, startUser init debt = {}). `npm run build` OK (28.01 kB CSS / 667 kB JS,
+  +0.2 CSS / +3 JS). E2e Playwright non relancée (touché structurel
+  léger — engine.recordFeedback signature étendue avec options optionnelles,
+  rétrocompat).
+- **API engine #11a (durable)** : `engine.applyMissedVolumeToDebt(state,
+  catalog, plan, feedback)`, `engine.recordFeedback(state, catalog,
+  feedback, options?: {plan})`.
+
+**Backlog Conv #11 — à venir** :
+- **#11b — Onboarding preview programme** : Step 5 aperçu adapté au nb de
+  séances (2/3/4/5/6), variantes par slot via `VariantPickerSheet` existant,
+  bandeau rééquilibrage si swap change profil musculaire, panneau "Volume
+  hebdo par groupe" + "Comment ça marche" optionnel déroulable.
+- **#11c — Refonte visuelle complète** : pistes A (graphite chaleureux +
+  brushed metal), B (rouge structurel + gradient RPE + halos), C (profondeur
+  + glassmorphism sheets + bordures lumineuses), D (font display Anton +
+  gros chiffres + silhouettes background), E (transitions + progress ring +
+  haptics). Probablement à splitter en #11c/#11c'.
+
 ## État courant — fin Conv #10d (2026-05-16)
 
 Bundle Catalogue + Séance + Planning (dump initial Azur + ajout en cours

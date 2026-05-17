@@ -5,6 +5,12 @@ interface SetInputProps {
   readonly index: number;
   readonly entry: SetEntry;
   readonly onChange: (patch: Partial<SetEntry>) => void;
+  /**
+   * Le bouton "✓" est verrouillé tant que la série précédente n'est pas validée.
+   * Les saisies reps/charge/effort restent éditables — on peut préparer ses
+   * valeurs à l'avance, on ne peut juste pas cocher en désordre.
+   */
+  readonly checkLocked?: boolean;
 }
 
 const RPE_OPTIONS = ['6', '6.5', '7', '7.5', '8', '8.5', '9', '9.5', '10'] as const;
@@ -15,11 +21,12 @@ const RPE_OPTIONS = ['6', '6.5', '7', '7.5', '8', '8.5', '9', '9.5', '10'] as co
  * Charge, reps et RPE pré-remplis depuis la consigne. Validation = bouton "✓".
  * Pas de timer (cf. 08 §115 : "ne lance plus de timer actif").
  */
-export function SetInput({ index, entry, onChange }: SetInputProps) {
+export function SetInput({ index, entry, onChange, checkLocked = false }: SetInputProps) {
   return (
     <div
       data-testid={`set-row-${index}`}
       data-done={entry.done ? 'true' : 'false'}
+      data-locked={checkLocked ? 'true' : 'false'}
       className={cn(
         'grid grid-cols-[2rem_1fr_1fr_1fr_2.5rem] items-center gap-2 rounded-lg border px-2 py-2 text-sm',
         entry.done
@@ -66,13 +73,27 @@ export function SetInput({ index, entry, onChange }: SetInputProps) {
       <button
         type="button"
         data-testid={`toggle-done-${index}`}
-        aria-label={entry.done ? 'Annuler la série' : 'Valider la série'}
+        aria-label={
+          entry.done
+            ? 'Annuler la série'
+            : checkLocked
+              ? 'Termine la série précédente d’abord'
+              : 'Valider la série'
+        }
+        title={
+          checkLocked && !entry.done
+            ? 'Termine la série précédente d’abord'
+            : undefined
+        }
+        disabled={checkLocked && !entry.done}
         onClick={() => onChange({ done: !entry.done })}
         className={cn(
           'flex h-8 w-8 items-center justify-center rounded-full transition active:scale-95',
           entry.done
             ? 'bg-sang-700 text-white'
-            : 'bg-anthracite-700 text-anthracite-300 hover:text-white',
+            : checkLocked
+              ? 'cursor-not-allowed bg-anthracite-800 text-anthracite-500'
+              : 'bg-anthracite-700 text-anthracite-300 hover:text-white',
         )}
       >
         ✓

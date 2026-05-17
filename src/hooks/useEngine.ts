@@ -381,7 +381,10 @@ export async function recordFeedbackAndCommit(
 ): Promise<engine.RecordFeedbackResult> {
   const catalog = requireCatalog();
   const next = requireUserState();
-  const summary = engine.recordFeedback(next, catalog, feedback);
+  // Conv #11a : on passe le plan courant pour que le moteur calcule la dette
+  // de volume non réalisée et l'accumule dans `next.weekly_volume_debt`.
+  const plan = useCoachOsStore.getState().currentSessionPlan;
+  const summary = engine.recordFeedback(next, catalog, feedback, { plan });
   const sessionId = useCoachOsStore.getState().currentSessionId;
   await txCommitSessionFeedback({ feedback, state: next, sessionId });
   useCoachOsStore.setState({

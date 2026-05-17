@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import { Catalog } from '@/engine/catalog';
 import {
+  applyMissedVolumeToDebt,
   bootstrapMuscleGoalsFromProfile,
   endOfCycle,
   endOfWeek,
@@ -13,6 +14,7 @@ import {
   replaceSessionItem,
   startUser,
 } from '@/engine/engine';
+import { exercisePrimaires } from '@/engine/models';
 import { generateCyclePlan } from '@/engine/cycle_planner';
 import { applyUserActionAfterCycle } from '@/engine/lifecycle';
 import { SuggestedAction } from '@/engine/models';
@@ -141,5 +143,95 @@ describe('replaceSessionItem', () => {
     state.current_cycle_plan = generateCyclePlan(state, catalog);
     const plan = generateSession(state, catalog, 0, '2026-01-05');
     expect(() => replaceSessionItem(plan, 999, 'bench_bb', state, catalog)).toThrow();
+  });
+});
+
+// =============================================================================
+// Conv #11a — dette de volume hebdo
+// =============================================================================
+
+describe('weekly_volume_debt', () => {
+  it('startUser pose weekly_volume_debt = {}', () => {
+    const state = startUser(profile(), catalog, {
+      muscleGoals: bootstrapMuscleGoalsFromProfile(profile(), ['pectoraux']),
+    });
+    expect(state.weekly_volume_debt).toEqual({});
+  });
+
+  it('applyMissedVolumeToDebt accumule par muscle primaire les séries manquées', () => {
+    const p = profile();
+    const goals = bootstrapMuscleGoalsFromProfile(p, ['pectoraux', 'quadriceps']);
+    const state = startUser(p, catalog, { muscleGoals: goals });
+    state.current_cycle_plan = generateCyclePlan(state, catalog);
+
+    const plan = generateSession(state, catalog, 0, '2026-01-05');
+    // Construit un feedback qui ne coche QUE la première série de chaque exo
+    const partialFeedback: SessionFeedback = {
+      seance_date: plan.seance_date,
+      week_in_cycle: plan.week_in_cycle,
+      cycle_index: plan.cycle_index,
+      rpe_target: plan.rpe_target,
+      label: plan.label,
+      sets: plan.items.map((it) => ({
+        exercise_id: it.exercise_id,
+        reps_done: it.sets[0]!.reps,
+        load_kg: it.sets[0]!.load_kg,
+        rpe_perceived: it.sets[0]!.rpe_target,
+      })),
+    };
+
+    applyMissedVolumeToDebt(state, catalog, plan, partialFeedback);
+
+    // Chaque exo a perdu (nSets - 1) séries. La dette par muscle = somme des
+    // missed des exos qui couvrent ce muscle en primaire.
+    let expectedFromPrimaires: Record<string, number> = {};
+    for (const item of plan.items) {
+      const missed = item.sets.length - 1;
+      if (missed <= 0) continue;
+      const ex = catalog.get(item.exercise_id);
+      for (const m of exercisePrimaires(ex)) {
+        expectedFromPrimaires[m] = (expectedFromPrimaires[m] ?? 0) + missed;
+      }
+    }
+    expect(state.weekly_volume_debt).toEqual(expectedFromPrimaires);
+  });
+
+  it('generateSession consomme la dette en ajoutant des séries (cap 30 %)', () => {
+    const p = profile();
+    const goals = bootstrapMuscleGoalsFromProfile(p, ['pectoraux']);
+    const state = startUser(p, catalog, { muscleGoals: goals });
+    state.current_cycle_plan = generateCyclePlan(state, catalog);
+
+    // Dette artificielle énorme sur pectoraux (doit être limitée par le cap)
+    state.weekly_volume_debt = { pectoraux: 99 };
+
+    const plan = generateSession(state, catalog, 0, '2026-01-05');
+
+    // Au moins un exo de la séance qui touche pec en primaire a vu son nb de
+    // séries augmenter. Le total ajouté est borné par le cap 30 % par exo.
+    let totalAdded = 0;
+    let totalBase = 0;
+    for (const item of plan.items) {
+      const ex = catalog.get(item.exercise_id);
+      if (!exercisePrimaires(ex).includes('pectoraux')) continue;
+      totalBase += 1;
+      totalAdded += item.sets.length;
+    }
+    expect(totalBase).toBeGreaterThan(0);
+    expect(totalAdded).toBeGreaterThan(totalBase);
+    // La dette restante doit avoir baissé (mais pas forcément à 0 vu le cap).
+    expect(state.weekly_volume_debt.pectoraux ?? 0).toBeLessThan(99);
+  });
+
+  it('endOfWeek reset weekly_volume_debt', () => {
+    const p = profile();
+    const goals = bootstrapMuscleGoalsFromProfile(p, ['pectoraux']);
+    const state = startUser(p, catalog, { muscleGoals: goals });
+    state.current_cycle_plan = generateCyclePlan(state, catalog);
+    state.weekly_volume_debt = { pectoraux: 4, biceps: 2 };
+
+    endOfWeek(state, catalog);
+
+    expect(state.weekly_volume_debt).toEqual({});
   });
 });

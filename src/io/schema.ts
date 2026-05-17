@@ -76,6 +76,8 @@ const userStateSchema = z
         })
         .strict(),
     ),
+    // Conv #11a : optionnel pour rétrocompat avec exports antérieurs.
+    weekly_volume_debt: recordOfNumber.optional(),
   })
   .strict();
 

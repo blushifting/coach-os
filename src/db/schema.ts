@@ -64,6 +64,8 @@ export interface SerializedUserState {
   recovery_mode: boolean;
   recovery_weeks_remaining: number;
   equipment_overrides: Record<string, EquipmentOverride>;
+  /** Dette de volume non réalisée cette semaine (Conv #11a). Absent sur les anciens blobs. */
+  weekly_volume_debt?: Record<string, number>;
 }
 
 // =============================================================================

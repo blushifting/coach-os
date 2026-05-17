@@ -158,7 +158,103 @@ function bootstrapE1rmIfMissing(state: UserState, exercise: Exercise): number {
 }
 
 // =============================================================================
-// 3. Génération d'une séance — voie nouvelle (lit current_cycle_plan)
+// 3. Dette de volume hebdo (Conv #11a)
+// =============================================================================
+
+/**
+ * Cap de séries supplémentaires qu'on peut ajouter sur un exo pour rattraper
+ * de la dette : 30 % du nb prescrit (arrondi supérieur, min 1).
+ */
+function debtCapForExo(baseSets: number): number {
+  return Math.max(1, Math.ceil(baseSets * 0.3));
+}
+
+/**
+ * Accumule dans `state.weekly_volume_debt` les séries non réalisées de la
+ * séance terminée. Pour chaque exo, `missed = setsPrescris - setsFaits`, et
+ * on ajoute `missed` à chacun de ses muscles primaires.
+ *
+ * Pas explicite côté utilisateur — c'est juste un report pour la séance
+ * suivante de la même semaine (cf. Conv #11a). Reset par `endOfWeek`.
+ */
+export function applyMissedVolumeToDebt(
+  state: UserState,
+  catalog: Catalog,
+  plan: SessionPlan,
+  feedback: SessionFeedback,
+): void {
+  const doneByExo: Record<string, number> = {};
+  for (const f of feedback.sets) {
+    doneByExo[f.exercise_id] = (doneByExo[f.exercise_id] ?? 0) + 1;
+  }
+  for (const item of plan.items) {
+    const prescribed = item.sets.length;
+    const done = doneByExo[item.exercise_id] ?? 0;
+    const missed = Math.max(0, prescribed - done);
+    if (missed === 0) continue;
+    let ex: Exercise;
+    try {
+      ex = catalog.get(item.exercise_id);
+    } catch {
+      continue;
+    }
+    for (const m of exercisePrimaires(ex)) {
+      state.weekly_volume_debt[m] = (state.weekly_volume_debt[m] ?? 0) + missed;
+    }
+  }
+}
+
+/**
+ * Consomme `state.weekly_volume_debt` sur le plan de séance en cours de
+ * génération : pour chaque muscle avec dette, ajoute des séries supplémentaires
+ * (capées à 30 % du base) sur les exos de la séance qui le couvrent en primaire.
+ * Décrémente la dette de chaque muscle primaire des exos modifiés.
+ *
+ * Mute `plan.items[i].sets` (ajoute des copies de la prescription) et
+ * `state.weekly_volume_debt` (décrémente, supprime les entrées à 0).
+ */
+function consumeWeeklyDebt(
+  plan: SessionPlan,
+  state: UserState,
+  catalog: Catalog,
+): void {
+  const debt = state.weekly_volume_debt;
+  if (Object.keys(debt).length === 0) return;
+  const extras: number[] = plan.items.map(() => 0);
+  const baseSets: number[] = plan.items.map((it) => it.sets.length);
+
+  for (const m of Object.keys(debt)) {
+    if ((debt[m] ?? 0) <= 0) continue;
+    for (let i = 0; i < plan.items.length; i++) {
+      if ((debt[m] ?? 0) <= 0) break;
+      let ex: Exercise;
+      try {
+        ex = catalog.get(plan.items[i]!.exercise_id);
+      } catch {
+        continue;
+      }
+      if (!exercisePrimaires(ex).includes(m)) continue;
+      const cap = debtCapForExo(baseSets[i]!);
+      const remainingCap = cap - extras[i]!;
+      if (remainingCap <= 0) continue;
+      const toAdd = Math.min(debt[m]!, remainingCap);
+      const template = plan.items[i]!.sets[0];
+      if (template === undefined) continue;
+      for (let k = 0; k < toAdd; k++) plan.items[i]!.sets.push(template);
+      extras[i] = extras[i]! + toAdd;
+      for (const m2 of exercisePrimaires(ex)) {
+        debt[m2] = Math.max(0, (debt[m2] ?? 0) - toAdd);
+      }
+    }
+  }
+
+  for (const m of Object.keys(debt)) {
+    if ((debt[m] ?? 0) <= 0) delete debt[m];
+  }
+}
+
+// =============================================================================
+// 4. Génération d'une séance — voie nouvelle (lit current_cycle_plan)
 // =============================================================================
 
 export function generateSession(
@@ -222,7 +318,7 @@ export function generateSession(
     ? rpeTargets.reduce((a, b) => a + b, 0) / rpeTargets.length
     : 7.0;
 
-  return {
+  const planOut: SessionPlan = {
     seance_date: seanceDate,
     week_in_cycle: state.current_week_in_cycle,
     cycle_index: state.cycle_index,
@@ -230,6 +326,12 @@ export function generateSession(
     items,
     label: day.label,
   };
+
+  // Conv #11a : injecte la dette de volume hebdo non réalisée. Mute `items[i].sets`
+  // (ajoute des séries) et `state.weekly_volume_debt` (décrémente).
+  consumeWeeklyDebt(planOut, state, catalog);
+
+  return planOut;
 }
 
 /**
@@ -396,10 +498,20 @@ export function generateSessionLegacy(
 
 export type RecordFeedbackResult = Record<string, readonly [number, number] | null>;
 
+export interface RecordFeedbackOptions {
+  /**
+   * Plan d'origine de la séance — si fourni, on calcule la dette de volume
+   * (séries non réalisées) et on l'accumule dans `state.weekly_volume_debt`
+   * pour report sur la prochaine séance de la semaine (Conv #11a).
+   */
+  plan?: SessionPlan | null;
+}
+
 export function recordFeedback(
   state: UserState,
   catalog: Catalog,
   sessionFeedback: SessionFeedback,
+  options: RecordFeedbackOptions = {},
 ): RecordFeedbackResult {
   const byEx: Record<string, SetFeedback[]> = {};
   for (const f of sessionFeedback.sets) {
@@ -413,6 +525,10 @@ export function recordFeedback(
     if (ex.e1RM_app === E1RMApp.PARTIAL || ex.e1RM_app === E1RMApp.NON) {
       maybeProgressReps(state, ex, fbs);
     }
+  }
+
+  if (options.plan) {
+    applyMissedVolumeToDebt(state, catalog, options.plan, sessionFeedback);
   }
 
   state.history.push(sessionFeedback);
@@ -497,6 +613,10 @@ export function endOfWeek(state: UserState, catalog: Catalog): EndOfWeekResult {
   const event = advanceWeek(state, plateauAny, hitVmaxOk);
 
   decrementRecoveryWeek(state);
+
+  // Conv #11a : la dette de volume ne traverse pas la frontière hebdo —
+  // un manque ponctuel n'est pas grave en RPE-based, on repart propre.
+  state.weekly_volume_debt = {};
 
   return {
     event,

@@ -58,6 +58,7 @@ export function serializeUserState(state: UserState): SerializedUserState {
     equipment_overrides: Object.fromEntries(
       Object.entries(state.equipment_overrides).map(([k, v]) => [k, { ...v }]),
     ),
+    weekly_volume_debt: { ...state.weekly_volume_debt },
   };
 }
 
@@ -93,5 +94,7 @@ export function deserializeUserState(s: SerializedUserState): UserState {
     equipment_overrides: Object.fromEntries(
       Object.entries(s.equipment_overrides).map(([k, v]) => [k, { ...v }]),
     ),
+    // Rétrocompat : blobs antérieurs à Conv #11a n'ont pas ce champ.
+    weekly_volume_debt: { ...(s.weekly_volume_debt ?? {}) },
   };
 }

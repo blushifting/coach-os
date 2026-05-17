@@ -101,6 +101,7 @@ export function SessionRunner({
                       key={j}
                       index={j}
                       entry={entry}
+                      checkLocked={j > 0 && !entrySets[j - 1]!.done}
                       onChange={(patch) =>
                         onEntriesChange(updateSetEntry(entries, i, j, patch))
                       }

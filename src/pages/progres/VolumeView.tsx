@@ -15,8 +15,13 @@ interface VolumeViewProps {
  * Volume hebdo par muscle, N dernières semaines.
  *
  * Chaque ligne = un muscle. Mini-graphe à barres horizontales avec :
- * - bande grise V_min → V_max (cible)
- * - barre rouge "sang" = volume réalisé la semaine
+ * - ligne pointillée rouge = V_max (cap)
+ * - ligne pointillée gris clair = V_min (seuil)
+ * - barre colorée = volume réalisé la semaine (rouge sous, vert dans, ambre sur)
+ *
+ * Conv #11a : les lignes pointillées remplacent l'ancienne bande grise qui se
+ * fondait dans le fond du tableau (illisible).
+ *
  * Référence : 10_plan §3 Conv #6a, infobulle help "V_min / V_max".
  */
 export function VolumeView({ series }: VolumeViewProps) {
@@ -61,9 +66,16 @@ export function VolumeView({ series }: VolumeViewProps) {
         </div>
       </Card>
 
-      <p className="text-[10px] text-anthracite-300">
-        Bande grise = cible <span className="font-medium text-anthracite-400">V_min → V_max</span>.
-        Une barre dans la zone grise = volume idéal. Sous : sous-dosé. Au-dessus : sur-volume.
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-anthracite-300">
+        <span className="inline-flex items-center gap-1.5">
+          <span aria-hidden="true" className="inline-block h-0 w-4 border-t border-dashed border-anthracite-200/70" />
+          V_min
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span aria-hidden="true" className="inline-block h-0 w-4 border-t border-dashed border-sang-400/80" />
+          V_max
+        </span>
+        <span>Entre les deux = volume idéal. Sous : sous-dosé. Au-dessus : sur-volume.</span>
       </p>
     </section>
   );
@@ -77,6 +89,8 @@ interface MuscleRowProps {
 function MuscleRow({ series, maxScale }: MuscleRowProps) {
   const { muscle, vMin, vMax, points } = series;
   const hasTarget = vMax > 0;
+  const minPct = hasTarget ? (vMin / maxScale) * 100 : 0;
+  const maxPct = hasTarget ? (vMax / maxScale) * 100 : 0;
   return (
     <>
       <span className="truncate text-xs font-medium text-white">
@@ -84,13 +98,26 @@ function MuscleRow({ series, maxScale }: MuscleRowProps) {
       </span>
       <div
         data-testid={`volume-row-${muscle}`}
-        className="flex h-6 items-end gap-1"
+        className="relative flex h-6 items-end gap-1"
       >
+        {hasTarget && (
+          <>
+            <div
+              aria-hidden="true"
+              data-testid={`vmax-line-${muscle}`}
+              className="pointer-events-none absolute left-0 right-0 z-10 border-t border-dashed border-sang-400/80"
+              style={{ bottom: `${maxPct}%` }}
+            />
+            <div
+              aria-hidden="true"
+              data-testid={`vmin-line-${muscle}`}
+              className="pointer-events-none absolute left-0 right-0 z-10 border-t border-dashed border-anthracite-200/60"
+              style={{ bottom: `${minPct}%` }}
+            />
+          </>
+        )}
         {points.map((p, i) => {
           const pct = (p.sets / maxScale) * 100;
-          // Position de la bande cible (gris) en fond de chaque mini-cellule.
-          const minPct = hasTarget ? (vMin / maxScale) * 100 : 0;
-          const maxPct = hasTarget ? (vMax / maxScale) * 100 : 0;
           const tone = barTone(p.sets, vMin, vMax);
           return (
             <div
@@ -99,16 +126,6 @@ function MuscleRow({ series, maxScale }: MuscleRowProps) {
               data-testid={`volume-cell-${muscle}-${i}`}
               title={`${formatWeekLabel(p.weekStart)} · ${p.sets.toFixed(1)} séries`}
             >
-              {hasTarget && (
-                <div
-                  aria-hidden="true"
-                  className="absolute bottom-0 left-0 right-0 bg-anthracite-700/60"
-                  style={{
-                    height: `${maxPct - minPct}%`,
-                    bottom: `${minPct}%`,
-                  }}
-                />
-              )}
               <div
                 aria-hidden="true"
                 className={cn('absolute bottom-0 left-0 right-0 rounded-sm', tone)}
