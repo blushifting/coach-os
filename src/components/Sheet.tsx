@@ -9,6 +9,16 @@ interface SheetProps {
   readonly children: ReactNode;
 }
 
+/**
+ * Sheet bottom-attached avec backdrop semi-transparent.
+ *
+ * Conv #11c — refonte glassmorphism :
+ *   - backdrop : noir 70 % + blur renforcé (12 px) → le contenu derrière reste
+ *     deviné mais flouté
+ *   - sheet : fond semi-transparent (anthracite-900/85) + blur 16 px,
+ *     bordure haute sang-700/30 pour matérialiser la séparation,
+ *     ombre extérieure haute pour décoller du fond
+ */
 export function Sheet({ open, onClose, title, children }: SheetProps) {
   useEffect(() => {
     if (!open) return;
@@ -26,12 +36,14 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      className="fixed inset-0 z-50 flex items-end bg-black/60 backdrop-blur-sm animate-in fade-in"
+      className="fixed inset-0 z-50 flex items-end bg-black/70 backdrop-blur-md animate-in fade-in"
       onClick={onClose}
     >
       <div
         className={cn(
-          'w-full bg-anthracite-900 border-t border-anthracite-700 rounded-t-3xl p-6',
+          // Conv #11c — surface translucide + blur fort = effet "glass"
+          'w-full rounded-t-3xl border-t border-sang-700/30 bg-anthracite-900/85 p-6 backdrop-blur-xl',
+          'shadow-[0_-12px_32px_-8px_rgba(0,0,0,0.6)]',
           'pb-[max(1.5rem,env(safe-area-inset-bottom))]',
         )}
         onClick={(e) => e.stopPropagation()}
@@ -43,7 +55,7 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
               type="button"
               onClick={onClose}
               aria-label="Fermer"
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-anthracite-800 text-anthracite-300 hover:text-white"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-anthracite-800/80 text-anthracite-300 transition hover:bg-anthracite-700 hover:text-white"
             >
               ×
             </button>

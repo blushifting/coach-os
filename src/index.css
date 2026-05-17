@@ -1,6 +1,11 @@
 /* Inter via Fontsource — chargée à côté du bundle (offline-ready, anticipation
  * Conv #9 PWA). Variable, weights 400/500/600/700, latin uniquement. */
 @import '@fontsource-variable/inter';
+/* Conv #11c — Oswald (font display condensée avec vraies minuscules) pour
+ * titres séance, charges, grands chiffres. Weights 500 (semi-bold) + 700
+ * (bold) suffisent pour les usages display. */
+@import '@fontsource/oswald/500.css';
+@import '@fontsource/oswald/700.css';
 
 @tailwind base;
 @tailwind components;
@@ -29,15 +34,21 @@
     overflow: hidden;
     overscroll-behavior: none;
     font-family: theme('fontFamily.sans');
-    background-color: theme('colors.anthracite.950');
+    /* Conv #11c — fond global passé en graphite (gris infusé brun-rouge)
+     * pour casser l'austérité du noir pur. Les cards/inputs restent en
+     * anthracite (gris froid) → contraste subtil et organique. */
+    background-color: theme('colors.graphite.950');
     color: theme('colors.anthracite.100');
   }
   #root {
     height: 100%;
   }
 
-  /* Grain subtil sur le fond. ::before plutôt que sur body pour éviter le
-   * blend-mode sur tous les enfants. Pointer-events none, derrière tout. */
+  /* Texture de fond en 2 couches (Conv #11c) :
+   *   ::before = grain (bruit fractal, ~0.05 opacité)
+   *   ::after  = stries brushed metal (turbulence horizontale, ~0.07 opacité)
+   * Posées en fixed, pointer-events none, derrière tout (z-index -1 / -2).
+   * Le mix imite un métal brossé tiède plutôt qu'un aplat plat noir. */
   body {
     position: relative;
   }
@@ -49,7 +60,33 @@
     background-size: 240px 240px;
     opacity: 0.9;
     pointer-events: none;
+    z-index: -2;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: theme('backgroundImage.brushed');
+    background-size: 400px 400px;
+    /* Linear gradient discret top→bottom pour donner du relief au fond,
+     * comme une plaque de métal éclairée par dessus. */
+    background-blend-mode: overlay;
+    pointer-events: none;
     z-index: -1;
+  }
+  /* Vignette radiale très douce : centre lumineux, coins plus sombres.
+   * Posée sur #root, derrière tout le contenu via mix-blend-mode. */
+  #root::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(
+      ellipse at top,
+      rgba(122, 26, 37, 0.06) 0%,
+      transparent 60%
+    );
+    pointer-events: none;
+    z-index: 0;
   }
 
   /* Hiérarchie typographique de base. Les composants restent libres

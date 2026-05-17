@@ -145,6 +145,74 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
+## État courant — fin Conv #11c (2026-05-17)
+
+Refonte visuelle complète, pistes A→D (pas E ce coup-ci). Cosmétique
+pure — pas de Vitest dédié, sanity check : **425 tests verts**, build OK.
+
+- **Piste A — graphite chaleureux + texture brossée** (`tailwind.config.ts`
+  + `index.css`) :
+  - Nouvelle palette `graphite` (gris infusé brun-rouge) : 700→950 (`#3a2f2a`
+    → `#16110f`). Utilisée pour `body` background + TabBar/Header en
+    sur-couche translucide.
+  - Les cards/inputs restent en `anthracite` (gris froid) → contraste subtil
+    fond/surfaces, plus organique.
+  - 2 couches de texture sur `body` : `::before` grain SVG (0.05 opacity,
+    z -2) + `::after` brushed metal SVG (stries horizontales 0.07 opacity,
+    z -1, blend overlay). `#root::before` = vignette radiale sang très
+    discrète en top.
+- **Piste B — rouge structurel partout** :
+  - `Card.tsx` : nouvelle prop `accent` (barre verticale gradient
+    sang-500→800 à gauche). Shadow par défaut : `shadow-card-soft` (inset
+    blanc top + **reflet sang en bas** + ombre extérieure douce) → toute
+    card a une signature rouge permanente discrète.
+  - `Button.tsx` : variants en gradients (primary sang-600→800, secondary
+    anthracite-700→800, danger sang-700→900), `shadow-glow-sang` au
+    hover/focus, ring-2 sang au `focus-visible`.
+  - `TabBar.tsx` : tab actif → fond gradient sang-900/30 + label sang-400
+    en font-medium + barre haute gradient sang avec `shadow-glow-sang`.
+  - `StepIndicator.tsx` : barre étape active en gradient sang-500→700 +
+    `shadow-glow-sang-lg`. Étapes done en sang-700 plein. Label actif
+    sang-400.
+  - `HelpButton.tsx` : fond `bg-sang-900/40`, bordure `border-sang-700/40`,
+    "?" en sang-300 (anciennement anthracite).
+  - `SetInput.tsx` : numéro de série (S1/S2…) en font-display sang-400
+    quand done, sinon anthracite-300. Select Effort colorisé selon RPE
+    (anthracite ≤7, amber 7.5-8, sang 8.5-9, sang vif >9). Bouton ✓ done en
+    gradient sang-500→700 + `shadow-glow-sang`. Inputs reps/charge avec
+    `focus:border-sang-700/50`.
+  - `SessionRunner.tsx` : Card "session-progress" en `accent`, label séance
+    en `font-display text-2xl`, compteur done/total en `font-display
+    text-3xl` (done en sang-400, total en anthracite-400).
+  - `Header.tsx` : bordure basse `border-sang-700/25`, fond
+    `graphite-950/85 backdrop-blur-md`.
+- **Piste C — profondeur + glassmorphism** :
+  - `shadow-card-soft` + `shadow-glow-sang` + `shadow-glow-sang-lg`
+    définis dans `tailwind.config.ts`.
+  - `Sheet.tsx` : backdrop overlay en `bg-black/70 backdrop-blur-md`,
+    sheet en `bg-anthracite-900/85 backdrop-blur-xl`, bordure haute
+    `border-sang-700/30`, ombre extérieure haute.
+- **Piste D — police display + grands chiffres** :
+  - Police display = **Oswald** (Conv #11c bis : remplace Anton qui ne
+    distinguait pas les majuscules/minuscules — feedback Azur). Condensée
+    avec vraies minuscules, weights 500/700 chargés via
+    `@fontsource/oswald`. `tailwind.config.ts` : `fontFamily.display`.
+  - `Header.tsx` titre en `font-display text-2xl uppercase tracking-[0.06em]`.
+  - `WelcomeScreen.tsx` : "K**o**tsh" en `font-display text-7xl font-bold`,
+    le **o** en `text-sang-500` (évoque le disque de poids — clin d'œil
+    discret, signature de marque).
+  - `SessionRunner` + `SetInput` : grands chiffres tabular en font-display.
+- Tests : sanity **425 Vitest verts** (pas de régression). Build OK :
+  **41.83 kB CSS / 678 kB JS** (+3.7 CSS / +0.3 JS depuis #11b). Précache
+  PWA gonflé à 1144 kB par les multiples weights/scripts d'Oswald
+  (vietnamien, cyrillique, latin-ext chargés à la demande par le navigateur
+  via unicode-range — peu téléchargés en pratique).
+
+**Backlog Conv #11 — restant** :
+- **#11d ou #11c'** — piste E (transitions sur cochage, progress ring
+  autour des exos, haptics Vibration API, animations courbes Bilan).
+  Laissé en suspens — Azur réévalue après revue visuelle des A→D.
+
 ## État courant — fin Conv #11b (2026-05-17)
 
 Aperçu programme + personnalisation des variantes en onboarding

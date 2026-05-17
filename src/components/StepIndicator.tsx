@@ -6,6 +6,11 @@ interface StepIndicatorProps {
   readonly labels?: readonly string[];
 }
 
+/**
+ * Étapes d'un wizard — Conv #11c : étape courante en gradient sang + halo
+ * lumineux (`shadow-glow-sang-lg`), étapes passées en sang plein, étapes à
+ * venir en anthracite-700. Le label actif passe en sang-400 pour matcher.
+ */
 export function StepIndicator({ current, total, labels }: StepIndicatorProps) {
   const indices = Array.from({ length: total }, (_, i) => i + 1);
   return (
@@ -18,9 +23,10 @@ export function StepIndicator({ current, total, labels }: StepIndicatorProps) {
             <div
               key={i}
               className={cn(
-                'h-1.5 flex-1 rounded-full transition-colors',
-                done && 'bg-sang-600',
-                active && 'bg-sang-500',
+                'h-1.5 flex-1 rounded-full transition-all duration-300',
+                done && 'bg-sang-700',
+                active &&
+                  'bg-gradient-to-r from-sang-500 to-sang-700 shadow-glow-sang-lg',
                 !done && !active && 'bg-anthracite-700',
               )}
               data-testid={`step-bar-${i}`}
@@ -37,7 +43,7 @@ export function StepIndicator({ current, total, labels }: StepIndicatorProps) {
               key={lbl}
               className={cn(
                 'flex-1 text-center',
-                idx + 1 === current && 'text-white font-medium',
+                idx + 1 === current && 'font-medium text-sang-400',
               )}
             >
               {lbl}
@@ -46,7 +52,7 @@ export function StepIndicator({ current, total, labels }: StepIndicatorProps) {
         </div>
       ) : (
         <div className="mt-2 text-xs text-anthracite-300">
-          Étape <span className="text-white font-medium">{current}</span> sur {total}
+          Étape <span className="font-medium text-sang-400">{current}</span> sur {total}
         </div>
       )}
     </div>

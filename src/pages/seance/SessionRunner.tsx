@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { HelpButton } from '@/components/HelpButton';
+import { cn } from '@/lib/cn';
 import type { Catalog } from '@/engine/catalog';
 import type { SessionPlan } from '@/engine/models';
 import { useEngine } from '@/hooks/useEngine';
@@ -44,20 +45,27 @@ export function SessionRunner({
 
   return (
     <div className="flex flex-col gap-3" data-testid="session-runner">
-      <Card data-testid="session-progress" className="flex items-center justify-between">
-        <div className="flex flex-col gap-0.5">
-          <span className="text-xs uppercase tracking-wide text-anthracite-300">
-            Séance — {plan.label}
+      <Card accent data-testid="session-progress" className="flex items-center justify-between">
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] uppercase tracking-[0.18em] text-sang-400/90">
+            Séance
           </span>
-          <span className="flex items-center gap-1.5 text-sm text-white">
-            Cycle {plan.cycle_index} · S{plan.week_in_cycle} · Effort cible {plan.rpe_target}/10
+          <span className="font-display text-2xl leading-none tracking-wide text-white">
+            {plan.label}
+          </span>
+          <span className="flex items-center gap-1.5 text-xs text-anthracite-300">
+            Cycle {plan.cycle_index} · S{plan.week_in_cycle} · Effort cible{' '}
+            <span className="tabular-nums text-anthracite-100">{plan.rpe_target}/10</span>
             <HelpButton topic="rpe" label="Aide : effort cible" />
           </span>
         </div>
         <div className="flex flex-col items-end gap-0.5">
-          <span className="text-xs text-anthracite-300">Séries</span>
-          <span className="tabular-nums text-white">
-            {done} / {total}
+          <span className="text-[10px] uppercase tracking-[0.18em] text-anthracite-300">
+            Séries
+          </span>
+          <span className="font-display text-3xl leading-none tabular-nums text-white">
+            <span className="text-sang-400">{done}</span>
+            <span className="text-anthracite-400"> / {total}</span>
           </span>
         </div>
       </Card>
@@ -81,7 +89,15 @@ export function SessionRunner({
                       {ex?.nom_fr ?? item.exercise_id}
                     </span>
                     <span className="text-xs text-anthracite-300">
-                      {doneCount}/{entrySets.length} séries — repos {formatRest(item.sets[0]?.rest_s ?? 0)}
+                      <span
+                        className={cn(
+                          'font-display tabular-nums tracking-wide',
+                          doneCount > 0 ? 'text-sang-400' : 'text-anthracite-200',
+                        )}
+                      >
+                        {doneCount}/{entrySets.length}
+                      </span>{' '}
+                      séries — repos {formatRest(item.sets[0]?.rest_s ?? 0)}
                     </span>
                   </div>
                   <button
