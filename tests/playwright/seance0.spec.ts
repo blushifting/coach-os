@@ -47,6 +47,8 @@ async function runOnboardingFullBodyCustom(page: Page): Promise<void> {
   // Étape 3 — accepter toutes les suggestions
   await page.getByTestId('btn-next').click();
   // Étape 4 — custom (par défaut)
+  await page.getByTestId('btn-next').click();
+  // Étape 5 — aperçu (Conv #11b)
   await page.getByTestId('btn-finish').click();
   await expect(page).toHaveURL(/\/seance-0$/);
 }
@@ -133,6 +135,8 @@ test('séance 0 guidée Starting Strength : calibration des main_* → /programm
   await page.getByTestId('btn-next').click();
   await page.getByTestId('btn-next').click();
   await page.getByTestId('program-ss').click();
+  // Step 4 → 5 (aperçu Conv #11b), puis finalize
+  await page.getByTestId('btn-next').click();
   await page.getByTestId('btn-finish').click();
   await expect(page).toHaveURL(/\/seance-0$/);
 

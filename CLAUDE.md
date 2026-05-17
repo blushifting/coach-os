@@ -145,6 +145,62 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
+## État courant — fin Conv #11b (2026-05-17)
+
+Aperçu programme + personnalisation des variantes en onboarding
+(2e item du dump #11) :
+
+- **Nouveau Step 5 "Aperçu"** dans le wizard onboarding
+  (`pages/onboarding/Step5Preview.tsx` + `OnboardingPage` étendu à 5 étapes).
+  Affiche les séances générées (1 carte par jour), pour chaque exo :
+  icône pattern + nom + nb séries + muscles primaires + bouton "Variantes".
+  Le bouton ouvre `VariantPickerSheet` (réutilisé Conv #4c/#10d) avec
+  toggle "mode élargi" pour voir tous les exos ciblant le muscle. Adapté
+  au nb de séances/sem (2 à 6) puisqu'il itère sur `template.days`.
+- **Préview en mémoire pure** (`lib/onboarding-preview.ts`) — aucune
+  écriture en DB tant que l'utilisateur n'a pas validé Step5.
+  `buildPreviewTemplate(profile, muscleGoals, programmeId, catalog)` :
+  construit un `UserState` temporaire via `engine.startUser` puis appelle
+  `fitGuidedProgram` ou `generateCyclePlan`. `applyVariantsToTemplate`
+  applique les swaps sur une copie (conserve base_sets / progression /
+  role / intensity_scheme). `weeklyVolumeByMuscle` somme les séries par
+  muscle primaire pour le récap. `muscleDeltaForSwap` calcule lost/gained
+  primaires pour l'avertissement.
+- **Avertissement non-bloquant** : si un swap retire des muscles
+  primaires (ex : traction → tirage vertical perd les biceps), un
+  bandeau amber sous le slot signale la perte avec le label des muscles
+  concernés. Non bloquant ; pas de suggestion auto d'exo compensatoire
+  (à creuser ultérieurement si Azur juge ça nécessaire).
+- **Transparence** : panneau "Volume hebdo par muscle (semaine 1)" en
+  haut du Step5 (chiffres bruts, pas d'algo expliqué). Panneau dépliable
+  "Comment ça marche ?" en option (RPE / autorégulation / progression
+  5 sem / remplacement en séance — court).
+- **Finalize étendu** (`OnboardingPage.finalize`) : `startUser` →
+  `generateInitialCyclePlan` (force la pose du plan immédiatement) →
+  `applyVariantReplacements` (nouveau, cf. ci-dessous) → navigate vers
+  `/seance-0` ou `/programme` selon `requires_calibration`. Auparavant on
+  ne faisait que `startUser` et c'est `Seance0Page` qui posait le plan.
+- **`useEngine.applyVariantReplacements`** (nouveau, durable) : mute
+  `current_cycle_plan.days[di].exercises[pi].exercise_id` pour chaque
+  replacement, persiste via `txSaveUserStateOnly`. **Ne touche pas**
+  `requires_calibration` (contrairement à `commitInitialCalibration`
+  qui le flip false). Idempotent : liste vide ou plan null → no-op.
+- **Tests Playwright** : 6 specs touchées (ajout d'un `btn-next` Step
+  4→5 + `btn-finish` Step 5). 20 e2e verts.
+- Tests : **425 Vitest** verts (+10 nouveaux sur `onboarding-preview` :
+  buildPreviewTemplate custom + guidé, no-mutation, weeklyVolumeByMuscle,
+  applyVariantsToTemplate preserve fields, muscleDeltaForSwap).
+  `npm run build` OK (28.14 kB CSS / 675.7 kB JS, +0.1 CSS / +8.7 JS).
+  Suite e2e Playwright **20/20 verte**.
+
+**Backlog Conv #11 — restant** :
+- **#11c — Refonte visuelle complète** : pistes A (graphite chaleureux +
+  brushed metal), B (rouge structurel + gradient RPE + halos), C
+  (profondeur + glassmorphism sheets + bordures lumineuses), D (font
+  display Anton + gros chiffres + silhouettes background), E
+  (transitions + progress ring + haptics). Probablement à splitter en
+  #11c/#11c'.
+
 ## État courant — fin Conv #11a (2026-05-17)
 
 Bundle séance & inter-séance + fix Progrès (1er morceau du 2e dump Azur) :

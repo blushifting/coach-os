@@ -30,6 +30,7 @@ async function runOnboardingAndCalibration(page: Page): Promise<void> {
   await page.getByTestId('preset-default').click();
   await page.getByTestId('btn-next').click();
   await page.getByTestId('btn-next').click();
+  await page.getByTestId('btn-next').click();
   await page.getByTestId('btn-finish').click();
   await expect(page).toHaveURL(/\/seance-0$/);
 

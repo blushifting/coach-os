@@ -14,7 +14,12 @@ import { Button } from '@/components/Button';
 import { ChevronLeft, ChevronRight } from '@/components/icons';
 import { StepIndicator } from '@/components/StepIndicator';
 import { ALL_GUIDED_PROGRAMS } from '@/engine/guided_programs';
-import { bootstrap, startUser } from '@/hooks/useEngine';
+import {
+  applyVariantReplacements,
+  bootstrap,
+  generateInitialCyclePlan,
+  startUser,
+} from '@/hooks/useEngine';
 import {
   buildMuscleGoals,
   buildProfile,
@@ -24,26 +29,60 @@ import {
   makeInitialDraft,
   type OnboardingDraft,
 } from '@/lib/onboarding-state';
+import {
+  buildPreviewTemplate,
+  type VariantReplacement,
+} from '@/lib/onboarding-preview';
+import { useCoachOsStore } from '@/store';
 import { Step1Profile } from './Step1Profile';
 import { Step2Muscles } from './Step2Muscles';
 import { Step3Balance } from './Step3Balance';
 import { Step4Program } from './Step4Program';
+import { Step5Preview } from './Step5Preview';
 
-const STEP_LABELS = ['Profil', 'Muscles', 'Équilibre', 'Programme'] as const;
+const STEP_LABELS = ['Profil', 'Muscles', 'Équilibre', 'Programme', 'Aperçu'] as const;
 const TOTAL_STEPS = STEP_LABELS.length;
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
+  const catalog = useCoachOsStore((s) => s.catalog);
   const [draft, setDraft] = useState<OnboardingDraft>(makeInitialDraft);
   const [step, setStep] = useState<number>(1);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Conv #11b — variantes choisies dans le Step5 (en mémoire jusqu'au finalize).
+  const [variantReplacements, setVariantReplacements] = useState<
+    ReadonlyArray<VariantReplacement>
+  >([]);
 
   // Bootstrap idempotent du store/catalog au mount (utile si on entre direct
   // sur /onboarding sans avoir traversé d'autre page).
   useEffect(() => {
     void bootstrap();
   }, []);
+
+  // Conv #11b — preview calculée à la volée quand on entre dans Step5. Sans
+  // toucher au store (tout reste en mémoire jusqu'au finalize).
+  const preview = useMemo(() => {
+    if (step !== 5 || catalog === null) {
+      return { template: null, blocking: [] as readonly string[] };
+    }
+    try {
+      const guided =
+        draft.programmeId !== null
+          ? (ALL_GUIDED_PROGRAMS.find((p) => p.id === draft.programmeId) ?? null)
+          : null;
+      const objectiveOverride = guided?.objectifs_principaux[0];
+      const globalObjective = deriveGlobalObjective(draft, objectiveOverride);
+      const profile = buildProfile(draft, globalObjective);
+      const suggestions = computeBalanceSuggestions(draft.priorities);
+      const muscleGoals = buildMuscleGoals(draft, suggestions);
+      return buildPreviewTemplate(profile, muscleGoals, draft.programmeId, catalog);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Erreur preview';
+      return { template: null, blocking: [msg] };
+    }
+  }, [step, draft, catalog]);
 
   // Garde-fou étape 2 : valider seulement si au moins 1 muscle.
   const canAdvanceFromStep2 = !isEmptySelection(draft);
@@ -70,6 +109,11 @@ export default function OnboardingPage() {
         ...d,
         acceptedSuggestions: new Set(suggestions.map((s) => s.muscle)),
       }));
+    }
+    if (step === 4) {
+      // Au passage 4 → 5 : on remet à zéro les variantes (changement de programme
+      // ⇒ les slots ne correspondent plus aux indices précédents).
+      setVariantReplacements([]);
     }
     if (step < TOTAL_STEPS) setStep((s) => s + 1);
   }
@@ -99,7 +143,15 @@ export default function OnboardingPage() {
         applyBalance: false,
         programmeId: draft.programmeId,
       });
-      navigate('/seance-0', { replace: true });
+      // Conv #11b : génère le cycle plan maintenant pour pouvoir appliquer
+      // les variantes choisies en Step5 avant de router vers Séance 0.
+      const { state: stateWithPlan } = await generateInitialCyclePlan();
+      if (variantReplacements.length > 0) {
+        await applyVariantReplacements(variantReplacements);
+      }
+      const requiresCalibration =
+        stateWithPlan?.current_cycle_plan?.requires_calibration ?? false;
+      navigate(requiresCalibration ? '/seance-0' : '/programme', { replace: true });
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Erreur inattendue';
       setError(msg);
@@ -117,10 +169,21 @@ export default function OnboardingPage() {
         return <Step3Balance draft={draft} onChange={patchDraft} />;
       case 4:
         return <Step4Program draft={draft} onChange={patchDraft} />;
+      case 5:
+        return (
+          <Step5Preview
+            template={preview.template}
+            blocking={preview.blocking}
+            catalog={catalog}
+            equipment={draft.equipment}
+            replacements={variantReplacements}
+            onChangeReplacements={setVariantReplacements}
+          />
+        );
       default:
         return null;
     }
-  }, [step, draft]);
+  }, [step, draft, preview, catalog, variantReplacements]);
 
   const isLastStep = step === TOTAL_STEPS;
 
@@ -167,11 +230,11 @@ export default function OnboardingPage() {
             <Button
               variant="primary"
               onClick={finalize}
-              disabled={submitting}
+              disabled={submitting || preview.template === null}
               fullWidth
               data-testid="btn-finish"
             >
-              {submitting ? 'Création…' : 'Commencer la séance 0'}
+              {submitting ? 'Création…' : 'Valider et continuer'}
             </Button>
           ) : (
             <Button

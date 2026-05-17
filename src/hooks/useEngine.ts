@@ -189,15 +189,47 @@ export async function generateInitialCyclePlan(): Promise<InitialCyclePlanResult
   return { state: next, blocking: [] };
 }
 
+export interface VariantReplacementInput {
+  readonly dayIndex: number;
+  readonly slotIndex: number;
+  readonly newExerciseId: string;
+}
+
+/**
+ * Conv #11b — Applique les variantes choisies dans le Step5 d'onboarding sur
+ * le `current_cycle_plan` posé, **sans toucher** à `requires_calibration`. Le
+ * routing vers `/seance-0` ou `/programme` est décidé par l'appelant selon
+ * l'état du flag (qui reste à la valeur posée par `generateInitialCyclePlan`).
+ *
+ * Préserve `base_sets`, `progression`, `progression_rule`, `role`,
+ * `intensity_scheme` — seul `exercise_id` du slot ciblé est remplacé.
+ * Idempotent : si la liste est vide ou si le plan n'existe pas, no-op silencieux.
+ */
+export async function applyVariantReplacements(
+  replacements: ReadonlyArray<VariantReplacementInput>,
+): Promise<UserState> {
+  const next = requireUserState();
+  if (next.current_cycle_plan === null || replacements.length === 0) {
+    useCoachOsStore.setState({ userState: next });
+    return next;
+  }
+  for (const r of replacements) {
+    const day = next.current_cycle_plan.days[r.dayIndex];
+    if (day === undefined) continue;
+    const slot = day.exercises[r.slotIndex];
+    if (slot === undefined) continue;
+    slot.exercise_id = r.newExerciseId;
+  }
+  await txSaveUserStateOnly(next);
+  useCoachOsStore.setState({ userState: next });
+  return next;
+}
+
 export interface CommitInitialCalibrationArgs {
   /** e1RM (valeur "totale", incluant BW pour bodyweight_loaded) par exercise_id. */
   readonly e1rmByExerciseId: Readonly<Record<string, number>>;
   /** Variantes choisies par l'utilisateur, à appliquer sur `current_cycle_plan`. */
-  readonly variantReplacements?: ReadonlyArray<{
-    readonly dayIndex: number;
-    readonly slotIndex: number;
-    readonly newExerciseId: string;
-  }>;
+  readonly variantReplacements?: ReadonlyArray<VariantReplacementInput>;
 }
 
 /**
@@ -549,6 +581,7 @@ export interface EngineApi {
   refreshHistory: typeof refreshHistory;
   startUser: typeof startUser;
   generateInitialCyclePlan: typeof generateInitialCyclePlan;
+  applyVariantReplacements: typeof applyVariantReplacements;
   commitInitialCalibration: typeof commitInitialCalibration;
   generateAndStoreSession: typeof generateAndStoreSession;
   planSessionForDay: typeof planSessionForDay;
@@ -571,6 +604,7 @@ export function useEngine(): EngineApi {
       refreshHistory,
       startUser,
       generateInitialCyclePlan,
+      applyVariantReplacements,
       commitInitialCalibration,
       generateAndStoreSession,
       planSessionForDay,
