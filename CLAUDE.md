@@ -145,6 +145,51 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
+## État courant — fin Conv #11g (2026-05-18)
+
+Visualisation des données (items 6, 9, 10 du dump #11 bis).
+
+- **Onglet "Force"** (`pages/progres/ForceView.tsx` + tab dans `ProgresPage`) :
+  pour chaque exo présent dans l'historique avec ≥ 2 points → carte avec
+  nom, plafond actuel (kg, en font-display tabulaire), delta % depuis le
+  1er point (vert si > +0.5 %, sang si < −0.5 %, anthracite sinon), et
+  une mini-courbe SVG (polyline sang sur fond card). Calcul dans
+  `lib/progress.ts → computeE1rmHistory` : on parcourt `history.feedbacks`,
+  applique `e1rmObserved` (Epley) sur chaque set valide, garde le plus
+  haut e1RM par date, trie chrono ascendant. Tri global par nombre de
+  points décroissant (les exos les plus suivis remontent), top 8.
+  Tab order : Couverture / Force / Volume / Cycles.
+- **Plafonds dans le catalogue** (item 9 minimal — pas d'estimation) :
+  `CataloguePage` lit `userState.e1rm` et passe la valeur courante à
+  chaque `ExerciseCard` (petit chip sang `{val} kg` dans la rangée de
+  tags, testid `card-e1rm-${exId}`) et à `CatalogueDetailSheet` (bloc
+  encadré sang sous la description, "Ton plafond — {val} kg" en
+  font-display). Les exos non mesurés n'affichent rien — pas d'estimation
+  par ratio dans cette conv (cf. backlog : ça demande une table de
+  conversion validée scientifiquement, hors scope).
+- **Séance 0 exclue du décompte de cycle** (`lib/dashboard.ts` + `engine/
+  lifecycle.ts`) : `computeCycleProgress`, `computeWeekSessions` et
+  `isCycleFinished` filtrent les feedbacks avec `feedback.label === 'Séance 0'`.
+  Nouvelle const exportée `CALIBRATION_LABEL = 'Séance 0'`. Idem dans
+  `generateCycleReview` : `cycleSessions` exclut la Séance 0 du calcul
+  d'adhérence et de l'analyse muscles. **Le volume hebdo / la couverture
+  continuent d'inclure la Séance 0** (filtres par dates seuls,
+  `computeVolumeHistory` et `computeCoverageThisWeek` inchangés).
+
+Tests : **434 Vitest verts** (+6 : 3 sur `computeE1rmHistory`, 2 sur
+exclusion Séance 0 dans dashboard, 1 e1rm test "single point excluded").
+**20 e2e verts** (workers=1). Build OK (44.39 kB CSS / 686.99 kB JS,
++1.19 CSS / +1.68 JS depuis #11f).
+
+**Backlog Conv #11 — restant** :
+- **#11h** — Calendrier (déload bien placé quel que soit le jour de
+  démarrage S1) + co-construction programme (détecteur de tensions full
+  body × n séances × volume avec arbitrages explicites et estim. durée
+  séance).
+- **Estimation de plafond par ratios** (item 9 partiel) : reportée. Demande
+  une table de conversion entre exos d'un même muscle/pattern (ex : front
+  squat ≈ 0.85 × back squat) appuyée sur de la littérature. Hors scope #11.
+
 ## État courant — fin Conv #11f (2026-05-18)
 
 Refonte onboarding/calibration + chrome (items 4, 5, 7, 8 du dump #11 bis).

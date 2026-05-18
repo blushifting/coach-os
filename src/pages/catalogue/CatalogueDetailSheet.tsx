@@ -18,6 +18,8 @@ import { PatternIcon } from '@/pages/seance/PatternIcon';
 interface CatalogueDetailSheetProps {
   readonly open: boolean;
   readonly exercise: Exercise | null;
+  /** Plafond mesuré pour cet exo (kg) — null si jamais mesuré (Conv #11g). */
+  readonly e1rm?: number | null;
   readonly onClose: () => void;
 }
 
@@ -31,6 +33,7 @@ interface CatalogueDetailSheetProps {
 export function CatalogueDetailSheet({
   open,
   exercise,
+  e1rm = null,
   onClose,
 }: CatalogueDetailSheetProps) {
   if (exercise === null) return null;
@@ -81,6 +84,20 @@ export function CatalogueDetailSheet({
         >
           {buildDescription(exercise)}
         </p>
+
+        {e1rm !== null && e1rm > 0 ? (
+          <div
+            data-testid="catalogue-detail-e1rm"
+            className="flex items-baseline justify-between rounded-xl border border-sang-700/40 bg-sang-900/25 px-3 py-2"
+          >
+            <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-sang-300">
+              Ton plafond
+            </span>
+            <span className="font-display text-xl tabular-nums text-white">
+              {e1rm.toFixed(1)} kg
+            </span>
+          </div>
+        ) : null}
 
         {primaires.length > 0 && (
           <Section label="Muscles principaux">

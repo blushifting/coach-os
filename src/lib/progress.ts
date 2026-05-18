@@ -22,6 +22,7 @@ import type {
   UserState,
 } from '@/engine/models';
 import { exercisePrimaires } from '@/engine/models';
+import { e1rmObserved } from '@/engine/prescription';
 import { effectiveVolumeBounds } from '@/engine/volume';
 import {
   addDays,
@@ -350,4 +351,89 @@ export function exerciseMusclesLabel(
   return exercisePrimaires(catalog.get(exerciseId))
     .map(muscleLabel)
     .join(', ');
+}
+
+// =============================================================================
+// Historique des plafonds (Conv #11g — onglet Progrès / Force)
+// =============================================================================
+
+export interface E1rmPoint {
+  /** seance_date au format YYYY-MM-DD (clé d'agrégation). */
+  readonly date: string;
+  /** Plafond estimé sur la meilleure série de cette date pour cet exo. */
+  readonly e1rm: number;
+}
+
+export interface ExerciseE1rmSeries {
+  readonly exercise_id: string;
+  readonly nom_fr: string;
+  readonly points: ReadonlyArray<E1rmPoint>;
+  /** Plafond actuel = dernier point. */
+  readonly current: number;
+  /** Plafond initial = premier point. Sert au calcul du delta %. */
+  readonly initial: number;
+  /** Pourcentage d'évolution (current/initial − 1) × 100. */
+  readonly deltaPct: number;
+}
+
+/**
+ * Construit l'historique d'e1RM par exercice à partir des feedbacks réalisés
+ * (Séance 0 incluse — c'est même souvent le 1er point). Pour chaque exo et
+ * chaque date de séance, on garde le plus haut e1RM calculé via Epley
+ * (`e1rmObserved`) sur les sets de cette date. Ne renvoie que les exos avec
+ * **≥ 2 points** (sinon pas de courbe à tracer). Tri par nombre de points
+ * décroissant (les exos les plus suivis remontent en haut), limité à `topN`.
+ */
+export function computeE1rmHistory(
+  feedbacks: ReadonlyArray<FeedbackRow>,
+  catalog: Catalog,
+  topN: number = 8,
+): ExerciseE1rmSeries[] {
+  const byExo = new Map<string, Map<string, number>>();
+  for (const fb of feedbacks) {
+    const date = fb.feedback.seance_date;
+    for (const s of fb.feedback.sets) {
+      if (s.reps_done <= 0) continue;
+      let e: number;
+      try {
+        e = e1rmObserved(s.load_kg, s.reps_done, s.rpe_perceived);
+      } catch {
+        continue;
+      }
+      if (!Number.isFinite(e) || e <= 0) continue;
+      let inner = byExo.get(s.exercise_id);
+      if (inner === undefined) {
+        inner = new Map<string, number>();
+        byExo.set(s.exercise_id, inner);
+      }
+      const cur = inner.get(date);
+      if (cur === undefined || e > cur) inner.set(date, e);
+    }
+  }
+
+  const result: ExerciseE1rmSeries[] = [];
+  for (const [exId, dateMap] of byExo) {
+    if (dateMap.size < 2) continue;
+    if (!catalog.has(exId)) continue;
+    const points: E1rmPoint[] = [...dateMap.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, e1rm]) => ({ date, e1rm }));
+    const initial = points[0]!.e1rm;
+    const current = points[points.length - 1]!.e1rm;
+    const deltaPct = initial > 0 ? (current / initial - 1) * 100 : 0;
+    result.push({
+      exercise_id: exId,
+      nom_fr: catalog.get(exId).nom_fr,
+      points,
+      current,
+      initial,
+      deltaPct,
+    });
+  }
+
+  result.sort((a, b) => {
+    if (b.points.length !== a.points.length) return b.points.length - a.points.length;
+    return b.current - a.current;
+  });
+  return result.slice(0, topN);
 }

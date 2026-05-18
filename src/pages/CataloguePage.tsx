@@ -21,6 +21,7 @@ import { FiltersSheet } from './catalogue/FiltersSheet';
  */
 export default function CataloguePage() {
   const catalog = useCoachOsStore((s) => s.catalog);
+  const userState = useCoachOsStore((s) => s.userState);
   const [filters, setFilters] = useState<CatalogFilters>(EMPTY_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selected, setSelected] = useState<Exercise | null>(null);
@@ -29,6 +30,10 @@ export default function CataloguePage() {
     if (catalog === null) return [];
     return applyFilters(catalog, filters);
   }, [catalog, filters]);
+
+  // Conv #11g — plafonds mesurés (kg) affichés sur chaque carte. Snapshot
+  // depuis userState.e1rm. Si pas d'user (pré-onboarding), map vide → rien.
+  const e1rmMap: Readonly<Record<string, number>> = userState?.e1rm ?? {};
 
   if (catalog === null) {
     return (
@@ -105,7 +110,11 @@ export default function CataloguePage() {
         <ul className="flex flex-col gap-2" data-testid="catalogue-list">
           {results.map((ex) => (
             <li key={ex.id}>
-              <ExerciseCard exercise={ex} onClick={() => setSelected(ex)} />
+              <ExerciseCard
+                exercise={ex}
+                onClick={() => setSelected(ex)}
+                e1rm={e1rmMap[ex.id] ?? null}
+              />
             </li>
           ))}
         </ul>
@@ -120,6 +129,7 @@ export default function CataloguePage() {
       <CatalogueDetailSheet
         open={selected !== null}
         exercise={selected}
+        e1rm={selected === null ? null : (e1rmMap[selected.id] ?? null)}
         onClose={() => setSelected(null)}
       />
     </section>

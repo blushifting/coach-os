@@ -164,7 +164,13 @@ function sumVolumeKg(cycleSessions: readonly SessionFeedback[]): number {
 // =============================================================================
 
 export function generateCycleReview(state: UserState, catalog: Catalog): CycleReview {
-  const cycleSessions = state.history.filter((s) => s.cycle_index === state.cycle_index);
+  // Conv #11g — exclut la Séance 0 (label 'Séance 0') du décompte d'adhérence
+  // et de l'analyse muscles : c'est de la calibration, pas une séance normale.
+  // Ses sets restent dans state.history (donc utilisables ailleurs pour les
+  // calculs de volume / plafond historique).
+  const cycleSessions = state.history.filter(
+    (s) => s.cycle_index === state.cycle_index && s.label !== 'Séance 0',
+  );
 
   const plafondsProgression = computeE1rmDeltaPerExercise(state, cycleSessions);
   const { progresses, plateau, undertrained, overshoot } = classifyMusclesOutcome(

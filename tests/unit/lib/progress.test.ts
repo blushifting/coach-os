@@ -7,6 +7,7 @@ import {
   buildCycleHistory,
   buildMusclesOf,
   computeCoverageThisWeek,
+  computeE1rmHistory,
   computeVolumeHistory,
   exerciseLabel,
   formatCycleDates,
@@ -499,6 +500,92 @@ describe('buildCycleHistory', () => {
 // =============================================================================
 // Helpers de formatage
 // =============================================================================
+
+// =============================================================================
+// computeE1rmHistory (Conv #11g)
+// =============================================================================
+
+function makeFbCustom(
+  seanceDate: string,
+  sets: Array<{ exercise_id: string; reps_done: number; load_kg: number; rpe_perceived: number }>,
+): FeedbackRow {
+  return {
+    seance_date: seanceDate,
+    cycle_index: 1,
+    week_in_cycle: 1,
+    session_id: null,
+    feedback: {
+      seance_date: seanceDate,
+      week_in_cycle: 1,
+      cycle_index: 1,
+      rpe_target: 8,
+      sets,
+      label: 'Test',
+    },
+    created_at: seanceDate,
+  };
+}
+
+describe('computeE1rmHistory', () => {
+  const cat = makeCatalog();
+
+  it("ne renvoie pas un exo avec un seul point (pas de courbe possible)", () => {
+    const fbs = [
+      makeFbCustom('2026-05-01', [
+        { exercise_id: 'bp', reps_done: 5, load_kg: 80, rpe_perceived: 8 },
+      ]),
+    ];
+    expect(computeE1rmHistory(fbs, cat)).toEqual([]);
+  });
+
+  it('garde le max e1rm par date et trie chronologiquement', () => {
+    const fbs = [
+      makeFbCustom('2026-05-08', [
+        // 2 sets ce jour-là : on garde celui qui donne le e1rm le plus haut
+        { exercise_id: 'bp', reps_done: 5, load_kg: 80, rpe_perceived: 8 },
+        { exercise_id: 'bp', reps_done: 3, load_kg: 90, rpe_perceived: 8 },
+      ]),
+      makeFbCustom('2026-05-01', [
+        { exercise_id: 'bp', reps_done: 5, load_kg: 75, rpe_perceived: 8 },
+      ]),
+    ];
+    const series = computeE1rmHistory(fbs, cat);
+    expect(series).toHaveLength(1);
+    expect(series[0]!.exercise_id).toBe('bp');
+    expect(series[0]!.points).toHaveLength(2);
+    expect(series[0]!.points[0]!.date).toBe('2026-05-01');
+    expect(series[0]!.points[1]!.date).toBe('2026-05-08');
+    expect(series[0]!.current).toBeGreaterThan(series[0]!.initial);
+    expect(series[0]!.deltaPct).toBeGreaterThan(0);
+  });
+
+  it('exclut les sets invalides (reps <= 0, e1rm calcul échoue)', () => {
+    const fbs = [
+      makeFbCustom('2026-05-01', [
+        { exercise_id: 'bp', reps_done: 0, load_kg: 80, rpe_perceived: 8 }, // skip
+        { exercise_id: 'bp', reps_done: 5, load_kg: 80, rpe_perceived: 8 },
+      ]),
+      makeFbCustom('2026-05-08', [
+        { exercise_id: 'bp', reps_done: 5, load_kg: 85, rpe_perceived: 8 },
+      ]),
+    ];
+    const series = computeE1rmHistory(fbs, cat);
+    expect(series).toHaveLength(1);
+    expect(series[0]!.points).toHaveLength(2);
+  });
+
+  it('ignore les exos absents du catalogue', () => {
+    const fbs = [
+      makeFbCustom('2026-05-01', [
+        { exercise_id: 'inconnu', reps_done: 5, load_kg: 50, rpe_perceived: 8 },
+      ]),
+      makeFbCustom('2026-05-08', [
+        { exercise_id: 'inconnu', reps_done: 5, load_kg: 55, rpe_perceived: 8 },
+      ]),
+    ];
+    expect(computeE1rmHistory(fbs, cat)).toEqual([]);
+  });
+});
 
 describe('helpers formatage', () => {
   it('muscleLabel : capitalise et remplace _', () => {

@@ -79,6 +79,7 @@ function makeFeedback(
   seanceDate: string,
   cycleIndex: number,
   weekInCycle: number,
+  label = 'Test',
 ): FeedbackRow {
   return {
     seance_date: seanceDate,
@@ -91,7 +92,7 @@ function makeFeedback(
       cycle_index: cycleIndex,
       rpe_target: 8,
       sets: [],
-      label: 'Test',
+      label,
     },
     created_at: seanceDate,
   };
@@ -255,6 +256,17 @@ describe('computeCycleProgress', () => {
     ];
     expect(computeCycleProgress(state, fbs).done).toBe(1);
   });
+
+  // Conv #11g — la Séance 0 calibre mais ne compte pas dans le décompte.
+  it("Séance 0 (label 'Séance 0') exclue du décompte", () => {
+    const state = makeState({ current_cycle_plan: makeWeekly(3) });
+    const fbs = [
+      makeFeedback('2026-05-01', 1, 1, 'Séance 0'),
+      makeFeedback('2026-05-03', 1, 1, 'Push'),
+      makeFeedback('2026-05-05', 1, 1, 'Pull'),
+    ];
+    expect(computeCycleProgress(state, fbs).done).toBe(2);
+  });
 });
 
 describe('computeWeekSessions', () => {
@@ -269,6 +281,18 @@ describe('computeWeekSessions', () => {
       makeFeedback('2026-05-10', 1, 2), // sem 2
     ];
     expect(computeWeekSessions(state, fbs)).toEqual({ done: 2, planned: 4 });
+  });
+
+  it("Séance 0 exclue du décompte de la semaine", () => {
+    const state = makeState({
+      current_week_in_cycle: 1,
+      current_cycle_plan: makeWeekly(3),
+    });
+    const fbs = [
+      makeFeedback('2026-05-01', 1, 1, 'Séance 0'),
+      makeFeedback('2026-05-02', 1, 1, 'Push'),
+    ];
+    expect(computeWeekSessions(state, fbs)).toEqual({ done: 1, planned: 3 });
   });
 });
 

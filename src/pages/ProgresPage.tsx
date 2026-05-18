@@ -6,17 +6,20 @@ import {
   buildCycleHistory,
   buildMusclesOf,
   computeCoverageThisWeek,
+  computeE1rmHistory,
   computeVolumeHistory,
 } from '@/lib/progress';
 import { useCoachOsStore } from '@/store';
 import { CoverageView } from './progres/CoverageView';
 import { CyclesView } from './progres/CyclesView';
+import { ForceView } from './progres/ForceView';
 import { VolumeView } from './progres/VolumeView';
 
-type Tab = 'couverture' | 'volume' | 'cycles';
+type Tab = 'couverture' | 'force' | 'volume' | 'cycles';
 
 const TABS: ReadonlyArray<{ readonly id: Tab; readonly label: string }> = [
   { id: 'couverture', label: 'Couverture' },
+  { id: 'force', label: 'Force' },
   { id: 'volume', label: 'Volume' },
   { id: 'cycles', label: 'Cycles' },
 ];
@@ -51,6 +54,7 @@ export default function ProgresPage() {
         VOLUME_HISTORY_WEEKS,
       ),
       cycles: buildCycleHistory(history.cycles, ALL_GUIDED_PROGRAMS),
+      force: computeE1rmHistory(history.feedbacks, catalog),
     };
   }, [userState, catalog, history]);
 
@@ -88,6 +92,7 @@ export default function ProgresPage() {
 
       <div role="tabpanel" data-testid={`panel-${tab}`}>
         {tab === 'couverture' && <CoverageView coverage={data.coverage} />}
+        {tab === 'force' && <ForceView series={data.force} />}
         {tab === 'volume' && <VolumeView series={data.volume} />}
         {tab === 'cycles' && <CyclesView items={data.cycles} catalog={catalog} />}
       </div>

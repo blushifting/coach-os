@@ -22,6 +22,20 @@ import type { CycleRow, FeedbackRow, SessionRow } from '@/db/schema';
 export const CYCLE_LENGTH_WEEKS = 5;
 export const DELOAD_WEEK_INDEX = 5;
 
+/**
+ * Label réservé à la Séance 0 (cf. `Seance0Page.finalize`). Les compteurs
+ * de cycle (avancement, séances de la semaine) excluent cette séance — elle
+ * sert à calibrer, pas à valider une séance du programme. En revanche, ses
+ * sets contribuent au volume hebdo / à la couverture (item #6 dump #11 bis).
+ */
+export const CALIBRATION_LABEL = 'Séance 0';
+
+function isCalibrationFeedback(
+  f: Pick<FeedbackRow, 'feedback'>,
+): boolean {
+  return f.feedback.label === CALIBRATION_LABEL;
+}
+
 // =============================================================================
 // Helpers date (purs, sans dépendance externe)
 // =============================================================================
@@ -107,10 +121,12 @@ export interface CycleProgress {
 /** Avancement global du cycle courant : séances faites / planifiées × 100. */
 export function computeCycleProgress(
   state: Pick<UserState, 'cycle_index' | 'current_cycle_plan'>,
-  feedbacks: ReadonlyArray<Pick<FeedbackRow, 'cycle_index'>>,
+  feedbacks: ReadonlyArray<Pick<FeedbackRow, 'cycle_index' | 'feedback'>>,
 ): CycleProgress {
   const planned = plannedSessionsForCycle(state.current_cycle_plan);
-  const done = feedbacks.filter((f) => f.cycle_index === state.cycle_index).length;
+  const done = feedbacks.filter(
+    (f) => f.cycle_index === state.cycle_index && !isCalibrationFeedback(f),
+  ).length;
   const pct = planned === 0 ? 0 : Math.round((done / planned) * 100);
   return { done, planned, pct };
 }
@@ -126,12 +142,15 @@ export function computeWeekSessions(
     UserState,
     'cycle_index' | 'current_week_in_cycle' | 'current_cycle_plan'
   >,
-  feedbacks: ReadonlyArray<Pick<FeedbackRow, 'cycle_index' | 'week_in_cycle'>>,
+  feedbacks: ReadonlyArray<
+    Pick<FeedbackRow, 'cycle_index' | 'week_in_cycle' | 'feedback'>
+  >,
 ): WeekSessions {
   const done = feedbacks.filter(
     (f) =>
       f.cycle_index === state.cycle_index &&
-      f.week_in_cycle === state.current_week_in_cycle,
+      f.week_in_cycle === state.current_week_in_cycle &&
+      !isCalibrationFeedback(f),
   ).length;
   const planned = state.current_cycle_plan?.days.length ?? 0;
   return { done, planned };
@@ -328,11 +347,13 @@ export function buildCalendarMatrix(
  */
 export function isCycleFinished(
   state: Pick<UserState, 'cycle_index' | 'current_week_in_cycle' | 'current_cycle_plan'>,
-  feedbacks: ReadonlyArray<Pick<FeedbackRow, 'cycle_index'>>,
+  feedbacks: ReadonlyArray<Pick<FeedbackRow, 'cycle_index' | 'feedback'>>,
 ): boolean {
   if (state.current_week_in_cycle > CYCLE_LENGTH_WEEKS) return true;
   const planned = plannedSessionsForCycle(state.current_cycle_plan);
   if (planned === 0) return false;
-  const done = feedbacks.filter((f) => f.cycle_index === state.cycle_index).length;
+  const done = feedbacks.filter(
+    (f) => f.cycle_index === state.cycle_index && !isCalibrationFeedback(f),
+  ).length;
   return done >= planned;
 }

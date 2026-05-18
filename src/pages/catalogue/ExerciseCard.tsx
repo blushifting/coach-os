@@ -12,9 +12,11 @@ import { MiniSilhouette } from './MiniSilhouette';
 interface ExerciseCardProps {
   readonly exercise: Exercise;
   readonly onClick: () => void;
+  /** Plafond mesuré pour cet exo (kg) — null si jamais mesuré (Conv #11g). */
+  readonly e1rm?: number | null;
 }
 
-export function ExerciseCard({ exercise, onClick }: ExerciseCardProps) {
+export function ExerciseCard({ exercise, onClick, e1rm = null }: ExerciseCardProps) {
   const primaires = exercisePrimaires(exercise);
   const description = buildDescription(exercise);
   const isLengthened = exercise.tags.includes('lengthened_bias');
@@ -50,6 +52,15 @@ export function ExerciseCard({ exercise, onClick }: ExerciseCardProps) {
               data-testid="card-tag-lengthened"
             >
               Étirement
+            </span>
+          )}
+          {e1rm !== null && e1rm > 0 && (
+            <span
+              data-testid={`card-e1rm-${exercise.id}`}
+              className="rounded bg-sang-800/60 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-white"
+              title="Ton plafond mesuré (1 rep)"
+            >
+              {e1rm.toFixed(1)} kg
             </span>
           )}
           {primaires.slice(0, 2).map((m) => (
