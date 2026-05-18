@@ -145,6 +145,58 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
+## État courant — fin Conv #11e (2026-05-18)
+
+UX de saisie des séries (items 1-3 du dump #11 bis) — `SetInput` refondu,
+appliqué partout (séances normales + phase work de la Séance 0).
+
+- **Modèle `SetEntry`** (`lib/session-runner.ts`) : `reps` et `load_kg`
+  deviennent `number | null`. `null` = champ vidé par l'utilisateur, affiché
+  vide à l'écran. Plus de défaut à 0 qui forçait des "07"/"08" quand on
+  reprend la saisie. La sérialisation feedback (`buildSessionFeedback`) et
+  le commit Séance 0 (`CalibrationStep.handleCommit`) skippent les sets
+  avec `reps === null` ou `load_kg === null` (en plus de `reps <= 0`).
+  `load_kg === 0` reste valide (= poids du corps).
+- **Steppers +/-** pour reps (step 1) et effort (step 0.5, min 6, max 10) :
+  boutons − et + flanquent l'input. Tap targets ≥ 44px (h-11). Clamping
+  automatique aux bornes. Pas de stepper pour kg (charge libre).
+- **Lock après coche** : quand `entry.done === true`, tous les inputs
+  (reps, kg, effort) + steppers sont disabled. Le bouton ✓ reste
+  actionnable pour déverrouiller (re-clic = uncheck). Anti-misclick demandé
+  par Azur.
+- **Refus de coche si champ vide** : bouton ✓ disabled tant que
+  `reps === null || load_kg === null` (sauf BW pur où load est ignoré).
+  Title-tooltip explicite "Renseigne reps et charge avant de valider".
+- **Charge ajoutée — toggle "Poids du corps"** :
+  - `BODYWEIGHT` pur (pompes, dips bodyweight, …) → badge non-éditable
+    "Poids du corps" à la place de l'input kg. `load_kg` ignoré au commit.
+  - `BODYWEIGHT_LOADED` / `BODYWEIGHT_ASSISTED` (lestables/assistés) →
+    input kg + chip "PdC" à droite du label. Toggle ON = `load_kg = 0`
+    (highlight sang) ; toggle OFF = repasse à `null` (input vide).
+  - autres charges (barre, dumbbell, machine, câble) → input kg standard.
+  - `chargeType` propagé via prop : depuis `SessionRunner` (catalog.get)
+    et depuis `CalibrationStep` (`currentEx.charge`).
+- **Layout** : flex 1 ligne, S# en label compact, steppers reps/effort
+  étirables (`flex-1`), kg étirable aussi. Mobile 390px tient.
+- **Testids préservés** : `set-row-${i}`, `toggle-done-${i}`,
+  `input-reps-${i}`, `input-rpe-${i}`, `input-load-${i}` ; nouveaux :
+  `stepper-dec-reps-${i}`, `stepper-inc-reps-${i}`, idem rpe,
+  `toggle-bw-${i}`, `bw-badge-${i}`.
+- Tests : **428 Vitest verts** (+3 sur null skip + bodyweight ok dans
+  buildSessionFeedback). **20 e2e verts** (workers=1 — en parallèle
+  certains tests catalogue/profil flakent au timeout 30s sur cette
+  machine, pas un régression). Build OK (42.64 kB CSS / 684.61 kB JS,
+  +0.23 CSS / +2.87 JS depuis le patch logo).
+
+**Backlog Conv #11 — à venir** :
+- **#11f** — Refonte onboarding/calibration (item 4), logo Kotsh persistant
+  (item 7), audit des largeurs (item 8), "Je teste" en mode prio (item 5).
+- **#11g** — Visualisation : plafonds dans catalogue (item 9), courbe de
+  progrès en charge (item 10), retrait séance 0 du décompte de cycle
+  (item 6).
+- **#11h** — Calendrier (déload bien placé, item 11) + co-construction
+  programme avec estim. durée séance et arbitrages explicites (item 12).
+
 ## État courant — fin Conv #11d (2026-05-18)
 
 - **Prompt MAJ PWA** (`components/UpdatePrompt.tsx`) monté dans `AppShell`,

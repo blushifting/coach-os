@@ -192,7 +192,8 @@ export function CalibrationStep({
     const sets: CalibrationWorkingSet[] = [];
     for (const e of workEntries) {
       if (!e.done) continue;
-      if (e.reps <= 0) continue;
+      if (e.reps === null || e.reps <= 0) continue;
+      if (e.load_kg === null) continue;
       sets.push({
         reps_done: e.reps,
         load_kg: e.load_kg,
@@ -426,6 +427,7 @@ export function CalibrationStep({
                   key={i}
                   index={i}
                   entry={entry}
+                  chargeType={currentEx.charge}
                   onChange={(patch) => handleSetChange(i, patch)}
                 />
               ))}

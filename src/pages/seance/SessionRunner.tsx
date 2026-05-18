@@ -75,6 +75,7 @@ export function SessionRunner({
           const ex = safeGet(catalog, item.exercise_id);
           const entrySets = entries[i] ?? [];
           const doneCount = entrySets.filter((s) => s.done).length;
+          const chargeType = ex?.charge;
           return (
             <li key={`${item.exercise_id}-${i}`}>
               <Card
@@ -117,6 +118,7 @@ export function SessionRunner({
                       key={j}
                       index={j}
                       entry={entry}
+                      chargeType={chargeType}
                       checkLocked={j > 0 && !entrySets[j - 1]!.done}
                       onChange={(patch) =>
                         onEntriesChange(updateSetEntry(entries, i, j, patch))

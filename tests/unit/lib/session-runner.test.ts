@@ -137,6 +137,37 @@ describe('buildSessionFeedback', () => {
     expect(fb.label).toBe('Push');
     expect(fb.rpe_target).toBe(8);
   });
+
+  // Conv #11e — input vidé par l'user (reps ou load_kg === null) ne doit
+  // pas remonter comme un faux 0.
+  it('skip un set done si reps === null', () => {
+    let e = initEntries(makePlan());
+    e = updateSetEntry(e, 0, 0, { done: true, reps: null });
+    e = updateSetEntry(e, 1, 0, { done: true, reps: 8 });
+    const fb = buildSessionFeedback(makePlan(), e);
+    expect(fb).not.toBeNull();
+    expect(fb!.sets).toHaveLength(1);
+    expect(fb!.sets[0]!.exercise_id).toBe('shoulder_press');
+  });
+
+  it('skip un set done si load_kg === null', () => {
+    let e = initEntries(makePlan());
+    e = updateSetEntry(e, 0, 0, { done: true, load_kg: null });
+    e = updateSetEntry(e, 1, 0, { done: true });
+    const fb = buildSessionFeedback(makePlan(), e);
+    expect(fb).not.toBeNull();
+    expect(fb!.sets).toHaveLength(1);
+    expect(fb!.sets[0]!.exercise_id).toBe('shoulder_press');
+  });
+
+  it('accepte load_kg === 0 (poids du corps)', () => {
+    let e = initEntries(makePlan());
+    e = updateSetEntry(e, 0, 0, { done: true, load_kg: 0, reps: 8 });
+    const fb = buildSessionFeedback(makePlan(), e);
+    expect(fb).not.toBeNull();
+    expect(fb!.sets).toHaveLength(1);
+    expect(fb!.sets[0]!.load_kg).toBe(0);
+  });
 });
 
 // =============================================================================

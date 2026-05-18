@@ -46,8 +46,14 @@ export function formatRest(seconds: number): string {
 // =============================================================================
 
 export interface SetEntry {
-  readonly reps: number;
-  readonly load_kg: number;
+  /**
+   * `null` = champ vidé par l'utilisateur (input vide affiché tel quel).
+   * Permet d'éviter le default à 0 qui force des "07"/"08" quand on reprend
+   * la saisie (Conv #11e). La coche est bloquée tant que c'est `null`.
+   */
+  readonly reps: number | null;
+  /** Idem `reps` : `null` = champ vidé. 0 reste une valeur valide (poids du corps). */
+  readonly load_kg: number | null;
   readonly rpe: number;
   /** L'user a marqué cette série comme "faite" (= elle ira au feedback). */
   readonly done: boolean;
@@ -116,7 +122,8 @@ export function buildSessionFeedback(
     if (entry === undefined) return;
     for (const s of entry) {
       if (!s.done) continue;
-      if (s.reps <= 0) continue;
+      if (s.reps === null || s.reps <= 0) continue;
+      if (s.load_kg === null) continue;
       sets.push({
         exercise_id: item.exercise_id,
         reps_done: s.reps,
