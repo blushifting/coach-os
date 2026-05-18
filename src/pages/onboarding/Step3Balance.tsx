@@ -47,7 +47,14 @@ export function Step3Balance({ draft, onChange }: Step3Props) {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <h1 className="text-xl font-semibold text-white">Équilibre musculaire</h1>
+      <header className="flex flex-col gap-1">
+        <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
+          Étape 3
+        </span>
+        <h1 className="font-display text-3xl leading-tight tracking-wide text-white">
+          Équilibre musculaire
+        </h1>
+      </header>
       <p className="text-sm text-anthracite-300">
         D'après tes priorités, on te suggère d'ajouter ces muscles en maintien
         (volume minimum) pour éviter les déséquilibres. Décoche ceux que tu ne

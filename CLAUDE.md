@@ -145,6 +145,53 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
+## État courant — fin Conv #11f (2026-05-18)
+
+Refonte onboarding/calibration + chrome (items 4, 5, 7, 8 du dump #11 bis).
+
+- **Filigrane logo K** (`layout/AppShell.tsx → BrandWatermark`) : `<img
+  src=icon.svg>` 28×28 en `fixed` top-right, `opacity-[0.32]`,
+  `pointer-events-none`, `z-50` (pour passer au-dessus du Header sticky).
+  Présent sur tous les écrans (onboarding, séance 0, tabs, etc.). Testid
+  `brand-watermark`. Le `top` respecte la safe-area iOS.
+- **"Je teste" en mode par défaut** (`CalibrationStep.tsx`) : mode initial
+  `'submax'` quel que soit `allowsKnown1RM`. Tabs inversés (Je teste 1re
+  position, "Je le connais" 2e — texte raccourci de "Je connais mon
+  plafond"). Petit paragraphe explicatif sous le tab `submax` : "Choisis
+  une charge où tu penses tenir 3 à 8 reps propres…"
+- **Titre exo en font-display** (`CalibrationStep.tsx`) : header restructuré
+  avec sur-titre "Exo N / total" en sang-400 / tracking large + nom de
+  l'exo en `font-display text-2xl tracking-wide`. Plus marqué que
+  l'ancien `text-xl font-semibold`.
+- **IntroBanner Séance 0 enrichie** (`Seance0Page.tsx`) : Card en `accent`,
+  surtitre "Séance 0" sang-400, titre "Calibration" en font-display, puis
+  liste 1-2-3 numérotée (1. mesurer plafond, 2. 2 séries de travail à
+  effort 8/10 qui comptent dans l'historique, 3. exo suivant, ~7-8 min/exo
+  → estim. totale calculée). Pédagogie pour un user qui découvre le format.
+- **Titres onboarding harmonisés** (Step1-5) : pattern `<header>` avec
+  sur-titre "Étape N" en sang-400 / `tracking-[0.22em]` + `<h1>` en
+  `font-display text-3xl tracking-wide`. Cohérent avec le Header app
+  (Oswald, gros chiffres). Step5 gagne aussi le sous-titre "· Aperçu".
+- **Safety net débordement boutons** (`components/Button.tsx`) : `whitespace-nowrap`
+  retiré au profit de `min-w-0 max-w-full leading-tight` — le bouton peut
+  se rétrécir dans un flex contraint et wrapper son label au lieu de sortir
+  du cadre. C'est une dégradation gracieuse (wrap 2 lignes) plutôt qu'un
+  débordement horizontal. Test visuel : footer OnboardingPage + footer
+  CalibrationStep tiennent en 390px.
+
+Tests : **428 Vitest** verts (inchangé). **20 e2e** verts (workers=1).
+Build OK (43.20 kB CSS / 685.31 kB JS, +0.56 CSS / +0.70 JS depuis #11e).
+
+**Backlog Conv #11 — restant** :
+- **#11g — Visualisation** (items 6, 9, 10) : plafonds mesurés visibles
+  dans le catalogue + estimés pour variantes, courbe de progrès en charge
+  (régression depuis prototype à vérifier), séance 0 retirée du décompte
+  du cycle mais contribuant au volume hebdo.
+- **#11h — Calendrier + co-construction programme** (items 11, 12) :
+  déload bien placé quel que soit le jour de démarrage S1, détecteur de
+  tensions de programme (full body × n séances × volume) avec arbitrages
+  explicites et estim. durée séance.
+
 ## État courant — fin Conv #11e (2026-05-18)
 
 UX de saisie des séries (items 1-3 du dump #11 bis) — `SetInput` refondu,

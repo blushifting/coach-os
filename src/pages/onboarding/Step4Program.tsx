@@ -40,7 +40,14 @@ function objectivesToFr(objs: readonly MuscleObjective[]): string {
 export function Step4Program({ draft, onChange }: Step4Props) {
   return (
     <div className="flex flex-col gap-4 p-4">
-      <h1 className="text-xl font-semibold text-white">Choix du programme</h1>
+      <header className="flex flex-col gap-1">
+        <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
+          Étape 4
+        </span>
+        <h1 className="font-display text-3xl leading-tight tracking-wide text-white">
+          Choix du programme
+        </h1>
+      </header>
       <p className="text-sm text-anthracite-300">
         Pars sur un programme guidé éprouvé ou laisse l'app générer un programme
         custom adapté à tes muscles cibles.

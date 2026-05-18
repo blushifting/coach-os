@@ -313,18 +313,49 @@ export default function Seance0Page() {
 
 function IntroBanner({ total }: { readonly total: number }) {
   return (
-    <Card className="mx-4 mt-4" data-testid="seance0-intro">
-      <h1 className="flex items-center gap-2 text-lg font-semibold text-white">
-        Séance 0 — Calibration
-        <HelpButton topic="plafond" label="Aide : plafond" />
-      </h1>
-      <p className="mt-2 text-sm text-anthracite-300">
-        On va calibrer {total} exo{total > 1 ? 's' : ''} clé
-        {total > 1 ? 's' : ''} de ton programme. Pour chacun : on mesure ton{' '}
-        <span className="font-medium text-white">plafond</span> (test rapide
-        ou valeur connue), puis tu fais 2 séries de travail à effort 8/10
-        — comme une vraie séance qui calibre.
+    <Card accent className="mx-4 mt-4" data-testid="seance0-intro">
+      <header className="flex flex-col gap-1">
+        <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
+          Séance 0
+        </span>
+        <h1 className="flex items-center gap-2 font-display text-2xl leading-tight tracking-wide text-white">
+          Calibration
+          <HelpButton topic="plafond" label="Aide : plafond" />
+        </h1>
+      </header>
+      <p className="mt-3 text-sm leading-relaxed text-anthracite-200">
+        Cette séance sert à découvrir ton niveau réel sur les {total} exo
+        {total > 1 ? 's' : ''} clé{total > 1 ? 's' : ''} de ton programme.
+        C'est une vraie séance, pas un sondage — tu chauffes, tu pousses,
+        tu enregistres.
       </p>
+      <ol className="mt-3 flex flex-col gap-1.5 text-sm text-anthracite-200">
+        <li className="flex gap-2">
+          <span className="font-display text-sang-400">1.</span>
+          <span>
+            Pour chaque exo, on commence par{' '}
+            <span className="font-medium text-white">mesurer ton plafond</span>{' '}
+            (charge à 1 rep). Pas besoin de la chercher pile : tu fais un
+            test à charge modérée et l'app calcule.
+          </span>
+        </li>
+        <li className="flex gap-2">
+          <span className="font-display text-sang-400">2.</span>
+          <span>
+            Puis tu enchaînes{' '}
+            <span className="font-medium text-white">2 séries de travail</span>{' '}
+            à charge réelle (effort cible 8/10), exactement comme dans le
+            programme. Ces séries comptent dans ton historique.
+          </span>
+        </li>
+        <li className="flex gap-2">
+          <span className="font-display text-sang-400">3.</span>
+          <span>
+            On passe à l'exo suivant. Compte ~7-8 min par exo (~
+            {Math.round(total * 7.5)} min au total).
+          </span>
+        </li>
+      </ol>
     </Card>
   );
 }

@@ -102,7 +102,9 @@ export function CalibrationStep({
   const [sheetOpen, setSheetOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const allowsKnown = allowsKnown1RM(currentEx.charge);
-  const [mode, setMode] = useState<Mode>(allowsKnown ? 'known' : 'submax');
+  // Conv #11f — "Je teste" en mode par défaut : peu d'utilisateurs connaissent
+  // précisément leur 1RM, l'écran doit d'abord proposer le test sub-maximal.
+  const [mode, setMode] = useState<Mode>('submax');
   const [knownLoad, setKnownLoad] = useState<string>('');
   const [submaxLoad, setSubmaxLoad] = useState<string>('');
   const [submaxReps, setSubmaxReps] = useState<number>(5);
@@ -220,10 +222,14 @@ export function CalibrationStep({
       data-exercise-id={currentEx.id}
       data-phase={phase}
     >
-      <div className="text-xs uppercase tracking-wide text-anthracite-300">
-        Exo {progress.index} / {progress.total}
-      </div>
-      <h2 className="text-xl font-semibold text-white">{currentEx.nom_fr}</h2>
+      <header className="flex flex-col gap-1">
+        <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
+          Exo {progress.index} / {progress.total}
+        </span>
+        <h2 className="font-display text-2xl leading-tight tracking-wide text-white">
+          {currentEx.nom_fr}
+        </h2>
+      </header>
 
       {phase === 'measure' ? (
         <>
@@ -243,22 +249,7 @@ export function CalibrationStep({
               role="tablist"
               className="grid grid-cols-2 gap-1 rounded-xl bg-anthracite-900 p-1"
             >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={mode === 'known'}
-                disabled={!allowsKnown}
-                onClick={() => setMode('known')}
-                data-testid="tab-known"
-                className={
-                  'rounded-lg px-3 py-2 text-sm font-medium transition disabled:opacity-40 ' +
-                  (mode === 'known'
-                    ? 'bg-sang-700 text-white'
-                    : 'text-anthracite-300 hover:text-white')
-                }
-              >
-                Je connais mon plafond
-              </button>
+              {/* Conv #11f — "Je teste" en 1re position (mode par défaut). */}
               <button
                 type="button"
                 role="tab"
@@ -274,7 +265,31 @@ export function CalibrationStep({
               >
                 Je teste
               </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={mode === 'known'}
+                disabled={!allowsKnown}
+                onClick={() => setMode('known')}
+                data-testid="tab-known"
+                className={
+                  'rounded-lg px-3 py-2 text-sm font-medium transition disabled:opacity-40 ' +
+                  (mode === 'known'
+                    ? 'bg-sang-700 text-white'
+                    : 'text-anthracite-300 hover:text-white')
+                }
+              >
+                Je le connais
+              </button>
             </div>
+
+            {mode === 'submax' ? (
+              <p className="mt-3 text-xs leading-relaxed text-anthracite-300">
+                Choisis une charge où tu penses tenir 3 à 8 reps propres. Fais
+                les reps que tu peux, puis indique combien et l'effort perçu.
+                On en déduit ton plafond — pas besoin de chercher la limite.
+              </p>
+            ) : null}
 
             {mode === 'known' ? (
               <div className="mt-4 flex flex-col gap-2">

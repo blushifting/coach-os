@@ -138,7 +138,14 @@ export function Step5Preview({
 
   return (
     <div className="flex flex-col gap-4 p-4" data-testid="step5-preview">
-      <h1 className="text-xl font-semibold text-white">Ton programme</h1>
+      <header className="flex flex-col gap-1">
+        <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
+          Étape 5 · Aperçu
+        </span>
+        <h1 className="font-display text-3xl leading-tight tracking-wide text-white">
+          Ton programme
+        </h1>
+      </header>
       <p className="text-sm text-anthracite-300">
         Voici les séances générées. Tu peux changer chaque exo par une variante
         adaptée à tes préférences ou à ton équipement. Tu pourras toujours

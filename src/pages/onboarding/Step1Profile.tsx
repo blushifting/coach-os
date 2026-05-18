@@ -29,8 +29,15 @@ export function Step1Profile({ draft, onChange }: Step1Props) {
 
   return (
     <div className="flex flex-col gap-5 p-4">
-      <h1 className="text-xl font-semibold text-white">Profil</h1>
-      <p className="text-sm text-anthracite-300">
+      <header className="flex flex-col gap-1">
+        <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
+          Étape 1
+        </span>
+        <h1 className="font-display text-3xl leading-tight tracking-wide text-white">
+          Profil
+        </h1>
+      </header>
+      <p className="text-sm leading-relaxed text-anthracite-200">
         Ces infos servent à calibrer ton volume cible et tes plafonds de départ.
       </p>
 

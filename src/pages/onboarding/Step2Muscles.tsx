@@ -102,11 +102,16 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <h1 className="flex items-center gap-2 text-xl font-semibold text-white">
-        Muscles cibles
-        <HelpButton topic="deltoides" label="Aide : deltoïdes" />
-      </h1>
-      <p className="text-sm text-anthracite-300">
+      <header className="flex flex-col gap-1">
+        <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
+          Étape 2
+        </span>
+        <h1 className="flex items-center gap-2 font-display text-3xl leading-tight tracking-wide text-white">
+          Muscles cibles
+          <HelpButton topic="deltoides" label="Aide : deltoïdes" />
+        </h1>
+      </header>
+      <p className="text-sm leading-relaxed text-anthracite-200">
         Choisis tes muscles prioritaires et leur ordre d'importance. Glisse pour
         réorganiser. Tu pourras toujours modifier plus tard.
       </p>
