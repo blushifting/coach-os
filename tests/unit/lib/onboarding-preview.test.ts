@@ -38,13 +38,12 @@ describe('buildPreviewTemplate (Conv #11b)', () => {
     expect(template!.days.length).toBeGreaterThan(0);
   });
 
-  it('mode guidé : utilise fitGuidedProgram et pose requires_calibration', () => {
+  it('mode guidé : utilise fitGuidedProgram', () => {
     const p = profile();
     const goals = bootstrapMuscleGoalsFromProfile(p, ['pectoraux']);
     const { template } = buildPreviewTemplate(p, goals, 'ss', catalog);
     if (template !== null) {
-      // Plafonds vides → calibration requise.
-      expect(template.requires_calibration).toBe(true);
+      expect(template.days.length).toBeGreaterThan(0);
     }
   });
 
@@ -182,7 +181,6 @@ describe('estimateExerciseDurationMinutes / analyzeProgramTension (Conv #11h)', 
     const tpl: WeeklyTemplate = {
       cycle_index: 1,
       days: [day, day, day],
-      requires_calibration: false,
       rationale: 't',
       warnings: [],
     };
@@ -202,7 +200,6 @@ describe('estimateExerciseDurationMinutes / analyzeProgramTension (Conv #11h)', 
     const tpl: WeeklyTemplate = {
       cycle_index: 1,
       days: [heavyDay],
-      requires_calibration: false,
       rationale: 't',
       warnings: [],
     };
@@ -216,7 +213,6 @@ describe('estimateExerciseDurationMinutes / analyzeProgramTension (Conv #11h)', 
     const tpl: WeeklyTemplate = {
       cycle_index: 1,
       days: [day],
-      requires_calibration: false,
       rationale: 't',
       warnings: [],
     };

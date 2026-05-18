@@ -18,7 +18,6 @@ import { applyBalanceRules } from '@/engine/balance';
 import { generateCyclePlan } from '@/engine/cycle_planner';
 import { fitGuidedProgram, getGuidedProgram } from '@/engine/guided_programs';
 import { initialVolumeBounds } from '@/engine/volume';
-import { pickCalibrationExercises } from '@/lib/calibration';
 import type {
   MuscleGoal,
   Profile,
@@ -36,7 +35,6 @@ import {
   txInitUser,
   txSaveSessionPlan,
   txSaveUserStateOnly,
-  txShiftCycleStart,
   txUpdateSessionPlan,
 } from '@/db/transactions';
 import { importFromJsonString } from '@/io/import';
@@ -97,26 +95,6 @@ export async function refreshHistory(): Promise<void> {
   useCoachOsStore.setState({ history });
 }
 
-/**
- * Conv #11i bis — décale le `start_date` du cycle courant au lendemain.
- * Appelé à la fin de la Séance 0 pour que la S1 du programme ne commence
- * pas le jour de la calibration (qui est une intro pré-cycle).
- *
- * No-op si pas de userState ou pas de cycle correspondant en DB.
- */
-export async function shiftCurrentCycleStartToTomorrow(): Promise<void> {
-  const state = useCoachOsStore.getState().userState;
-  if (state === null) return;
-  const today = new Date();
-  const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-  const y = tomorrow.getFullYear();
-  const m = String(tomorrow.getMonth() + 1).padStart(2, '0');
-  const d = String(tomorrow.getDate()).padStart(2, '0');
-  const newStartDate = `${y}-${m}-${d}`;
-  await txShiftCycleStart(state.cycle_index, newStartDate);
-  await refreshHistory();
-}
-
 // =============================================================================
 // Init utilisateur (Onboarding terminé)
 // =============================================================================
@@ -144,7 +122,7 @@ export async function startUser(args: StartUserArgs): Promise<UserState> {
 }
 
 // =============================================================================
-// Séance 0 — génération du WeeklyTemplate Cycle 1 + commit calibration
+// Génération du WeeklyTemplate Cycle 1 (post-onboarding)
 // =============================================================================
 
 export interface InitialCyclePlanResult {
@@ -157,8 +135,11 @@ export interface InitialCyclePlanResult {
  * Génère et persiste le `WeeklyTemplate` Cycle 1.
  *
  * Mode guidé : `fitGuidedProgram(program, profile, equipment, plafonds={}, catalog)`.
- *   Pose `requires_calibration=true` puisque les plafonds sont vides.
  * Mode custom : `generateCyclePlan(state, catalog)`.
+ *
+ * Les exos sans e1RM connu sont bootstrap heuristiquement à la 1re séance
+ * via `bootstrapE1rmIfMissing` (engine.ts) et raffinés par feedback RPE
+ * (calibration transparente, depuis le retrait de la Séance 0 — Conv #12).
  *
  * Idempotent : ne régénère pas si `state.current_cycle_plan` est déjà posé.
  */
@@ -191,18 +172,6 @@ export async function generateInitialCyclePlan(): Promise<InitialCyclePlanResult
     next.current_cycle_plan = weekly;
   } else {
     next.current_cycle_plan = generateCyclePlan(next, catalog);
-    // Custom : si des compounds n'ont pas encore d'e1RM, on doit passer par
-    // Séance 0. Sans ce flip, `ProgrammePage` ne redirigeait pas vers
-    // `/seance-0` si l'utilisateur quittait l'app entre l'onboarding et la
-    // calibration (bug remonté Conv #10c').
-    const calibList = pickCalibrationExercises(
-      next.current_cycle_plan,
-      next.e1rm,
-      catalog,
-    );
-    if (calibList.length > 0) {
-      next.current_cycle_plan.requires_calibration = true;
-    }
   }
 
   await txSaveUserStateOnly(next);
@@ -218,12 +187,9 @@ export interface VariantReplacementInput {
 
 /**
  * Conv #11b — Applique les variantes choisies dans le Step5 d'onboarding sur
- * le `current_cycle_plan` posé, **sans toucher** à `requires_calibration`. Le
- * routing vers `/seance-0` ou `/programme` est décidé par l'appelant selon
- * l'état du flag (qui reste à la valeur posée par `generateInitialCyclePlan`).
- *
- * Préserve `base_sets`, `progression`, `progression_rule`, `role`,
- * `intensity_scheme` — seul `exercise_id` du slot ciblé est remplacé.
+ * le `current_cycle_plan` posé. Préserve `base_sets`, `progression`,
+ * `progression_rule`, `role`, `intensity_scheme` — seul `exercise_id` du slot
+ * ciblé est remplacé.
  * Idempotent : si la liste est vide ou si le plan n'existe pas, no-op silencieux.
  */
 export async function applyVariantReplacements(
@@ -241,48 +207,6 @@ export async function applyVariantReplacements(
     if (slot === undefined) continue;
     slot.exercise_id = r.newExerciseId;
   }
-  await txSaveUserStateOnly(next);
-  useCoachOsStore.setState({ userState: next });
-  return next;
-}
-
-export interface CommitInitialCalibrationArgs {
-  /** e1RM (valeur "totale", incluant BW pour bodyweight_loaded) par exercise_id. */
-  readonly e1rmByExerciseId: Readonly<Record<string, number>>;
-  /** Variantes choisies par l'utilisateur, à appliquer sur `current_cycle_plan`. */
-  readonly variantReplacements?: ReadonlyArray<VariantReplacementInput>;
-}
-
-/**
- * Commit final de la séance 0 : merge les e1RM, remplace les variantes choisies
- * dans `current_cycle_plan`, et flip `requires_calibration=false`. Persiste.
- */
-export async function commitInitialCalibration(
-  args: CommitInitialCalibrationArgs,
-): Promise<UserState> {
-  const next = requireUserState();
-  if (next.current_cycle_plan === null) {
-    throw new Error(
-      'current_cycle_plan non posé : appeler generateInitialCyclePlan() d\'abord.',
-    );
-  }
-
-  for (const r of args.variantReplacements ?? []) {
-    const day = next.current_cycle_plan.days[r.dayIndex];
-    if (day === undefined) continue;
-    const slot = day.exercises[r.slotIndex];
-    if (slot === undefined) continue;
-    slot.exercise_id = r.newExerciseId;
-  }
-
-  for (const [exId, val] of Object.entries(args.e1rmByExerciseId)) {
-    if (Number.isFinite(val) && val > 0) {
-      next.e1rm[exId] = val;
-    }
-  }
-
-  next.current_cycle_plan.requires_calibration = false;
-
   await txSaveUserStateOnly(next);
   useCoachOsStore.setState({ userState: next });
   return next;
@@ -603,7 +527,6 @@ export interface EngineApi {
   startUser: typeof startUser;
   generateInitialCyclePlan: typeof generateInitialCyclePlan;
   applyVariantReplacements: typeof applyVariantReplacements;
-  commitInitialCalibration: typeof commitInitialCalibration;
   generateAndStoreSession: typeof generateAndStoreSession;
   planSessionForDay: typeof planSessionForDay;
   loadPlannedSessionForRunner: typeof loadPlannedSessionForRunner;
@@ -626,7 +549,6 @@ export function useEngine(): EngineApi {
       startUser,
       generateInitialCyclePlan,
       applyVariantReplacements,
-      commitInitialCalibration,
       generateAndStoreSession,
       planSessionForDay,
       loadPlannedSessionForRunner,

@@ -10,7 +10,6 @@ interface VariantPickerSheetProps {
   readonly onToggleExpand: () => void;
   readonly onPick: (newExerciseId: string) => void;
   readonly onClose: () => void;
-  /** Étiquette du sheet — "Changer de variante" en séance 0, "Remplacer l'exercice" en séance. */
   readonly title?: string;
 }
 

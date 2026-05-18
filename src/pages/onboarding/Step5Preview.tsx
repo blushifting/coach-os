@@ -39,7 +39,7 @@ import { alternativeVariantsFor } from '@/lib/calibration';
 import { cn } from '@/lib/cn';
 import { muscleLabel } from '@/lib/progress';
 import { PatternIcon } from '@/pages/seance/PatternIcon';
-import { VariantPickerSheet } from '@/pages/seance-0/VariantPickerSheet';
+import { VariantPickerSheet } from '@/components/VariantPickerSheet';
 
 interface Step5Props {
   readonly template: WeeklyTemplate | null;

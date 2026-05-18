@@ -58,8 +58,8 @@ export default function ProgrammePage() {
   if (userState === null) {
     return <Navigate to="/welcome" replace />;
   }
-  if (userState.current_cycle_plan === null || userState.current_cycle_plan.requires_calibration) {
-    return <Navigate to="/seance-0" replace />;
+  if (userState.current_cycle_plan === null) {
+    return <Navigate to="/onboarding" replace />;
   }
   if (dashboard === null) return null;
 
@@ -89,7 +89,7 @@ export default function ProgrammePage() {
       {dashboard.matrix === null ? (
         <Card data-testid="no-cycle-card">
           <p className="text-sm text-anthracite-300">
-            Le cycle n'est pas encore initialisé. Termine la séance 0 pour démarrer.
+            Le cycle n'est pas encore initialisé. Termine l'onboarding pour démarrer.
           </p>
         </Card>
       ) : (

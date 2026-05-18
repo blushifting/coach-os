@@ -81,15 +81,14 @@ export default function SeancePage() {
 
   const isInitialized = useMemo(() => {
     if (userState === null) return false;
-    if (userState.current_cycle_plan === null) return false;
-    return !userState.current_cycle_plan.requires_calibration;
+    return userState.current_cycle_plan !== null;
   }, [userState]);
 
   if (userState === null) {
     return <Navigate to="/welcome" replace />;
   }
   if (!isInitialized) {
-    return <Navigate to="/seance-0" replace />;
+    return <Navigate to="/onboarding" replace />;
   }
 
   // État C : bilan post-séance.

@@ -417,7 +417,6 @@ export interface WeeklyTemplate {
   cycle_index: number;
   rationale: string;
   days: DayTemplate[];
-  requires_calibration: boolean;
   warnings: string[];
 }
 
@@ -425,7 +424,6 @@ export interface WeeklyTemplateInput {
   cycle_index: number;
   rationale: string;
   days?: DayTemplate[];
-  requires_calibration?: boolean;
   warnings?: string[];
 }
 
@@ -434,7 +432,6 @@ export function makeWeeklyTemplate(input: WeeklyTemplateInput): WeeklyTemplate {
     cycle_index: input.cycle_index,
     rationale: input.rationale,
     days: input.days ?? [],
-    requires_calibration: input.requires_calibration ?? false,
     warnings: input.warnings ?? [],
   };
 }

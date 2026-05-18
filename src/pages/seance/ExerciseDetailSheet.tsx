@@ -17,7 +17,7 @@ import { muscleLabel } from '@/lib/progress';
 import { formatRest } from '@/lib/session-runner';
 import { useCoachOsStore } from '@/store';
 import { PatternIcon } from './PatternIcon';
-import { VariantPickerSheet } from '@/pages/seance-0/VariantPickerSheet';
+import { VariantPickerSheet } from '@/components/VariantPickerSheet';
 
 interface ExerciseDetailSheetProps {
   readonly open: boolean;

@@ -154,10 +154,9 @@ describe('WeeklyTemplate', () => {
     expect(weeklyTemplateSessionsPlanned(wt)).toBe(20);
   });
 
-  it('warnings vide et requires_calibration false par défaut', () => {
+  it('warnings vide par défaut', () => {
     const wt = makeWeeklyTemplate({ cycle_index: 1, rationale: 'test' });
     expect(wt.warnings).toEqual([]);
-    expect(wt.requires_calibration).toBe(false);
   });
 });
 

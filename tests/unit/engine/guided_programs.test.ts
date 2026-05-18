@@ -13,7 +13,6 @@ import {
   WENDLER_531_BBB,
   fitGuidedProgram,
   getGuidedProgram,
-  hasRequiredPlafonds,
   pickSubstitution,
 } from '@/engine/guided_programs';
 import { EQUIP_FULL, profile } from './_helpers';
@@ -202,55 +201,3 @@ describe('fitGuidedProgram (équipement réduit)', () => {
   });
 });
 
-// =============================================================================
-// 5. requires_calibration
-// =============================================================================
-
-describe('requires_calibration', () => {
-  it('true si plafonds manquants', () => {
-    const p = profile({ level: Level.DEBUTANT, sessions_per_week: 3 });
-    const { weekly } = fitGuidedProgram(STARTING_STRENGTH, p, EQUIP_FULL, {}, catalog);
-    expect(weekly).not.toBeNull();
-    expect(weekly!.requires_calibration).toBe(true);
-  });
-
-  it('false si plafonds complets', () => {
-    const p = profile({ level: Level.DEBUTANT, sessions_per_week: 3 });
-    const plafonds = {
-      squat_bb_low: 100.0, bench_bb: 80.0,
-      ohp_bb_standing: 50.0, deadlift_conv: 130.0,
-    };
-    const { weekly } = fitGuidedProgram(
-      STARTING_STRENGTH, p, EQUIP_FULL, plafonds, catalog,
-    );
-    expect(weekly).not.toBeNull();
-    expect(weekly!.requires_calibration).toBe(false);
-  });
-});
-
-// =============================================================================
-// 6. hasRequiredPlafonds
-// =============================================================================
-
-describe('hasRequiredPlafonds', () => {
-  it('true si tous les main_* ont un plafond', () => {
-    const p = profile({ level: Level.DEBUTANT, sessions_per_week: 3 });
-    const plafonds = {
-      squat_bb_low: 100.0, bench_bb: 80.0,
-      ohp_bb_standing: 50.0, deadlift_conv: 130.0,
-    };
-    const { weekly } = fitGuidedProgram(
-      STARTING_STRENGTH, p, EQUIP_FULL, plafonds, catalog,
-    );
-    expect(hasRequiredPlafonds(weekly!, plafonds)).toBe(true);
-  });
-
-  it('false si un main_* manque', () => {
-    const p = profile({ level: Level.DEBUTANT, sessions_per_week: 3 });
-    const partial = { squat_bb_low: 100.0, bench_bb: 80.0 };
-    const { weekly } = fitGuidedProgram(
-      STARTING_STRENGTH, p, EQUIP_FULL, partial, catalog,
-    );
-    expect(hasRequiredPlafonds(weekly!, partial)).toBe(false);
-  });
-});

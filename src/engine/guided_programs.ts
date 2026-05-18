@@ -612,21 +612,6 @@ export function findLooseReplacement(
 // Fitting d'un programme guidé
 // =============================================================================
 
-/** True si tous les exos `role=main_*` ont un plafond connu. */
-export function hasRequiredPlafonds(
-  weekly: WeeklyTemplate,
-  plafonds: Record<string, number>,
-): boolean {
-  for (const day of weekly.days) {
-    for (const p of day.exercises) {
-      if (p.role && p.role.startsWith('main_')) {
-        if (!(p.exercise_id in plafonds)) return false;
-      }
-    }
-  }
-  return true;
-}
-
 /** Progression hebdo en séries pour 1 exo, sur 5 semaines. */
 function computeProgression(canon: CanonicalExercise, rule: ProgressionRule): number[] {
   const base = canon.sets;
@@ -662,7 +647,7 @@ export function fitGuidedProgram(
   program: GuidedProgram,
   _profile: Profile,
   equipment: Set<string>,
-  plafonds: Record<string, number>,
+  _plafonds: Record<string, number>,
   catalog: Catalog,
   cycle_index = 1,
 ): FitGuidedResult {
@@ -720,10 +705,6 @@ export function fitGuidedProgram(
 
   if (blocking.length > 0) {
     return { weekly: null, blocking };
-  }
-
-  if (!hasRequiredPlafonds(week, plafonds)) {
-    week.requires_calibration = true;
   }
 
   return { weekly: week, blocking: [] };

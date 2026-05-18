@@ -4,8 +4,9 @@
  * - 4 étapes (Profil / Muscles / Équilibre / Programme).
  * - Navigation Précédent / Suivant avec garde-fous (étape 2 : ≥ 1 muscle).
  * - À la finalisation : `useEngine.startUser` (applyBalance=false puisqu'on a
- *   déjà arbitré les SUGGERE dans l'étape 3) puis navigation vers `/seance-0`
- *   (calibration des plafonds — Conv #4c).
+ *   déjà arbitré les SUGGERE dans l'étape 3) puis navigation vers `/programme`.
+ *   Calibration : depuis le retrait de la Séance 0 (Conv #12), les plafonds
+ *   sont bootstrap heuristiquement à la 1re séance et raffinés via RPE.
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -143,15 +144,13 @@ export default function OnboardingPage() {
         applyBalance: false,
         programmeId: draft.programmeId,
       });
-      // Conv #11b : génère le cycle plan maintenant pour pouvoir appliquer
-      // les variantes choisies en Step5 avant de router vers Séance 0.
-      const { state: stateWithPlan } = await generateInitialCyclePlan();
+      // Conv #11b : génère le cycle plan pour pouvoir appliquer les variantes
+      // choisies en Step5 avant de router vers /programme.
+      await generateInitialCyclePlan();
       if (variantReplacements.length > 0) {
         await applyVariantReplacements(variantReplacements);
       }
-      const requiresCalibration =
-        stateWithPlan?.current_cycle_plan?.requires_calibration ?? false;
-      navigate(requiresCalibration ? '/seance-0' : '/programme', { replace: true });
+      navigate('/programme', { replace: true });
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Erreur inattendue';
       setError(msg);

@@ -32,8 +32,8 @@ export interface PreviewResult {
 /**
  * Construit la `WeeklyTemplate` qui sera posée à la fin de l'onboarding,
  * sans toucher au store ni à la DB. Si `programmeId` est non null on
- * utilise `fitGuidedProgram` (e1RM vides → `requires_calibration` posé),
- * sinon on appelle `generateCyclePlan` sur un state temporaire.
+ * utilise `fitGuidedProgram` (e1RM vides), sinon on appelle `generateCyclePlan`
+ * sur un state temporaire.
  */
 export function buildPreviewTemplate(
   profile: Profile,

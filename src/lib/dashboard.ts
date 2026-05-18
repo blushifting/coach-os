@@ -22,20 +22,6 @@ import type { CycleRow, FeedbackRow, SessionRow } from '@/db/schema';
 export const CYCLE_LENGTH_WEEKS = 5;
 export const DELOAD_WEEK_INDEX = 5;
 
-/**
- * Label réservé à la Séance 0 (cf. `Seance0Page.finalize`). Les compteurs
- * de cycle (avancement, séances de la semaine) excluent cette séance — elle
- * sert à calibrer, pas à valider une séance du programme. En revanche, ses
- * sets contribuent au volume hebdo / à la couverture (item #6 dump #11 bis).
- */
-export const CALIBRATION_LABEL = 'Séance 0';
-
-function isCalibrationFeedback(
-  f: Pick<FeedbackRow, 'feedback'>,
-): boolean {
-  return f.feedback.label === CALIBRATION_LABEL;
-}
-
 // =============================================================================
 // Helpers date (purs, sans dépendance externe)
 // =============================================================================
@@ -149,7 +135,7 @@ export function computeCycleProgress(
 ): CycleProgress {
   const planned = plannedSessionsForCycle(state.current_cycle_plan);
   const done = feedbacks.filter(
-    (f) => f.cycle_index === state.cycle_index && !isCalibrationFeedback(f),
+    (f) => f.cycle_index === state.cycle_index,
   ).length;
   const pct = planned === 0 ? 0 : Math.round((done / planned) * 100);
   return { done, planned, pct };
@@ -173,8 +159,7 @@ export function computeWeekSessions(
   const done = feedbacks.filter(
     (f) =>
       f.cycle_index === state.cycle_index &&
-      f.week_in_cycle === state.current_week_in_cycle &&
-      !isCalibrationFeedback(f),
+      f.week_in_cycle === state.current_week_in_cycle,
   ).length;
   const planned = state.current_cycle_plan?.days.length ?? 0;
   return { done, planned };
@@ -276,15 +261,8 @@ export function buildCalendarMatrix(
   const anchor = parseDateKey(cycle.start_date);
   const todayKey = dateKey(now);
 
-  // Index rapides par date. Conv #11i bis — la Séance 0 ne marque pas une
-  // case "completed" dans le calendrier (c'est une intro pré-cycle).
-  // L'appelant passe `feedbacks` typés `Pick<FeedbackRow, 'seance_date' |
-  // 'feedback'>` quand il veut filtrer. Si le champ `feedback` n'est pas
-  // fourni, tous les feedbacks comptent (rétrocompat anciens tests).
   const feedbackDates = new Set<string>();
   for (const f of feedbacks) {
-    const fb = (f as Pick<FeedbackRow, 'feedback'>).feedback;
-    if (fb !== undefined && fb.label === 'Séance 0') continue;
     feedbackDates.add(f.seance_date);
   }
   const sessionByDate = new Map<
@@ -394,7 +372,7 @@ export function isCycleFinished(
   const planned = plannedSessionsForCycle(state.current_cycle_plan);
   if (planned === 0) return false;
   const done = feedbacks.filter(
-    (f) => f.cycle_index === state.cycle_index && !isCalibrationFeedback(f),
+    (f) => f.cycle_index === state.cycle_index,
   ).length;
   return done >= planned;
 }

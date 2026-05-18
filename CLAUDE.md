@@ -145,6 +145,58 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
+## État courant — fin Conv #12a (2026-05-18)
+
+**Retrait Séance 0 — calibration transparente RPE-based** (décision Azur Conv
+#12, fin de la conv tuto). La Séance 0 dédiée disparaît : depuis l'onboarding
+on arrive directement sur `/programme`, et pour chaque exo sans plafond
+mesuré, le moteur bootstrap heuristique bw-based (`bootstrapE1rmIfMissing`
+déjà en place dans `engine/engine.ts`), puis raffine via le filtre EMA à
+chaque feedback RPE (`updateE1rmForExercise` existant). Plus de calibration
+dédiée — l'algo apprend en marchant.
+
+**Why** : la Séance 0 forçait une étape de friction inutile avant de
+s'entraîner. La calibration peut être transparente puisque le moteur RPE
+est déjà conçu pour ça (bootstrap + EMA).
+
+**Changements structurels** :
+- Suppression `src/pages/seance-0/` (3 fichiers : Seance0Page, CalibrationStep,
+  VariantPickerSheet). `VariantPickerSheet` déplacé à `src/components/`
+  (utilisé par Step5Preview et ExerciseDetailSheet).
+- Route `/seance-0` retirée de `router.tsx`.
+- `WeeklyTemplate.requires_calibration` retiré du modèle (`engine/models.ts`).
+- `hasRequiredPlafonds` retiré (`engine/guided_programs.ts`) — plus utilisé.
+- `commitInitialCalibration` + `shiftCurrentCycleStartToTomorrow` retirés
+  de `useEngine.ts`. `txShiftCycleStart` retiré de `db/transactions.ts`.
+- `generateInitialCyclePlan` simplifié : ne pose plus `requires_calibration`
+  ni n'appelle `pickCalibrationExercises`.
+- `OnboardingPage.finalize` : navigue toujours vers `/programme` post-onboarding.
+- `SeancePage` / `ProgrammePage` : retirent le redirect vers `/seance-0`.
+  Si `current_cycle_plan === null`, retour `/onboarding`.
+- Filtres `feedback.label === 'Séance 0'` retirés dans :
+  - `lib/dashboard.ts` (+ const `CALIBRATION_LABEL` + `isCalibrationFeedback`)
+  - `lib/progress.ts` (`computeCoverageThisWeek`, `computeVolumeHistory`)
+  - `engine/lifecycle.ts` (`generateCycleReview`)
+- `lib/calibration.ts` réduit à `alternativeVariantsFor` (+ helpers privés).
+  Les anciennes fonctions de calibration (`pickCalibrationExercises`,
+  `e1rmFromSubmaxTest`, `e1rmFromKnown1RM`, `validateSubmaxInput`,
+  `SUBMAX_*`, `allowsKnown1RM`, `loadLabelFor`) sont supprimées.
+
+**Tests** : 439 Vitest verts (-6 retirés cohérents : tests requires_calibration,
+hasRequiredPlafonds, "Séance 0 exclue du décompte"). E2e `seance0.spec.ts`
+supprimé. Build vert.
+
+**Limites #12a** : l'UX de calibration transparente reste sommaire pour
+l'instant — l'utilisateur ne voit pas explicitement que sa 1re série d'un exo
+inconnu calibre le plafond. À traiter en **#12b** :
+- Banner "On apprend ta charge" dans `SetInput` quand exo non mesuré.
+- Recalcul live des charges proposées des séries suivantes après 1re série
+  fiable cochée.
+- Marquage `stale` (dernier snapshot > 8 sem) + bannière re-calibrage.
+- Écran récap léger post-onboarding ("Ton cycle commence aujourd'hui").
+
+---
+
 ## État courant — fin Conv #11i bis (2026-05-18)
 
 3 fix complémentaires post-#11i, suite à retours immédiats Azur :

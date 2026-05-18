@@ -115,13 +115,8 @@ export function computeCoverageThisWeek(
 ): MuscleCoverage[] {
   const weekStart = dateKey(weekStartFor(now, cycleStart));
   const weekEnd = dateKey(addDays(parseDateKey(weekStart), 7));
-  // Conv #11i bis — Séance 0 (`label === 'Séance 0'`) exclue de toutes les
-  // agrégations : c'est une intro, elle ne doit compter nulle part.
   const inWeek = feedbacks.filter(
-    (f) =>
-      f.seance_date >= weekStart &&
-      f.seance_date < weekEnd &&
-      f.feedback.label !== 'Séance 0',
+    (f) => f.seance_date >= weekStart && f.seance_date < weekEnd,
   );
   const counts = sumMuscleSets(
     inWeek.map((f) => f.feedback),
@@ -199,10 +194,8 @@ export function computeVolumeHistory(
     weekStarts.push(dateKey(addDays(thisWeekStart, -i * 7)));
   }
 
-  // Index feedbacks par semaine. Conv #11i bis — Séance 0 exclue.
   const byWeek = new Map<string, SessionFeedback[]>();
   for (const f of feedbacks) {
-    if (f.feedback.label === 'Séance 0') continue;
     const wk = weekKeyFor(parseDateKey(f.seance_date), cycleStart);
     const list = byWeek.get(wk) ?? [];
     list.push(f.feedback);
@@ -391,7 +384,7 @@ export interface ExerciseE1rmSeries {
 
 /**
  * Construit l'historique d'e1RM par exercice à partir des feedbacks réalisés
- * (Séance 0 incluse — c'est même souvent le 1er point). Pour chaque exo et
+ * Pour chaque exo et
  * chaque date de séance, on garde le plus haut e1RM calculé via Epley
  * (`e1rmObserved`) sur les sets de cette date. Ne renvoie que les exos avec
  * **≥ 2 points** (sinon pas de courbe à tracer). Tri par nombre de points
