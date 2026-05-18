@@ -242,7 +242,14 @@ export function buildCalendarMatrix(
   const cycle = cycles.find((c) => c.cycle_index === state.cycle_index);
   if (cycle === undefined) return null;
 
-  const anchor = startOfWeekMonday(parseDateKey(cycle.start_date));
+  // Conv #11h — anchor sur cycle.start_date (= S1J1) plutôt que sur le lundi
+  // ISO de la semaine du start. Cela assure que le déload (5e ligne) tombe
+  // strictement 4 semaines × 7 jours après le démarrage, même si le cycle
+  // ne démarre pas un lundi. Le `dayOfWeek` de chaque case devient le vrai
+  // jour calendaire (calculé via getDay), pas l'index de colonne — donc la
+  // 1re colonne porte l'étiquette du jour de démarrage (mer/jeu/... si
+  // démarrage hors lundi).
+  const anchor = parseDateKey(cycle.start_date);
   const todayKey = dateKey(now);
 
   // Index rapides par date.
@@ -315,7 +322,9 @@ export function buildCalendarMatrix(
       row.push({
         date: key,
         weekInCycle: w + 1,
-        dayOfWeek: d,
+        // Jour calendaire réel (0 = lundi, 6 = dimanche), pas l'index de
+        // colonne, depuis qu'on aligne sur cycle.start_date (Conv #11h).
+        dayOfWeek: (date.getDay() + 6) % 7,
         status,
         isToday: key === todayKey,
         isDeload: w + 1 === DELOAD_WEEK_INDEX,

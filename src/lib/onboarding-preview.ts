@@ -10,6 +10,7 @@
 
 import type { Catalog } from '@/engine/catalog';
 import {
+  ExType,
   exercisePrimaires,
   type DayTemplate,
   type PlannedExercise,
@@ -174,4 +175,77 @@ export function muscleDeltaForSwap(
     lost: oldP.filter((m) => !newSet.has(m)),
     gained: newP.filter((m) => !oldSet.has(m)),
   };
+}
+
+// =============================================================================
+// Estimation durée séance + détection tensions (Conv #11h)
+// =============================================================================
+
+/**
+ * Heuristiques de durée — calibrées sur l'indice d'Azur "6 exos calibrés en
+ * 45-50 min" (≈ 8 min/exo en mode calibration). Pour une séance normale,
+ * sans test plafond, on tourne autour de 8-10 min/exo selon les sets/repos.
+ *
+ * Composantes : setup (changement d'exo, ajustement matériel) + sets × (temps
+ * d'exécution + repos). Repos plus long sur compounds (~120 s) que sur
+ * isolations (~60 s).
+ */
+const SETUP_S = 60;
+const SET_EXEC_S = 30;
+const REST_COMPOUND_S = 120;
+const REST_ISOLATION_S = 60;
+
+/** Seuil au-dessus duquel on alerte sur la durée d'une séance (minutes). */
+export const SESSION_DURATION_WARN_MIN = 75;
+
+export function estimateExerciseDurationMinutes(
+  planned: Pick<PlannedExercise, 'base_sets'>,
+  exType: ExType,
+): number {
+  const restS = exType === ExType.COMPOUND ? REST_COMPOUND_S : REST_ISOLATION_S;
+  const totalS = SETUP_S + planned.base_sets * (SET_EXEC_S + restS);
+  return totalS / 60;
+}
+
+export function estimateDayDurationMinutes(
+  day: DayTemplate,
+  catalog: Catalog,
+): number {
+  let total = 0;
+  for (const ex of day.exercises) {
+    if (!catalog.has(ex.exercise_id)) continue;
+    const e = catalog.get(ex.exercise_id);
+    total += estimateExerciseDurationMinutes(ex, e.type);
+  }
+  return total;
+}
+
+export interface ProgramTension {
+  /** Durée estimée par jour (min). */
+  readonly durationsMin: ReadonlyArray<number>;
+  /** Durée moyenne (min) sur les jours non vides. */
+  readonly avgMin: number;
+  /** Durée max (min). */
+  readonly maxMin: number;
+  /** true si au moins un jour dépasse le seuil de warning. */
+  readonly tooLong: boolean;
+}
+
+/**
+ * Analyse le `WeeklyTemplate` pour estimer la charge horaire des séances.
+ * Sert au Step5 à afficher la durée estimée + un bandeau d'arbitrage si une
+ * séance dépasse le seuil (suggérer plus de séances, moins d'exos, etc.).
+ */
+export function analyzeProgramTension(
+  template: WeeklyTemplate,
+  catalog: Catalog,
+): ProgramTension {
+  const durationsMin = template.days.map((d) => estimateDayDurationMinutes(d, catalog));
+  const nonEmpty = durationsMin.filter((d) => d > 0);
+  const avgMin = nonEmpty.length === 0
+    ? 0
+    : nonEmpty.reduce((a, b) => a + b, 0) / nonEmpty.length;
+  const maxMin = durationsMin.length === 0 ? 0 : Math.max(...durationsMin);
+  const tooLong = maxMin > SESSION_DURATION_WARN_MIN;
+  return { durationsMin, avgMin, maxMin, tooLong };
 }

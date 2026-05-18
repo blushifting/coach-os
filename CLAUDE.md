@@ -145,6 +145,52 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
+## État courant — fin Conv #11h (2026-05-18)
+
+Calendrier aligné cycle + co-construction programme + filigrane à gauche
+(items 11, 12 du dump #11 bis).
+
+- **Calendrier aligné sur cycle.start_date** (`lib/dashboard.ts →
+  buildCalendarMatrix`) : `anchor` passe de `startOfWeekMonday(start_date)`
+  à `parseDateKey(start_date)`. La 1re case du calendrier est désormais
+  toujours S1J1, et la 5e ligne couvre strictement les jours 29-35 depuis
+  le démarrage → le déload est correctement positionné même si le cycle
+  ne commence pas un lundi. Le `dayOfWeek` de chaque case est calculé
+  depuis la vraie date (`(date.getDay() + 6) % 7`), donc le `DayCell`
+  affiche le bon label (M si mardi, J si jeudi…) — la 1re colonne porte
+  le jour de démarrage (mer si on a démarré un mer).
+- **Estimateur de durée séance** (`lib/onboarding-preview.ts`) :
+  `estimateExerciseDurationMinutes(planned, exType)` (heuristique
+  setup 60 s + sets × (exécution 30 s + repos 120 s compound / 60 s
+  isolation)) + `estimateDayDurationMinutes(day, catalog)` somme par jour.
+  Calibré sur l'indice "6 exos calibrés = 45-50 min" donné par Azur
+  (compound × 3 sets ≈ 8.5 min). Seuil `SESSION_DURATION_WARN_MIN = 75 min`.
+- **Détecteur de tensions** (`analyzeProgramTension(template, catalog)`) :
+  retourne `{durationsMin[], avgMin, maxMin, tooLong}`. `tooLong = maxMin >
+  75`. Sert au Step5 à afficher un panneau d'arbitrage.
+- **Affichage Step5** : sous `VolumeRecap`, encart `TensionPanel` toujours
+  visible (durée moyenne + max). Si `tooLong`, fond sang-900/15 + bandeau
+  d'arbitrage transparent listant les leviers (plus de séances, moins de
+  muscles, programme custom, accepter séances + longues). Chaque day card
+  affiche aussi sa durée individuelle (`{n} exos · ~{X} min`, testid
+  `day-duration-${di}`).
+- **Filigrane K déplacé à gauche** (`AppShell.BrandWatermark`) :
+  `left-3` + `flex h-12 items-center` pour être centré verticalement avec
+  le titre du Header (h-12). Taille passée à `h-8 w-8` (32px) pour rester
+  visible. Le Header gagne `pl-14` au lieu de `px-5` pour libérer la
+  zone à gauche et garder le titre lisible. Opacity inchangée à 0.32 +
+  drop-shadow pour bien distinguer du titre adjacent.
+
+Tests : **438 Vitest verts** (+4 : analyzeProgramTension low/high
+volume + exos inconnus + compound > isolation, 1 test calendrier mis
+à jour pour l'anchor start_date). **20 e2e verts** (workers=1). Build OK
+(44.65 kB CSS / 689.43 kB JS, +0.26 CSS / +2.44 JS depuis #11g).
+
+**Backlog Conv #11 — restant** :
+- **#11i — Piste E refonte visuelle** : transitions sur cochage de série,
+  progress ring autour des exos, haptics via Vibration API, animations
+  courbes Bilan. Reste en suspens depuis #11c (A→D livré, E à évaluer).
+
 ## État courant — fin Conv #11g (2026-05-18)
 
 Visualisation des données (items 6, 9, 10 du dump #11 bis).

@@ -362,19 +362,26 @@ describe('buildCalendarMatrix', () => {
     expect(buildCalendarMatrix(state, [], [], [])).toBeNull();
   });
 
-  it('grille 5 × 7 ancrée sur le lundi de la semaine du start_date', () => {
+  it('grille 5 × 7 alignée sur cycle.start_date (S1J1 en première case)', () => {
+    // Conv #11h — anchor = start_date directement (pas le lundi ISO), pour
+    // que la 5e ligne corresponde exactement à la semaine de déload selon
+    // l'engine. La 1re colonne porte le jour de démarrage (mer/jeu/...).
     const state = makeState({ cycle_index: 1 });
     const cycles: CycleRow[] = [
-      // 2026-05-13 = mercredi → lundi d'ancrage = 2026-05-11
+      // 2026-05-13 = mercredi → 1re case = mercredi (anchor)
       { cycle_index: 1, start_date: '2026-05-13', end_date: null, programme_id: null, review: null },
     ];
     const m = buildCalendarMatrix(state, cycles, [], [], parseDateKey('2026-05-13'));
     expect(m).not.toBeNull();
     expect(m!.weeks).toHaveLength(CYCLE_LENGTH_WEEKS);
     expect(m!.weeks[0]!).toHaveLength(7);
-    expect(m!.cycleStart).toBe('2026-05-11');
-    expect(m!.weeks[0]![0]!.date).toBe('2026-05-11');
-    expect(m!.weeks[4]![6]!.date).toBe('2026-06-14');
+    expect(m!.cycleStart).toBe('2026-05-13');
+    expect(m!.weeks[0]![0]!.date).toBe('2026-05-13');
+    // S5J7 = J35 depuis start = 5×7 - 1 = 34 jours après start
+    expect(m!.weeks[4]![6]!.date).toBe('2026-06-16');
+    // dayOfWeek réel : 2026-05-13 = mercredi → 2 (Lun=0)
+    expect(m!.weeks[0]![0]!.dayOfWeek).toBe(2);
+    expect(m!.weeks[0]![6]!.dayOfWeek).toBe(1); // mardi
   });
 
   it('statut completed si feedback à la date', () => {

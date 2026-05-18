@@ -24,23 +24,28 @@ export function AppShell() {
 }
 
 /**
- * Filigrane logo K en haut-droit, présent sur tous les écrans (#11f item 7).
- * `pointer-events-none` pour ne jamais bloquer l'UI dessous. `z-50` pour
- * passer au-dessus du Header sticky qui est en z-10, sinon il serait masqué
- * sur les pages avec TabbedLayout.
+ * Filigrane logo K en haut-gauche, présent sur tous les écrans (#11f item 7,
+ * repositionné #11h : à gauche pour libérer le coin haut-droit et être centré
+ * sur la même ligne que les titres de page). `pointer-events-none` pour ne
+ * jamais bloquer l'UI dessous. `z-50` pour passer au-dessus du Header sticky
+ * (z-10), sinon il serait masqué sur les pages avec TabbedLayout.
+ *
+ * Le Header décale son titre via `pl-12` pour laisser de la place. L'opacity
+ * 0.32 et le drop-shadow assurent qu'on distingue toujours bien le filigrane
+ * du titre adjacent (titre = opacity 1.0, filigrane = 0.32).
  */
 function BrandWatermark() {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none fixed right-2 z-50"
+      className="pointer-events-none fixed left-3 z-50 flex h-12 items-center"
       style={{ top: 'max(env(safe-area-inset-top), 0.5rem)' }}
       data-testid="brand-watermark"
     >
       <img
         src={`${import.meta.env.BASE_URL}icon.svg`}
         alt=""
-        className="h-7 w-7 opacity-[0.32] drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
+        className="h-8 w-8 opacity-[0.32] drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)]"
       />
     </div>
   );

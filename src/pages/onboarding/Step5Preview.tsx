@@ -26,12 +26,17 @@ import { Card } from '@/components/Card';
 import type { Catalog } from '@/engine/catalog';
 import { exercisePrimaires, type WeeklyTemplate } from '@/engine/models';
 import {
+  analyzeProgramTension,
   applyVariantsToTemplate,
+  estimateDayDurationMinutes,
   muscleDeltaForSwap,
+  SESSION_DURATION_WARN_MIN,
   weeklyVolumeByMuscle,
+  type ProgramTension,
   type VariantReplacement,
 } from '@/lib/onboarding-preview';
 import { alternativeVariantsFor } from '@/lib/calibration';
+import { cn } from '@/lib/cn';
 import { muscleLabel } from '@/lib/progress';
 import { PatternIcon } from '@/pages/seance/PatternIcon';
 import { VariantPickerSheet } from '@/pages/seance-0/VariantPickerSheet';
@@ -73,6 +78,14 @@ export function Step5Preview({
   const volumeByMuscle = useMemo<Record<string, number>>(() => {
     if (effectiveTemplate === null || catalog === null) return {};
     return weeklyVolumeByMuscle(effectiveTemplate, catalog);
+  }, [effectiveTemplate, catalog]);
+
+  // Conv #11h — durée estimée par séance + détection de tension (séance >
+  // 75 min). Sert à proposer des arbitrages transparents si le programme
+  // est trop chargé pour le nb de séances choisi.
+  const tension = useMemo<ProgramTension | null>(() => {
+    if (effectiveTemplate === null || catalog === null) return null;
+    return analyzeProgramTension(effectiveTemplate, catalog);
   }, [effectiveTemplate, catalog]);
 
   // Alternatives proposées pour le slot ouvert dans le picker.
@@ -154,15 +167,22 @@ export function Step5Preview({
 
       <VolumeRecap volumeByMuscle={volumeByMuscle} />
 
+      {tension !== null && <TensionPanel tension={tension} />}
+
       <PedagogyPanel open={pedagogyOpen} onToggle={() => setPedagogyOpen((v) => !v)} />
 
       <div className="flex flex-col gap-3">
-        {effectiveTemplate.days.map((day, di) => (
+        {effectiveTemplate.days.map((day, di) => {
+          const dayMin = catalog === null ? 0 : estimateDayDurationMinutes(day, catalog);
+          return (
           <Card key={di} className="flex flex-col gap-2" data-testid={`day-card-${di}`}>
             <header className="flex items-baseline justify-between">
               <h2 className="text-sm font-semibold text-white">{day.label}</h2>
-              <span className="text-[11px] text-anthracite-300">
-                {day.exercises.length} exos
+              <span
+                className="text-[11px] text-anthracite-300"
+                data-testid={`day-duration-${di}`}
+              >
+                {day.exercises.length} exos · ~{Math.round(dayMin)} min
               </span>
             </header>
             {day.target_muscles_focus.length > 0 && (
@@ -247,7 +267,8 @@ export function Step5Preview({
               })}
             </ul>
           </Card>
-        ))}
+          );
+        })}
       </div>
 
       {replacements.length > 0 && (
@@ -276,6 +297,67 @@ export function Step5Preview({
 // =============================================================================
 // Sous-composants
 // =============================================================================
+
+function TensionPanel({ tension }: { readonly tension: ProgramTension }) {
+  // Pas d'affichage si tout va bien (durée moyenne et max raisonnables).
+  // On affiche un récap durée en encart bleu/neutre, et un bandeau sang
+  // d'arbitrage uniquement si tooLong.
+  const avg = Math.round(tension.avgMin);
+  const max = Math.round(tension.maxMin);
+  return (
+    <Card
+      data-testid="tension-panel"
+      className={cn(
+        'flex flex-col gap-2',
+        tension.tooLong && 'border-sang-700/50 bg-sang-900/15',
+      )}
+    >
+      <header className="flex items-baseline justify-between">
+        <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-anthracite-300">
+          Durée estimée par séance
+        </span>
+        <span
+          className="font-display text-lg tabular-nums text-white"
+          data-testid="tension-avg"
+        >
+          ~{avg} min
+        </span>
+      </header>
+      {tension.tooLong ? (
+        <>
+          <p className="text-xs leading-relaxed text-sang-200">
+            Au moins une séance dépasse {SESSION_DURATION_WARN_MIN} min
+            (max ~{max} min). Tu peux la garder telle quelle, mais voici les
+            leviers si tu veux raccourcir :
+          </p>
+          <ul className="ml-4 flex list-disc flex-col gap-1 text-xs leading-relaxed text-anthracite-100">
+            <li>
+              <span className="font-medium text-white">Plus de séances</span> par
+              semaine (étale le volume — retour à l'étape 1).
+            </li>
+            <li>
+              <span className="font-medium text-white">Moins de muscles cibles</span>{' '}
+              (focus sur l'essentiel — retour à l'étape 2).
+            </li>
+            <li>
+              <span className="font-medium text-white">Programme custom</span> au
+              lieu d'un guidé full body (retour à l'étape 4).
+            </li>
+            <li>
+              Accepter des <span className="font-medium text-white">séances plus
+              longues</span> et continuer comme prévu.
+            </li>
+          </ul>
+        </>
+      ) : (
+        <p className="text-xs leading-relaxed text-anthracite-300">
+          Tient en {max} min max sur la séance la plus chargée. Aligné avec
+          ton nombre de séances par semaine.
+        </p>
+      )}
+    </Card>
+  );
+}
 
 function VolumeRecap({ volumeByMuscle }: { readonly volumeByMuscle: Record<string, number> }) {
   const entries = Object.entries(volumeByMuscle)
