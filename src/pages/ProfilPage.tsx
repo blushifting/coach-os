@@ -147,8 +147,7 @@ export default function ProfilPage() {
 
   return (
     <section className="flex flex-col gap-4 pb-6" data-testid="profil-page">
-      <h1 className="text-xl font-semibold text-white">Profil</h1>
-
+      {/* Conv #11i bis — h1 "Profil" retiré : doublon du titre Header. */}
       <Card>
         <div className="mb-3 flex items-center justify-between">
           <span className="text-sm font-semibold text-white">Identité</span>

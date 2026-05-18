@@ -36,6 +36,7 @@ import {
   txInitUser,
   txSaveSessionPlan,
   txSaveUserStateOnly,
+  txShiftCycleStart,
   txUpdateSessionPlan,
 } from '@/db/transactions';
 import { importFromJsonString } from '@/io/import';
@@ -94,6 +95,26 @@ export async function bootstrap(): Promise<void> {
 export async function refreshHistory(): Promise<void> {
   const history = await loadHistorySnapshot();
   useCoachOsStore.setState({ history });
+}
+
+/**
+ * Conv #11i bis — décale le `start_date` du cycle courant au lendemain.
+ * Appelé à la fin de la Séance 0 pour que la S1 du programme ne commence
+ * pas le jour de la calibration (qui est une intro pré-cycle).
+ *
+ * No-op si pas de userState ou pas de cycle correspondant en DB.
+ */
+export async function shiftCurrentCycleStartToTomorrow(): Promise<void> {
+  const state = useCoachOsStore.getState().userState;
+  if (state === null) return;
+  const today = new Date();
+  const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+  const y = tomorrow.getFullYear();
+  const m = String(tomorrow.getMonth() + 1).padStart(2, '0');
+  const d = String(tomorrow.getDate()).padStart(2, '0');
+  const newStartDate = `${y}-${m}-${d}`;
+  await txShiftCycleStart(state.cycle_index, newStartDate);
+  await refreshHistory();
 }
 
 // =============================================================================

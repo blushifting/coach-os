@@ -39,6 +39,26 @@ function syncEquipmentOverridesInTx(state: UserState): Promise<unknown> {
 }
 
 // =============================================================================
+// Décale le `start_date` du cycle indiqué (Conv #11i bis).
+//
+// Utilisé à la fin de la Séance 0 pour qu'elle ne lance pas le décompte du
+// calendrier. Le `start_date` est repoussé au lendemain (par défaut), ce qui
+// place la Séance 0 strictement avant la S1 du programme.
+// =============================================================================
+
+export async function txShiftCycleStart(
+  cycleIndex: number,
+  newStartDate: string,
+): Promise<void> {
+  const db = getDb();
+  await db.transaction('rw', [db.cycles], async () => {
+    const row = await db.cycles.get(cycleIndex);
+    if (row === undefined) return;
+    await db.cycles.put({ ...row, start_date: newStartDate });
+  });
+}
+
+// =============================================================================
 // Init utilisateur (Onboarding terminé)
 // =============================================================================
 

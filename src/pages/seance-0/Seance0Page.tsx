@@ -30,6 +30,7 @@ import {
   commitInitialCalibration,
   generateInitialCyclePlan,
   recordFeedbackAndCommit,
+  shiftCurrentCycleStartToTomorrow,
 } from '@/hooks/useEngine';
 import { useCoachOsStore } from '@/store';
 import { pickCalibrationExercises, type CalibrationItem } from '@/lib/calibration';
@@ -209,6 +210,14 @@ export default function Seance0Page() {
           label: 'Séance 0',
         };
         await recordFeedbackAndCommit(feedback);
+
+        // Conv #11i bis — la Séance 0 est une intro pré-cycle : on décale le
+        // start_date du cycle au lendemain pour que le calendrier visuel ne
+        // place pas la S1 sur le jour de la calibration. Le shift n'a de
+        // sens que si l'user a effectivement fait des séries (sinon la
+        // Séance 0 = simple parcours de validation sans contenu, pas la
+        // peine de décaler).
+        await shiftCurrentCycleStartToTomorrow();
       }
 
       setPhase('done');

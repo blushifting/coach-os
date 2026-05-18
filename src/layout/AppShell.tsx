@@ -38,8 +38,11 @@ function BrandWatermark() {
   return (
     <div
       aria-hidden="true"
+      // Conv #11i bis — top aligné au padding-top du Header (0.75rem) pour
+      // alignement vertical strict du K avec le titre. `flex h-12 items-center`
+      // centre le K verticalement sur la même ligne que le titre h-12.
       className="pointer-events-none fixed left-3 z-50 flex h-12 items-center"
-      style={{ top: 'max(env(safe-area-inset-top), 0.5rem)' }}
+      style={{ top: 'max(env(safe-area-inset-top), 0.75rem)' }}
       data-testid="brand-watermark"
     >
       <img

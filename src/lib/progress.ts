@@ -115,8 +115,13 @@ export function computeCoverageThisWeek(
 ): MuscleCoverage[] {
   const weekStart = dateKey(weekStartFor(now, cycleStart));
   const weekEnd = dateKey(addDays(parseDateKey(weekStart), 7));
+  // Conv #11i bis — Séance 0 (`label === 'Séance 0'`) exclue de toutes les
+  // agrégations : c'est une intro, elle ne doit compter nulle part.
   const inWeek = feedbacks.filter(
-    (f) => f.seance_date >= weekStart && f.seance_date < weekEnd,
+    (f) =>
+      f.seance_date >= weekStart &&
+      f.seance_date < weekEnd &&
+      f.feedback.label !== 'Séance 0',
   );
   const counts = sumMuscleSets(
     inWeek.map((f) => f.feedback),
@@ -194,9 +199,10 @@ export function computeVolumeHistory(
     weekStarts.push(dateKey(addDays(thisWeekStart, -i * 7)));
   }
 
-  // Index feedbacks par semaine.
+  // Index feedbacks par semaine. Conv #11i bis — Séance 0 exclue.
   const byWeek = new Map<string, SessionFeedback[]>();
   for (const f of feedbacks) {
+    if (f.feedback.label === 'Séance 0') continue;
     const wk = weekKeyFor(parseDateKey(f.seance_date), cycleStart);
     const list = byWeek.get(wk) ?? [];
     list.push(f.feedback);

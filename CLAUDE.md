@@ -145,6 +145,47 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
+## État courant — fin Conv #11i bis (2026-05-18)
+
+3 fix complémentaires post-#11i, suite à retours immédiats Azur :
+
+- **Séance 0 totalement exclue du programme** (Azur : "elle a lancé le
+  décompte des semaines dans le calendrier : ce ne doit être le cas nulle
+  part") :
+  - `computeCoverageThisWeek` (`lib/progress.ts`) filtre désormais
+    `feedback.label === 'Séance 0'`.
+  - `computeVolumeHistory` idem.
+  - `buildCalendarMatrix` (`lib/dashboard.ts`) filtre la Séance 0 lors
+    de la construction de `feedbackDates` → la cellule du jour ne s'affiche
+    plus "completed" si seule la Séance 0 a été enregistrée. Le type
+    de `feedbacks` est étendu à `Pick<…, 'seance_date' | 'feedback'>`
+    pour accéder au label.
+  - Nouvelle tx `txShiftCycleStart(cycleIndex, newStartDate)` (`db/
+    transactions.ts`). Nouvelle méthode `shiftCurrentCycleStartToTomorrow`
+    (`hooks/useEngine.ts`) qui appelle la tx + `refreshHistory`.
+  - `Seance0Page.finalize` appelle ce shift **après** `recordFeedbackAndCommit`,
+    **uniquement si au moins une série a été cochée** (`feedbackSets.length > 0`).
+    Si l'user passe sans cocher (cas test e2e, ou validation symbolique),
+    pas de shift → comportement conservé. Sinon : la S1 du programme
+    commence demain, pas le jour de la calibration.
+- **Alignement filigrane K / titre Header** (`AppShell` + `Header`) :
+  `top` du filigrane passe à `max(env(safe-area-inset-top), 0.75rem)`
+  (identique au padding-top du Header), donc le centre vertical du K est
+  rigoureusement sur la même ligne que le centre du titre h-12. Le `pl-14`
+  du Header passe à `pl-20` pour augmenter l'écart horizontal K↔titre
+  (l'utilisateur les voyait collés).
+- **Doublon "Profil"** retiré : la `<h1>Profil</h1>` redondante en haut
+  de `ProfilPage` est supprimée (le Header affichait déjà le titre).
+
+Tests : **445 Vitest verts** (inchangé). **20 e2e verts** (workers=1).
+Build OK (46.03 kB CSS / 693.96 kB JS, +0.24 CSS / +1.10 JS depuis #11i).
+
+**Note prochaine conv** — Azur veut un **tuto post-Séance 0** avec
+simulation d'un utilisateur fictif (multi-cycles réalistes) comme support
+pédagogique, accessible aussi via Profil > Aide. Reporté à #12 (porter
+`prototype/coach_os/simulation.py` en TS, mode "demo" du store,
+parcours guidé multi-écrans).
+
 ## État courant — fin Conv #11i (2026-05-18)
 
 Piste E refonte visuelle — micro-interactions et animations (dernier

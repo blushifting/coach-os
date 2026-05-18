@@ -259,7 +259,7 @@ export function buildCalendarMatrix(
   state: Pick<UserState, 'cycle_index'>,
   cycles: ReadonlyArray<Pick<CycleRow, 'cycle_index' | 'start_date'>>,
   sessions: ReadonlyArray<Pick<SessionRow, 'seance_date' | 'status' | 'plan' | 'id'>>,
-  feedbacks: ReadonlyArray<Pick<FeedbackRow, 'seance_date'>>,
+  feedbacks: ReadonlyArray<Pick<FeedbackRow, 'seance_date' | 'feedback'>>,
   now: Date = new Date(),
   catalog: Catalog | null = null,
 ): CalendarMatrix | null {
@@ -276,9 +276,17 @@ export function buildCalendarMatrix(
   const anchor = parseDateKey(cycle.start_date);
   const todayKey = dateKey(now);
 
-  // Index rapides par date.
+  // Index rapides par date. Conv #11i bis — la Séance 0 ne marque pas une
+  // case "completed" dans le calendrier (c'est une intro pré-cycle).
+  // L'appelant passe `feedbacks` typés `Pick<FeedbackRow, 'seance_date' |
+  // 'feedback'>` quand il veut filtrer. Si le champ `feedback` n'est pas
+  // fourni, tous les feedbacks comptent (rétrocompat anciens tests).
   const feedbackDates = new Set<string>();
-  for (const f of feedbacks) feedbackDates.add(f.seance_date);
+  for (const f of feedbacks) {
+    const fb = (f as Pick<FeedbackRow, 'feedback'>).feedback;
+    if (fb !== undefined && fb.label === 'Séance 0') continue;
+    feedbackDates.add(f.seance_date);
+  }
   const sessionByDate = new Map<
     string,
     { status: string; label: string; id: number | null; plan: SessionRow['plan'] }
