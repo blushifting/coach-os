@@ -26,14 +26,26 @@ export default function CataloguePage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selected, setSelected] = useState<Exercise | null>(null);
 
-  const results = useMemo(() => {
-    if (catalog === null) return [];
-    return applyFilters(catalog, filters);
-  }, [catalog, filters]);
-
   // Conv #11g — plafonds mesurés (kg) affichés sur chaque carte. Snapshot
   // depuis userState.e1rm. Si pas d'user (pré-onboarding), map vide → rien.
   const e1rmMap: Readonly<Record<string, number>> = userState?.e1rm ?? {};
+
+  // Conv #11h — contexte pour les filtres "habituels" / "avec plafond mesuré".
+  // habitualIds = exos présents dans le programme courant.
+  const habitualIds = useMemo<ReadonlySet<string>>(() => {
+    const set = new Set<string>();
+    const plan = userState?.current_cycle_plan;
+    if (plan === null || plan === undefined) return set;
+    for (const day of plan.days) {
+      for (const ex of day.exercises) set.add(ex.exercise_id);
+    }
+    return set;
+  }, [userState]);
+
+  const results = useMemo(() => {
+    if (catalog === null) return [];
+    return applyFilters(catalog, filters, { habitualIds, e1rmMap });
+  }, [catalog, filters, habitualIds, e1rmMap]);
 
   if (catalog === null) {
     return (

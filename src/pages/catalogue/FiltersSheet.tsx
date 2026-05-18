@@ -63,10 +63,33 @@ export function FiltersSheet({
   const toggleLengthened = () => {
     onChange({ ...filters, lengthenedBiasOnly: !filters.lengthenedBiasOnly });
   };
+  const toggleHabitual = () => {
+    onChange({ ...filters, habitualOnly: !filters.habitualOnly });
+  };
+  const toggleMeasured = () => {
+    onChange({ ...filters, measuredOnly: !filters.measuredOnly });
+  };
 
   return (
     <Sheet open={open} onClose={onClose} title="Filtres">
       <div className="flex flex-col gap-4" data-testid="filters-sheet-content">
+        <Section title="Mon programme">
+          <Chip
+            active={filters.habitualOnly}
+            onClick={toggleHabitual}
+            testId="filter-habitual-only"
+          >
+            Exos habituels
+          </Chip>
+          <Chip
+            active={filters.measuredOnly}
+            onClick={toggleMeasured}
+            testId="filter-measured-only"
+          >
+            Plafond mesuré
+          </Chip>
+        </Section>
+
         <Section title="Type">
           <Chip
             active={filters.types.includes(ExType.COMPOUND)}

@@ -60,6 +60,29 @@ export function addDays(d: Date, n: number): Date {
   return r;
 }
 
+/**
+ * Début de la semaine de programme (Conv #11h) : bloc de 7 jours qui démarre
+ * à `cycleStart + 7×k` et contient `date`. Si `cycleStart` est `null`
+ * (pas de cycle posé), fallback sur la semaine ISO lundi-dim.
+ *
+ * Une "semaine du programme" matche la grille du calendrier cycle-aligned :
+ * semaine 1 = jours 1-7 depuis le démarrage, semaine 5 = J29-J35, etc. Les
+ * trackings (couverture, volume hebdo, streak) suivent cette grille pour
+ * rester cohérents avec le calendrier visuel.
+ */
+export function weekStartFor(date: Date, cycleStart: string | null): Date {
+  if (cycleStart === null) return startOfWeekMonday(date);
+  const startD = parseDateKey(cycleStart);
+  const diffDays = Math.round((date.getTime() - startD.getTime()) / 86_400_000);
+  const k = Math.floor(diffDays / 7);
+  return addDays(startD, k * 7);
+}
+
+/** Clé YYYY-MM-DD du début de la semaine de programme (cf. `weekStartFor`). */
+export function weekKeyFor(date: Date, cycleStart: string | null): string {
+  return dateKey(weekStartFor(date, cycleStart));
+}
+
 /** Lundi (00:00) de la semaine contenant `d`. Lun = 0, Dim = 6. */
 export function startOfWeekMonday(d: Date): Date {
   const r = new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -89,25 +112,26 @@ export function weekKey(d: Date): string {
 export function computeStreak(
   feedbacks: ReadonlyArray<{ readonly seance_date: string }>,
   now: Date = new Date(),
+  cycleStart: string | null = null,
 ): number {
   if (feedbacks.length === 0) return 0;
   const weeks = new Set<string>();
   for (const f of feedbacks) {
-    weeks.add(weekKey(parseDateKey(f.seance_date)));
+    weeks.add(weekKeyFor(parseDateKey(f.seance_date), cycleStart));
   }
-  const thisWeek = weekKey(now);
+  const thisWeek = weekKeyFor(now, cycleStart);
   let cursor: string;
   if (weeks.has(thisWeek)) {
     cursor = thisWeek;
   } else {
-    cursor = weekKey(addDays(parseDateKey(thisWeek), -7));
+    cursor = weekKeyFor(addDays(parseDateKey(thisWeek), -7), cycleStart);
     if (!weeks.has(cursor)) return 0;
   }
   let count = 0;
   let probe = cursor;
   while (weeks.has(probe)) {
     count++;
-    probe = weekKey(addDays(parseDateKey(probe), -7));
+    probe = weekKeyFor(addDays(parseDateKey(probe), -7), cycleStart);
   }
   return count;
 }

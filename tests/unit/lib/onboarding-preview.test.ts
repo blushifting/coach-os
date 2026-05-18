@@ -181,10 +181,10 @@ describe('estimateExerciseDurationMinutes / analyzeProgramTension (Conv #11h)', 
     ]);
     const tpl: WeeklyTemplate = {
       cycle_index: 1,
-      week_in_cycle: 1,
       days: [day, day, day],
       requires_calibration: false,
       rationale: 't',
+      warnings: [],
     };
     const tension = analyzeProgramTension(tpl, catalog);
     expect(tension.tooLong).toBe(false);
@@ -201,10 +201,10 @@ describe('estimateExerciseDurationMinutes / analyzeProgramTension (Conv #11h)', 
     );
     const tpl: WeeklyTemplate = {
       cycle_index: 1,
-      week_in_cycle: 1,
       days: [heavyDay],
       requires_calibration: false,
       rationale: 't',
+      warnings: [],
     };
     const tension = analyzeProgramTension(tpl, catalog);
     expect(tension.tooLong).toBe(true);
@@ -215,10 +215,10 @@ describe('estimateExerciseDurationMinutes / analyzeProgramTension (Conv #11h)', 
     const day = makeDay('Vide', [{ id: 'inconnu', sets: 5 }]);
     const tpl: WeeklyTemplate = {
       cycle_index: 1,
-      week_in_cycle: 1,
       days: [day],
       requires_calibration: false,
       rationale: 't',
+      warnings: [],
     };
     const tension = analyzeProgramTension(tpl, catalog);
     expect(tension.maxMin).toBe(0);

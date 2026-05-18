@@ -175,6 +175,16 @@ export interface CatalogFilters {
   types: readonly ExType[];
   /** Si vrai : ne garder que les exos avec tag `lengthened_bias`. */
   lengthenedBiasOnly: boolean;
+  /**
+   * Si vrai : ne garder que les exos présents dans le programme courant
+   * (i.e. dans `state.current_cycle_plan.days[].exercises[]`). Conv #11h.
+   */
+  habitualOnly: boolean;
+  /**
+   * Si vrai : ne garder que les exos avec un plafond mesuré strictement > 0
+   * dans `state.e1rm`. Conv #11h.
+   */
+  measuredOnly: boolean;
 }
 
 export const EMPTY_FILTERS: CatalogFilters = Object.freeze({
@@ -184,6 +194,8 @@ export const EMPTY_FILTERS: CatalogFilters = Object.freeze({
   charges: [],
   types: [],
   lengthenedBiasOnly: false,
+  habitualOnly: false,
+  measuredOnly: false,
 });
 
 export function hasActiveFilters(f: CatalogFilters): boolean {
@@ -193,7 +205,9 @@ export function hasActiveFilters(f: CatalogFilters): boolean {
     f.patterns.length > 0 ||
     f.charges.length > 0 ||
     f.types.length > 0 ||
-    f.lengthenedBiasOnly
+    f.lengthenedBiasOnly ||
+    f.habitualOnly ||
+    f.measuredOnly
   );
 }
 
@@ -204,9 +218,26 @@ export function hasActiveFilters(f: CatalogFilters): boolean {
  *
  * Tous les critères sont AND entre catégories, OR à l'intérieur d'une catégorie.
  */
+/**
+ * Contexte user pour les filtres dépendant du state (Conv #11h) :
+ * - `habitualIds` : ids des exos présents dans `current_cycle_plan`.
+ * - `e1rmMap` : `userState.e1rm`.
+ * Fournir un objet vide / un Set vide si pas de user ou pas de cycle.
+ */
+export interface CatalogFilterContext {
+  readonly habitualIds: ReadonlySet<string>;
+  readonly e1rmMap: Readonly<Record<string, number>>;
+}
+
+const EMPTY_CONTEXT: CatalogFilterContext = {
+  habitualIds: new Set(),
+  e1rmMap: {},
+};
+
 export function applyFilters(
   catalog: Catalog,
   filters: CatalogFilters,
+  context: CatalogFilterContext = EMPTY_CONTEXT,
 ): Exercise[] {
   const text = filters.text.trim().toLowerCase();
   const muscleSet = new Set(filters.muscles);
@@ -224,6 +255,11 @@ export function applyFilters(
     if (muscleSet.size > 0) {
       const primaires = exercisePrimaires(ex);
       if (!primaires.some((m) => muscleSet.has(m))) return false;
+    }
+    if (filters.habitualOnly && !context.habitualIds.has(ex.id)) return false;
+    if (filters.measuredOnly) {
+      const e1rm = context.e1rmMap[ex.id];
+      if (e1rm === undefined || !(e1rm > 0)) return false;
     }
     return true;
   };

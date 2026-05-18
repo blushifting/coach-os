@@ -11,6 +11,8 @@ import {
   computeStreak,
   computeWeekSessions,
   dateKey,
+  weekKeyFor,
+  weekStartFor,
   isCycleFinished,
   isDeloadWeek,
   nextCycleReviewDate,
@@ -220,6 +222,29 @@ describe('computeStreak', () => {
 // =============================================================================
 // computeCycleProgress / computeWeekSessions / plannedSessionsForCycle
 // =============================================================================
+
+// Conv #11h — semaines de programme alignées sur cycleStart.
+describe('weekStartFor / weekKeyFor', () => {
+  it("sans cycleStart : fallback semaine ISO lundi-dim", () => {
+    // 2026-05-13 = mercredi → lundi ISO = 2026-05-11
+    expect(weekKeyFor(parseDateKey('2026-05-13'), null)).toBe('2026-05-11');
+    expect(weekKeyFor(parseDateKey('2026-05-17'), null)).toBe('2026-05-11');
+    expect(weekKeyFor(parseDateKey('2026-05-18'), null)).toBe('2026-05-18');
+  });
+
+  it("avec cycleStart = mercredi : semaines mer→mar", () => {
+    const cs = '2026-05-13'; // mercredi
+    expect(weekKeyFor(parseDateKey('2026-05-13'), cs)).toBe('2026-05-13');
+    expect(weekKeyFor(parseDateKey('2026-05-19'), cs)).toBe('2026-05-13'); // mardi suivant
+    expect(weekKeyFor(parseDateKey('2026-05-20'), cs)).toBe('2026-05-20'); // mer suivant = S2J1
+    expect(weekKeyFor(parseDateKey('2026-06-10'), cs)).toBe('2026-06-10'); // S5J1
+  });
+
+  it("date avant cycleStart : weekIndex négatif possible mais pas crash", () => {
+    const cs = '2026-05-13';
+    expect(() => weekStartFor(parseDateKey('2026-05-01'), cs)).not.toThrow();
+  });
+});
 
 describe('plannedSessionsForCycle', () => {
   it('null → 0', () => {

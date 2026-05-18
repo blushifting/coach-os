@@ -45,13 +45,29 @@ export default function ProgresPage() {
   const data = useMemo(() => {
     if (userState === null || catalog === null) return null;
     const musclesOf = buildMusclesOf(catalog);
+    // Conv #11h — alignement des trackings sur les semaines du programme :
+    // on récupère le start_date du cycle courant pour passer à
+    // computeCoverageThisWeek + computeVolumeHistory. Null si pas de cycle
+    // (fallback ISO).
+    const currentCycle = history.cycles.find(
+      (c) => c.cycle_index === userState.cycle_index,
+    );
+    const cycleStart = currentCycle?.start_date ?? null;
     return {
-      coverage: computeCoverageThisWeek(userState, history.feedbacks, musclesOf),
+      coverage: computeCoverageThisWeek(
+        userState,
+        history.feedbacks,
+        musclesOf,
+        undefined,
+        cycleStart,
+      ),
       volume: computeVolumeHistory(
         userState,
         history.feedbacks,
         musclesOf,
         VOLUME_HISTORY_WEEKS,
+        undefined,
+        cycleStart,
       ),
       cycles: buildCycleHistory(history.cycles, ALL_GUIDED_PROGRAMS),
       force: computeE1rmHistory(history.feedbacks, catalog),

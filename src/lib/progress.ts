@@ -28,8 +28,8 @@ import {
   addDays,
   dateKey,
   parseDateKey,
-  startOfWeekMonday,
-  weekKey,
+  weekKeyFor,
+  weekStartFor,
 } from '@/lib/dashboard';
 
 // =============================================================================
@@ -100,17 +100,20 @@ export interface MuscleCoverage {
 }
 
 /**
- * Calcule la couverture par muscle pour la semaine ISO contenant `now`.
- * On considère uniquement les feedbacks (séances réalisées), pas les sessions
- * planifiées non-faites.
+ * Calcule la couverture par muscle pour la semaine **du programme** contenant
+ * `now` (Conv #11h — alignée sur `cycleStart` plutôt que sur le lundi ISO,
+ * pour être cohérente avec le calendrier visuel). Si `cycleStart` est null
+ * (pas de cycle posé), fallback sur la semaine ISO.
+ * On considère uniquement les feedbacks (séances réalisées).
  */
 export function computeCoverageThisWeek(
   state: Pick<UserState, 'volume_min' | 'volume_max' | 'muscle_goals'>,
   feedbacks: readonly FeedbackRow[],
   musclesOf: Readonly<Record<string, Readonly<Record<string, number>>>>,
   now: Date = new Date(),
+  cycleStart: string | null = null,
 ): MuscleCoverage[] {
-  const weekStart = weekKey(now);
+  const weekStart = dateKey(weekStartFor(now, cycleStart));
   const weekEnd = dateKey(addDays(parseDateKey(weekStart), 7));
   const inWeek = feedbacks.filter(
     (f) => f.seance_date >= weekStart && f.seance_date < weekEnd,
@@ -179,18 +182,22 @@ export function computeVolumeHistory(
   musclesOf: Readonly<Record<string, Readonly<Record<string, number>>>>,
   weeks: number = 8,
   now: Date = new Date(),
+  cycleStart: string | null = null,
 ): MuscleVolumeSeries[] {
   if (weeks <= 0) return [];
-  const thisMon = startOfWeekMonday(now);
+  // Conv #11h — fenêtre glissante sur les `weeks` dernières semaines de
+  // programme (alignées sur cycleStart), pas semaines ISO. Cohérent avec
+  // le calendrier visuel.
+  const thisWeekStart = weekStartFor(now, cycleStart);
   const weekStarts: string[] = [];
   for (let i = weeks - 1; i >= 0; i--) {
-    weekStarts.push(dateKey(addDays(thisMon, -i * 7)));
+    weekStarts.push(dateKey(addDays(thisWeekStart, -i * 7)));
   }
 
   // Index feedbacks par semaine.
   const byWeek = new Map<string, SessionFeedback[]>();
   for (const f of feedbacks) {
-    const wk = weekKey(parseDateKey(f.seance_date));
+    const wk = weekKeyFor(parseDateKey(f.seance_date), cycleStart);
     const list = byWeek.get(wk) ?? [];
     list.push(f.feedback);
     byWeek.set(wk, list);

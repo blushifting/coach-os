@@ -145,6 +145,35 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
+## État courant — fin Conv #11h bis (2026-05-18)
+
+Trois ajouts en complément de #11h, suite à retours immédiats Azur :
+
+- **Trackings alignés sur les semaines du programme** (`lib/dashboard.ts` :
+  `weekStartFor(date, cycleStart) / weekKeyFor`). Fallback semaine ISO si
+  `cycleStart === null`. Cascadé dans `computeCoverageThisWeek`,
+  `computeVolumeHistory`, `computeStreak`. Les pages `ProgresPage` et
+  `ProgrammePage` extraient `cycle.start_date` du cycle courant pour le
+  passer. Cohérence visuelle avec le calendrier cycle-aligned : "cette
+  semaine" = la semaine du programme contenant aujourd'hui, pas la
+  semaine ISO lundi-dim.
+- **Plafond mis en évidence sur les cards catalogue** (`ExerciseCard`) :
+  chip distinct à droite du nom de l'exo (au lieu de l'ancienne ligne de
+  tags), gradient sang-600→800 plein, font-display tabulaire, halo
+  `shadow-glow-sang`. Plus de confusion avec les tags neutres
+  ("polyarticulaire", "barre", muscles).
+- **Filtres "Exos habituels" + "Plafond mesuré"** (`lib/catalog-filter.ts`) :
+  `CatalogFilters` étendu (`habitualOnly`, `measuredOnly`). `applyFilters`
+  accepte un `CatalogFilterContext` (`{habitualIds, e1rmMap}`).
+  `CataloguePage` calcule `habitualIds` depuis `userState.current_cycle_plan`
+  et passe le contexte. `FiltersSheet` ajoute une section "Mon programme"
+  en tête avec 2 chips (testids `filter-habitual-only`, `filter-measured-only`).
+
+Tests : **445 Vitest verts** (+7 : weekStartFor null/cycleStart, 4 sur
+les filtres habitual/measured, applyFilters habitualOnly sans contexte).
+**20 e2e verts** (workers=1). Build OK
+(44.95 kB CSS / 689.92 kB JS, +0.30 CSS / +0.49 JS).
+
 ## État courant — fin Conv #11h (2026-05-18)
 
 Calendrier aligné cycle + co-construction programme + filigrane à gauche

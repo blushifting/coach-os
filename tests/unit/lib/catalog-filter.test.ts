@@ -255,6 +255,43 @@ describe('applyFilters', () => {
     });
     expect(out).toEqual([]);
   });
+
+  // Conv #11h — filtres dépendant du state user
+  it('habitualOnly : ne garde que les exos du programme courant', () => {
+    const ctx = {
+      habitualIds: new Set(['bench_bb', 'squat_bb']),
+      e1rmMap: {},
+    };
+    const out = applyFilters(cat, { ...EMPTY_FILTERS, habitualOnly: true }, ctx);
+    expect(out.map((e) => e.id).sort()).toEqual(['bench_bb', 'squat_bb']);
+  });
+
+  it('habitualOnly sans contexte (Set vide) → liste vide', () => {
+    const out = applyFilters(cat, { ...EMPTY_FILTERS, habitualOnly: true });
+    expect(out).toEqual([]);
+  });
+
+  it('measuredOnly : ne garde que les exos avec plafond > 0', () => {
+    const ctx = {
+      habitualIds: new Set<string>(),
+      e1rmMap: { bench_bb: 80, squat_bb: 120, leg_ext: 0 },
+    };
+    const out = applyFilters(cat, { ...EMPTY_FILTERS, measuredOnly: true }, ctx);
+    expect(out.map((e) => e.id).sort()).toEqual(['bench_bb', 'squat_bb']);
+  });
+
+  it('habitualOnly + measuredOnly combinés (AND)', () => {
+    const ctx = {
+      habitualIds: new Set(['bench_bb', 'squat_bb', 'curl_db']),
+      e1rmMap: { bench_bb: 80, curl_db: 20 },
+    };
+    const out = applyFilters(
+      cat,
+      { ...EMPTY_FILTERS, habitualOnly: true, measuredOnly: true },
+      ctx,
+    );
+    expect(out.map((e) => e.id).sort()).toEqual(['bench_bb', 'curl_db']);
+  });
 });
 
 // =============================================================================

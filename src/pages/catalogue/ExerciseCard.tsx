@@ -34,7 +34,21 @@ export function ExerciseCard({ exercise, onClick, e1rm = null }: ExerciseCardPro
           <span className="truncate text-sm font-medium text-white">
             {exercise.nom_fr}
           </span>
-          <PatternIcon pattern={exercise.pattern} size="sm" />
+          <div className="flex shrink-0 items-center gap-1.5">
+            {/* Conv #11h — plafond mis en évidence : chip distinct à droite
+                du nom, fond sang plein + font-display tabulaire pour
+                ressortir vs les tags neutres (polyarticulaire, barre…). */}
+            {e1rm !== null && e1rm > 0 && (
+              <span
+                data-testid={`card-e1rm-${exercise.id}`}
+                className="rounded-md bg-gradient-to-b from-sang-600 to-sang-800 px-2 py-0.5 font-display text-xs leading-none tabular-nums text-white shadow-glow-sang"
+                title="Ton plafond mesuré (1 rep)"
+              >
+                {e1rm.toFixed(0)} kg
+              </span>
+            )}
+            <PatternIcon pattern={exercise.pattern} size="sm" />
+          </div>
         </div>
         <p className="line-clamp-2 text-xs leading-snug text-anthracite-400">
           {description}
@@ -52,15 +66,6 @@ export function ExerciseCard({ exercise, onClick, e1rm = null }: ExerciseCardPro
               data-testid="card-tag-lengthened"
             >
               Étirement
-            </span>
-          )}
-          {e1rm !== null && e1rm > 0 && (
-            <span
-              data-testid={`card-e1rm-${exercise.id}`}
-              className="rounded bg-sang-800/60 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-white"
-              title="Ton plafond mesuré (1 rep)"
-            >
-              {e1rm.toFixed(1)} kg
             </span>
           )}
           {primaires.slice(0, 2).map((m) => (

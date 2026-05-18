@@ -33,8 +33,13 @@ export default function ProgrammePage() {
   const catalog = useCoachOsStore((s) => s.catalog);
   const dashboard = useMemo(() => {
     if (userState === null) return null;
+    // Conv #11h — alignement streak sur les semaines du programme.
+    const currentCycle = history.cycles.find(
+      (c) => c.cycle_index === userState.cycle_index,
+    );
+    const cycleStart = currentCycle?.start_date ?? null;
     return {
-      streak: computeStreak(history.feedbacks),
+      streak: computeStreak(history.feedbacks, new Date(), cycleStart),
       cycleProgress: computeCycleProgress(userState, history.feedbacks),
       weekSessions: computeWeekSessions(userState, history.feedbacks),
       nextBilanDate: nextCycleReviewDate(userState, history.cycles),
