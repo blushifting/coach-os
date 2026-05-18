@@ -15,6 +15,16 @@ const config: Config = {
           'Roboto',
           'sans-serif',
         ],
+        // Conv #11c — police display Oswald (condensée, avec vraies
+        // minuscules contrairement à Anton). Effet "outil de salle de sport"
+        // tout en restant lisible en bas/haut de casse.
+        display: [
+          'Oswald',
+          'Inter',
+          'ui-sans-serif',
+          'system-ui',
+          'sans-serif',
+        ],
       },
       colors: {
         // Palette Coach OS — anthracite + sang (cf. recherche/08_ux_decisions.md).
@@ -44,12 +54,40 @@ const config: Config = {
           500: '#b62a3a',
           400: '#cc4a59',
         },
+        // Conv #11c — palette "graphite chaleureux" : anthracite avec une
+        // infusion subtile de brun-rouge. Utilisée pour le fond global et les
+        // surfaces hero. Les composants (Card, inputs) restent en anthracite
+        // froid → contraste subtil entre fond et surfaces, plus organique.
+        graphite: {
+          950: '#16110f', // fond body — gris très foncé chaud
+          900: '#1c1714', // section hero, header
+          850: '#221c19', // alternative card hero
+          800: '#2a2320', // surface élevée
+          700: '#3a2f2a', // bordure chaude discrète
+        },
       },
       backgroundImage: {
-        // Grain SVG très subtil. Casse l'aspect plat des aplats anthracite
-        // sans être perceptible consciemment (opacité 0.05, frequency 0.9).
+        // Grain SVG très subtil. Casse l'aspect plat des aplats sans être
+        // perceptible consciemment (opacité 0.05, frequency 0.9).
         grain:
           "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.05'/></svg>\")",
+        // Conv #11c — texture "brushed metal" : fines stries horizontales en
+        // turbulence anisotrope. Plus visible que le grain (opacité 0.07), ne
+        // ressemble pas à du bruit mais à un métal brossé. Posée en sur-couche
+        // sur le grain. Note : baseFrequency 0.04 0.9 = très horizontal.
+        brushed:
+          "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400'><filter id='b'><feTurbulence type='turbulence' baseFrequency='0.04 0.9' numOctaves='1' seed='5'/><feColorMatrix values='0 0 0 0 0.9  0 0 0 0 0.8  0 0 0 0 0.7  0 0 0 0.4 0'/></filter><rect width='100%' height='100%' filter='url(%23b)' opacity='0.07'/></svg>\")",
+      },
+      boxShadow: {
+        // Conv #11c — halo rouge diffus pour les éléments primaires hover/focus.
+        'glow-sang': '0 0 16px -2px rgba(182,42,58,0.35), 0 0 32px -4px rgba(182,42,58,0.25)',
+        // Halo rouge plus prononcé (étape active de StepIndicator, etc.).
+        'glow-sang-lg':
+          '0 0 8px 0 rgba(204,74,89,0.55), 0 0 24px -2px rgba(182,42,58,0.45)',
+        // Conv #11c — ombre extérieure douce + inset clair haut + reflet rouge
+        // discret en bas → profondeur "card" avec une signature sang permanente.
+        'card-soft':
+          'inset 0 1px 0 0 rgba(255,255,255,0.07), inset 0 -1px 0 0 rgba(204,74,89,0.10), 0 4px 16px -6px rgba(0,0,0,0.55), 0 1px 2px 0 rgba(0,0,0,0.4)',
       },
     },
   },

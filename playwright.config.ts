@@ -10,9 +10,13 @@ export default defineConfig({
   testDir: './tests/playwright',
   timeout: 30_000,
   expect: { timeout: 5_000 },
-  fullyParallel: false,
+  // Conv #11d — parallélisation activée. Chaque test Playwright crée son
+  // propre browserContext isolé (comportement par défaut), donc aucun
+  // partage d'IndexedDB entre tests. 4 workers cible une machine de dev
+  // classique ; sur CI ou machine plus modeste, baisser à 2.
+  fullyParallel: true,
   retries: 0,
-  workers: 1,
+  workers: 4,
   reporter: process.env.CI ? 'list' : [['list']],
   use: {
     baseURL: 'http://localhost:5173/coach-os/',

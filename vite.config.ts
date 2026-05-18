@@ -9,7 +9,12 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // Conv #11d — passage à 'prompt' : on capture la dispo d'une nouvelle
+      // version via `useRegisterSW` (cf. components/UpdatePrompt.tsx) et on
+      // demande confirmation à l'utilisateur avant le reload. Rassure sur iOS
+      // où Safari peut tarder à activer la nouvelle version ; le prompt rend
+      // la MAJ visible et explicite.
+      registerType: 'prompt',
       includeAssets: [
         'favicon-32.png',
         'apple-touch-icon.png',

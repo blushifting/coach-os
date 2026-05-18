@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { HelpProvider } from '@/components/help-context';
+import { UpdatePrompt } from '@/components/UpdatePrompt';
 import { useCoachOsStore } from '@/store';
 import { bootstrap } from '@/hooks/useEngine';
 
@@ -15,6 +16,7 @@ export function AppShell() {
     <HelpProvider>
       <div className="flex h-dvh flex-col overflow-hidden bg-anthracite-950 text-white">
         {bootstrapped ? <Outlet /> : <SplashScreen />}
+        <UpdatePrompt />
       </div>
     </HelpProvider>
   );
