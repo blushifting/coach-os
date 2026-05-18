@@ -77,10 +77,17 @@ export default function WelcomeScreen() {
           className="h-32 w-32 rounded-3xl shadow-lg"
         />
         <div className="flex flex-col gap-4">
-          {/* Conv #11c — "Kotsh" en Oswald, le 'o' en rouge sang évoque le
-              disque de poids (clin d'œil discret à la muscu, sans gimmick). */}
           <h1 className="font-display text-7xl font-bold leading-none tracking-tight text-white">
-            K<span className="text-sang-500">o</span>tsh
+            K
+            <svg
+              viewBox="0 0 100 100"
+              className="inline-block h-[0.62em] w-[0.62em] align-baseline text-sang-500"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <circle cx="50" cy="50" r="31" fill="none" stroke="currentColor" strokeWidth="38" />
+            </svg>
+            tsh
           </h1>
           <p className="text-lg font-medium text-anthracite-100">
             Ta muscu, ajustée à ton effort réel.

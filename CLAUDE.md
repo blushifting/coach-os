@@ -145,6 +145,37 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
+## État courant — fin Conv #11d (2026-05-18)
+
+- **Prompt MAJ PWA** (`components/UpdatePrompt.tsx`) monté dans `AppShell`,
+  alimenté par `useRegisterSW` de `virtual:pwa-register/react`. Passage de
+  `registerType: 'autoUpdate'` → `'prompt'` dans `vite.config.ts`. Quand le
+  SW détecte une nouvelle version, bannière en bas-droite avec boutons
+  "Mettre à jour" / "Plus tard". Le reload préserve IndexedDB.
+- **Perf suite de tests** (commit 8438e47 — détails dans le commit).
+- **Décision durable post-#11d** : la sync cloud devient prioritaire post-V1
+  (au-delà du V1.5 originel). Raison : un utilisateur iOS a perdu toutes ses
+  données après "Effacer historique Safari" — irréparable côté client (aucune
+  API web ne résiste à cette commande système Apple). Direction visée :
+  Supabase (gratuit ≤500MB, offline-first conservé, snapshot JSON last-write-wins
+  puisque mono-utilisateur).
+
+**Patch logo "disque de poids" (2026-05-18, post-#11d)**
+
+- `public/icon.svg` + `public/icon-maskable.svg` : le `<circle>` rouge sang
+  plein du logo K (point en haut à droite) est remplacé par un disque-de-poids
+  (anneau via `stroke` épais, outer r=54, hole r=13). Approche `stroke` au
+  lieu de `fill-rule="evenodd"` car `@resvg/resvg-js` ignore evenodd au
+  rendu PNG (le trou disparaissait à la génération d'icônes).
+- `pages/WelcomeScreen.tsx` : le `<span>o</span>` Oswald sang-500 du titre
+  "Kotsh" devient un SVG inline du même disque-de-poids (viewBox 100×100,
+  `<circle cx=50 cy=50 r=31 stroke-width=38>` → outer r=50, hole r=12),
+  taille `h-[0.62em] w-[0.62em]` pour matcher la cap du 'o' Oswald bold 7xl,
+  aligné en `align-baseline`. Signature de marque unifiée entre logo PWA
+  et logo type.
+- PNG régénérés via `npm run generate-icons`. Build OK (42.41 kB CSS /
+  681.74 kB JS, +0.58 CSS / +3.74 JS depuis #11c — gain mineur).
+
 ## État courant — fin Conv #11c (2026-05-17)
 
 Refonte visuelle complète, pistes A→D (pas E ce coup-ci). Cosmétique
