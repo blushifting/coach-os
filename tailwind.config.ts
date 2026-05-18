@@ -78,6 +78,39 @@ const config: Config = {
         brushed:
           "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400'><filter id='b'><feTurbulence type='turbulence' baseFrequency='0.04 0.9' numOctaves='1' seed='5'/><feColorMatrix values='0 0 0 0 0.9  0 0 0 0 0.8  0 0 0 0 0.7  0 0 0 0.4 0'/></filter><rect width='100%' height='100%' filter='url(%23b)' opacity='0.07'/></svg>\")",
       },
+      keyframes: {
+        // Conv #11i — flash sang one-shot quand on coche une série. Le ✓
+        // grossit brièvement et halo plus intense, puis retour normal.
+        'tick-pop': {
+          '0%': { transform: 'scale(0.85)', boxShadow: '0 0 0 0 rgba(182,42,58,0.6)' },
+          '50%': { transform: 'scale(1.15)', boxShadow: '0 0 16px 4px rgba(182,42,58,0.55)' },
+          '100%': { transform: 'scale(1)', boxShadow: '0 0 16px -2px rgba(182,42,58,0.35)' },
+        },
+        // Halo sang pulsant qui parcourt le row une fois (transition douce
+        // mais perceptible). Plus discret que tick-pop.
+        'row-flash': {
+          '0%': { backgroundColor: 'rgba(122,26,37,0.15)' },
+          '40%': { backgroundColor: 'rgba(122,26,37,0.40)' },
+          '100%': { backgroundColor: 'rgba(122,26,37,0.10)' },
+        },
+        // Conv #11i — bilan : numéros qui "count up" via opacity + slide.
+        'reveal-up': {
+          '0%': { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        // Tracé progressif d'un polyline SVG (stroke-dashoffset). Le composant
+        // doit poser pathLength sur le polyline + stroke-dasharray=1.
+        'draw-line': {
+          '0%': { strokeDashoffset: '1' },
+          '100%': { strokeDashoffset: '0' },
+        },
+      },
+      animation: {
+        'tick-pop': 'tick-pop 380ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+        'row-flash': 'row-flash 600ms ease-out',
+        'reveal-up': 'reveal-up 420ms cubic-bezier(0.16, 1, 0.3, 1) both',
+        'draw-line': 'draw-line 900ms cubic-bezier(0.4, 0, 0.2, 1) forwards',
+      },
       boxShadow: {
         // Conv #11c — halo rouge diffus pour les éléments primaires hover/focus.
         'glow-sang': '0 0 16px -2px rgba(182,42,58,0.35), 0 0 32px -4px rgba(182,42,58,0.25)',

@@ -1,5 +1,7 @@
+import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/cn';
 import { ChargeType } from '@/engine/models';
+import { triggerHaptic } from '@/lib/haptics';
 import type { SetEntry } from '@/lib/session-runner';
 
 interface SetInputProps {
@@ -80,16 +82,36 @@ export function SetInput({
         ? 'Renseigne reps et charge avant de valider'
         : undefined;
 
+  // Conv #11i — animation cochage : `justChecked` actif 600 ms après le
+  // passage à done. Déclenche aussi un haptic via Vibration API (Android).
+  // Pas d'animation à l'undone (déverrouillage = action calme).
+  const [justChecked, setJustChecked] = useState(false);
+  const prevDone = useRef(entry.done);
+  useEffect(() => {
+    if (entry.done && !prevDone.current) {
+      setJustChecked(true);
+      triggerHaptic('set-done');
+      const t = setTimeout(() => setJustChecked(false), 600);
+      prevDone.current = true;
+      return () => clearTimeout(t);
+    }
+    if (!entry.done && prevDone.current) {
+      triggerHaptic('set-undone');
+    }
+    prevDone.current = entry.done;
+  }, [entry.done]);
+
   return (
     <div
       data-testid={`set-row-${index}`}
       data-done={entry.done ? 'true' : 'false'}
       data-locked={checkLocked ? 'true' : 'false'}
       className={cn(
-        'flex items-stretch gap-2 rounded-lg border px-2 py-2 text-sm transition-colors',
+        'flex items-stretch gap-2 rounded-lg border px-2 py-2 text-sm transition-colors duration-300',
         entry.done
           ? 'border-sang-700/70 bg-sang-900/25'
           : 'border-anthracite-700 bg-anthracite-900/70',
+        justChecked && 'animate-row-flash',
       )}
     >
       <span
@@ -148,6 +170,7 @@ export function SetInput({
             : disableCheck
               ? 'cursor-not-allowed bg-anthracite-800 text-anthracite-500'
               : 'bg-anthracite-700 text-anthracite-300 hover:text-white',
+          justChecked && 'animate-tick-pop',
         )}
       >
         ✓

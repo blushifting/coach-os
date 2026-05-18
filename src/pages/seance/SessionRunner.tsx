@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { HelpButton } from '@/components/HelpButton';
+import { ProgressRing } from '@/components/ProgressRing';
 import { cn } from '@/lib/cn';
+import { triggerHaptic } from '@/lib/haptics';
 import type { Catalog } from '@/engine/catalog';
 import type { SessionPlan } from '@/engine/models';
 import { useEngine } from '@/hooks/useEngine';
@@ -59,14 +61,23 @@ export function SessionRunner({
             <HelpButton topic="rpe" label="Aide : effort cible" />
           </span>
         </div>
-        <div className="flex flex-col items-end gap-0.5">
-          <span className="text-[10px] uppercase tracking-[0.18em] text-anthracite-300">
-            Séries
-          </span>
-          <span className="font-display text-3xl leading-none tabular-nums text-white">
-            <span className="text-sang-400">{done}</span>
-            <span className="text-anthracite-400"> / {total}</span>
-          </span>
+        <div className="flex items-center gap-3">
+          <div className="flex flex-col items-end gap-0.5">
+            <span className="text-[10px] uppercase tracking-[0.18em] text-anthracite-300">
+              Séries
+            </span>
+            <span className="font-display text-3xl leading-none tabular-nums text-white">
+              <span className="text-sang-400">{done}</span>
+              <span className="text-anthracite-400"> / {total}</span>
+            </span>
+          </div>
+          <ProgressRing
+            value={done}
+            total={total}
+            size={44}
+            strokeWidth={4}
+            data-testid="session-ring"
+          />
         </div>
       </Card>
 
@@ -101,6 +112,13 @@ export function SessionRunner({
                       séries — repos {formatRest(item.sets[0]?.rest_s ?? 0)}
                     </span>
                   </div>
+                  {/* Conv #11i — progress ring par exo */}
+                  <ProgressRing
+                    value={doneCount}
+                    total={entrySets.length}
+                    size={28}
+                    strokeWidth={3}
+                  />
                   <button
                     type="button"
                     aria-label={`Détail ${ex?.nom_fr ?? item.exercise_id}`}
@@ -136,7 +154,10 @@ export function SessionRunner({
         variant="primary"
         size="lg"
         fullWidth
-        onClick={onFinish}
+        onClick={() => {
+          triggerHaptic('session-done');
+          onFinish();
+        }}
         disabled={finishing || done === 0}
         data-testid="btn-finish-session"
       >

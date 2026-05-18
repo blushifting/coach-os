@@ -110,6 +110,8 @@ function MiniLine({ points }: MiniLineProps) {
       role="img"
       aria-label="Courbe de progression du plafond"
     >
+      {/* Conv #11i — tracé animé `draw-line` via pathLength=1 + dasharray=1.
+          La ligne se trace progressivement à l'apparition de la card. */}
       <polyline
         points={polyline}
         fill="none"
@@ -117,9 +119,20 @@ function MiniLine({ points }: MiniLineProps) {
         strokeWidth="2.5"
         strokeLinejoin="round"
         strokeLinecap="round"
+        pathLength={1}
+        className="animate-draw-line"
+        style={{ strokeDasharray: 1 }}
       />
       {xy.map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y} r="2.5" fill="#dc2626" />
+        <circle
+          key={i}
+          cx={x}
+          cy={y}
+          r="2.5"
+          fill="#dc2626"
+          className="animate-reveal-up"
+          style={{ animationDelay: `${500 + i * 60}ms`, animationFillMode: 'both' }}
+        />
       ))}
     </svg>
   );

@@ -145,6 +145,51 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
+## État courant — fin Conv #11i (2026-05-18)
+
+Piste E refonte visuelle — micro-interactions et animations (dernier
+item du backlog #11) :
+
+- **Haptics Vibration API** (`lib/haptics.ts`) : wrapper minimal autour de
+  `navigator.vibrate`. Patterns prédéfinis : `set-done` (25 ms), `set-undone`
+  (12 ms), `session-done` ([40, 60, 40, 60, 80] ms), `pr` (pattern 7 pulses),
+  `error`, `tap-soft`. Silent si pas de support (iOS Safari) ou si
+  `prefers-reduced-motion: reduce`. Branché sur SetInput (toggle done /
+  undone) et SessionRunner (btn-finish-session → 'session-done').
+- **Animations cochage série** (`SetInput.tsx`) : nouveau state `justChecked`
+  (600 ms après passage à done). Le row pulse via `animate-row-flash`
+  (background sang qui fade in/out) et le bouton ✓ via `animate-tick-pop`
+  (scale 0.85 → 1.15 → 1 avec courbe easing élastique, halo sang qui
+  enfle). Pas d'animation à l'undone (action calme).
+- **Progress ring** (`components/ProgressRing.tsx`) : SVG pur, anneau
+  circulaire avec track anthracite-700 + arc sang qui se remplit selon
+  `value/total`. Transition CSS sur `stroke-dasharray` (360 ms). Affiché
+  dans `SessionRunner` : un grand ring 44 px à côté du compteur global
+  `{done}/{total}`, et un mini ring 28 px sur chaque header d'exo à côté
+  du compteur per-exo. `showLabel` optionnel pour mettre les chiffres au
+  centre.
+- **Animations Bilan** (`CycleBilanPage.tsx`) : Metric et entries plafonds
+  passent en `animate-reveal-up` (slide up + fade, courbe ease-out élégante
+  cubic-bezier(0.16, 1, 0.3, 1)). Stagger 80 ms entre les 3 metrics, 60 ms
+  entre chaque plafond. Numéros Metric passent en `font-display text-2xl`
+  pour matcher la signature visuelle.
+- **Animation courbe Force** (`ForceView.MiniLine`) : polyline animée via
+  `animate-draw-line` (`pathLength={1}` + `strokeDasharray={1}` +
+  keyframe sur `strokeDashoffset` 1 → 0) → la courbe se trace
+  progressivement en 900 ms. Les cercles aux points apparaissent en
+  `animate-reveal-up` avec stagger 60 ms après le tracé.
+- **Tailwind keyframes** (`tailwind.config.ts`) : 4 nouvelles animations
+  one-shot (`tick-pop`, `row-flash`, `reveal-up`, `draw-line`).
+
+Tests : **445 Vitest verts** (inchangé — modifs purement cosmétiques).
+**20 e2e verts** (workers=1). Build OK (45.79 kB CSS / 692.86 kB JS,
++0.84 CSS / +2.94 JS depuis #11h bis).
+
+**Backlog Conv #11 — soldé**. Le 2e dump de retours d'Azur est entièrement
+traité (items 1-12) + ajustements complémentaires (#11h bis : trackings
+semaines programme, plafond catalogue mis en évidence, filtres habituels/
+mesurés ; #11i : piste E refonte visuelle).
+
 ## État courant — fin Conv #11h bis (2026-05-18)
 
 Trois ajouts en complément de #11h, suite à retours immédiats Azur :

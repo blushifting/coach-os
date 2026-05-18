@@ -62,20 +62,34 @@ export default function CycleBilanPage() {
 }
 
 function ReviewKeyMetrics({ review }: { review: CycleReview }) {
+  // Conv #11i — animation reveal-up staggered (cascade 0 / 80 / 160 ms).
   return (
     <Card data-testid="bilan-key-metrics" className="grid grid-cols-3 gap-3">
-      <Metric label="Adhérence" value={`${Math.round(review.adherence_pct * 100)} %`} />
-      <Metric label="Volume" value={`${Math.round(review.volume_total_kg).toLocaleString('fr-FR')} kg`} />
-      <Metric label="PR" value={`${review.PRs.length}`} />
+      <Metric
+        label="Adhérence"
+        value={`${Math.round(review.adherence_pct * 100)} %`}
+        delay={0}
+      />
+      <Metric
+        label="Volume"
+        value={`${Math.round(review.volume_total_kg).toLocaleString('fr-FR')} kg`}
+        delay={80}
+      />
+      <Metric label="PR" value={`${review.PRs.length}`} delay={160} />
     </Card>
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function Metric({ label, value, delay = 0 }: { label: string; value: string; delay?: number }) {
   return (
-    <div className="flex flex-col gap-0.5">
+    <div
+      className="flex animate-reveal-up flex-col gap-0.5"
+      style={{ animationDelay: `${delay}ms` }}
+    >
       <span className="text-xs uppercase tracking-wide text-anthracite-300">{label}</span>
-      <span className="text-lg font-semibold text-white tabular-nums">{value}</span>
+      <span className="font-display text-2xl leading-none text-white tabular-nums">
+        {value}
+      </span>
     </div>
   );
 }
@@ -94,10 +108,11 @@ function ReviewPlafonds({ review }: { review: CycleReview }) {
     <Card data-testid="bilan-plafonds" className="flex flex-col gap-2">
       <h2 className="text-sm font-semibold text-white">Plafonds — Δ sur le cycle</h2>
       <ul className="flex flex-col gap-1">
-        {entries.slice(0, 6).map(([exId, delta]) => (
+        {entries.slice(0, 6).map(([exId, delta], i) => (
           <li
             key={exId}
-            className="flex items-center justify-between text-sm"
+            className="flex animate-reveal-up items-center justify-between text-sm"
+            style={{ animationDelay: `${200 + i * 60}ms` }}
             data-testid={`plafond-${exId}`}
           >
             <span className="text-anthracite-300">{exId}</span>
