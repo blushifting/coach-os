@@ -193,7 +193,7 @@ export default function OnboardingPage() {
       data-step={step}
     >
       <header
-        className="border-b border-anthracite-800"
+        className="border-b border-anthracite-800 pl-12"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
         <StepIndicator current={step} total={TOTAL_STEPS} labels={STEP_LABELS} />

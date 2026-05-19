@@ -104,7 +104,7 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
     <div className="flex flex-col gap-4 p-4">
       <header className="flex flex-col gap-1">
         <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
-          Étape 2
+          Étape 2 · Muscles
         </span>
         <h1 className="flex items-center gap-2 font-display text-3xl leading-tight tracking-wide text-white">
           Muscles cibles

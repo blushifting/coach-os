@@ -42,7 +42,7 @@ export function Step4Program({ draft, onChange }: Step4Props) {
     <div className="flex flex-col gap-4 p-4">
       <header className="flex flex-col gap-1">
         <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
-          Étape 4
+          Étape 4 · Programme
         </span>
         <h1 className="font-display text-3xl leading-tight tracking-wide text-white">
           Choix du programme

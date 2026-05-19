@@ -49,7 +49,7 @@ export function Step3Balance({ draft, onChange }: Step3Props) {
     <div className="flex flex-col gap-4 p-4">
       <header className="flex flex-col gap-1">
         <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
-          Étape 3
+          Étape 3 · Équilibre
         </span>
         <h1 className="font-display text-3xl leading-tight tracking-wide text-white">
           Équilibre musculaire
