@@ -166,6 +166,36 @@ export async function txCommitSessionFeedback(args: CommitSessionFeedbackArgs): 
 }
 
 // =============================================================================
+// Saisie manuelle d'un plafond e1RM (Conv #12b — option "Je connais mon plafond").
+// Pose `state.e1rm[exo]` + insère un snapshot daté pour que la calibration
+// passe en `'measured'` sans avoir besoin de feedback de séance.
+// =============================================================================
+
+export interface CommitManualE1rmArgs {
+  state: UserState;
+  exerciseId: string;
+  e1rmTotal: number;
+  date: string;
+  cycleIndex: number;
+  weekInCycle: number;
+}
+
+export async function txCommitManualE1rm(args: CommitManualE1rmArgs): Promise<void> {
+  const { state, exerciseId, e1rmTotal, date, cycleIndex, weekInCycle } = args;
+  const db = getDb();
+  await db.transaction('rw', [db.userState, db.e1rmSnapshots], async () => {
+    await putUserStateInTx(state);
+    await db.e1rmSnapshots.add({
+      date,
+      exercise_id: exerciseId,
+      e1rm: e1rmTotal,
+      cycle_index: cycleIndex,
+      week_in_cycle: weekInCycle,
+    });
+  });
+}
+
+// =============================================================================
 // Fin de semaine (mute juste UserState)
 // =============================================================================
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { HelpButton } from '@/components/HelpButton';
@@ -8,6 +8,7 @@ import { triggerHaptic } from '@/lib/haptics';
 import type { Catalog } from '@/engine/catalog';
 import type { SessionPlan } from '@/engine/models';
 import { useEngine } from '@/hooks/useEngine';
+import { useCoachOsStore } from '@/store';
 import {
   countDoneSets,
   countPlannedSets,
@@ -15,6 +16,8 @@ import {
   type SessionEntries,
   updateSetEntry,
 } from '@/lib/session-runner';
+import { e1rmConfidenceFor } from '@/lib/calibration-status';
+import { CalibrationBanner } from './CalibrationBanner';
 import { ExerciseDetailSheet } from './ExerciseDetailSheet';
 import { PatternIcon } from './PatternIcon';
 import { SetInput } from './SetInput';
@@ -41,9 +44,30 @@ export function SessionRunner({
   finishing,
 }: SessionRunnerProps) {
   const engine = useEngine();
+  const userState = useCoachOsStore((s) => s.userState);
+  const snapshots = useCoachOsStore((s) => s.history.e1rmSnapshots);
   const [detail, setDetail] = useState<{ exerciseId: string; itemIndex: number } | null>(null);
   const done = countDoneSets(entries);
   const total = countPlannedSets(entries);
+
+  // Conv #12b — confidence dérivée pour chaque exo, calculée 1× par cycle de
+  // render à partir des snapshots datés. Le banner s'affiche au-dessus du
+  // bloc des séries pour les exos `not_calibrated` ou `stale`.
+  const confidenceByExo = useMemo(() => {
+    const today = new Date();
+    const e1rm = userState?.e1rm ?? {};
+    const out: Record<string, ReturnType<typeof e1rmConfidenceFor>> = {};
+    for (const item of plan.items) {
+      out[item.exercise_id] = e1rmConfidenceFor(
+        item.exercise_id,
+        e1rm,
+        snapshots,
+        today,
+      );
+    }
+    return out;
+  }, [plan.items, userState?.e1rm, snapshots]);
+  const bodyweight = userState?.profile.bodyweight_kg ?? 75;
 
   return (
     <div className="flex flex-col gap-3" data-testid="session-runner">
@@ -129,6 +153,15 @@ export function SessionRunner({
                     i
                   </button>
                 </header>
+
+                {ex !== null ? (
+                  <CalibrationBanner
+                    exercise={ex}
+                    bodyweightKg={bodyweight}
+                    confidence={confidenceByExo[item.exercise_id] ?? 'measured'}
+                    entries={entrySets}
+                  />
+                ) : null}
 
                 <div className="flex flex-col gap-1.5">
                   {entrySets.map((entry, j) => (

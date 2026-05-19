@@ -14,6 +14,7 @@ import {
 } from '@/lib/dashboard';
 import { CondensedCalendar } from './CondensedCalendar';
 import { PlanDaySheet } from './PlanDaySheet';
+import { WelcomeBanner } from './WelcomeBanner';
 import { Widgets } from './Widgets';
 
 /**
@@ -65,6 +66,8 @@ export default function ProgrammePage() {
 
   return (
     <section className="flex flex-col gap-4 pb-4" data-testid="programme-page">
+      <WelcomeBanner feedbackCount={history.feedbacks.length} />
+
       <Widgets
         streak={dashboard.streak}
         cycleProgress={dashboard.cycleProgress}

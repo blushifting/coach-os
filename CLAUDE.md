@@ -145,6 +145,59 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
+## État courant — fin Conv #12b (2026-05-19)
+
+UX de la calibration transparente — banner par exo en séance + option
+"Je connais mon plafond" + écran de bienvenue post-onboarding.
+
+- **`lib/calibration-status.ts`** : confidence dérivée par exo
+  (`'not_calibrated' | 'measured' | 'stale'`). Pas de refonte du type
+  `e1rm` : on lit `e1rmSnapshots` (table existante) pour le `measured_at`.
+  - `'not_calibrated'` si aucun snapshot pour l'exo (même si `e1rm[id]` est
+    posé via bw-bootstrap dans `bootstrapE1rmIfMissing`).
+  - `'measured'` si dernier snapshot < `STALE_WEEKS` (8 sem = 56 jours).
+  - `'stale'` au-delà. Calcul en `Date.UTC` pour neutraliser les bascules
+    DST mars/oct (sinon `Math.floor` peut renvoyer 55 au lieu de 56 et
+    fausser la frontière).
+- **`pages/seance/CalibrationBanner.tsx`** : affiché au-dessus des séries
+  d'un exo dans `SessionRunner` si confidence ≠ `'measured'`. 2 états :
+  - Avant 1re série fiable : "On apprend ta charge — vise 3-6 reps en
+    gardant 2-3 reps en réserve" + bouton "Je connais mon plafond".
+  - Après 1re série fiable cochée : "Plafond appris : X kg — ajuste les
+    séries suivantes si besoin." (calcul max des `e1rmObserved` sur les
+    sets fiables `n_equiv ≤ 15`).
+- **`pages/seance/ManualE1rmSheet.tsx`** : sheet "Je connais mon plafond"
+  ouverte depuis le banner. Input charge à 1 rep, validation →
+  `useEngine.setManualE1rm` pose `state.e1rm[id]` (via
+  `effectiveLoadForE1rm` pour BW loaded/assisted) + insère un snapshot
+  daté `today` (table `e1rmSnapshots`). Confidence passe instantanément
+  en `'measured'`, banner disparaît.
+- **`db/transactions.ts`** : `txCommitManualE1rm` (nouvelle tx, met à jour
+  `userState` + insère 1 snapshot, atomique).
+- **`pages/programme/WelcomeBanner.tsx`** : Card "Bienvenue, ton cycle
+  commence aujourd'hui" sur `ProgrammePage`. Affiché tant que
+  `history.feedbacks.length === 0` ET pas dismissé.
+  Dismiss persisté en localStorage (`coach-os.welcome-dismissed`).
+- **`SessionRunner`** : intègre `CalibrationBanner` par exo via le memo
+  `confidenceByExo` (e1rmConfidenceFor pour chaque item du plan, lecture
+  des snapshots depuis le store).
+
+**Tests** : 451 Vitest verts (+12 nouveaux sur calibration-status :
+lastSnapshotDateFor, e1rmConfidenceFor cases not_calibrated / measured /
+stale + frontière 56j, helpers isNotCalibrated / isStale).
+
+**Limites résiduelles** (à itérer plus tard si Azur souhaite) :
+- Pas de **recalcul live des charges proposées** des séries suivantes
+  après la 1re série fiable cochée. Seul un texte "Plafond appris : X kg"
+  s'affiche — l'utilisateur ajuste sa charge manuellement s'il veut.
+  L'ajout d'un recalcul auto avec patch de `entries` est faisable mais
+  demande un useEffect-callback ciblé pour éviter les boucles avec le
+  state UI.
+- Pas de **Profil > Plafonds** pour éditer/supprimer les plafonds hors
+  séance (le seul chemin manuel est via le banner pendant une séance).
+
+---
+
 ## État courant — fin Conv #12a (2026-05-18)
 
 **Retrait Séance 0 — calibration transparente RPE-based** (décision Azur Conv

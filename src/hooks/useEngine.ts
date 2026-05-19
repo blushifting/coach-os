@@ -29,6 +29,7 @@ import { getDb, resetDbInstance } from '@/db';
 import { loadUserState } from '@/db/repositories/userState.repo';
 import {
   txCancelSession,
+  txCommitManualE1rm,
   txCommitSessionFeedback,
   txEndOfCycle,
   txEndOfWeek,
@@ -37,6 +38,8 @@ import {
   txSaveUserStateOnly,
   txUpdateSessionPlan,
 } from '@/db/transactions';
+import { effectiveLoadForE1rm } from '@/engine/prescription';
+import type { Exercise } from '@/engine/models';
 import { importFromJsonString } from '@/io/import';
 import { useCoachOsStore, type HistorySnapshot } from '@/store';
 
@@ -350,6 +353,58 @@ export async function cancelPlannedSession(sessionId: number): Promise<void> {
 }
 
 // =============================================================================
+// Saisie manuelle d'un plafond (Conv #12b)
+// =============================================================================
+
+export interface SetManualE1rmArgs {
+  /** id de l'exo */
+  readonly exerciseId: string;
+  /** Exercice du catalog (pour effectiveLoadForE1rm — BW loaded/assisted). */
+  readonly exercise: Exercise;
+  /** Charge à 1 rep telle que saisie par l'user (interface externe : kg ajoutés). */
+  readonly loadKg: number;
+}
+
+/**
+ * Pose un plafond `e1rm[exoId]` à partir d'une charge à 1 rep saisie par
+ * l'utilisateur (path "Je connais mon plafond" depuis le banner de calibration).
+ *
+ * Insère un snapshot daté pour que `e1rmConfidenceFor` bascule en `'measured'`
+ * et que le banner disparaisse. Le 1RM = charge totale soulevée selon
+ * `effectiveLoadForE1rm` (inclut le bodyweight pour BW loaded/assisted).
+ */
+export async function setManualE1rm(args: SetManualE1rmArgs): Promise<UserState> {
+  const next = requireUserState();
+  const e1rmTotal = effectiveLoadForE1rm(
+    args.loadKg,
+    args.exercise,
+    next.profile.bodyweight_kg,
+  );
+  if (!Number.isFinite(e1rmTotal) || e1rmTotal <= 0) {
+    throw new Error(`e1RM invalide : ${e1rmTotal}`);
+  }
+  next.e1rm[args.exerciseId] = e1rmTotal;
+  const today = new Date();
+  const dateStr =
+    today.getFullYear() +
+    '-' +
+    String(today.getMonth() + 1).padStart(2, '0') +
+    '-' +
+    String(today.getDate()).padStart(2, '0');
+  await txCommitManualE1rm({
+    state: next,
+    exerciseId: args.exerciseId,
+    e1rmTotal,
+    date: dateStr,
+    cycleIndex: next.cycle_index,
+    weekInCycle: next.current_week_in_cycle,
+  });
+  await refreshHistory();
+  useCoachOsStore.setState({ userState: next });
+  return next;
+}
+
+// =============================================================================
 // Enregistrement d'un feedback
 // =============================================================================
 
@@ -527,6 +582,7 @@ export interface EngineApi {
   startUser: typeof startUser;
   generateInitialCyclePlan: typeof generateInitialCyclePlan;
   applyVariantReplacements: typeof applyVariantReplacements;
+  setManualE1rm: typeof setManualE1rm;
   generateAndStoreSession: typeof generateAndStoreSession;
   planSessionForDay: typeof planSessionForDay;
   loadPlannedSessionForRunner: typeof loadPlannedSessionForRunner;
@@ -549,6 +605,7 @@ export function useEngine(): EngineApi {
       startUser,
       generateInitialCyclePlan,
       applyVariantReplacements,
+      setManualE1rm,
       generateAndStoreSession,
       planSessionForDay,
       loadPlannedSessionForRunner,
