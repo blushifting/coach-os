@@ -12,6 +12,9 @@
 
 import { useState } from 'react';
 import { Card } from '@/components/Card';
+import { Button } from '@/components/Button';
+import { enterDemoMode } from '@/lib/demo';
+import { resetDemoDismissals } from '@/components/DemoMode';
 
 const DISMISS_KEY = 'coach-os.welcome-dismissed';
 
@@ -46,6 +49,11 @@ export function WelcomeBanner({ feedbackCount }: WelcomeBannerProps) {
     setDismissed(true);
   }
 
+  async function startDemo() {
+    resetDemoDismissals();
+    await enterDemoMode();
+  }
+
   return (
     <Card
       accent
@@ -73,6 +81,15 @@ export function WelcomeBanner({ feedbackCount }: WelcomeBannerProps) {
         Tes plafonds s'apprendront automatiquement au fil des séries — pas de
         calibration préalable.
       </p>
+      <div className="mt-2">
+        <Button
+          variant="secondary"
+          onClick={() => void startDemo()}
+          data-testid="btn-start-demo-from-welcome"
+        >
+          Voir un exemple : 8 sem d'entraînement
+        </Button>
+      </div>
     </Card>
   );
 }

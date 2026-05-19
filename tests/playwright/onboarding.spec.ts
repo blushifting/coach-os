@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test';
  * Aperçu ajoutée Conv #11b).
  *
  * Parcours complet : Profil → Muscles (préset) → Équilibre R1-R4 → Programme
- * → Aperçu (Conv #11b) → finalisation → /seance-0 (séance de calibration).
+ * → Aperçu (Conv #11b) → finalisation → /programme (post-#12a : Séance 0 retirée).
  *
  * Garde-fou aussi testé : impossible de passer 2 → 3 sans muscle sélectionné.
  */
@@ -65,7 +65,7 @@ test('parcours complet : préset par défaut → custom → /seance', async ({ p
 
   // Finaliser
   await page.getByTestId('btn-finish').click();
-  await expect(page).toHaveURL(/\/seance-0$/);
+  await expect(page).toHaveURL(/\/programme$/);
 });
 
 test('garde-fou : impossible d\'avancer étape 2 sans muscle', async ({ page }) => {
@@ -129,5 +129,5 @@ test('parcours avec programme guidé', async ({ page }) => {
   // Étape 5 : aperçu, on valide directement
   await expect(page.getByTestId('step5-preview')).toBeVisible();
   await page.getByTestId('btn-finish').click();
-  await expect(page).toHaveURL(/\/seance-0$/);
+  await expect(page).toHaveURL(/\/programme$/);
 });

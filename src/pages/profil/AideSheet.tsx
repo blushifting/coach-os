@@ -10,7 +10,10 @@
 
 import { Card } from '@/components/Card';
 import { Sheet } from '@/components/Sheet';
+import { Button } from '@/components/Button';
 import { HELP_GLOSSARY, type HelpTopic } from '@/lib/help-glossary';
+import { enterDemoMode } from '@/lib/demo';
+import { resetDemoDismissals } from '@/components/DemoMode';
 
 interface AideSheetProps {
   readonly open: boolean;
@@ -82,10 +85,39 @@ const GLOSSARY_ORDER: readonly HelpTopic[] = [
 ];
 
 export function AideSheet({ open, onClose }: AideSheetProps) {
+  async function startDemo() {
+    resetDemoDismissals();
+    onClose();
+    await enterDemoMode();
+  }
+
   return (
     <Sheet open={open} onClose={onClose} title="Aide & glossaire">
       <div className="max-h-[75dvh] overflow-y-auto pr-1">
         <div className="flex flex-col gap-5">
+          <section data-testid="aide-tuto-demo">
+            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wide text-anthracite-300">
+              Tuto interactif
+            </h4>
+            <Card>
+              <p className="text-sm leading-relaxed text-anthracite-200">
+                Découvre Coach OS avec un utilisateur fictif (Alex), 8 semaines
+                d'entraînement Upper/Lower déjà jouées. Tu navigues dans
+                l'app comme si c'étaient tes données — ton vrai profil revient
+                en sortie.
+              </p>
+              <div className="mt-3">
+                <Button
+                  variant="primary"
+                  onClick={() => void startDemo()}
+                  data-testid="btn-relaunch-demo"
+                >
+                  Lancer la démo
+                </Button>
+              </div>
+            </Card>
+          </section>
+
           <section data-testid="aide-tutos">
             <h4 className="mb-3 text-sm font-semibold uppercase tracking-wide text-anthracite-300">
               Prise en main

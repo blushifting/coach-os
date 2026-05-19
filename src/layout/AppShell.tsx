@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { HelpProvider } from '@/components/help-context';
 import { UpdatePrompt } from '@/components/UpdatePrompt';
+import { DemoModeProvider } from '@/components/DemoMode';
 import { useCoachOsStore } from '@/store';
 import { bootstrap } from '@/hooks/useEngine';
 
@@ -18,6 +19,7 @@ export function AppShell() {
         {bootstrapped ? <Outlet /> : <SplashScreen />}
         <BrandWatermark />
         <UpdatePrompt />
+        <DemoModeProvider />
       </div>
     </HelpProvider>
   );
