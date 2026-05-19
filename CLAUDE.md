@@ -256,6 +256,45 @@ réaliste. Rejoue-able à tout moment via `ProfilPage > Aide > Relancer tuto`.
 
 ---
 
+## État courant — fin Conv #13 (2026-05-19)
+
+Tuto démo persona Alex : snapshot JSON commité + mode démo store +
+overlay/checklist/hints UI. **3 sous-livrables pushés** (`93a5790`,
+`b764a7e`, `7b89793`).
+
+- **`public/demo/alex.json`** (10k lignes) — snapshot 8 sem UL 4j avec
+  2 PR, déload S5, 3 swaps durables, 1 séance ratée. Généré par
+  `scripts/generate-alex-demo.mts` (lancé via `npm run demo:generate`).
+  Décision design vs backlog : script TS (engine = source de vérité)
+  plutôt que simulator Python, parcours scripté plutôt que stochastique.
+- **`src/lib/demo-schema.ts`** : Zod qui valide la forme du JSON
+  (parsé au load + au build).
+- **`src/lib/demo.ts`** : `loadDemoSnapshot` (fetch + memoize),
+  `enterDemoMode` (backup state courant + swap userState/history),
+  `exitDemoMode` (restaure backup). Pas d'interception au niveau
+  selectors — l'UI lit normalement ses hooks.
+- **`src/store/`** : ajout `demoMode` + `demoSnapshot`.
+- **`src/components/DemoMode.tsx`** : provider monté dans AppShell.
+  WelcomeOverlay (1× par session via LS), ExitDemoButton fixed top-right,
+  HintBubble (5 mappings route → hint, dismissible par id), Discovery
+  Checklist 8 étapes repliable.
+- **Entry points** : WelcomeBanner `/programme` (bouton "Voir un
+  exemple"), Profil > Aide section "Tuto interactif".
+- **E2E** : 2 nouveaux Playwright (`demo.spec.ts`) parcours
+  WelcomeBanner + Profil. Fix collatéral : `onboarding.spec.ts`
+  attendait `/seance-0` → patché `/programme`.
+- Tests : 471 Vitest verts, build OK.
+
+**Régression pré-existante non-corrigée (hors scope #13)** : 12 e2e
+(profil/seance/catalogue/progres/programme) attendent encore Séance 0
+et sont cassés depuis #12a. À balayer dans une conv dédiée.
+
+**Hors scope #13** : protection paranoïaque mode démo (bloquer
+"Démarrer séance" pendant la démo). À voir si Azur trouve la version
+read-only-soft suffisante.
+
+---
+
 ## État courant — fin Conv #12b (2026-05-19)
 
 UX de la calibration transparente — banner par exo en séance + option
