@@ -28,6 +28,7 @@ import type {
   FeedbackRow,
   SessionRow,
 } from '@/db/schema';
+import type { DemoSnapshot } from '@/lib/demo-schema';
 
 // =============================================================================
 // État du store
@@ -58,6 +59,14 @@ export interface CoachOsState {
   bootstrapped: boolean;
   lastEndOfWeekReview: { event: string; cycle_index: number } | null;
   lastCycleReview: CycleReview | null;
+
+  /**
+   * Mode démo Conv #13. Quand `true`, `userState` + `history` viennent de
+   * `demoSnapshot` (cf. `lib/demo.ts`). La vraie DB Dexie est figée pendant
+   * cette session : aucune écriture, aucun bootstrap rechargé.
+   */
+  demoMode: boolean;
+  demoSnapshot: DemoSnapshot | null;
 }
 
 // =============================================================================
@@ -92,6 +101,8 @@ const initialState: CoachOsState = {
   bootstrapped: false,
   lastEndOfWeekReview: null,
   lastCycleReview: null,
+  demoMode: false,
+  demoSnapshot: null,
 };
 
 export const useCoachOsStore = create<CoachOsState & CoachOsActions>((set) => ({

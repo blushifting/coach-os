@@ -28,6 +28,8 @@ export const selectCatalog = (s: CoachOsState) => s.catalog;
 
 // === Méta ===
 export const selectBootstrapped = (s: CoachOsState) => s.bootstrapped;
+export const selectDemoMode = (s: CoachOsState) => s.demoMode;
+export const selectDemoSnapshot = (s: CoachOsState) => s.demoSnapshot;
 export const selectCycleProgress = (s: CoachOsState) => {
   if (s.userState === null) return null;
   return {
@@ -45,3 +47,5 @@ export const useHistory = () => useCoachOsStore(selectHistory);
 export const useCatalog = () => useCoachOsStore(selectCatalog);
 export const useBootstrapped = () => useCoachOsStore(selectBootstrapped);
 export const useCycleProgress = () => useCoachOsStore(selectCycleProgress);
+export const useDemoMode = () => useCoachOsStore(selectDemoMode);
+export const useDemoSnapshot = () => useCoachOsStore(selectDemoSnapshot);
