@@ -145,6 +145,117 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
+## Backlog Conv #13 — Tuto démo (persona Alex)
+
+**Objectif** : tutoriel interactif post-onboarding qui montre toutes les
+surfaces de Coach OS via un utilisateur fictif "Alex" avec un historique
+réaliste. Rejoue-able à tout moment via `ProfilPage > Aide > Relancer tuto`.
+
+### Décisions actées (Conv #12, début) — ne pas re-discuter
+
+- **Persona** : "Alex", 4×/sem **Upper/Lower**, équipement salle complet
+  (haltères + barre + machines + poulies). Objectifs **force + hypertrophie
+  50/50** → montre les deux axes simultanément.
+- **Historique simulé** : 8 semaines = **1 cycle terminé + 1 cycle entamé
+  semaine 4**. Doit faire apparaître au moins :
+  - 2 PR sur exos majeurs (squat + bench probablement)
+  - 1 semaine de déload visible dans le calendrier
+  - ~3 swaps d'exos durables (ex: dév incliné haltères → barre)
+  - 1 ajustement RPE bas → baisse charge (récup ratée)
+  - 1 ajustement RPE haut → hausse charge (saut de palier)
+  - 1 séance ratée → dette volume
+- **Exos couverts** : squat, soulevé de terre, dév couché, tractions
+  (assistées au début → libres après PR), rowing, dév militaire, curl,
+  extensions tri. Couvre `BODYWEIGHT_ASSISTED`, `BODYWEIGHT_LOADED`,
+  charges libres, machines.
+- **Données démo préfabriquées en JSON** : `/public/demo/alex.json`,
+  généré **une fois** via `prototype/coach_os/simulation.py`, commité.
+  **Pas de port TS du simulator** — on veut un parcours déterministe
+  identique pour tous les utilisateurs.
+- **Mode démo** : flag `demoMode: boolean` + `demoSnapshot: DemoState |
+  null` dans le store. Les selectors lisent `demoSnapshot` quand actif.
+  La vraie DB n'est **jamais touchée** en mode démo. Sortie = on flippe
+  le flag, tout revient instantanément.
+- **Guidage** : pas de tour rigide étape-par-étape (lourd, ennuyeux).
+  Plutôt :
+  - **Bulle d'accueil plein écran** à l'entrée : "Voici Coach OS vu par
+    Alex, intermédiaire, 8 semaines d'historique. Explore librement, on
+    te guidera."
+  - **Hints flottants contextuels** en bas, 1-2 par page visitée
+    ("Ici, le plafond mesuré — il évolue à chaque RPE remonté").
+    Dismissible individuellement.
+  - **Checklist de découverte** flottante repliable en bas à droite,
+    "5/8 endroits visités" : Programme du jour / Lancer une séance /
+    Bilan de séance / Onglet Progrès / Bilan de cycle / Catalogue / Swap
+    d'exo / Profil. Persistante jusqu'à fermeture du mode démo.
+  - **Bouton "Quitter la démo"** toujours visible en haut, confirmation
+    légère, retour aux vraies données.
+- **Entry points** : (a) auto post-onboarding (avant le `WelcomeBanner`
+  de `ProgrammePage` posé en #12b — ou en remplacement) ; (b) toujours
+  accessible dans `ProfilPage > Aide > Relancer le tuto`.
+
+### Périmètre technique #13
+
+1. **Générer `/public/demo/alex.json`** via Python.
+   - Adapter `prototype/coach_os/simulation.py` pour produire un profil
+     Alex (params ci-dessus) et exporter en JSON le tuple
+     `{ userState, history, currentCyclePlan, completedCycles }`.
+   - Format JSON validé par un **schéma Zod côté TS** (`lib/demo-schema.ts`)
+     pour que tout changement de format casse vite avec un message clair.
+   - Asset commité sous `/public/demo/alex.json` (servi tel quel par Vite).
+
+2. **Module `lib/demo.ts`**
+   - `loadDemoSnapshot(): Promise<DemoState>` (fetch + Zod parse du JSON).
+   - `enterDemoMode()` / `exitDemoMode()` : pose/retire `demoMode` +
+     `demoSnapshot` dans le store, sans toucher à `userState` réel.
+   - `isDemoActive(state): boolean` helper pur.
+
+3. **Adapter `store/selectors.ts`** : chaque selector qui lit `userState`
+   ou `history.*` doit checker `demoMode` et lire `demoSnapshot.*` à la
+   place. Liste à recenser (probablement 8-10 selectors). Tester à part.
+
+4. **`components/DemoMode/`** :
+   - `DemoModeProvider` (contexte React pour les étapes de checklist).
+   - `WelcomeOverlay` (bulle plein écran d'accueil).
+   - `HintBubble` (générique, props : `route`, `target`, `text`, `id`
+     pour persistance dismiss).
+   - `DiscoveryChecklist` (flottante, repliable, persistante).
+   - `ExitDemoButton` (header fixe, confirmation).
+   - Hints contextuels par route : un mapping `route → Hint[]` (Programme,
+     Séance, Progrès, Catalogue, Profil, Bilan).
+
+5. **Entry points UX** :
+   - **Auto post-onboarding** : remplacer `WelcomeBanner` par un bouton
+     "Voir le tuto" + "Je commence direct" (skip). Si "Voir", on entre
+     en mode démo immédiatement.
+   - **`ProfilPage > Aide`** : nouvelle section "Tuto" avec bouton
+     "Relancer le tuto". (Si pas déjà de bloc Aide, créer la section.)
+
+6. **Tests** :
+   - Vitest : selectors lus en mode démo retournent `demoSnapshot.*`.
+   - Vitest : schéma Zod accepte un JSON valide / rejette un malformé.
+   - E2E (1 spec) : parcours `entre démo → coche 1 hint → quitte démo
+     → vraies données revenues`.
+
+### Hors scope #13 (à pousser plus tard si besoin)
+
+- Mode démo qui **simule une séance live** (saisie séries avec sets cochés
+  d'avance pour montrer le flow) — V2 nice-to-have.
+- Mode démo **multilingue** ou animations sophistiquées — V2.
+- A/B des persona (Alex / Bea / ...) — sans intérêt en V1.
+
+### Limites résiduelles de #12 à éventuellement folder dans #13
+
+- **Recalcul live des charges proposées** après 1re série fiable :
+  aujourd'hui le banner affiche "Plafond appris : X kg" mais ne patche pas
+  `entries`. À discuter — est-ce utile en V1, ou on garde le compromis
+  actuel (l'user ajuste à la main) ?
+- **`ProfilPage > Plafonds`** pour édition hors séance : utile si l'user
+  veut corriger un plafond saisi à tort. Indépendant du tuto, peut sortir
+  en hotfix.
+
+---
+
 ## État courant — fin Conv #12b (2026-05-19)
 
 UX de la calibration transparente — banner par exo en séance + option
