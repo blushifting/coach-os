@@ -1,7 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
+import { runOnboardingMinimal } from './_helpers';
 
 /**
- * E2E Onglet Profil — Conv #6c.
+ * E2E Onglet Profil — Conv #6c (helper Séance 0 retiré post-#12a).
  *
  * Couvre :
  *  - récapitulatif identité + objectifs visibles
@@ -10,7 +11,7 @@ import { expect, test, type Page } from '@playwright/test';
  *  - modification post-export (poids différent)
  *  - import du buffer → poids revient à la valeur d'origine
  *  - bouton Réinitialiser → dialog confirmation → /welcome → /onboarding (DB vide)
- *  - sheet Aide affiche les 13 entrées du glossaire
+ *  - sheet Aide affiche les 14 entrées du glossaire
  */
 
 test.beforeEach(async ({ context }) => {
@@ -24,35 +25,6 @@ test.beforeEach(async ({ context }) => {
     }
   });
 });
-
-async function runOnboardingAndCalibration(page: Page): Promise<void> {
-  await page.goto('onboarding');
-  await page.getByTestId('equip-preset-gym').click();
-  await page.getByTestId('btn-next').click();
-  await page.getByTestId('preset-default').click();
-  await page.getByTestId('btn-next').click();
-  await page.getByTestId('btn-next').click();
-  await page.getByTestId('btn-next').click();
-  await page.getByTestId('btn-finish').click();
-  await expect(page).toHaveURL(/\/seance-0$/);
-
-  const totalAttr = await page.getByTestId('seance0-page').getAttribute('data-total');
-  const total = Number.parseInt(totalAttr ?? '0', 10);
-
-  for (let i = 0; i < total; i++) {
-    await page.getByTestId('tab-submax').click();
-    const loadInput = page.getByTestId('input-submax-load');
-    if ((await loadInput.count()) > 0) {
-      await loadInput.fill('50');
-    }
-    await page.getByTestId('input-submax-reps').fill('5');
-    await page.getByTestId('input-submax-rpe').selectOption('8');
-    await page.getByTestId('btn-next').click();
-    await page.getByTestId('btn-work-next').click();
-  }
-
-  await expect(page).toHaveURL(/\/programme$/);
-}
 
 async function goToProfil(page: Page): Promise<void> {
   await page.getByRole('link', { name: 'Profil' }).click();
@@ -92,7 +64,7 @@ async function setBodyweight(page: Page, target: number): Promise<void> {
 }
 
 test('profil : édition poids persistante + reload', async ({ page }) => {
-  await runOnboardingAndCalibration(page);
+  await runOnboardingMinimal(page);
   await goToProfil(page);
 
   await expect(page.getByTestId('profil-identity-summary')).toContainText('75 kg');
@@ -113,7 +85,7 @@ test('profil : édition poids persistante + reload', async ({ page }) => {
 test('profil : export → modification → import restaure l\'état', async ({
   page,
 }) => {
-  await runOnboardingAndCalibration(page);
+  await runOnboardingMinimal(page);
   await goToProfil(page);
 
   // Édition 1 : poids 82
@@ -151,7 +123,7 @@ test('profil : export → modification → import restaure l\'état', async ({
 });
 
 test('profil : réinitialisation + dialog → /welcome → /onboarding', async ({ page }) => {
-  await runOnboardingAndCalibration(page);
+  await runOnboardingMinimal(page);
   await goToProfil(page);
 
   await page.getByTestId('profil-reset').click();
@@ -166,7 +138,7 @@ test('profil : réinitialisation + dialog → /welcome → /onboarding', async (
 test('profil : sheet Aide affiche les 14 entrées du glossaire', async ({
   page,
 }) => {
-  await runOnboardingAndCalibration(page);
+  await runOnboardingMinimal(page);
   await goToProfil(page);
 
   await page.getByTestId('profil-open-aide').click();
@@ -196,7 +168,7 @@ test('profil : sheet Aide affiche les 14 entrées du glossaire', async ({
 test('profil : édition objectifs (retrait + réorganisation) persistée', async ({
   page,
 }) => {
-  await runOnboardingAndCalibration(page);
+  await runOnboardingMinimal(page);
   await goToProfil(page);
 
   await page.getByTestId('profil-edit-goals').click();

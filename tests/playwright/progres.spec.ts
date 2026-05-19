@@ -1,15 +1,14 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { runOnboardingMinimal } from './_helpers';
 
 /**
- * E2E Onglet Progrès — Conv #6a.
+ * E2E Onglet Progrès — Conv #6a (helper Séance 0 retiré post-#12a).
  *
  * Couvre :
- *  - navigation onboarding + séance 0 + arrivée sur /programme
- *  - bascule vers /progres
- *  - 3 tabs Couverture / Volume / Cycles présents
- *  - vue par défaut = Couverture, avec sa grille de chips muscles
- *  - bascule entre tabs (clic sur tab-volume, tab-cycles)
- *  - vue Cycles montre l'état vide tant qu'aucun bilan n'a été produit
+ *  - onboarding minimal → /programme
+ *  - bascule vers /progres via TabBar
+ *  - 3 tabs Couverture / Volume / Cycles présents + bascule
+ *  - vue Cycles : état vide tant qu'aucun bilan n'a été produit
  */
 
 test.beforeEach(async ({ context }) => {
@@ -24,38 +23,8 @@ test.beforeEach(async ({ context }) => {
   });
 });
 
-async function runOnboardingAndCalibration(page: Page): Promise<void> {
-  await page.goto('onboarding');
-  await page.getByTestId('equip-preset-gym').click();
-  await page.getByTestId('btn-next').click();
-  await page.getByTestId('preset-default').click();
-  await page.getByTestId('btn-next').click();
-  await page.getByTestId('btn-next').click();
-  await page.getByTestId('btn-next').click();
-  await page.getByTestId('btn-finish').click();
-  await expect(page).toHaveURL(/\/seance-0$/);
-
-  const totalAttr = await page.getByTestId('seance0-page').getAttribute('data-total');
-  const total = Number.parseInt(totalAttr ?? '0', 10);
-  expect(total).toBeGreaterThan(0);
-
-  for (let i = 0; i < total; i++) {
-    await page.getByTestId('tab-submax').click();
-    const loadInput = page.getByTestId('input-submax-load');
-    if ((await loadInput.count()) > 0) {
-      await loadInput.fill('50');
-    }
-    await page.getByTestId('input-submax-reps').fill('5');
-    await page.getByTestId('input-submax-rpe').selectOption('8');
-    await page.getByTestId('btn-next').click();
-    await page.getByTestId('btn-work-next').click();
-  }
-
-  await expect(page).toHaveURL(/\/programme$/);
-}
-
 test('progres : 3 tabs Couverture / Volume / Cycles et bascule entre eux', async ({ page }) => {
-  await runOnboardingAndCalibration(page);
+  await runOnboardingMinimal(page);
 
   // Navigation SPA via la TabBar pour préserver l'état du store hydraté à
   // l'onboarding (cf. bug connu : `bootstrap()` n'est pas appelé en arrivée

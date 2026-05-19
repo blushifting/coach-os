@@ -1,10 +1,11 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { runOnboardingMinimal } from './_helpers';
 
 /**
- * E2E Onglet Séance — Conv #5b.
+ * E2E Onglet Séance — Conv #5b (helper Séance 0 retiré post-#12a).
  *
  * Parcours :
- *  - onboarding + séance 0
+ *  - onboarding minimal → /programme
  *  - /seance État A → bouton "Commencer" → État B (runner)
  *  - valider quelques sets → "Terminer" → bilan (État C)
  *  - retour au programme
@@ -23,38 +24,8 @@ test.beforeEach(async ({ context }) => {
   });
 });
 
-async function runOnboardingAndCalibration(page: Page): Promise<void> {
-  await page.goto('onboarding');
-  await page.getByTestId('equip-preset-gym').click();
-  await page.getByTestId('btn-next').click();
-  await page.getByTestId('preset-default').click();
-  await page.getByTestId('btn-next').click();
-  await page.getByTestId('btn-next').click();
-  await page.getByTestId('btn-next').click();
-  await page.getByTestId('btn-finish').click();
-  await expect(page).toHaveURL(/\/seance-0$/);
-
-  const total = Number.parseInt(
-    (await page.getByTestId('seance0-page').getAttribute('data-total')) ?? '0',
-    10,
-  );
-  for (let i = 0; i < total; i++) {
-    await page.getByTestId('tab-submax').click();
-    const loadInput = page.getByTestId('input-submax-load');
-    if ((await loadInput.count()) > 0) {
-      await loadInput.fill('50');
-    }
-    await page.getByTestId('input-submax-reps').fill('5');
-    await page.getByTestId('input-submax-rpe').selectOption('8');
-    await page.getByTestId('btn-next').click();
-    // Phase work : passe l'exo sans cocher de série.
-    await page.getByTestId('btn-work-next').click();
-  }
-  await expect(page).toHaveURL(/\/programme$/);
-}
-
 test('seance : start list → runner → terminer → bilan → retour', async ({ page }) => {
-  await runOnboardingAndCalibration(page);
+  await runOnboardingMinimal(page);
 
   // Nav vers /seance via TabBar
   await page.getByRole('link', { name: 'Séance' }).click();
@@ -90,7 +61,7 @@ test('seance : start list → runner → terminer → bilan → retour', async (
 });
 
 test('seance : détail exo affiche le nom + muscles', async ({ page }) => {
-  await runOnboardingAndCalibration(page);
+  await runOnboardingMinimal(page);
   await page.getByRole('link', { name: 'Séance' }).click();
   await page.getByTestId('start-day-0').click();
   await expect(page.getByTestId('session-runner')).toBeVisible();
@@ -100,7 +71,7 @@ test('seance : détail exo affiche le nom + muscles', async ({ page }) => {
 });
 
 test('programme → PlanDaySheet → Démarrer → /seance runner', async ({ page }) => {
-  await runOnboardingAndCalibration(page);
+  await runOnboardingMinimal(page);
 
   // Cherche la 1re case "free-future" cliquable.
   const future = page.locator('[data-testid^="day-"][data-status="free-future"]').first();

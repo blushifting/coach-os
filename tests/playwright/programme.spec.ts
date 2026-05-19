@@ -1,12 +1,11 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { runOnboardingMinimal } from './_helpers';
 
 /**
- * E2E Onglet Programme — Conv #5a.
+ * E2E Onglet Programme — Conv #5a (helper Séance 0 retiré post-#12a).
  *
  * Parcours :
- *  - onboarding full-body custom + équip gym
- *  - séance 0 : calibrer chaque exo en "Je teste"
- *  - arrivée sur /programme
+ *  - onboarding full-body custom + équip gym → /programme direct
  *  - vérifier widgets + calendrier 5×7 + ouverture sheet "Planifier"
  *  - tester /cycle-bilan en standalone (aucun bilan)
  */
@@ -23,38 +22,8 @@ test.beforeEach(async ({ context }) => {
   });
 });
 
-async function runOnboardingAndCalibration(page: Page): Promise<void> {
-  await page.goto('onboarding');
-  await page.getByTestId('equip-preset-gym').click();
-  await page.getByTestId('btn-next').click();
-  await page.getByTestId('preset-default').click();
-  await page.getByTestId('btn-next').click();
-  await page.getByTestId('btn-next').click();
-  await page.getByTestId('btn-next').click();
-  await page.getByTestId('btn-finish').click();
-  await expect(page).toHaveURL(/\/seance-0$/);
-
-  const totalAttr = await page.getByTestId('seance0-page').getAttribute('data-total');
-  const total = Number.parseInt(totalAttr ?? '0', 10);
-  expect(total).toBeGreaterThan(0);
-
-  for (let i = 0; i < total; i++) {
-    await page.getByTestId('tab-submax').click();
-    const loadInput = page.getByTestId('input-submax-load');
-    if ((await loadInput.count()) > 0) {
-      await loadInput.fill('50');
-    }
-    await page.getByTestId('input-submax-reps').fill('5');
-    await page.getByTestId('input-submax-rpe').selectOption('8');
-    await page.getByTestId('btn-next').click();
-    await page.getByTestId('btn-work-next').click();
-  }
-
-  await expect(page).toHaveURL(/\/programme$/);
-}
-
 test('programme : widgets + calendrier 5×7 + sheet planifier', async ({ page }) => {
-  await runOnboardingAndCalibration(page);
+  await runOnboardingMinimal(page);
 
   // Dashboard rendu
   await expect(page.getByTestId('programme-page')).toBeVisible();
@@ -89,7 +58,7 @@ test('programme : widgets + calendrier 5×7 + sheet planifier', async ({ page })
 });
 
 test('cycle-bilan : page accessible et affiche message vide si pas de bilan', async ({ page }) => {
-  await runOnboardingAndCalibration(page);
+  await runOnboardingMinimal(page);
   await page.goto('cycle-bilan');
   await expect(page.getByTestId('cycle-bilan-page')).toBeVisible();
   await expect(page.getByTestId('bilan-empty')).toBeVisible();

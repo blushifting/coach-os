@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { runOnboardingMinimal } from './_helpers';
 
 /**
  * E2E mode démo persona Alex — Conv #13c.
@@ -27,18 +28,6 @@ test.beforeEach(async ({ context }) => {
     }
   });
 });
-
-async function runOnboardingMinimal(page: Page): Promise<void> {
-  await page.goto('onboarding');
-  await page.getByTestId('equip-preset-gym').click();
-  await page.getByTestId('btn-next').click();
-  await page.getByTestId('preset-default').click();
-  await page.getByTestId('btn-next').click();
-  await page.getByTestId('btn-next').click();
-  await page.getByTestId('btn-next').click();
-  await page.getByTestId('btn-finish').click();
-  await expect(page).toHaveURL(/\/programme$/);
-}
 
 test('démo Alex : entrée via WelcomeBanner puis sortie restaure l\'état', async ({
   page,
