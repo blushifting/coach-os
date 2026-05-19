@@ -13,6 +13,7 @@
     "test:e2e": "playwright test",
     "parity-check": "tsx tools/parity-check.ts",
     "generate-icons": "node scripts/generate-icons.mjs",
+    "demo:generate": "tsx scripts/generate-alex-demo.mts",
     "lint": "eslint .",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\" \"tests/**/*.{ts,tsx}\""
   },
