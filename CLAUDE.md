@@ -285,9 +285,10 @@ overlay/checklist/hints UI. **3 sous-livrables pushés** (`93a5790`,
   attendait `/seance-0` → patché `/programme`.
 - Tests : 471 Vitest verts, build OK.
 
-**Régression pré-existante non-corrigée (hors scope #13)** : 12 e2e
-(profil/seance/catalogue/progres/programme) attendent encore Séance 0
-et sont cassés depuis #12a. À balayer dans une conv dédiée.
+**Fix collatéral Conv #13 (commit `3ce9552`)** : 12 e2e cassés depuis
+#12a (attente de `/seance-0`) corrigés via extraction d'un helper
+partagé `tests/playwright/_helpers.ts` (`runOnboardingMinimal`).
+**18/18 e2e verts**, suite complète en 1m24.
 
 **Hors scope #13** : protection paranoïaque mode démo (bloquer
 "Démarrer séance" pendant la démo). À voir si Azur trouve la version
