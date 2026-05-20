@@ -256,11 +256,41 @@ réaliste. Rejoue-able à tout moment via `ProfilPage > Aide > Relancer tuto`.
 
 ---
 
-## État courant — fin Conv #13 (2026-05-19)
+## État courant — fin Conv #13 (2026-05-19, refonte visite guidée)
 
-Tuto démo persona Alex : snapshot JSON commité + mode démo store +
-overlay/checklist/hints UI. **3 sous-livrables pushés** (`93a5790`,
-`b764a7e`, `7b89793`).
+Tuto démo persona Alex **refondu en visite guidée linéaire** après
+retours Azur (la version libre/checklist était hors sujet pour un
+onboarding "prise en main 1re séance"). **5 commits pushés** :
+`93a5790` #13a · `b764a7e` #13b · `7b89793` #13c · `08a5afb` #13d ·
+`b091f8f` #13e.
+
+**Refonte #13d/e** (par-dessus #13a/b/c) :
+- Snapshot Alex enrichi : ajout C2W4D0 (Upper A lundi déjà jouée) +
+  `current_session` (Lower A mardi = DEMO_TODAY, posée sur
+  currentSessionPlan à l'enterDemoMode). Couverture sem courante
+  remplie, écran Séance live avec runner actif.
+- `lastCycleReview` injecté à l'enterDemoMode depuis `cycles[0].review`
+  (sinon `/cycle-bilan` reste vide en démo).
+- UI : `DiscoveryChecklist` + `HintBubble` (route hints éparpillés)
+  remplacés par un `GuidedTour` linéaire 6 étapes (Programme → Séance
+  → Force → Bilan cycle → Profil → Sortie). Bandeau narratif unique
+  bordure sang 2px + shadow-glow-sang-lg + ring sang/20 (clairement
+  identifiable maintenant). Plus de label "Astuce", juste badge
+  "Étape N/T" + icône ⓘ.
+- Hide-on-sheet via MutationObserver — la bulle se masque quand un
+  `role=dialog` apparaît (sinon cachait récap séance, Aide, etc.).
+- Flèche SVG sang qui pointe sur l'élément central de chaque étape
+  via `[data-testid]`. Resize/scroll-safe.
+- Étape Séance : highlight ponctuel `animate-row-flash` 700ms sur
+  set-row-0 pour montrer le retour visuel d'une validation.
+- Étape Force : `clickOnEnter` qui clique programmatiquement sur le
+  sous-onglet `tab-force` (état local non-routable).
+- Sortie via "Démarrer ma vraie 1re séance" = `exit + nav /programme`.
+- Pas de reprise mi-parcours (relance = étape 1).
+
+**Tests** : 474 Vitest verts (+3 sur lastCycleReview / currentSession /
+backup propre). **20/20 e2e verts** (4 specs démo : tour complet,
+Précédent, exit mi-parcours, relance Aide).
 
 - **`public/demo/alex.json`** (10k lignes) — snapshot 8 sem UL 4j avec
   2 PR, déload S5, 3 swaps durables, 1 séance ratée. Généré par
@@ -288,7 +318,7 @@ overlay/checklist/hints UI. **3 sous-livrables pushés** (`93a5790`,
 **Fix collatéral Conv #13 (commit `3ce9552`)** : 12 e2e cassés depuis
 #12a (attente de `/seance-0`) corrigés via extraction d'un helper
 partagé `tests/playwright/_helpers.ts` (`runOnboardingMinimal`).
-**18/18 e2e verts**, suite complète en 1m24.
+**20/20 e2e verts** (avec les 4 specs démo refondues).
 
 **Hors scope #13** : protection paranoïaque mode démo (bloquer
 "Démarrer séance" pendant la démo). À voir si Azur trouve la version
