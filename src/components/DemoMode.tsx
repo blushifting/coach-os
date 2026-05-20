@@ -1,143 +1,124 @@
 /**
- * Mode démo Coach OS — tous les composants UI dans un seul fichier (Conv #13c).
+ * Mode démo Coach OS — visite guidée linéaire (Conv #13d/e, refonte de #13c).
  *
- * Monté en haut niveau dans `AppShell`. Quand `demoMode === true` (cf.
- * `lib/demo.ts`), affiche :
- *   - `<WelcomeOverlay>` : modal plein écran présentant Alex (1re fois).
- *   - `<ExitDemoButton>` : pill rouge fixe top-right, sortie en 1 clic.
- *   - `<HintBubble>` : bulle contextuelle (1 par route, dismissible par id).
- *   - `<DiscoveryChecklist>` : liste flottante 8 étapes, repliable, persiste
- *     les cases cochées dans `localStorage` (scope démo).
+ * Le tuto est désormais un parcours **scénarisé en 6 étapes** orchestré par
+ * `<GuidedTour>` : pas de checklist, pas de bulles éparpillées par route.
+ * Une narration unique en bas d'écran + bouton "Suivant" qui navigue
+ * automatiquement vers la route de l'étape suivante.
  *
- * Tous regroupés ici parce qu'aucune partie n'est réutilisée hors démo, et
- * un fichier court reste plus lisible que 5 fichiers de 30 lignes.
+ * Composants exportés :
+ * - `<DemoModeProvider>` monté dans AppShell, ne rend rien hors démo.
+ * - `<WelcomeOverlay>` modal d'introduction (1× par session démo).
+ * - `<ExitDemoButton>` pill rouge fixe top-right, sortie en 1 clic.
+ * - `<GuidedTour>` bandeau narratif fixe en bas + bulle/flèche optionnelle
+ *   sur l'élément central de la page.
  *
- * **Pas de réécriture des selectors / hooks de l'app** : on swap au niveau
- * du store (cf. `enterDemoMode`), donc l'UI principale lit naturellement les
- * données d'Alex sans modification.
+ * Pendant la démo, `userState` + `history` + `currentSessionPlan` +
+ * `lastCycleReview` viennent du snapshot (cf. `lib/demo.ts`). Aucune
+ * écriture DB Dexie.
  */
 
-import { useEffect, useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from './Button';
 import { Card } from './Card';
 import { useDemoMode, useDemoSnapshot } from '@/store/selectors';
 import { exitDemoMode } from '@/lib/demo';
 
 // =============================================================================
-// Mapping route → hint contextuel (1 par page max)
+// Script du tour — 6 étapes
 // =============================================================================
 
-interface RouteHint {
-  /** Stable, sert de clé LS pour le dismiss. */
+interface TourStep {
   id: string;
-  /** Prefix de route — match avec `startsWith`. */
-  matchPath: string;
+  /** Route à atteindre. Le tour y navigue automatiquement. */
+  route: string;
+  /** Titre court de l'étape (titre du bandeau). */
   title: string;
+  /** 1-3 phrases. Évite le jargon — explique avec les mots de l'utilisateur. */
   body: string;
+  /**
+   * Sélecteur CSS de l'élément central à pointer (optionnel). Le bandeau
+   * affichera une flèche pointant vers cet élément. Si l'élément n'existe
+   * pas (timing route), la flèche est cachée silencieusement.
+   */
+  pointTo?: string;
+  /**
+   * Si défini, déclenche une animation visuelle ciblée à l'arrivée sur la
+   * route — pour V1, juste une class CSS posée 600 ms sur l'élément.
+   */
+  highlight?: { selector: string; className: string; durationMs: number };
+  /**
+   * Si défini, simule un clic sur l'élément à l'entrée de l'étape — utilisé
+   * pour basculer sur un sous-onglet (ex: `tab-force` dans /progres) qui est
+   * un état local de page non exposé en route.
+   */
+  clickOnEnter?: string;
 }
 
-const ROUTE_HINTS: readonly RouteHint[] = [
+const TOUR_STEPS: readonly TourStep[] = [
   {
     id: 'programme',
-    matchPath: '/programme',
+    route: '/programme',
     title: 'Le programme d\'Alex',
     body:
-      "Alex est en semaine 4 du 2ᵉ cycle. Le calendrier montre ses 7 semaines déjà jouées — y compris la semaine de déload (volume réduit) en S5. Tape une séance pour voir le détail.",
+      "Alex est mardi de la semaine 4. Hier (lundi), il a fait son Upper A. Aujourd'hui : Lower A. Le calendrier montre toutes les séances déjà jouées sur 8 semaines.",
+    pointTo: '[data-testid="condensed-calendar"]',
   },
   {
     id: 'seance',
-    matchPath: '/seance',
-    title: 'Une séance d\'Upper/Lower',
+    route: '/seance',
+    title: 'Sa séance du jour',
     body:
-      "Voici la séance courante d'Alex. Les charges sont calées sur son plafond appris (e1RM), pas sur un %1RM figé. Tu verras le banner 'Plafond appris' sur les exos déjà calibrés.",
+      "Voici l'interface séance. Pour chaque série tu coches dès que tu l'as faite, puis tu indiques ton effort perçu (sur 10). Coach OS apprend ton plafond à chaque saisie — pas besoin de calibration préalable.",
+    pointTo: '[data-testid="set-row-0"]',
+    highlight: {
+      selector: '[data-testid="set-row-0"]',
+      className: 'animate-row-flash',
+      durationMs: 700,
+    },
   },
   {
-    id: 'progres',
-    matchPath: '/progres',
-    title: 'La progression d\'Alex',
+    id: 'progres-force',
+    route: '/progres',
+    title: 'Ses plafonds qui montent',
     body:
-      "Trois onglets : Volume hebdomadaire par muscle, courbes de Force par exo (+2 PR identifiés), et un bilan de cycle. Le déload S5 est visible comme creux normal — pas un plateau.",
+      "Au bout de 8 semaines, voici la progression d'Alex sur ses gros exercices. Le squat est passé de 120 à 127 kg. Les points hauts = records personnels.",
+    pointTo: '[data-testid="force-view"]',
+    clickOnEnter: '[data-testid="tab-force"]',
   },
   {
-    id: 'catalogue',
-    matchPath: '/catalogue',
-    title: "Le catalogue d'exos",
+    id: 'cycle-bilan',
+    route: '/cycle-bilan',
+    title: 'Le bilan de cycle',
     body:
-      "Les exos qu'Alex a déjà travaillés affichent leur plafond appris. Filtre 'Plafond mesuré' pour voir lesquels. Les swaps durables (front squat / tractions libres / DM haltères) apparaissent dans son programme.",
+      "À la fin du cycle, Coach OS résume tes progrès muscle par muscle et te suggère la suite : continuer pareil, ajuster les objectifs, ou déloader. Ici : continuer.",
+    pointTo: '[data-testid="cycle-bilan-page"]',
   },
   {
     id: 'profil',
-    matchPath: '/profil',
-    title: "Le profil d'Alex",
+    route: '/profil',
+    title: 'Son profil',
     body:
-      "Alex : 30 ans, 75 kg, intermédiaire, 4 séances/sem. Force prioritaire sur le bas + dos + pec, hypertrophie sur les bras et épaules. Tu peux quitter la démo depuis Aide.",
+      "Alex : 30 ans, 75 kg, intermédiaire. 6 muscles prioritaires en force (pectoraux, quadriceps, dos…), bras et épaules en hypertrophie. Tu fixeras le tien à la fin de la démo.",
+    pointTo: '[data-testid="profil-identity-summary"]',
+  },
+  {
+    id: 'done',
+    route: '/programme',
+    title: 'À toi de jouer',
+    body:
+      "Tu as vu la boucle complète. Quitte la démo pour revenir à ton profil et démarrer ta vraie 1re séance — l'app apprend en marchant, pas besoin de tout connaître pour commencer.",
   },
 ];
 
-function useCurrentHint(): RouteHint | null {
-  const { pathname } = useLocation();
-  return useMemo(() => {
-    for (const h of ROUTE_HINTS) {
-      if (pathname === h.matchPath || pathname.startsWith(h.matchPath + '/')) {
-        return h;
-      }
-    }
-    return null;
-  }, [pathname]);
-}
-
-// =============================================================================
-// Discovery checklist (8 étapes)
-// =============================================================================
-
-interface ChecklistItem {
-  id: string;
-  label: string;
-  /** Route à visiter pour valider l'étape. */
-  matchPath: string;
-}
-
-const CHECKLIST: readonly ChecklistItem[] = [
-  { id: 'open-programme', label: "Ouvrir l'onglet Programme", matchPath: '/programme' },
-  { id: 'open-seance', label: 'Inspecter une séance', matchPath: '/seance' },
-  { id: 'open-progres', label: 'Voir les courbes de Force', matchPath: '/progres' },
-  { id: 'open-catalogue', label: 'Explorer le catalogue', matchPath: '/catalogue' },
-  { id: 'open-profil', label: 'Consulter le profil', matchPath: '/profil' },
-  { id: 'open-cycle-bilan', label: 'Lire le bilan de cycle', matchPath: '/cycle-bilan' },
-  { id: 'see-watermark', label: 'Repérer le filigrane Kotsh', matchPath: '/' },
-  { id: 'exit', label: 'Quitter la démo quand prêt', matchPath: '__exit__' },
-];
-
-const LS_CHECKLIST = 'coach-os.demo-checklist';
-const LS_HINT_DISMISSED = 'coach-os.demo-hint-dismissed';
 const LS_WELCOME_SEEN = 'coach-os.demo-welcome-seen';
-
-function readLsSet(key: string): Set<string> {
-  try {
-    const raw = localStorage.getItem(key);
-    if (raw === null) return new Set();
-    const arr = JSON.parse(raw) as unknown;
-    if (!Array.isArray(arr)) return new Set();
-    return new Set(arr.filter((x): x is string => typeof x === 'string'));
-  } catch {
-    return new Set();
-  }
-}
-
-function writeLsSet(key: string, set: Set<string>): void {
-  try {
-    localStorage.setItem(key, JSON.stringify([...set]));
-  } catch {
-    // ignore (mode privé, etc.)
-  }
-}
 
 // =============================================================================
 // Welcome overlay
 // =============================================================================
 
-function WelcomeOverlay({ onClose }: { onClose: () => void }) {
+function WelcomeOverlay({ onStart }: { onStart: () => void }) {
   const snap = useDemoSnapshot();
   if (snap === null) return null;
   return (
@@ -150,7 +131,7 @@ function WelcomeOverlay({ onClose }: { onClose: () => void }) {
     >
       <div className="w-full max-w-md rounded-2xl border border-sang-700 bg-anthracite-900 p-6 shadow-2xl">
         <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
-          Tuto démo
+          Visite guidée
         </span>
         <h2 className="mt-1 font-display text-2xl leading-tight text-white">
           {snap.persona.label}
@@ -159,18 +140,18 @@ function WelcomeOverlay({ onClose }: { onClose: () => void }) {
           {snap.persona.summary}
         </p>
         <p className="mt-3 text-xs leading-relaxed text-anthracite-300">
-          Navigue librement dans l'app. Tes vraies données sont en pause — rien
-          n'est modifié. Clique <span className="text-sang-400">Quitter la démo</span>{' '}
-          en haut à droite quand tu veux retourner à ton profil.
+          Tu peux quitter à tout moment via le bouton{' '}
+          <span className="text-sang-400">Quitter la démo</span> en haut à
+          droite — tes vraies données ne sont jamais modifiées.
         </p>
         <div className="mt-5 flex flex-col gap-2">
           <Button
             variant="primary"
             fullWidth
-            onClick={onClose}
+            onClick={onStart}
             data-testid="btn-demo-start"
           >
-            Démarrer la visite
+            Commencer la visite
           </Button>
         </div>
       </div>
@@ -179,7 +160,7 @@ function WelcomeOverlay({ onClose }: { onClose: () => void }) {
 }
 
 // =============================================================================
-// Exit demo button (fixé top-right)
+// Exit demo button (top-right)
 // =============================================================================
 
 function ExitDemoButton() {
@@ -197,108 +178,173 @@ function ExitDemoButton() {
 }
 
 // =============================================================================
-// Hint bubble (1 par route, dismissible)
+// Détection de sheet/dialog ouverte
 // =============================================================================
 
-function HintBubble({
-  hint,
-  dismissed,
-  onDismiss,
-}: {
-  hint: RouteHint;
-  dismissed: boolean;
-  onDismiss: () => void;
-}) {
-  if (dismissed) return null;
-  return (
-    <div
-      data-testid={`demo-hint-${hint.id}`}
-      className="pointer-events-auto fixed left-3 right-3 z-[54] mx-auto max-w-md"
-      style={{ bottom: 'max(env(safe-area-inset-bottom), 5.5rem)' }}
-    >
-      <Card accent className="relative flex flex-col gap-1.5">
-        <button
-          type="button"
-          aria-label="Masquer la bulle"
-          data-testid={`btn-dismiss-hint-${hint.id}`}
-          onClick={onDismiss}
-          className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full text-anthracite-300 hover:text-white"
-        >
-          ×
-        </button>
-        <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
-          Astuce
-        </span>
-        <h3 className="pr-6 font-display text-base leading-snug text-white">
-          {hint.title}
-        </h3>
-        <p className="text-xs leading-relaxed text-anthracite-300">{hint.body}</p>
-      </Card>
-    </div>
-  );
+/**
+ * Observe le DOM pour détecter si un `<div role="dialog">` est monté ailleurs
+ * que notre propre overlay welcome — auquel cas on masque le bandeau narratif
+ * pour ne pas chevaucher (sheets de détail séance, Aide, etc.).
+ */
+function useDialogOverlaying(): boolean {
+  const [hasDialog, setHasDialog] = useState(false);
+  useEffect(() => {
+    function refresh() {
+      const dialogs = document.querySelectorAll('[role="dialog"]');
+      // Ignore notre overlay welcome (déjà géré par l'état welcomeOpen)
+      let count = 0;
+      dialogs.forEach((el) => {
+        if (el.getAttribute('data-testid') !== 'demo-welcome-overlay') count++;
+      });
+      setHasDialog(count > 0);
+    }
+    refresh();
+    const observer = new MutationObserver(refresh);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+  return hasDialog;
 }
 
 // =============================================================================
-// Discovery checklist (8 étapes, repliable)
+// Bandeau narratif + flèche pointeur
 // =============================================================================
 
-function DiscoveryChecklist({
-  done,
-  collapsed,
-  onToggleCollapsed,
-}: {
-  done: Set<string>;
-  collapsed: boolean;
-  onToggleCollapsed: () => void;
-}) {
-  const total = CHECKLIST.length;
-  const doneCount = done.size;
+function PointerArrow({ targetSelector }: { targetSelector: string }) {
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    function refresh() {
+      const el = document.querySelector(targetSelector);
+      if (el === null) {
+        setPos(null);
+        return;
+      }
+      const r = el.getBoundingClientRect();
+      setPos({ x: r.left + r.width / 2, y: r.top });
+    }
+    refresh();
+    const ro = new ResizeObserver(refresh);
+    ro.observe(document.body);
+    window.addEventListener('scroll', refresh, true);
+    window.addEventListener('resize', refresh);
+    // Retry court pour les routes qui montent leurs éléments en async.
+    const t = window.setTimeout(refresh, 200);
+    const t2 = window.setTimeout(refresh, 600);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('scroll', refresh, true);
+      window.removeEventListener('resize', refresh);
+      window.clearTimeout(t);
+      window.clearTimeout(t2);
+    };
+  }, [targetSelector]);
+
+  if (pos === null) return null;
+  // Flèche SVG verticale pointant vers le haut (target), placée juste
+  // au-dessus du bandeau (qui occupe les ~140 px du bas).
+  const arrowBottomPx = 152; // hauteur bandeau approx + marge
   return (
-    <div
-      data-testid="demo-checklist"
-      className="fixed right-3 z-[53] w-64"
-      style={{ top: 'max(env(safe-area-inset-top), 3.25rem)' }}
+    <svg
+      aria-hidden="true"
+      data-testid="demo-pointer-arrow"
+      className="pointer-events-none fixed z-[53]"
+      style={{
+        left: pos.x - 14,
+        bottom: arrowBottomPx,
+        width: 28,
+        height: 36,
+      }}
+      viewBox="0 0 28 36"
+      fill="none"
     >
-      <Card padded={false}>
-        <button
-          type="button"
-          data-testid="btn-toggle-checklist"
-          onClick={onToggleCollapsed}
-          className="flex w-full items-center justify-between px-3 py-2 text-left"
+      <path
+        d="M14 0 L14 28 M14 28 L6 20 M14 28 L22 20"
+        stroke="#e11d48"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="drop-shadow-[0_0_6px_rgba(225,29,72,0.6)]"
+      />
+    </svg>
+  );
+}
+
+function GuidedTourBanner({
+  step,
+  index,
+  total,
+  onNext,
+  onPrev,
+  onFinish,
+}: {
+  step: TourStep;
+  index: number;
+  total: number;
+  onNext: () => void;
+  onPrev: () => void;
+  onFinish: () => void;
+}) {
+  const hidden = useDialogOverlaying();
+  if (hidden) return null;
+  const isLast = index === total - 1;
+  return (
+    <>
+      {step.pointTo !== undefined && <PointerArrow targetSelector={step.pointTo} />}
+      <div
+        data-testid={`demo-tour-step-${step.id}`}
+        className="pointer-events-auto fixed left-3 right-3 z-[54] mx-auto max-w-md"
+        style={{ bottom: 'max(env(safe-area-inset-bottom), 4.25rem)' }}
+      >
+        <Card
+          className="relative flex flex-col gap-2 border-2 border-sang-600 shadow-glow-sang-lg ring-2 ring-sang-600/20"
         >
-          <span className="text-xs font-medium uppercase tracking-wider text-anthracite-300">
-            Découverte ({doneCount}/{total})
-          </span>
-          <span className="text-sm text-anthracite-300">
-            {collapsed ? '▾' : '▴'}
-          </span>
-        </button>
-        {!collapsed && (
-          <ul className="border-t border-anthracite-700 px-3 py-2 text-xs text-anthracite-200">
-            {CHECKLIST.map((it) => (
-              <li
-                key={it.id}
-                className="flex items-center gap-2 py-1"
-                data-testid={`checklist-${it.id}`}
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
+              <span className="inline-block rounded-full bg-sang-600 px-1.5 text-white">
+                ⓘ
+              </span>{' '}
+              Étape {index + 1} / {total}
+            </span>
+          </div>
+          <h3 className="font-display text-base leading-snug text-white">
+            {step.title}
+          </h3>
+          <p className="text-xs leading-relaxed text-anthracite-200">
+            {step.body}
+          </p>
+          <div className="mt-1 flex gap-2">
+            <Button
+              variant="secondary"
+              onClick={onPrev}
+              disabled={index === 0}
+              data-testid="btn-tour-prev"
+            >
+              Précédent
+            </Button>
+            {isLast ? (
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={onFinish}
+                data-testid="btn-tour-finish"
               >
-                <span
-                  className={
-                    done.has(it.id)
-                      ? 'inline-block h-3 w-3 rounded-sm bg-sang-500'
-                      : 'inline-block h-3 w-3 rounded-sm border border-anthracite-500'
-                  }
-                />
-                <span
-                  className={done.has(it.id) ? 'line-through opacity-60' : ''}
-                >
-                  {it.label}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
-    </div>
+                Démarrer ma vraie 1re séance
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={onNext}
+                data-testid="btn-tour-next"
+              >
+                Suivant
+              </Button>
+            )}
+          </div>
+        </Card>
+      </div>
+    </>
   );
 }
 
@@ -308,79 +354,115 @@ function DiscoveryChecklist({
 
 export function DemoModeProvider() {
   const active = useDemoMode();
+  const navigate = useNavigate();
   const { pathname } = useLocation();
-  const currentHint = useCurrentHint();
 
   const [welcomeOpen, setWelcomeOpen] = useState(false);
-  const [hintDismissed, setHintDismissed] = useState<Set<string>>(new Set());
-  const [done, setDone] = useState<Set<string>>(new Set());
-  const [collapsed, setCollapsed] = useState(false);
+  const [stepIndex, setStepIndex] = useState(0);
 
-  // Ouvre la welcome overlay une fois par session démo (LS-scoped).
+  // Ouvre la welcome overlay 1× par session démo (LS). Et reset l'index à 0
+  // à chaque entrée dans la démo (pas de reprise mi-parcours).
   useEffect(() => {
-    if (!active) return;
-    const seen = localStorage.getItem(LS_WELCOME_SEEN) === '1';
+    if (!active) {
+      setStepIndex(0);
+      setWelcomeOpen(false);
+      return;
+    }
+    setStepIndex(0);
+    const seen = (() => {
+      try {
+        return localStorage.getItem(LS_WELCOME_SEEN) === '1';
+      } catch {
+        return false;
+      }
+    })();
     setWelcomeOpen(!seen);
-    setHintDismissed(readLsSet(LS_HINT_DISMISSED));
-    setDone(readLsSet(LS_CHECKLIST));
   }, [active]);
 
-  // À chaque changement de route en démo, marque l'étape correspondante.
+  const currentStep = TOUR_STEPS[stepIndex] ?? null;
+
+  // Synchronise la route active avec le step courant : si on bascule d'étape,
+  // on navigue vers la nouvelle route. On évite la nav si on y est déjà.
   useEffect(() => {
-    if (!active) return;
-    setDone((prev) => {
-      let next: Set<string> | null = null;
-      for (const it of CHECKLIST) {
-        if (it.matchPath === '__exit__') continue;
-        if (
-          (pathname === it.matchPath ||
-            pathname.startsWith(it.matchPath + '/')) &&
-          !prev.has(it.id)
-        ) {
-          next ??= new Set(prev);
-          next.add(it.id);
-        }
+    if (!active || welcomeOpen || currentStep === null) return;
+    if (pathname !== currentStep.route) {
+      navigate(currentStep.route);
+    }
+  }, [active, welcomeOpen, currentStep, pathname, navigate]);
+
+  // Déclenche la highlight ponctuelle (si l'étape en a une).
+  useEffect(() => {
+    if (!active || welcomeOpen || currentStep === null) return;
+    const hl = currentStep.highlight;
+    if (hl === undefined) return;
+    // Attend que l'élément cible soit monté.
+    const t1 = window.setTimeout(() => {
+      const el = document.querySelector(hl.selector);
+      if (el === null) return;
+      el.classList.add(hl.className);
+      window.setTimeout(() => el.classList.remove(hl.className), hl.durationMs);
+    }, 300);
+    return () => window.clearTimeout(t1);
+  }, [active, welcomeOpen, currentStep]);
+
+  // Click programmatique à l'entrée (pour basculer sur un sous-onglet).
+  useEffect(() => {
+    if (!active || welcomeOpen || currentStep === null) return;
+    const sel = currentStep.clickOnEnter;
+    if (sel === undefined) return;
+    // 2 tentatives — le composant cible peut monter en async.
+    const tryClick = () => {
+      const el = document.querySelector(sel);
+      if (el instanceof HTMLElement) {
+        el.click();
+        return true;
       }
-      if (next === null) return prev;
-      writeLsSet(LS_CHECKLIST, next);
-      return next;
-    });
-  }, [pathname, active]);
+      return false;
+    };
+    const t1 = window.setTimeout(() => {
+      if (!tryClick()) {
+        window.setTimeout(tryClick, 350);
+      }
+    }, 120);
+    return () => window.clearTimeout(t1);
+  }, [active, welcomeOpen, currentStep]);
 
-  if (!active) return null;
-
-  function closeWelcome() {
+  const closeWelcome = useCallback(() => {
     try {
       localStorage.setItem(LS_WELCOME_SEEN, '1');
     } catch {
       /* ignore */
     }
     setWelcomeOpen(false);
-  }
+  }, []);
 
-  function dismissHint(id: string) {
-    setHintDismissed((prev) => {
-      const next = new Set(prev);
-      next.add(id);
-      writeLsSet(LS_HINT_DISMISSED, next);
-      return next;
-    });
-  }
+  const next = useCallback(() => {
+    setStepIndex((i) => Math.min(i + 1, TOUR_STEPS.length - 1));
+  }, []);
+  const prev = useCallback(() => {
+    setStepIndex((i) => Math.max(i - 1, 0));
+  }, []);
+  const finish = useCallback(() => {
+    exitDemoMode();
+    navigate('/programme');
+  }, [navigate]);
+
+  const total = TOUR_STEPS.length;
+
+  if (!active) return null;
 
   return (
     <>
-      {welcomeOpen && <WelcomeOverlay onClose={closeWelcome} />}
+      {welcomeOpen && <WelcomeOverlay onStart={closeWelcome} />}
       <ExitDemoButton />
-      <DiscoveryChecklist
-        done={done}
-        collapsed={collapsed}
-        onToggleCollapsed={() => setCollapsed((c) => !c)}
-      />
-      {currentHint !== null && !welcomeOpen && (
-        <HintBubble
-          hint={currentHint}
-          dismissed={hintDismissed.has(currentHint.id)}
-          onDismiss={() => dismissHint(currentHint.id)}
+      {!welcomeOpen && currentStep !== null && (
+        <GuidedTourBanner
+          step={currentStep}
+          index={stepIndex}
+          total={total}
+          onNext={next}
+          onPrev={prev}
+          onFinish={finish}
         />
       )}
     </>
@@ -388,15 +470,20 @@ export function DemoModeProvider() {
 }
 
 /**
- * Helpers exposés pour tests / scripts. Le reset des dismiss permet de
- * re-déclencher la démo "comme la 1re fois" depuis Profil > Aide.
+ * Reset des dismissals LS — utilisé par les entry points (WelcomeBanner,
+ * Profil > Aide) pour que la démo redémarre "comme la 1re fois" même si
+ * l'utilisateur avait déjà vu la welcome overlay.
  */
 export function resetDemoDismissals(): void {
   try {
     localStorage.removeItem(LS_WELCOME_SEEN);
-    localStorage.removeItem(LS_HINT_DISMISSED);
-    localStorage.removeItem(LS_CHECKLIST);
   } catch {
     /* ignore */
   }
 }
+
+// Export utile aux tests : nombre d'étapes du tour.
+export const TOUR_TOTAL_STEPS = TOUR_STEPS.length;
+
+// Réexport implicite — utile pour tests si on veut le step ids.
+export const TOUR_STEP_IDS = TOUR_STEPS.map((s) => s.id);
