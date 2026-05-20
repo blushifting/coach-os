@@ -110,4 +110,43 @@ describe('enterDemoMode / exitDemoMode', () => {
     expect(profile.available_equip).toBeInstanceOf(Set);
     expect(profile.available_equip.has('barbell')).toBe(true);
   });
+
+  it('enterDemoMode pose currentSessionPlan + currentSessionId depuis le snapshot', async () => {
+    const snap = loadAlex();
+    await enterDemoMode(snap);
+    const s = useCoachOsStore.getState();
+    expect(s.currentSessionPlan).not.toBeNull();
+    expect(s.currentSessionPlan!.label).toBe('Lower A');
+    expect(s.currentSessionPlan!.seance_date).toBe('2026-05-19');
+    expect(s.currentSessionId).toBe(-1);
+  });
+
+  it('enterDemoMode pose lastCycleReview depuis cycles[0].review', async () => {
+    const snap = loadAlex();
+    await enterDemoMode(snap);
+    const s = useCoachOsStore.getState();
+    expect(s.lastCycleReview).not.toBeNull();
+    expect(s.lastCycleReview!.cycle_index).toBe(1);
+    expect(s.lastCycleReview!.PRs.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('exitDemoMode restaure currentSessionPlan + lastCycleReview pré-démo', async () => {
+    // Pose un userState et un lastCycleReview "réels"
+    useCoachOsStore.setState({
+      userState: startUser(makeTestProfile(), new Catalog()),
+      lastCycleReview: null,
+      currentSessionPlan: null,
+      currentSessionId: null,
+    });
+
+    const snap = loadAlex();
+    await enterDemoMode(snap);
+    expect(useCoachOsStore.getState().currentSessionPlan).not.toBeNull();
+
+    exitDemoMode();
+    const s = useCoachOsStore.getState();
+    expect(s.currentSessionPlan).toBeNull();
+    expect(s.currentSessionId).toBeNull();
+    expect(s.lastCycleReview).toBeNull();
+  });
 });

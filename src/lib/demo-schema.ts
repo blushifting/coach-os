@@ -198,7 +198,7 @@ const cycleRowSchema = z.object({
 // =============================================================================
 
 export const demoSnapshotSchema = z.object({
-  /** Persona affiché dans la welcome overlay et la checklist. */
+  /** Persona affiché dans le tour guidé (titre + résumé en welcome overlay). */
   persona: z.object({
     id: z.literal('alex'),
     label: z.string(),
@@ -212,6 +212,18 @@ export const demoSnapshotSchema = z.object({
     e1rmSnapshots: z.array(e1rmSnapshotRowSchema),
     cycles: z.array(cycleRowSchema),
   }),
+  /**
+   * Séance "du jour" pré-construite (pas dans `history` puisque non jouée).
+   * À l'entrée démo, on la pose sur `currentSessionPlan` + `currentSessionId`
+   * du store pour que le runner de l'écran Séance ait du contenu sans
+   * passer par un déclic utilisateur. `id: -1` = id sentinelle non-DB.
+   */
+  current_session: z
+    .object({
+      id: z.number().int(),
+      plan: sessionPlanSchema,
+    })
+    .optional(),
 });
 
 export type DemoSnapshot = z.infer<typeof demoSnapshotSchema>;

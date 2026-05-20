@@ -2,7 +2,7 @@
   "persona": {
     "id": "alex",
     "label": "Alex — Upper/Lower 4j",
-    "summary": "8 semaines simulées : 1 cycle terminé + 4 séances du cycle 2. 2 PR, 1 déload, 3 swaps durables, 1 séance ratée — pour explorer comment Coach OS apprend."
+    "summary": "8 semaines déjà jouées par Alex. On va regarder ensemble comment Coach OS suit sa progression — pour que tu sois prêt à démarrer ta vraie 1re séance."
   },
   "generated_at": "2026-05-19",
   "user_state": {
@@ -29,12 +29,12 @@
     "e1rm": {
       "squat_bb_high": 126.6,
       "deadlift_conv": 147.1,
-      "bench_bb": 89.8,
+      "bench_bb": 90.2,
       "ohp_bb_standing": 56.3,
       "bb_row": 81.8,
       "pullup_assisted": -20.9,
       "bb_curl": 35.6,
-      "triceps_pushdown_rope": 26.5
+      "triceps_pushdown_rope": 26.6
     },
     "k_user": {
       "squat_bb_high": 0.0333,
@@ -2101,6 +2101,99 @@
           }
         ],
         "label": "Lower B"
+      },
+      {
+        "seance_date": "2026-05-18",
+        "week_in_cycle": 4,
+        "cycle_index": 2,
+        "rpe_target": 7.5,
+        "sets": [
+          {
+            "exercise_id": "bench_bb",
+            "reps_done": 5,
+            "load_kg": 75,
+            "rpe_perceived": 7.5
+          },
+          {
+            "exercise_id": "bench_bb",
+            "reps_done": 5,
+            "load_kg": 75,
+            "rpe_perceived": 7.5
+          },
+          {
+            "exercise_id": "bench_bb",
+            "reps_done": 5,
+            "load_kg": 75,
+            "rpe_perceived": 7.5
+          },
+          {
+            "exercise_id": "bench_bb",
+            "reps_done": 5,
+            "load_kg": 75,
+            "rpe_perceived": 7.5
+          },
+          {
+            "exercise_id": "bench_bb",
+            "reps_done": 5,
+            "load_kg": 75,
+            "rpe_perceived": 7.5
+          },
+          {
+            "exercise_id": "pullup",
+            "reps_done": 8,
+            "load_kg": 36.25,
+            "rpe_perceived": 7.5
+          },
+          {
+            "exercise_id": "pullup",
+            "reps_done": 8,
+            "load_kg": 36.25,
+            "rpe_perceived": 7.5
+          },
+          {
+            "exercise_id": "pullup",
+            "reps_done": 8,
+            "load_kg": 36.25,
+            "rpe_perceived": 7.5
+          },
+          {
+            "exercise_id": "ohp_db_seated",
+            "reps_done": 8,
+            "load_kg": 36.25,
+            "rpe_perceived": 7.5
+          },
+          {
+            "exercise_id": "ohp_db_seated",
+            "reps_done": 8,
+            "load_kg": 36.25,
+            "rpe_perceived": 7.5
+          },
+          {
+            "exercise_id": "ohp_db_seated",
+            "reps_done": 8,
+            "load_kg": 36.25,
+            "rpe_perceived": 7.5
+          },
+          {
+            "exercise_id": "triceps_pushdown_rope",
+            "reps_done": 8,
+            "load_kg": 20,
+            "rpe_perceived": 7.5
+          },
+          {
+            "exercise_id": "triceps_pushdown_rope",
+            "reps_done": 8,
+            "load_kg": 20,
+            "rpe_perceived": 7.5
+          },
+          {
+            "exercise_id": "triceps_pushdown_rope",
+            "reps_done": 8,
+            "load_kg": 20,
+            "rpe_perceived": 7.5
+          }
+        ],
+        "label": "Upper A"
       }
     ],
     "last_used_for_muscle": {},
@@ -5546,6 +5639,141 @@
         },
         "status": "completed",
         "created_at": "2026-05-16T18:00:00.000Z"
+      },
+      {
+        "id": 33,
+        "seance_date": "2026-05-18",
+        "week_in_cycle": 4,
+        "cycle_index": 2,
+        "plan": {
+          "seance_date": "2026-05-18",
+          "week_in_cycle": 4,
+          "cycle_index": 2,
+          "rpe_target": 7.5,
+          "items": [
+            {
+              "exercise_id": "bench_bb",
+              "sets": [
+                {
+                  "exercise_id": "bench_bb",
+                  "reps": 5,
+                  "load_kg": 75,
+                  "rpe_target": 7.5,
+                  "rest_s": 180
+                },
+                {
+                  "exercise_id": "bench_bb",
+                  "reps": 5,
+                  "load_kg": 75,
+                  "rpe_target": 7.5,
+                  "rest_s": 180
+                },
+                {
+                  "exercise_id": "bench_bb",
+                  "reps": 5,
+                  "load_kg": 75,
+                  "rpe_target": 7.5,
+                  "rest_s": 180
+                },
+                {
+                  "exercise_id": "bench_bb",
+                  "reps": 5,
+                  "load_kg": 75,
+                  "rpe_target": 7.5,
+                  "rest_s": 180
+                },
+                {
+                  "exercise_id": "bench_bb",
+                  "reps": 5,
+                  "load_kg": 75,
+                  "rpe_target": 7.5,
+                  "rest_s": 180
+                }
+              ]
+            },
+            {
+              "exercise_id": "pullup",
+              "sets": [
+                {
+                  "exercise_id": "pullup",
+                  "reps": 8,
+                  "load_kg": 36.25,
+                  "rpe_target": 7.5,
+                  "rest_s": 180
+                },
+                {
+                  "exercise_id": "pullup",
+                  "reps": 8,
+                  "load_kg": 36.25,
+                  "rpe_target": 7.5,
+                  "rest_s": 180
+                },
+                {
+                  "exercise_id": "pullup",
+                  "reps": 8,
+                  "load_kg": 36.25,
+                  "rpe_target": 7.5,
+                  "rest_s": 180
+                }
+              ]
+            },
+            {
+              "exercise_id": "ohp_db_seated",
+              "sets": [
+                {
+                  "exercise_id": "ohp_db_seated",
+                  "reps": 8,
+                  "load_kg": 36.25,
+                  "rpe_target": 7.5,
+                  "rest_s": 150
+                },
+                {
+                  "exercise_id": "ohp_db_seated",
+                  "reps": 8,
+                  "load_kg": 36.25,
+                  "rpe_target": 7.5,
+                  "rest_s": 150
+                },
+                {
+                  "exercise_id": "ohp_db_seated",
+                  "reps": 8,
+                  "load_kg": 36.25,
+                  "rpe_target": 7.5,
+                  "rest_s": 150
+                }
+              ]
+            },
+            {
+              "exercise_id": "triceps_pushdown_rope",
+              "sets": [
+                {
+                  "exercise_id": "triceps_pushdown_rope",
+                  "reps": 8,
+                  "load_kg": 20,
+                  "rpe_target": 7.5,
+                  "rest_s": 60
+                },
+                {
+                  "exercise_id": "triceps_pushdown_rope",
+                  "reps": 8,
+                  "load_kg": 20,
+                  "rpe_target": 7.5,
+                  "rest_s": 60
+                },
+                {
+                  "exercise_id": "triceps_pushdown_rope",
+                  "reps": 8,
+                  "load_kg": 20,
+                  "rpe_target": 7.5,
+                  "rest_s": 60
+                }
+              ]
+            }
+          ],
+          "label": "Upper A"
+        },
+        "status": "completed",
+        "created_at": "2026-05-18T18:00:00.000Z"
       }
     ],
     "feedbacks": [
@@ -7797,6 +8025,107 @@
           "label": "Lower B"
         },
         "created_at": "2026-05-16T18:00:00.000Z"
+      },
+      {
+        "id": 32,
+        "session_id": 33,
+        "seance_date": "2026-05-18",
+        "cycle_index": 2,
+        "week_in_cycle": 4,
+        "feedback": {
+          "seance_date": "2026-05-18",
+          "week_in_cycle": 4,
+          "cycle_index": 2,
+          "rpe_target": 7.5,
+          "sets": [
+            {
+              "exercise_id": "bench_bb",
+              "reps_done": 5,
+              "load_kg": 75,
+              "rpe_perceived": 7.5
+            },
+            {
+              "exercise_id": "bench_bb",
+              "reps_done": 5,
+              "load_kg": 75,
+              "rpe_perceived": 7.5
+            },
+            {
+              "exercise_id": "bench_bb",
+              "reps_done": 5,
+              "load_kg": 75,
+              "rpe_perceived": 7.5
+            },
+            {
+              "exercise_id": "bench_bb",
+              "reps_done": 5,
+              "load_kg": 75,
+              "rpe_perceived": 7.5
+            },
+            {
+              "exercise_id": "bench_bb",
+              "reps_done": 5,
+              "load_kg": 75,
+              "rpe_perceived": 7.5
+            },
+            {
+              "exercise_id": "pullup",
+              "reps_done": 8,
+              "load_kg": 36.25,
+              "rpe_perceived": 7.5
+            },
+            {
+              "exercise_id": "pullup",
+              "reps_done": 8,
+              "load_kg": 36.25,
+              "rpe_perceived": 7.5
+            },
+            {
+              "exercise_id": "pullup",
+              "reps_done": 8,
+              "load_kg": 36.25,
+              "rpe_perceived": 7.5
+            },
+            {
+              "exercise_id": "ohp_db_seated",
+              "reps_done": 8,
+              "load_kg": 36.25,
+              "rpe_perceived": 7.5
+            },
+            {
+              "exercise_id": "ohp_db_seated",
+              "reps_done": 8,
+              "load_kg": 36.25,
+              "rpe_perceived": 7.5
+            },
+            {
+              "exercise_id": "ohp_db_seated",
+              "reps_done": 8,
+              "load_kg": 36.25,
+              "rpe_perceived": 7.5
+            },
+            {
+              "exercise_id": "triceps_pushdown_rope",
+              "reps_done": 8,
+              "load_kg": 20,
+              "rpe_perceived": 7.5
+            },
+            {
+              "exercise_id": "triceps_pushdown_rope",
+              "reps_done": 8,
+              "load_kg": 20,
+              "rpe_perceived": 7.5
+            },
+            {
+              "exercise_id": "triceps_pushdown_rope",
+              "reps_done": 8,
+              "load_kg": 20,
+              "rpe_perceived": 7.5
+            }
+          ],
+          "label": "Upper A"
+        },
+        "created_at": "2026-05-18T18:00:00.000Z"
       }
     ],
     "e1rmSnapshots": [
@@ -9783,6 +10112,70 @@
         "e1rm": 26.5,
         "cycle_index": 2,
         "week_in_cycle": 3
+      },
+      {
+        "id": 249,
+        "date": "2026-05-18",
+        "exercise_id": "squat_bb_high",
+        "e1rm": 126.6,
+        "cycle_index": 2,
+        "week_in_cycle": 4
+      },
+      {
+        "id": 250,
+        "date": "2026-05-18",
+        "exercise_id": "deadlift_conv",
+        "e1rm": 147.1,
+        "cycle_index": 2,
+        "week_in_cycle": 4
+      },
+      {
+        "id": 251,
+        "date": "2026-05-18",
+        "exercise_id": "bench_bb",
+        "e1rm": 90.2,
+        "cycle_index": 2,
+        "week_in_cycle": 4
+      },
+      {
+        "id": 252,
+        "date": "2026-05-18",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 56.3,
+        "cycle_index": 2,
+        "week_in_cycle": 4
+      },
+      {
+        "id": 253,
+        "date": "2026-05-18",
+        "exercise_id": "bb_row",
+        "e1rm": 81.8,
+        "cycle_index": 2,
+        "week_in_cycle": 4
+      },
+      {
+        "id": 254,
+        "date": "2026-05-18",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -20.9,
+        "cycle_index": 2,
+        "week_in_cycle": 4
+      },
+      {
+        "id": 255,
+        "date": "2026-05-18",
+        "exercise_id": "bb_curl",
+        "e1rm": 35.6,
+        "cycle_index": 2,
+        "week_in_cycle": 4
+      },
+      {
+        "id": 256,
+        "date": "2026-05-18",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 26.6,
+        "cycle_index": 2,
+        "week_in_cycle": 4
       }
     ],
     "cycles": [
@@ -9841,5 +10234,83 @@
         "review": null
       }
     ]
+  },
+  "current_session": {
+    "id": -1,
+    "plan": {
+      "seance_date": "2026-05-19",
+      "week_in_cycle": 4,
+      "cycle_index": 2,
+      "rpe_target": 7.5,
+      "items": [
+        {
+          "exercise_id": "front_squat",
+          "sets": [
+            {
+              "exercise_id": "front_squat",
+              "reps": 5,
+              "load_kg": 42.5,
+              "rpe_target": 7.5,
+              "rest_s": 240
+            },
+            {
+              "exercise_id": "front_squat",
+              "reps": 5,
+              "load_kg": 42.5,
+              "rpe_target": 7.5,
+              "rest_s": 240
+            },
+            {
+              "exercise_id": "front_squat",
+              "reps": 5,
+              "load_kg": 42.5,
+              "rpe_target": 7.5,
+              "rest_s": 240
+            },
+            {
+              "exercise_id": "front_squat",
+              "reps": 5,
+              "load_kg": 42.5,
+              "rpe_target": 7.5,
+              "rest_s": 240
+            },
+            {
+              "exercise_id": "front_squat",
+              "reps": 5,
+              "load_kg": 42.5,
+              "rpe_target": 7.5,
+              "rest_s": 240
+            }
+          ]
+        },
+        {
+          "exercise_id": "deadlift_conv",
+          "sets": [
+            {
+              "exercise_id": "deadlift_conv",
+              "reps": 5,
+              "load_kg": 122.5,
+              "rpe_target": 7.5,
+              "rest_s": 240
+            },
+            {
+              "exercise_id": "deadlift_conv",
+              "reps": 5,
+              "load_kg": 122.5,
+              "rpe_target": 7.5,
+              "rest_s": 240
+            },
+            {
+              "exercise_id": "deadlift_conv",
+              "reps": 5,
+              "load_kg": 122.5,
+              "rpe_target": 7.5,
+              "rest_s": 240
+            }
+          ]
+        }
+      ],
+      "label": "Lower A"
+    }
   }
 }

@@ -227,16 +227,18 @@ function addDays(iso: string, n: number): string {
 }
 
 /**
- * Construit la séquence de 8 semaines = 32 séances (1 ratée → 31 jouées).
- * Cycle 1 : sem 1-5 (sem 5 = déload).
- * Cycle 2 : sem 1-3 (sem 4 démarre mais pas encore jouée → état "courant").
+ * Construit la séquence : 8 semaines complètes (W1-5 cycle 1 + W1-3 cycle 2) +
+ * début de sem 4 cycle 2 (lundi Upper A déjà joué). DEMO_TODAY = mardi de
+ * W4C2 → la séance du jour (Lower A) est en `currentSession`, pas dans le
+ * schedule joué. Total = 33 séances jouées (1 ratée → 32 feedbacks).
  *
- * Calendrier 4j/sem espacés Lu-Me-Ve-Sa (offsets 0, 2, 4, 5).
+ * Calendrier 4j/sem espacés Lu-Me-Ve-Sa (offsets 0, 2, 4, 5). CYCLE_1_START =
+ * lundi 2026-03-23, donc lundi de W4C2 = 2026-03-23 + 8×7 = 2026-05-18.
  */
 function buildSchedule(): Scripted[] {
   const sched: Scripted[] = [];
   const offsets = [0, 2, 4, 5];
-  let baseDate = CYCLE_1_START;
+  const baseDate = CYCLE_1_START;
   let weekGlobal = 0;
 
   // Cycle 1 — 5 semaines
@@ -247,13 +249,20 @@ function buildSchedule(): Scripted[] {
     }
     weekGlobal++;
   }
-  // Cycle 2 — 3 semaines jouées
+  // Cycle 2 — 3 semaines complètes
   for (let w = 1; w <= 3; w++) {
     for (let d = 0; d < 4; d++) {
       const date = addDays(baseDate, weekGlobal * 7 + offsets[d]!);
       sched.push({ tag: `C2W${w}D${d}`, cycle: 2, weekInCycle: w, dayIdx: d as 0 | 1 | 2 | 3, date });
     }
     weekGlobal++;
+  }
+  // Cycle 2 sem 4 : seul le lundi Upper A est déjà joué (alimente la couverture
+  // de la semaine courante). Mardi (Lower A) = séance du jour, construite à
+  // part comme `currentSession` (cf. main).
+  {
+    const date = addDays(baseDate, weekGlobal * 7 + offsets[0]!);
+    sched.push({ tag: 'C2W4D0', cycle: 2, weekInCycle: 4, dayIdx: 0, date });
   }
 
   // ============== Placement des phénomènes pédagogiques ==============
@@ -642,16 +651,33 @@ function main(): void {
     playSession(ctx, sc);
   }
 
-  // Position finale : sem 4 cycle 2, prête à jouer.
+  // Position finale : sem 4 cycle 2, mardi — Upper A (lundi) déjà joué, Lower A
+  // (aujourd'hui = DEMO_TODAY) est la séance en cours.
   state.current_week_in_cycle = 4;
   state.cycle_index = 2;
+
+  // Construit la séance "Lower A mardi" en mémoire — pas insérée dans history,
+  // sera posée sur `currentSessionPlan` + `currentSessionId` du store par
+  // `enterDemoMode`. Date = DEMO_TODAY (mardi 2026-05-19) qui correspond
+  // bien à l'offset 1 (Mer/Ma) du calendrier hebdo… non : offsets sont
+  // [Lu=0, Mer=2, Ve=4, Sa=5]. Donc le dayIdx=1 du programme tombe
+  // calendairement mercredi. On ajuste : la séance "du jour" pour la démo
+  // est dayIdx 1 mais on la date au mardi (DEMO_TODAY) pour qu'elle
+  // s'affiche bien "aujourd'hui" dans l'UI calendrier.
+  const currentSessionPlan = planFromTemplate(ctx, {
+    tag: 'C2W4D1-current',
+    cycle: 2,
+    weekInCycle: 4,
+    dayIdx: 1,
+    date: DEMO_TODAY,
+  });
 
   const snapshot: DemoSnapshot = {
     persona: {
       id: 'alex',
       label: 'Alex — Upper/Lower 4j',
       summary:
-        '8 semaines simulées : 1 cycle terminé + 4 séances du cycle 2. 2 PR, 1 déload, 3 swaps durables, 1 séance ratée — pour explorer comment Coach OS apprend.',
+        '8 semaines déjà jouées par Alex. On va regarder ensemble comment Coach OS suit sa progression — pour que tu sois prêt à démarrer ta vraie 1re séance.',
     },
     generated_at: DEMO_TODAY,
     user_state: serializeUserState(state),
@@ -660,6 +686,10 @@ function main(): void {
       feedbacks: ctx.feedbacks,
       e1rmSnapshots: ctx.e1rmSnapshots,
       cycles,
+    },
+    current_session: {
+      id: -1,
+      plan: currentSessionPlan,
     },
   };
 

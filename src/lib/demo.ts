@@ -26,6 +26,7 @@ interface PreDemoBackup {
   history: HistorySnapshot;
   currentSessionPlan: CoachOsState['currentSessionPlan'];
   currentSessionId: CoachOsState['currentSessionId'];
+  lastCycleReview: CoachOsState['lastCycleReview'];
 }
 
 let _backup: PreDemoBackup | null = null;
@@ -68,12 +69,26 @@ export async function enterDemoMode(snapshot?: DemoSnapshot): Promise<void> {
     history: store.history,
     currentSessionPlan: store.currentSessionPlan,
     currentSessionId: store.currentSessionId,
+    lastCycleReview: store.lastCycleReview,
   };
   // Zod valide les valeurs string littérales — on cast vers les types métier
   // qui utilisent des enums (`ProgressionRule`, `SuggestedAction`, etc.). La
   // forme runtime est strictement identique.
   const serialized = snap.user_state as unknown as Parameters<typeof deserializeUserState>[0];
   const cycles = snap.history.cycles as unknown as HistorySnapshot['cycles'];
+  // Cycle review : on lit la 1re review trouvée dans l'historique (cycle 1)
+  // pour alimenter `lastCycleReview` du store (= la card affichée sur
+  // `/cycle-bilan`, qui ne consulte pas `history.cycles[i].review`).
+  const firstReview =
+    cycles.find((c) => c.review !== null)?.review ?? null;
+  // Current session : si présent dans le snapshot, on pose le plan + un id
+  // sentinelle pour que l'écran Séance ouvre le runner directement.
+  const currentSession = snap.current_session ?? null;
+  const currentSessionPlan =
+    currentSession !== null
+      ? (currentSession.plan as unknown as CoachOsState['currentSessionPlan'])
+      : null;
+  const currentSessionId = currentSession !== null ? currentSession.id : null;
   useCoachOsStore.setState({
     userState: deserializeUserState(serialized),
     history: {
@@ -82,8 +97,9 @@ export async function enterDemoMode(snapshot?: DemoSnapshot): Promise<void> {
       e1rmSnapshots: snap.history.e1rmSnapshots.map((e) => ({ ...e })),
       cycles: cycles.map((c) => ({ ...c })),
     },
-    currentSessionPlan: null,
-    currentSessionId: null,
+    currentSessionPlan,
+    currentSessionId,
+    lastCycleReview: firstReview,
     demoMode: true,
     demoSnapshot: snap,
   });
@@ -106,6 +122,7 @@ export function exitDemoMode(): void {
     history: _backup.history,
     currentSessionPlan: _backup.currentSessionPlan,
     currentSessionId: _backup.currentSessionId,
+    lastCycleReview: _backup.lastCycleReview,
     demoMode: false,
     demoSnapshot: null,
   });
