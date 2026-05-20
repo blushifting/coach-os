@@ -142,9 +142,11 @@ export function buildDescription(ex: Exercise): string {
   }
   const typ = extypeLabel(ex.type);
   const pat = patternLabel(ex.pattern).toLowerCase();
-  // `muscleLabel` renvoie déjà le label avec article ("les pectoraux",
-  // "le dos en largeur"). On ne préfixe donc pas par "le"/"les" ici, sinon
-  // on obtient "Cible le les pectoraux" (bug remonté Conv #10c').
+  // Conv #14c-8 — `muscleLabel` retourne désormais le label Capitalize sans
+  // article ("Pectoraux"). On toLowercase pour insérer dans la phrase sans
+  // article ("Cible pectoraux."). Pas idéal grammaticalement (on aurait
+  // préféré "Cible les pectoraux") mais le bug Conv #10c' nous a appris à
+  // ne pas mêler les articles ici.
   const primaires = exercisePrimaires(ex).map((m) => muscleLabel(m).toLowerCase());
   const cible =
     primaires.length === 0 ? '' : ` Cible ${joinFr(primaires)}.`;

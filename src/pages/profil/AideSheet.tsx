@@ -101,7 +101,7 @@ export function AideSheet({ open, onClose }: AideSheetProps) {
             </h4>
             <Card>
               <p className="text-sm leading-relaxed text-anthracite-200">
-                Découvre Coach OS avec un utilisateur fictif (Alex), 8 semaines
+                Découvre Kotsh avec un utilisateur fictif (Alex), 8 semaines
                 d'entraînement Upper/Lower déjà jouées. Tu navigues dans
                 l'app comme si c'étaient tes données — ton vrai profil revient
                 en sortie.

@@ -107,7 +107,7 @@ function FontSample({ candidate }: { readonly candidate: FontCandidate }) {
         style={display}
       >
         <span className="text-2xl uppercase leading-none tracking-[0.06em] text-white">
-          Programme
+          Séances
         </span>
       </div>
 

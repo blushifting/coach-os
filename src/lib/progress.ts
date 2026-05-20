@@ -17,6 +17,7 @@
 import type { Catalog } from '@/engine/catalog';
 import type { CycleRow, FeedbackRow } from '@/db/schema';
 import type {
+  CycleReview,
   GuidedProgram,
   SessionFeedback,
   UserState,
@@ -169,6 +170,10 @@ export interface MuscleVolumeSeries {
   readonly vMax: number;
   /** Séries pondérées par semaine, ordre chronologique ancien → récent. */
   readonly points: ReadonlyArray<WeeklyVolumePoint>;
+  /** Conv #14c-6 — statut du muscle (PRIORITAIRE / SUGGERE / NON_COUVERT). */
+  readonly status: string;
+  /** Objectif du muscle (hypertrophie / force / maintien). */
+  readonly objective: string;
 }
 
 /**
@@ -214,7 +219,15 @@ export function computeVolumeHistory(
       const sums = sumMuscleSets(fbs, musclesOf);
       return { weekStart: ws, sets: sums[muscle] ?? 0 };
     });
-    return { muscle, vMin, vMax, points };
+    const goal = state.muscle_goals[muscle];
+    return {
+      muscle,
+      vMin,
+      vMax,
+      points,
+      status: goal?.status ?? 'NON_COUVERT',
+      objective: goal?.objective ?? 'maintien',
+    };
   });
 }
 
@@ -237,6 +250,32 @@ export interface CycleHistoryItem {
   readonly deltaVolumeKg: number | null;
   /** Δ progression moyenne des plafonds vs cycle précédent (kg), null si N/A. */
   readonly deltaTopPlafondKg: number | null;
+  /**
+   * Conv #14c-7 — comparaison "visé vs fait" par muscle prioritaire, dérivée
+   * du snapshot des `muscle_goals` au moment du bilan et de la classification
+   * `progresses/plateau/undertrained/overshoot`. `null` si le cycle n'a pas
+   * été clôturé avec la nouvelle feature (rétrocompat).
+   */
+  readonly objectivesByMuscle: ReadonlyArray<MuscleObjectiveOutcome> | null;
+}
+
+export type MuscleOutcomeStatus =
+  | 'progressed'
+  | 'plateau'
+  | 'undertrained'
+  | 'overshoot'
+  | 'unknown';
+
+export interface MuscleObjectiveOutcome {
+  readonly muscle: string;
+  /** ex: hypertrophie / force / maintien (string libre côté UI). */
+  readonly objective: string;
+  /** Statut du muscle dans le programme courant (PRIORITAIRE, SUGGERE, ...). */
+  readonly status: string;
+  /** Rang de priorité (1 = top) — utilisé pour trier les PRIORITAIRES. */
+  readonly priorityRank: number;
+  /** Comment ce muscle a fini le cycle d'après la classification. */
+  readonly outcome: MuscleOutcomeStatus;
 }
 
 /**
@@ -286,6 +325,8 @@ export function buildCycleHistory(
       break;
     }
 
+    const objectivesByMuscle = buildObjectivesByMuscle(review);
+
     items.push({
       cycleIndex: c.cycle_index,
       programName,
@@ -296,11 +337,49 @@ export function buildCycleHistory(
       plafondsTop,
       deltaVolumeKg,
       deltaTopPlafondKg,
+      objectivesByMuscle,
     });
   }
 
   // Retour du plus récent au plus ancien pour l'UI.
   return items.reverse();
+}
+
+function buildObjectivesByMuscle(
+  review: CycleReview,
+): ReadonlyArray<MuscleObjectiveOutcome> | null {
+  const snapshot = review.muscle_goals_snapshot;
+  if (snapshot === undefined || snapshot.length === 0) return null;
+  const progressed = new Set(review.muscles_progresses);
+  const plateau = new Set(review.muscles_plateau);
+  const undertrained = new Set(review.muscles_undertrained);
+  const overshoot = new Set(review.muscles_overshoot);
+
+  const items: MuscleObjectiveOutcome[] = snapshot.map((g) => {
+    let outcome: MuscleOutcomeStatus = 'unknown';
+    if (progressed.has(g.muscle)) outcome = 'progressed';
+    else if (plateau.has(g.muscle)) outcome = 'plateau';
+    else if (undertrained.has(g.muscle)) outcome = 'undertrained';
+    else if (overshoot.has(g.muscle)) outcome = 'overshoot';
+    return {
+      muscle: g.muscle,
+      objective: g.objective,
+      status: g.status,
+      priorityRank: g.priority_rank,
+      outcome,
+    };
+  });
+
+  // Tri : PRIORITAIRE (rank croissant) puis le reste par muscle alphabétique.
+  items.sort((a, b) => {
+    const aPrio = a.status === 'PRIORITAIRE' ? 0 : 1;
+    const bPrio = b.status === 'PRIORITAIRE' ? 0 : 1;
+    if (aPrio !== bPrio) return aPrio - bPrio;
+    if (aPrio === 0) return a.priorityRank - b.priorityRank;
+    return a.muscle.localeCompare(b.muscle);
+  });
+
+  return items;
 }
 
 // =============================================================================
@@ -334,8 +413,38 @@ export function formatWeekLabel(weekStart: string): string {
   });
 }
 
-/** Libellé court FR pour un muscle (capitalisé, _ remplacés par espaces). */
+/**
+ * Libellé court FR d'un muscle pour titres, listes et badges (Conv #14c-8).
+ *
+ * Capitalize sans article ("Pectoraux", pas "les pectoraux"). Les noms
+ * tordus du dictionnaire interne (`dos_largeur`, `trapezes_hauts`,
+ * `deltos_lateraux`, ...) sont mappés vers leur nom français usuel.
+ *
+ * Pour une utilisation dans une phrase ("Cible les pectoraux"), `lib/
+ * catalog-filter.ts` toLowercase puis insère sans article.
+ */
+const MUSCLE_LABEL_FR: Readonly<Record<string, string>> = {
+  pectoraux: 'Pectoraux',
+  dos_largeur: 'Dos en largeur',
+  dos_epaisseur: 'Dos en épaisseur',
+  trapezes_hauts: 'Trapèzes',
+  quadriceps: 'Quadriceps',
+  ischios: 'Ischio-jambiers',
+  fessiers: 'Fessiers',
+  mollets: 'Mollets',
+  deltos_lateraux: 'Deltoïdes latéraux',
+  deltos_posterieurs: 'Deltoïdes postérieurs',
+  biceps: 'Biceps',
+  triceps: 'Triceps',
+  abdos: 'Abdominaux',
+  obliques: 'Obliques',
+  lombaires: 'Lombaires',
+};
+
 export function muscleLabel(muscle: string): string {
+  const known = MUSCLE_LABEL_FR[muscle];
+  if (known !== undefined) return known;
+  // Fallback Capitalize underscore-split (muscle inconnu du dictionnaire).
   return muscle
     .split('_')
     .map((p) => p.charAt(0).toUpperCase() + p.slice(1))

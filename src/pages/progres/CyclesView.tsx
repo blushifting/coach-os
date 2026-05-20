@@ -4,7 +4,10 @@ import { cn } from '@/lib/cn';
 import {
   exerciseLabel,
   formatCycleDates,
+  muscleLabel,
   type CycleHistoryItem,
+  type MuscleObjectiveOutcome,
+  type MuscleOutcomeStatus,
 } from '@/lib/progress';
 
 interface CyclesViewProps {
@@ -106,7 +109,79 @@ function CycleCard({ item, catalog }: CycleCardProps) {
           </ul>
         </div>
       )}
+
+      {item.objectivesByMuscle !== null && (
+        <ObjectivesOutcomeSection items={item.objectivesByMuscle} />
+      )}
     </Card>
+  );
+}
+
+// =============================================================================
+// Visé vs fait par muscle (Conv #14c-7)
+// =============================================================================
+
+const OBJECTIVE_LABEL: Readonly<Record<string, string>> = {
+  hypertrophie: 'Hypertrophie',
+  force: 'Force',
+  maintien: 'Maintien',
+};
+
+const OUTCOME_LABEL: Readonly<Record<MuscleOutcomeStatus, string>> = {
+  progressed: 'progressé',
+  plateau: 'plateau',
+  undertrained: 'sous-volume',
+  overshoot: 'sur-volume',
+  unknown: '—',
+};
+
+const OUTCOME_TONE: Readonly<Record<MuscleOutcomeStatus, string>> = {
+  progressed: 'text-emerald-400',
+  plateau: 'text-amber-400',
+  undertrained: 'text-sang-400',
+  overshoot: 'text-amber-300',
+  unknown: 'text-anthracite-400',
+};
+
+function ObjectivesOutcomeSection({
+  items,
+}: {
+  readonly items: ReadonlyArray<MuscleObjectiveOutcome>;
+}) {
+  const prioritaires = items.filter((i) => i.status === 'PRIORITAIRE');
+  // On affiche prioritaires d'abord. Le reste reste accessible mais
+  // n'est pas le focus de la comparaison "visé vs fait".
+  const visible = prioritaires.length > 0 ? prioritaires : items;
+  if (visible.length === 0) return null;
+  return (
+    <div
+      className="flex flex-col gap-1 border-t border-anthracite-800 pt-2"
+      data-testid="cycle-objectives-outcome"
+    >
+      <span className="text-[10px] uppercase tracking-wide text-anthracite-300">
+        Visé vs fait
+      </span>
+      <ul className="flex flex-col gap-1">
+        {visible.map((o) => (
+          <li
+            key={o.muscle}
+            className="flex items-center justify-between gap-2 text-xs text-anthracite-200"
+          >
+            <span className="min-w-0 truncate">
+              {muscleLabel(o.muscle)}
+              <span className="ml-1 text-anthracite-400">
+                — {OBJECTIVE_LABEL[o.objective] ?? o.objective}
+              </span>
+            </span>
+            <span
+              className={cn('shrink-0 tabular-nums', OUTCOME_TONE[o.outcome])}
+            >
+              {OUTCOME_LABEL[o.outcome]}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

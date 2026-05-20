@@ -109,6 +109,8 @@ const cycleReviewSchema = z.object({
   PRs: z.array(z.tuple([z.string(), z.number()])),
   suggested_action: z.enum(['continuer', 'ajuster', 'tourner', 'changer']),
   warnings: z.array(z.string()),
+  // Conv #14c-7 — snapshot des objectifs au moment du bilan (optionnel).
+  muscle_goals_snapshot: z.array(muscleGoalSchema).optional(),
 });
 
 const equipmentOverrideSchema = z.object({

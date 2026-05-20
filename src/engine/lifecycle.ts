@@ -183,6 +183,15 @@ export function generateCycleReview(state: UserState, catalog: Catalog): CycleRe
 
   const action = suggestNextAction(progresses, plateau, undertrained, adherence);
 
+  // Conv #14c-7 — snapshot des objectifs muscle au moment du bilan pour
+  // pouvoir afficher "visé vs fait" dans l'historique des cycles.
+  const muscleGoalsSnapshot = Object.values(state.muscle_goals).map((g) => ({
+    muscle: g.muscle,
+    objective: g.objective,
+    status: g.status,
+    priority_rank: g.priority_rank,
+  }));
+
   const review = makeCycleReview({
     cycle_index: state.cycle_index,
     plafonds_progression: plafondsProgression,
@@ -195,6 +204,7 @@ export function generateCycleReview(state: UserState, catalog: Catalog): CycleRe
     PRs: prs,
     suggested_action: action,
     warnings: [],
+    muscle_goals_snapshot: muscleGoalsSnapshot,
   });
 
   // Vigilance : plafond chute > 5 % sur le cycle

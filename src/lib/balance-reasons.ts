@@ -30,27 +30,10 @@ export interface BalanceReason {
   readonly text: string;
 }
 
-const MUSCLE_LABEL_FR: Record<string, string> = {
-  pectoraux: 'les pectoraux',
-  dos_largeur: 'le dos en largeur',
-  dos_epaisseur: 'le dos en épaisseur',
-  trapezes_hauts: 'les trapèzes',
-  quadriceps: 'les quadriceps',
-  ischios: 'les ischio-jambiers',
-  fessiers: 'les fessiers',
-  mollets: 'les mollets',
-  deltos_lateraux: 'les deltoïdes latéraux',
-  deltos_posterieurs: 'les deltoïdes postérieurs',
-  biceps: 'les biceps',
-  triceps: 'les triceps',
-  abdos: 'les abdominaux',
-  obliques: 'les obliques',
-  lombaires: 'les lombaires',
-};
-
-export function muscleLabel(muscle: string): string {
-  return MUSCLE_LABEL_FR[muscle] ?? muscle;
-}
+// Conv #14c-8 — la fonction `muscleLabel` est désormais unifiée dans
+// `lib/progress.ts` (label propre, sans article, "Pectoraux" pas "les
+// pectoraux"). Réexport ici pour ne pas casser les imports historiques.
+export { muscleLabel } from './progress';
 
 function priorityMuscles(priorities: readonly RankedPriority[]): Set<string> {
   return new Set(priorities.map((p) => p.muscle));

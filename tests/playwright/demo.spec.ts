@@ -108,7 +108,7 @@ test('démo Alex : Quitter la démo à mi-parcours restaure l\'état', async ({
 
   await expect(page.getByTestId('btn-exit-demo')).toBeHidden();
   // Une relance redémarre à l'étape 1 (pas de reprise mi-parcours)
-  await page.getByRole('link', { name: 'Programme' }).click();
+  await page.getByRole('link', { name: 'Séances' }).click();
   await expect(page).toHaveURL(/\/programme$/);
   await page.getByTestId('btn-start-demo-from-welcome').click();
   await page.getByTestId('btn-demo-start').click();

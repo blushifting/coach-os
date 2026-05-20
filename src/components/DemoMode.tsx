@@ -70,7 +70,7 @@ const TOUR_STEPS: readonly TourStep[] = [
     route: '/seance/runner',
     title: 'Sa séance du jour',
     body:
-      "Voici l'interface séance. Pour chaque série tu coches dès que tu l'as faite, puis tu indiques ton effort perçu (sur 10). Coach OS apprend ton plafond à chaque saisie — pas besoin de calibration préalable.",
+      "Voici l'interface séance. Pour chaque série tu coches dès que tu l'as faite, puis tu indiques ton effort perçu (sur 10). Kotsh apprend ton plafond à chaque saisie — pas besoin de calibration préalable.",
     pointTo: '[data-testid="set-row-0"]',
     highlight: {
       selector: '[data-testid="set-row-0"]',
@@ -92,7 +92,7 @@ const TOUR_STEPS: readonly TourStep[] = [
     route: '/cycle-bilan',
     title: 'Le bilan de cycle',
     body:
-      "À la fin du cycle, Coach OS résume tes progrès muscle par muscle et te suggère la suite : continuer pareil, ajuster les objectifs, ou déloader. Ici : continuer.",
+      "À la fin du cycle, Kotsh résume tes progrès muscle par muscle et te suggère la suite : continuer pareil, ajuster les objectifs, ou déloader. Ici : continuer.",
     pointTo: '[data-testid="cycle-bilan-page"]',
   },
   {

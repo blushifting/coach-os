@@ -588,9 +588,13 @@ describe('computeE1rmHistory', () => {
 });
 
 describe('helpers formatage', () => {
-  it('muscleLabel : capitalise et remplace _', () => {
-    expect(muscleLabel('deltos_lateraux')).toBe('Deltos Lateraux');
+  it('muscleLabel : capitalise sans article, dictionnaire FR (Conv #14c-8)', () => {
+    expect(muscleLabel('deltos_lateraux')).toBe('Deltoïdes latéraux');
     expect(muscleLabel('pectoraux')).toBe('Pectoraux');
+    expect(muscleLabel('dos_largeur')).toBe('Dos en largeur');
+    expect(muscleLabel('ischios')).toBe('Ischio-jambiers');
+    // Fallback : muscle inconnu → Capitalize naïf.
+    expect(muscleLabel('foo_bar')).toBe('Foo Bar');
   });
 
   it('formatCycleDates : avec fin = plage, sans fin = "depuis le X"', () => {

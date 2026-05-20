@@ -143,7 +143,8 @@ describe('buildDescription', () => {
       muscles: { quadriceps: 1.0, fessiers: 1.0, ischios: 1.0 },
     });
     const d = buildDescription(e);
-    expect(d.toLowerCase()).toMatch(/quadriceps.*fessiers.*et.*ischios/);
+    // Conv #14c-8 : `ischios` → "Ischio-jambiers" (toLowercase = "ischio-jambiers").
+    expect(d.toLowerCase()).toMatch(/quadriceps.*fessiers.*et.*ischio-jambiers/);
   });
 
   it('isolation sans primaire → pas de "Cible"', () => {

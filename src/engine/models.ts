@@ -520,6 +520,13 @@ export interface CycleReview {
   PRs: Array<[string, number]>;
   suggested_action: SuggestedAction;
   warnings: string[];
+  /**
+   * Conv #14c-7 — snapshot de `state.muscle_goals` posé au moment du bilan
+   * (≈ état des objectifs en fin de cycle). Sert à afficher "visé vs fait"
+   * dans l'historique des cycles. Optionnel : les anciens cycles clôturés
+   * avant cette feature n'auront pas ce champ.
+   */
+  muscle_goals_snapshot?: MuscleGoal[];
 }
 
 export interface CycleReviewInput {
@@ -534,13 +541,18 @@ export interface CycleReviewInput {
   PRs: Array<[string, number]>;
   suggested_action: SuggestedAction;
   warnings?: string[];
+  muscle_goals_snapshot?: MuscleGoal[];
 }
 
 export function makeCycleReview(input: CycleReviewInput): CycleReview {
-  return {
+  const out: CycleReview = {
     ...input,
     warnings: input.warnings ?? [],
   };
+  if (input.muscle_goals_snapshot !== undefined) {
+    out.muscle_goals_snapshot = input.muscle_goals_snapshot;
+  }
+  return out;
 }
 
 // =============================================================================

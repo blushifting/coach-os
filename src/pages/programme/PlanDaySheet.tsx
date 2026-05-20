@@ -443,7 +443,7 @@ function CompletedSessionBlock({
                   <span className="min-w-0 truncate">{name}</span>
                   <span className="shrink-0 tabular-nums text-anthracite-300">
                     {r.setsDone}×{repsPerSet} @ {r.avgLoadKg.toFixed(1)} kg ·
-                    RPE {r.avgRpe.toFixed(1)}
+                    effort {r.avgRpe.toFixed(1)}
                   </span>
                 </li>
               );
