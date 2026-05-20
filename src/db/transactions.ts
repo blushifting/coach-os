@@ -120,6 +120,21 @@ export async function txCancelSession(sessionId: number): Promise<void> {
 }
 
 // =============================================================================
+// Conv #14b-3 — Marquer une séance en cours comme sautée.
+// Met `status='skipped'` au lieu de supprimer : la séance reste visible dans
+// le calendrier (case "sautée", barrée), distincte d'une annulation muette.
+// =============================================================================
+
+export async function txSkipSession(sessionId: number): Promise<void> {
+  const db = getDb();
+  await db.transaction('rw', [db.sessions], async () => {
+    const row = await db.sessions.get(sessionId);
+    if (row === undefined) return;
+    await db.sessions.put({ ...row, status: 'skipped' });
+  });
+}
+
+// =============================================================================
 // Commit d'un feedback de séance (avec snapshot e1RM des exos touchés)
 // =============================================================================
 

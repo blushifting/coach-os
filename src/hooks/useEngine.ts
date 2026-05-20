@@ -29,6 +29,7 @@ import { getDb, resetDbInstance } from '@/db';
 import { loadUserState } from '@/db/repositories/userState.repo';
 import {
   txCancelSession,
+  txSkipSession,
   txCommitManualE1rm,
   txCommitSessionFeedback,
   txEndOfCycle,
@@ -352,6 +353,26 @@ export async function cancelPlannedSession(sessionId: number): Promise<void> {
   await refreshHistory();
 }
 
+/**
+ * Conv #14b-3 — Marque la séance actuellement en cours comme sautée. La ligne
+ * session passe en `status='skipped'` (vs delete pour `cancel`), et le store
+ * libère `currentSessionPlan` / `currentSessionId`. La case calendrier
+ * correspondante apparaîtra alors comme "sautée".
+ */
+export async function skipCurrentSession(): Promise<void> {
+  const store = useCoachOsStore.getState();
+  const sessionId = store.currentSessionId;
+  if (sessionId === null) {
+    throw new Error('Aucune séance en cours à sauter.');
+  }
+  await txSkipSession(sessionId);
+  useCoachOsStore.setState({
+    currentSessionPlan: null,
+    currentSessionId: null,
+  });
+  await refreshHistory();
+}
+
 // =============================================================================
 // Saisie manuelle d'un plafond (Conv #12b)
 // =============================================================================
@@ -588,6 +609,7 @@ export interface EngineApi {
   loadPlannedSessionForRunner: typeof loadPlannedSessionForRunner;
   replaceSessionExercise: typeof replaceSessionExercise;
   cancelPlannedSession: typeof cancelPlannedSession;
+  skipCurrentSession: typeof skipCurrentSession;
   recordFeedbackAndCommit: typeof recordFeedbackAndCommit;
   endOfWeek: typeof endOfWeek;
   endOfCycle: typeof endOfCycle;
@@ -611,6 +633,7 @@ export function useEngine(): EngineApi {
       loadPlannedSessionForRunner,
       replaceSessionExercise,
       cancelPlannedSession,
+      skipCurrentSession,
       recordFeedbackAndCommit,
       endOfWeek,
       endOfCycle,

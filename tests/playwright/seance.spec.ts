@@ -68,8 +68,32 @@ test('seance : détail exo affiche le nom + muscles', async ({ page }) => {
   await expect(page.getByTestId('exercise-detail-content')).toBeVisible();
 });
 
-test('seance : /seance redirige vers /programme (compat)', async ({ page }) => {
+test('seance : bouton "Sauter cette séance" marque skipped et rentre au programme', async ({ page }) => {
+  await runOnboardingMinimal(page);
+
+  const future = page.locator('[data-testid^="day-"][data-status="free-future"]').first();
+  const todayDate = await future.getAttribute('data-testid'); // day-YYYY-MM-DD
+  await future.click();
+  await page.getByTestId('plan-slot-0').click();
+  await expect(page).toHaveURL(/\/seance\/runner$/);
+
+  // Sauter avec confirmation
+  await page.getByTestId('btn-skip-session').click();
+  await page.getByRole('button', { name: 'Sauter', exact: true }).click();
+  await expect(page).toHaveURL(/\/programme$/);
+
+  // Le jour est désormais marqué skipped
+  await expect(page.locator(`[data-testid="${todayDate}"]`)).toHaveAttribute(
+    'data-status',
+    'skipped',
+  );
+});
+
+test('seance : /seance ne reste pas /seance (redirect compat)', async ({ page }) => {
   await runOnboardingMinimal(page);
   await page.goto('seance');
-  await expect(page).toHaveURL(/\/programme$/);
+  // Selon que le store rehydrate avant le 1er render, on tombe sur /programme
+  // (cas nominal) ou /welcome (state transitoirement null). Dans les deux cas,
+  // /seance n'est plus une route active après le redirect du router.
+  await expect(page).not.toHaveURL(/\/seance$/);
 });

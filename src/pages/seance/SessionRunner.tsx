@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { Dialog } from '@/components/Dialog';
 import { HelpButton } from '@/components/HelpButton';
 import { ProgressRing } from '@/components/ProgressRing';
 import { cn } from '@/lib/cn';
@@ -44,11 +46,25 @@ export function SessionRunner({
   finishing,
 }: SessionRunnerProps) {
   const engine = useEngine();
+  const navigate = useNavigate();
   const userState = useCoachOsStore((s) => s.userState);
   const snapshots = useCoachOsStore((s) => s.history.e1rmSnapshots);
   const [detail, setDetail] = useState<{ exerciseId: string; itemIndex: number } | null>(null);
+  const [confirmSkip, setConfirmSkip] = useState(false);
+  const [skipping, setSkipping] = useState(false);
   const done = countDoneSets(entries);
   const total = countPlannedSets(entries);
+
+  async function handleSkip() {
+    setConfirmSkip(false);
+    setSkipping(true);
+    try {
+      await engine.skipCurrentSession();
+      navigate('/programme');
+    } finally {
+      setSkipping(false);
+    }
+  }
 
   // Conv #12b — confidence dérivée pour chaque exo, calculée 1× par cycle de
   // render à partir des snapshots datés. Le banner s'affiche au-dessus du
@@ -196,6 +212,39 @@ export function SessionRunner({
       >
         {finishing ? 'Enregistrement…' : 'Terminer la séance'}
       </Button>
+
+      {/* Conv #14b-3 — sortie alternative : marquer la séance comme sautée. */}
+      <Button
+        variant="ghost"
+        size="md"
+        fullWidth
+        onClick={() => setConfirmSkip(true)}
+        disabled={finishing || skipping}
+        data-testid="btn-skip-session"
+      >
+        {skipping ? 'Annulation…' : 'Sauter cette séance'}
+      </Button>
+
+      <Dialog
+        open={confirmSkip}
+        title="Sauter cette séance ?"
+        description={
+          done > 0 ? (
+            <>
+              Tu as déjà coché {done} série(s) — elles ne seront pas enregistrées.
+              La séance restera marquée comme sautée dans le calendrier.
+            </>
+          ) : (
+            <>La séance sera marquée comme sautée dans le calendrier. Tu pourras
+            en redémarrer une depuis le Programme.</>
+          )
+        }
+        confirmLabel="Sauter"
+        cancelLabel="Annuler"
+        destructive
+        onConfirm={handleSkip}
+        onCancel={() => setConfirmSkip(false)}
+      />
 
       <ExerciseDetailSheet
         open={detail !== null}

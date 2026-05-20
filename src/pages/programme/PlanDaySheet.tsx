@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -8,7 +8,20 @@ import { getDb } from '@/db';
 import type { SessionRow } from '@/db/schema';
 import { dateKey, type CalendarDay } from '@/lib/dashboard';
 import { muscleLabel } from '@/lib/progress';
-import type { SessionPlan, WeeklyTemplate } from '@/engine/models';
+import { useCoachOsStore } from '@/store';
+import {
+  detectPeriodicity,
+  dayOfWeekLabel,
+  suggestionForDay,
+  type PeriodicitySuggestion,
+} from '@/lib/periodicity';
+import type { Catalog } from '@/engine/catalog';
+import type {
+  SessionFeedback,
+  SessionPlan,
+  SetFeedback,
+  WeeklyTemplate,
+} from '@/engine/models';
 
 interface PlanDaySheetProps {
   readonly open: boolean;
@@ -34,10 +47,26 @@ interface PlanDaySheetProps {
 export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProps) {
   const engine = useEngine();
   const navigate = useNavigate();
+  const catalog = useCoachOsStore((s) => s.catalog);
+  const feedbacks = useCoachOsStore((s) => s.history.feedbacks);
   const [pending, setPending] = useState<number | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [plannedSession, setPlannedSession] = useState<SessionRow | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Conv #14b-2 — feedback du jour pour status='completed' (mini-bilan inline).
+  const completedFeedback = useMemo(() => {
+    if (day === null || day.status !== 'completed') return null;
+    return feedbacks.find((f) => f.feedback.seance_date === day.date) ?? null;
+  }, [day, feedbacks]);
+
+  // Conv #14b-4 — suggestion de périodicité (jour dominant pour une séance
+  // récurrente). Ne s'affiche que sur les cases `free-future`.
+  const periodicitySuggestion = useMemo(() => {
+    if (day === null) return null;
+    const suggestions = detectPeriodicity(feedbacks);
+    return suggestionForDay(day, suggestions);
+  }, [day, feedbacks]);
 
   // Charge la session planifiée correspondant à ce jour (si statut planned).
   useEffect(() => {
@@ -112,10 +141,11 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
     <Sheet open={open} onClose={onClose} title={formatHumanDate(day.date)}>
       <div className="flex flex-col gap-4" data-testid="plan-day-sheet-content">
         {day.status === 'completed' && (
-          <p className="text-sm text-anthracite-300" data-testid="day-status-text">
-            Séance <strong className="text-white">{day.sessionLabel}</strong> faite.{' '}
-            {day.isDeload && <span className="text-sang-500">(déload)</span>}
-          </p>
+          <CompletedSessionBlock
+            day={day}
+            feedback={completedFeedback?.feedback ?? null}
+            catalog={catalog}
+          />
         )}
 
         {day.status === 'skipped' && (
@@ -147,6 +177,9 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
           <>
             {day.restSuggested && (
               <RestWarning recentMuscles={day.recentMuscles} />
+            )}
+            {periodicitySuggestion !== null && (
+              <PeriodicityNudge suggestion={periodicitySuggestion} />
             )}
             <FreeFutureBlock
               cyclePlan={cyclePlan}
@@ -308,6 +341,147 @@ function FreeFutureBlock({
         ))}
       </ul>
     </div>
+  );
+}
+
+// =============================================================================
+// Bilan inline pour status='completed' (Conv #14b-2)
+// =============================================================================
+
+interface ExerciseRollup {
+  readonly exerciseId: string;
+  readonly setsDone: number;
+  readonly repsTotal: number;
+  readonly avgLoadKg: number;
+  readonly avgRpe: number;
+}
+
+function rollupByExercise(sets: ReadonlyArray<SetFeedback>): ExerciseRollup[] {
+  // Conserve l'ordre d'apparition des exos dans la séance.
+  const buckets = new Map<
+    string,
+    { sets: number; reps: number; loadSum: number; rpeSum: number }
+  >();
+  const order: string[] = [];
+  for (const s of sets) {
+    if (s.reps_done <= 0) continue;
+    let b = buckets.get(s.exercise_id);
+    if (b === undefined) {
+      b = { sets: 0, reps: 0, loadSum: 0, rpeSum: 0 };
+      buckets.set(s.exercise_id, b);
+      order.push(s.exercise_id);
+    }
+    b.sets += 1;
+    b.reps += s.reps_done;
+    b.loadSum += s.load_kg;
+    b.rpeSum += s.rpe_perceived;
+  }
+  return order.map((id) => {
+    const b = buckets.get(id)!;
+    return {
+      exerciseId: id,
+      setsDone: b.sets,
+      repsTotal: b.reps,
+      avgLoadKg: b.loadSum / b.sets,
+      avgRpe: b.rpeSum / b.sets,
+    };
+  });
+}
+
+function totalVolumeKg(sets: ReadonlyArray<SetFeedback>): number {
+  let v = 0;
+  for (const s of sets) {
+    if (s.reps_done <= 0) continue;
+    v += s.load_kg * s.reps_done;
+  }
+  return v;
+}
+
+function CompletedSessionBlock({
+  day,
+  feedback,
+  catalog,
+}: {
+  readonly day: CalendarDay;
+  readonly feedback: SessionFeedback | null;
+  readonly catalog: Catalog | null;
+}) {
+  if (feedback === null) {
+    return (
+      <p className="text-sm text-anthracite-300" data-testid="day-status-text">
+        Séance <strong className="text-white">{day.sessionLabel}</strong> faite.{' '}
+        {day.isDeload && <span className="text-sang-500">(déload)</span>}
+      </p>
+    );
+  }
+  const rollups = rollupByExercise(feedback.sets);
+  const volume = totalVolumeKg(feedback.sets);
+  return (
+    <div className="flex flex-col gap-3" data-testid="day-status-text">
+      <p className="text-sm text-anthracite-100">
+        Séance <strong className="text-white">{feedback.label}</strong> faite
+        {day.isDeload && <span className="text-sang-500"> (déload)</span>}.
+      </p>
+      {rollups.length > 0 && (
+        <Card className="flex flex-col gap-1.5" data-testid="completed-session-rollup">
+          <span className="text-xs uppercase tracking-wide text-anthracite-300">
+            Exos faits
+          </span>
+          <ul className="flex flex-col gap-1 text-sm text-anthracite-100">
+            {rollups.map((r) => {
+              const name =
+                catalog !== null && catalog.has(r.exerciseId)
+                  ? catalog.get(r.exerciseId).nom_fr
+                  : r.exerciseId;
+              const repsPerSet = Math.round(r.repsTotal / r.setsDone);
+              return (
+                <li
+                  key={r.exerciseId}
+                  className="flex items-center justify-between gap-3"
+                  data-testid={`completed-exo-${r.exerciseId}`}
+                >
+                  <span className="min-w-0 truncate">{name}</span>
+                  <span className="shrink-0 tabular-nums text-anthracite-300">
+                    {r.setsDone}×{repsPerSet} @ {r.avgLoadKg.toFixed(1)} kg ·
+                    RPE {r.avgRpe.toFixed(1)}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      )}
+      <div
+        className="flex items-baseline justify-between text-xs text-anthracite-300"
+        data-testid="completed-session-totals"
+      >
+        <span>Volume total</span>
+        <span className="font-display text-sm font-semibold tabular-nums text-white">
+          {Math.round(volume).toLocaleString('fr-FR')} kg
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function PeriodicityNudge({
+  suggestion,
+}: {
+  readonly suggestion: PeriodicitySuggestion;
+}) {
+  return (
+    <Card
+      className="border-sang-700/40 bg-sang-900/15"
+      data-testid="periodicity-nudge"
+    >
+      <p className="text-sm text-anthracite-100">
+        💡 Tu fais souvent{' '}
+        <strong className="text-white">{suggestion.label}</strong> le{' '}
+        <strong className="text-white">{dayOfWeekLabel(suggestion.dayOfWeek)}</strong>
+        {' '}({suggestion.occurrences} fois sur les {suggestion.totalInWindow}{' '}
+        dernières). C'est peut-être le bon créneau pour la (re)programmer.
+      </p>
+    </Card>
   );
 }
 
