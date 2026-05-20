@@ -67,7 +67,7 @@ const TOUR_STEPS: readonly TourStep[] = [
   },
   {
     id: 'seance',
-    route: '/seance',
+    route: '/seance/runner',
     title: 'Sa séance du jour',
     body:
       "Voici l'interface séance. Pour chaque série tu coches dès que tu l'as faite, puis tu indiques ton effort perçu (sur 10). Coach OS apprend ton plafond à chaque saisie — pas besoin de calibration préalable.",

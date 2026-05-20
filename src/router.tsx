@@ -27,12 +27,16 @@ export const router = createBrowserRouter(
           children: [
             { path: 'programme', element: <ProgrammePage /> },
             { path: 'cycle-bilan', element: <CycleBilanPage /> },
-            { path: 'seance', element: <SeancePage /> },
             { path: 'progres', element: <ProgresPage /> },
             { path: 'catalogue', element: <CataloguePage /> },
             { path: 'profil', element: <ProfilPage /> },
           ],
         },
+        // Conv #14b-1 — Le runner sort de l'onglet "Séance" (supprimé de la
+        // TabBar) et vit sur sa propre route plein écran. L'ancien `/seance`
+        // redirige vers `/programme` pour compat des liens externes.
+        { path: 'seance', element: <Navigate to="/programme" replace /> },
+        { path: 'seance/runner', element: <SeancePage /> },
         ...(isDev
           ? [
               { path: 'dev', element: <DevPage /> },

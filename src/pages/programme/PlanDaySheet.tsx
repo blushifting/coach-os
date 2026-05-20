@@ -69,7 +69,7 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
       if (startNow) {
         await engine.generateAndStoreSession({ dayIndex, seanceDate: day.date });
         onClose();
-        navigate('/seance');
+        navigate('/seance/runner');
       } else {
         await engine.planSessionForDay({ dayIndex, seanceDate: day.date });
         onClose();
@@ -87,7 +87,7 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
     try {
       await engine.loadPlannedSessionForRunner(sessionId);
       onClose();
-      navigate('/seance');
+      navigate('/seance/runner');
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {

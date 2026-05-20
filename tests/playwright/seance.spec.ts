@@ -2,14 +2,12 @@ import { expect, test } from '@playwright/test';
 import { runOnboardingMinimal } from './_helpers';
 
 /**
- * E2E Onglet Séance — Conv #5b (helper Séance 0 retiré post-#12a).
+ * E2E runner séance — Conv #14b-1 (onglet "Séance" supprimé).
  *
- * Parcours :
- *  - onboarding minimal → /programme
- *  - /seance État A → bouton "Commencer" → État B (runner)
- *  - valider quelques sets → "Terminer" → bilan (État C)
- *  - retour au programme
- *  - depuis /programme : tap case libre → sheet → "Démarrer" → /seance État B
+ * Le démarrage passe désormais 100 % par le `PlanDaySheet` du Programme :
+ *  - tap sur un jour libre d'aujourd'hui → "Démarrer" → /seance/runner
+ *  - cocher / saisir → "Terminer" → bilan
+ *  - bouton "Retour programme" → /programme
  */
 
 test.beforeEach(async ({ context }) => {
@@ -24,18 +22,17 @@ test.beforeEach(async ({ context }) => {
   });
 });
 
-test('seance : start list → runner → terminer → bilan → retour', async ({ page }) => {
+test('seance : depuis programme → runner → terminer → bilan → retour', async ({ page }) => {
   await runOnboardingMinimal(page);
 
-  // Nav vers /seance via TabBar
-  await page.getByRole('link', { name: 'Séance' }).click();
-  await expect(page).toHaveURL(/\/seance$/);
+  // 1re case "free-future" cliquable (typiquement aujourd'hui après onboarding).
+  const future = page.locator('[data-testid^="day-"][data-status="free-future"]').first();
+  await future.click();
+  await expect(page.getByTestId('plan-day-sheet-content')).toBeVisible();
 
-  // État A : la liste de démarrage
-  await expect(page.getByTestId('start-session-list')).toBeVisible();
-  await page.getByTestId('start-day-0').click();
-
-  // État B : runner
+  // Démarrer le 1er slot du programme (jour d'aujourd'hui → start immédiat).
+  await page.getByTestId('plan-slot-0').click();
+  await expect(page).toHaveURL(/\/seance\/runner$/);
   await expect(page.getByTestId('session-runner')).toBeVisible();
   await expect(page.getByTestId('session-progress')).toBeVisible();
 
@@ -62,24 +59,17 @@ test('seance : start list → runner → terminer → bilan → retour', async (
 
 test('seance : détail exo affiche le nom + muscles', async ({ page }) => {
   await runOnboardingMinimal(page);
-  await page.getByRole('link', { name: 'Séance' }).click();
-  await page.getByTestId('start-day-0').click();
+  const future = page.locator('[data-testid^="day-"][data-status="free-future"]').first();
+  await future.click();
+  await page.getByTestId('plan-slot-0').click();
   await expect(page.getByTestId('session-runner')).toBeVisible();
 
   await page.getByTestId('btn-detail-0').click();
   await expect(page.getByTestId('exercise-detail-content')).toBeVisible();
 });
 
-test('programme → PlanDaySheet → Démarrer → /seance runner', async ({ page }) => {
+test('seance : /seance redirige vers /programme (compat)', async ({ page }) => {
   await runOnboardingMinimal(page);
-
-  // Cherche la 1re case "free-future" cliquable.
-  const future = page.locator('[data-testid^="day-"][data-status="free-future"]').first();
-  await future.click();
-  await expect(page.getByTestId('plan-day-sheet-content')).toBeVisible();
-
-  // Démarrer le 1er slot
-  await page.getByTestId('plan-slot-0').click();
-  await expect(page).toHaveURL(/\/seance$/);
-  await expect(page.getByTestId('session-runner')).toBeVisible();
+  await page.goto('seance');
+  await expect(page).toHaveURL(/\/programme$/);
 });

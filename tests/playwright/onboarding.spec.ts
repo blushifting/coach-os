@@ -22,7 +22,7 @@ test.beforeEach(async ({ context }) => {
   });
 });
 
-test('parcours complet : préset par défaut → custom → /seance', async ({ page }) => {
+test('parcours complet : préset par défaut → custom → /programme', async ({ page }) => {
   await page.goto('onboarding');
   await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '1');
 

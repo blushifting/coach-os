@@ -8,7 +8,6 @@ interface TabDef {
 
 const TABS: readonly TabDef[] = [
   { to: '/programme', label: 'Programme' },
-  { to: '/seance', label: 'Séance' },
   { to: '/progres', label: 'Progrès' },
   { to: '/catalogue', label: 'Catalogue' },
   { to: '/profil', label: 'Profil' },

@@ -49,7 +49,7 @@ test("démo Alex : tour guidé complet 6 étapes + sortie", async ({ page }) => 
   // 4. Suivant → étape 2 = Séance
   await page.getByTestId('btn-tour-next').click();
   await expect(page.getByTestId('demo-tour-step-seance')).toBeVisible();
-  await expect(page).toHaveURL(/\/seance$/);
+  await expect(page).toHaveURL(/\/seance\/runner$/);
 
   // 5. Suivant → étape 3 = Force (sur /progres, sous-onglet "force" auto-cliqué)
   await page.getByTestId('btn-tour-next').click();
@@ -88,6 +88,7 @@ test('démo Alex : bouton Précédent revient à l\'étape précédente', async 
   // Étape 1 → 2 → retour 1 via Précédent
   await page.getByTestId('btn-tour-next').click();
   await expect(page.getByTestId('demo-tour-step-seance')).toBeVisible();
+  await expect(page).toHaveURL(/\/seance\/runner$/);
   await page.getByTestId('btn-tour-prev').click();
   await expect(page.getByTestId('demo-tour-step-programme')).toBeVisible();
   await expect(page).toHaveURL(/\/programme$/);

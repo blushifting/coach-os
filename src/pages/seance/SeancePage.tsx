@@ -10,20 +10,20 @@ import {
   type SessionEntries,
   type SessionSummaryData,
 } from '@/lib/session-runner';
-import { dateKey } from '@/lib/dashboard';
-import { StartSessionList } from './StartSessionList';
 import { SessionRunner } from './SessionRunner';
 import { SessionSummary } from './SessionSummary';
 
 /**
- * Onglet Séance — orchestre 3 états (Conv #5b).
+ * Page runner — route `/seance/runner` (Conv #14b-1).
  *
- *  A. `currentSessionPlan === null` et `summary === null` → liste de démarrage.
- *  B. `currentSessionPlan !== null` → exécution + saisie set par set.
- *  C. `summary !== null` (vient d'être enregistré) → bilan, jusqu'au "Retour".
+ * Sortie de la TabBar : on n'arrive ici qu'après avoir démarré une séance
+ * depuis le `PlanDaySheet` du Programme. Deux états :
  *
- * Source : `recherche/08_ux_decisions.md §3 Onglet Séance` (tuile dashboard,
- * saisie reps + RPE, récap fin de séance).
+ *   B. `currentSessionPlan !== null` → exécution + saisie set par set.
+ *   C. `summary !== null` (vient d'être enregistré) → bilan, jusqu'au "Retour".
+ *
+ * Si on arrive ici sans plan en cours et sans bilan à afficher, on redirige
+ * vers `/programme` (l'utilisateur n'a rien à faire sur cette route).
  */
 export default function SeancePage() {
   const engine = useEngine();
@@ -33,7 +33,6 @@ export default function SeancePage() {
   const feedbacks = useCoachOsStore((s) => s.history.feedbacks);
 
   const [entries, setEntries] = useState<SessionEntries>([]);
-  const [starting, setStarting] = useState(false);
   const [finishing, setFinishing] = useState(false);
   const [summary, setSummary] = useState<{
     label: string;
@@ -46,8 +45,6 @@ export default function SeancePage() {
   //  - Nouveau plan, ou structure différente (nb d'items) : on initialise tout.
   //  - Plan muté (remplacement d'un exo) : on garde les lignes déjà saisies des
   //    exos inchangés et on ne réinitialise QUE les lignes de l'exo remplacé.
-  //    Sinon cocher une série puis remplacer un exo perdrait toutes les saisies
-  //    en cours.
   const prevPlanRef = useRef<SessionPlan | null>(null);
   useEffect(() => {
     const prev = prevPlanRef.current;
@@ -103,29 +100,19 @@ export default function SeancePage() {
     );
   }
 
-  // État A : pas de plan en cours.
-  if (currentSessionPlan === null) {
-    return (
-      <StartSessionList
-        userState={userState}
-        feedbacks={feedbacks}
-        starting={starting}
-        onStart={async (dayIndex) => {
-          setStarting(true);
-          try {
-            await engine.generateAndStoreSession({
-              dayIndex,
-              seanceDate: dateKey(new Date()),
-            });
-          } finally {
-            setStarting(false);
-          }
-        }}
-      />
-    );
+  // Conv #14b-1 — Plus de "État A" (start list) : si pas de plan en cours,
+  // le démarrage se fait depuis le Programme. On rebondit là-bas.
+  // Garde anti-flicker : pendant que `onFinish` est in-flight, le commit
+  // peut clear `currentSessionPlan` AVANT que `setSummary` soit appelé.
+  // On n'a alors ni plan ni summary l'espace d'un render — il ne faut pas
+  // rediriger, sinon on rate le bilan.
+  if (currentSessionPlan === null && !finishing) {
+    return <Navigate to="/programme" replace />;
   }
 
-  // État B : séance en cours.
+  // État B : séance en cours (ou finish in-flight — on garde le runner monté).
+  if (currentSessionPlan === null) return null;
+
   return (
     <SessionRunner
       plan={currentSessionPlan}
