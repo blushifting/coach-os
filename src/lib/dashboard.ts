@@ -176,6 +176,43 @@ export function nextCycleReviewDate(
   return dateKey(addDays(start, CYCLE_LENGTH_WEEKS * 7 - 1));
 }
 
+export interface CycleTimeProgress {
+  /** Durée totale du cycle, en jours (= 35). */
+  readonly daysTotal: number;
+  /** Jours écoulés depuis le début du cycle (saturé à [0, daysTotal]). */
+  readonly daysElapsed: number;
+  /** Jours restants jusqu'au bilan (saturé à [0, daysTotal]). */
+  readonly daysLeft: number;
+  /** Avancement temporel arrondi à l'entier (0..100). */
+  readonly pct: number;
+}
+
+/**
+ * Avancement temporel du cycle courant (Conv #14a) — sert au widget
+ * "Prochain bilan" pour matérialiser visuellement combien de temps s'est
+ * écoulé / combien il en reste. Distinct de `computeCycleProgress`, qui
+ * compte les séances faites (avancement *en travail*, pas *dans le temps*).
+ */
+export function computeCycleTimeProgress(
+  state: Pick<UserState, 'cycle_index'>,
+  cycles: ReadonlyArray<Pick<CycleRow, 'cycle_index' | 'start_date'>>,
+  now: Date = new Date(),
+): CycleTimeProgress | null {
+  const cycle = cycles.find((c) => c.cycle_index === state.cycle_index);
+  if (cycle === undefined) return null;
+  const start = parseDateKey(cycle.start_date);
+  // Normalise "now" en minuit local pour aligner sur les start_date stockés.
+  const today = parseDateKey(dateKey(now));
+  const daysTotal = CYCLE_LENGTH_WEEKS * 7;
+  const rawElapsed = Math.round(
+    (today.getTime() - start.getTime()) / 86400000,
+  );
+  const daysElapsed = Math.max(0, Math.min(daysTotal, rawElapsed));
+  const daysLeft = Math.max(0, daysTotal - daysElapsed);
+  const pct = Math.round((daysElapsed / daysTotal) * 100);
+  return { daysTotal, daysElapsed, daysLeft, pct };
+}
+
 export function isDeloadWeek(weekInCycle: number): boolean {
   return weekInCycle === DELOAD_WEEK_INDEX;
 }

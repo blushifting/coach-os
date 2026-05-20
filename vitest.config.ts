@@ -2,6 +2,11 @@ import { defineConfig } from 'vitest/config';
 import path from 'node:path';
 
 export default defineConfig({
+  define: {
+    // Conv #14a — miroir du define de vite.config.ts pour que les tests
+    // qui importent du code utilisant __APP_VERSION__ ne plantent pas.
+    __APP_VERSION__: JSON.stringify('test'),
+  },
   test: {
     globals: true,
     environment: 'node',

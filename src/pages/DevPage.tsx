@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Sheet } from '@/components/Sheet';
@@ -87,6 +88,18 @@ export default function DevPage() {
           destructive
           confirmLabel="Supprimer"
         />
+      </Section>
+
+      <Section title="Polices titres (Conv #14a-4)">
+        <Card>
+          <p className="mb-2 text-sm text-anthracite-200">
+            Comparateur 4 polices côte à côte (Oswald / Big Shoulders / Barlow
+            Condensed / Inter Tight) sur les contextes typiques de l'app.
+          </p>
+          <Link to="/dev/fonts" className="text-sm text-sang-400 underline">
+            Ouvrir le comparateur →
+          </Link>
+        </Card>
       </Section>
 
       <Section title="HelpButton (13 termes)">

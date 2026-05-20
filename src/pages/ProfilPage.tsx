@@ -16,6 +16,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Dialog } from '@/components/Dialog';
+import { KotshLogo } from '@/components/KotshLogo';
 import {
   importDataFromJson,
   resetApp,
@@ -355,6 +356,14 @@ export default function ProfilPage() {
         onConfirm={handleReset}
         onCancel={() => setConfirmReset(false)}
       />
+
+      <footer
+        className="mt-2 flex items-center justify-center gap-2 pt-4 text-anthracite-400"
+        data-testid="profil-footer"
+      >
+        <KotshLogo className="text-sm" ringClassName="text-sang-700" />
+        <span className="text-xs tabular-nums">v{__APP_VERSION__}</span>
+      </footer>
     </section>
   );
 }

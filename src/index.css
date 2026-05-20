@@ -1,11 +1,10 @@
 /* Inter via Fontsource — chargée à côté du bundle (offline-ready, anticipation
  * Conv #9 PWA). Variable, weights 400/500/600/700, latin uniquement. */
 @import '@fontsource-variable/inter';
-/* Conv #11c — Oswald (font display condensée avec vraies minuscules) pour
- * titres séance, charges, grands chiffres. Weights 500 (semi-bold) + 700
- * (bold) suffisent pour les usages display. */
-@import '@fontsource/oswald/500.css';
-@import '@fontsource/oswald/700.css';
+/* Conv #14a-4 — abandon d'Oswald (trop brutaliste). Inter Tight (variable)
+ * pour les titres : non condensée, serrée, contrepoint sobre. Couvre tous
+ * les poids via la version variable. */
+@import '@fontsource-variable/inter-tight';
 
 @tailwind base;
 @tailwind components;

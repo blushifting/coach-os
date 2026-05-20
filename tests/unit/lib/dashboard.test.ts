@@ -16,6 +16,7 @@ import {
   isCycleFinished,
   isDeloadWeek,
   nextCycleReviewDate,
+  computeCycleTimeProgress,
   parseDateKey,
   plannedSessionsForCycle,
   startOfWeekMonday,
@@ -325,6 +326,46 @@ describe('nextCycleReviewDate', () => {
     ];
     // 2026-05-04 lundi + 35j - 1 = 2026-06-07 (dim)
     expect(nextCycleReviewDate(state, cycles)).toBe('2026-06-07');
+  });
+});
+
+describe('computeCycleTimeProgress', () => {
+  const cycles: CycleRow[] = [
+    { cycle_index: 1, start_date: '2026-05-04', end_date: null, programme_id: null, review: null },
+  ];
+
+  it('null si pas de cycle correspondant', () => {
+    const state = makeState({ cycle_index: 1 });
+    expect(computeCycleTimeProgress(state, [])).toBeNull();
+  });
+
+  it('jour 0 = 0 % et 35 jours restants', () => {
+    const state = makeState({ cycle_index: 1 });
+    const out = computeCycleTimeProgress(state, cycles, new Date(2026, 4, 4));
+    expect(out).toEqual({ daysTotal: 35, daysElapsed: 0, daysLeft: 35, pct: 0 });
+  });
+
+  it('mi-cycle ≈ 50 %', () => {
+    const state = makeState({ cycle_index: 1 });
+    // +17 jours = 17/35 ≈ 49 %
+    const out = computeCycleTimeProgress(state, cycles, new Date(2026, 4, 21));
+    expect(out?.daysElapsed).toBe(17);
+    expect(out?.daysLeft).toBe(18);
+    expect(out?.pct).toBe(49);
+  });
+
+  it('fin de cycle = 100 % saturé', () => {
+    const state = makeState({ cycle_index: 1 });
+    // +35 jours, on dépasse → saturé à daysTotal
+    const out = computeCycleTimeProgress(state, cycles, new Date(2026, 5, 8));
+    expect(out).toEqual({ daysTotal: 35, daysElapsed: 35, daysLeft: 0, pct: 100 });
+  });
+
+  it('avant le début du cycle = 0 % saturé', () => {
+    const state = makeState({ cycle_index: 1 });
+    const out = computeCycleTimeProgress(state, cycles, new Date(2026, 4, 1));
+    expect(out?.daysElapsed).toBe(0);
+    expect(out?.pct).toBe(0);
   });
 });
 

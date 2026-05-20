@@ -1,13 +1,13 @@
 /**
- * Onglet Progrès → vue "Force" (Conv #11g).
+ * Onglet Progrès → vue "Force" (Conv #11g, refonte lisibilité Conv #14a).
  *
  * Pour chaque exercice présent dans l'historique avec ≥ 2 points : nom,
  * plafond actuel (kg), delta % depuis le 1er point, et une mini-courbe
  * SVG (polyline) qui visualise l'évolution chronologique de l'e1RM.
  *
- * Donne enfin la lecture "ma progression en charge dans le temps" qui était
- * dans la maquette v2 (`ForceView` + `MiniLine`) mais qui n'avait pas été
- * portée dans les premières conv.
+ * Refonte #14a-1 : axe Y avec 3 ticks (min/mid/max) en kg, ligne pointillée
+ * au plafond courant, polyline plus épaisse, chips PR sur les points qui
+ * battent le record précédent d'au moins +2 kg.
  */
 
 import { Card } from '@/components/Card';
@@ -70,7 +70,11 @@ export function ForceView({ series }: ForceViewProps) {
               </span>
             </div>
           </header>
-          <MiniLine points={s.points.map((p) => p.e1rm)} />
+          <MiniLine
+            points={s.points.map((p) => p.e1rm)}
+            current={s.current}
+            testId={`force-chart-${s.exercise_id}`}
+          />
         </Card>
       ))}
     </div>
@@ -79,61 +83,189 @@ export function ForceView({ series }: ForceViewProps) {
 
 interface MiniLineProps {
   readonly points: ReadonlyArray<number>;
+  readonly current: number;
+  readonly testId?: string;
 }
 
+/** Saut minimum (en kg) pour qu'un nouveau maximum soit qualifié de PR. */
+const PR_THRESHOLD_KG = 2;
+
 /**
- * Mini-courbe polyline. ViewBox 280×60. Si tous les points sont égaux,
- * on trace une ligne horizontale au milieu. Marges verticales 10 % pour
- * éviter que les points extrêmes touchent les bordures.
+ * Mini-courbe polyline avec axe Y (3 ticks en kg), ligne pointillée au
+ * plafond courant, et chips "PR" sur chaque point qui bat le précédent
+ * record d'au moins +2 kg.
+ *
+ * Layout :
+ *   viewBox 320×80. Marge gauche 28 px réservée aux labels de l'axe Y,
+ *   marge haute 12 px pour laisser respirer les chips PR au-dessus des
+ *   points hauts. Marge basse 4 px pour le tick "min".
  */
-function MiniLine({ points }: MiniLineProps) {
-  const w = 280;
-  const h = 60;
+function MiniLine({ points, current, testId }: MiniLineProps) {
+  const W = 320;
+  const H = 80;
+  const ML = 28; // marge gauche (labels Y)
+  const MT = 12; // marge haute (chips PR)
+  const MB = 4; // marge basse
+  const innerW = W - ML;
+  const innerH = H - MT - MB;
   if (points.length < 2) return null;
+
   const min = Math.min(...points);
   const max = Math.max(...points);
   const range = max - min || 1;
-  const margin = h * 0.1;
-  const innerH = h - margin * 2;
-  const xy = points.map((v, i) => {
-    const x = (i / (points.length - 1)) * w;
-    const y = h - margin - ((v - min) / range) * innerH;
-    return [x, y] as const;
-  });
+
+  /** Projette une valeur e1rm sur la coordonnée Y du SVG. */
+  const yOf = (v: number) => MT + innerH - ((v - min) / range) * innerH;
+  /** Projette l'index temporel sur X. */
+  const xOf = (i: number) => ML + (i / (points.length - 1)) * innerW;
+
+  const xy = points.map((v, i) => [xOf(i), yOf(v)] as const);
   const polyline = xy.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+
+  // Détection des PR : un point est PR s'il dépasse strictement le max
+  // running précédent d'au moins PR_THRESHOLD_KG. Le tout premier point
+  // n'est jamais marqué (pas de "précédent").
+  const prFlags: boolean[] = points.map(() => false);
+  let runningMax = points[0]!;
+  for (let i = 1; i < points.length; i++) {
+    const v = points[i]!;
+    if (v >= runningMax + PR_THRESHOLD_KG) {
+      prFlags[i] = true;
+    }
+    if (v > runningMax) runningMax = v;
+  }
+
+  // Ticks Y : min, mid, max. Si min === max (courbe plate), on tasse les
+  // ticks à la valeur courante pour éviter d'afficher trois fois la même.
+  const flat = range === 1 && min === max;
+  const tickValues = flat
+    ? [min]
+    : [max, (min + max) / 2, min];
+
+  const currentY = yOf(current);
 
   return (
     <svg
-      viewBox={`0 0 ${w} ${h}`}
+      viewBox={`0 0 ${W} ${H}`}
       className="w-full"
-      style={{ height: h }}
+      style={{ height: H }}
       role="img"
       aria-label="Courbe de progression du plafond"
+      data-testid={testId}
     >
+      {/* Axe Y : labels kg + ticks horizontaux discrets. */}
+      {tickValues.map((v, i) => {
+        const y = yOf(v);
+        return (
+          <g key={`tick-${i}`}>
+            <line
+              x1={ML}
+              x2={W}
+              y1={y}
+              y2={y}
+              stroke="rgba(154,160,170,0.10)"
+              strokeWidth={1}
+            />
+            <text
+              x={ML - 4}
+              y={y}
+              textAnchor="end"
+              dominantBaseline="middle"
+              fontSize="9"
+              fill="#9aa0aa"
+              className="tabular-nums"
+            >
+              {v.toFixed(0)} kg
+            </text>
+          </g>
+        );
+      })}
+
+      {/* Ligne pointillée au plafond courant (Conv #14a) — repère visuel
+          du "niveau atteint aujourd'hui". */}
+      <line
+        x1={ML}
+        x2={W}
+        y1={currentY}
+        y2={currentY}
+        stroke="#cc4a59"
+        strokeWidth={1}
+        strokeDasharray="4 3"
+        opacity={0.55}
+        data-testid="force-current-line"
+      />
+
       {/* Conv #11i — tracé animé `draw-line` via pathLength=1 + dasharray=1.
-          La ligne se trace progressivement à l'apparition de la card. */}
+          La ligne se trace progressivement à l'apparition de la card.
+          Conv #14a — strokeWidth passé de 2.5 à 3 pour plus de présence. */}
       <polyline
         points={polyline}
         fill="none"
         stroke="#dc2626"
-        strokeWidth="2.5"
+        strokeWidth="3"
         strokeLinejoin="round"
         strokeLinecap="round"
         pathLength={1}
         className="animate-draw-line"
         style={{ strokeDasharray: 1 }}
       />
+
       {xy.map(([x, y], i) => (
         <circle
           key={i}
           cx={x}
           cy={y}
-          r="2.5"
+          r={prFlags[i] ? 3.5 : 2.5}
           fill="#dc2626"
+          stroke={prFlags[i] ? '#fff' : 'none'}
+          strokeWidth={prFlags[i] ? 1 : 0}
           className="animate-reveal-up"
           style={{ animationDelay: `${500 + i * 60}ms`, animationFillMode: 'both' }}
         />
       ))}
+
+      {/* Chips PR (Conv #14a) — au-dessus de chaque point qui bat le
+          précédent record d'au moins +2 kg. Petit badge sang avec liseré
+          clair pour ressortir sur la polyline. */}
+      {xy.map(([x, y], i) => {
+        if (!prFlags[i]) return null;
+        const chipW = 22;
+        const chipH = 12;
+        const cx = Math.max(ML + chipW / 2, Math.min(W - chipW / 2, x));
+        // Place le chip 8 px au-dessus du point, sans déborder du haut.
+        const cy = Math.max(MT - 4, y - 10);
+        return (
+          <g
+            key={`pr-${i}`}
+            className="animate-reveal-up"
+            style={{ animationDelay: `${700 + i * 60}ms`, animationFillMode: 'both' }}
+            data-testid="force-pr-chip"
+          >
+            <rect
+              x={cx - chipW / 2}
+              y={cy - chipH / 2}
+              width={chipW}
+              height={chipH}
+              rx={3}
+              fill="#7a1a25"
+              stroke="#cc4a59"
+              strokeWidth={0.75}
+            />
+            <text
+              x={cx}
+              y={cy}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fontSize="8"
+              fontWeight="700"
+              fill="#fff"
+              letterSpacing="0.5"
+            >
+              PR
+            </text>
+          </g>
+        );
+      })}
     </svg>
   );
 }

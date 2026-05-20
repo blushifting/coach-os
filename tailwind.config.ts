@@ -15,11 +15,11 @@ const config: Config = {
           'Roboto',
           'sans-serif',
         ],
-        // Conv #11c — police display Oswald (condensée, avec vraies
-        // minuscules contrairement à Anton). Effet "outil de salle de sport"
-        // tout en restant lisible en bas/haut de casse.
+        // Conv #14a-4 — passage à Inter Tight (variable, non condensée mais
+        // serrée). Remplace Oswald (jugé trop brutaliste) tout en gardant un
+        // ton resserré qui se distingue d'Inter en body.
         display: [
-          'Oswald',
+          'Inter Tight Variable',
           'Inter',
           'ui-sans-serif',
           'system-ui',

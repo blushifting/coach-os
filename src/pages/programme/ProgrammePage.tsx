@@ -6,6 +6,7 @@ import { useCoachOsStore } from '@/store';
 import {
   buildCalendarMatrix,
   computeCycleProgress,
+  computeCycleTimeProgress,
   computeStreak,
   computeWeekSessions,
   isCycleFinished,
@@ -44,6 +45,7 @@ export default function ProgrammePage() {
       cycleProgress: computeCycleProgress(userState, history.feedbacks),
       weekSessions: computeWeekSessions(userState, history.feedbacks),
       nextBilanDate: nextCycleReviewDate(userState, history.cycles),
+      cycleTime: computeCycleTimeProgress(userState, history.cycles),
       cycleFinished: isCycleFinished(userState, history.feedbacks),
       matrix: buildCalendarMatrix(
         userState,
@@ -73,6 +75,7 @@ export default function ProgrammePage() {
         cycleProgress={dashboard.cycleProgress}
         weekSessions={dashboard.weekSessions}
         nextBilanDate={dashboard.nextBilanDate}
+        cycleTime={dashboard.cycleTime}
       />
 
       {dashboard.cycleFinished && (

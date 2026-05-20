@@ -10,6 +10,7 @@ import ProgresPage from '@/pages/ProgresPage';
 import CataloguePage from '@/pages/CataloguePage';
 import ProfilPage from '@/pages/ProfilPage';
 import DevPage from '@/pages/DevPage';
+import DevFontsPage from '@/pages/DevFontsPage';
 
 const isDev = import.meta.env.DEV;
 
@@ -32,7 +33,12 @@ export const router = createBrowserRouter(
             { path: 'profil', element: <ProfilPage /> },
           ],
         },
-        ...(isDev ? [{ path: 'dev', element: <DevPage /> }] : []),
+        ...(isDev
+          ? [
+              { path: 'dev', element: <DevPage /> },
+              { path: 'dev/fonts', element: <DevFontsPage /> },
+            ]
+          : []),
         { path: '*', element: <Navigate to="/programme" replace /> },
       ],
     },
