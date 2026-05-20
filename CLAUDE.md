@@ -145,6 +145,75 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
+## État courant — fin Conv #14 (2026-05-20) — V1.0.0
+
+Conv #14 = pass UI / UX en 3 sous-conv (#14a/b/c). Bump **package.json
+1.0.0** : V1 officialisée. La version est affichée en pied de
+`ProfilPage` via `__APP_VERSION__` injecté par Vite `define`.
+
+**#14a — polish visuel** (commit `ff7f002`)
+- Courbes Force (`ForceView`) : axe Y 3 ticks (kg), pointillé sang au
+  plafond courant, polyline épaisseur 3, chips "PR" aux pics ≥ +2 kg.
+- Widgets Programme : flamme stylisée (streak), `ProgressRing`
+  (cette semaine + cycle), barre temporelle (prochain bilan). Nouvelle
+  fonction `computeCycleTimeProgress` (`lib/dashboard.ts`).
+- Logo Kotsh extrait en `components/KotshLogo.tsx` (réutilisable),
+  posé en pied de `ProfilPage` avec `v{__APP_VERSION__}`.
+- Police titres : Oswald → **Inter Tight Variable**
+  (`@fontsource-variable/inter-tight`). Comparateur dev à
+  `/dev/fonts` pour itérations futures.
+
+**#14b — refonte navigation** (commits `2e02f24`, `c894809`)
+- Onglet "Séance" supprimé de la TabBar (5 → 4). Le runner vit
+  désormais sur `/seance/runner` (hors `TabbedLayout`, plein écran).
+  `/seance` redirige vers `/programme` (compat).
+- Démarrage 100 % depuis le `PlanDaySheet` du Programme. Tap sur jour
+  fait → mini-bilan inline (exos / sets / charge / RPE / volume).
+- Bouton **Sauter cette séance** dans `SessionRunner` →
+  `engine.skipCurrentSession` / `txSkipSession` → status='skipped',
+  case calendrier marquée "sautée".
+- Heuristique de périodicité (`lib/periodicity.ts`) : nudge "💡 Tu
+  fais souvent X le mardi" dans `PlanDaySheet` quand le jour matche
+  un slot dominant sur les 6 dernières semaines.
+- `StartSessionList.tsx` supprimé (plus utilisé).
+
+**#14c — lisibilité / contenu** (commit `46f6f1c`)
+- Onglet "Programme" → **"Séances"** (route `/programme` inchangée).
+- Volume Progrès refondu : toggle "Prioritaires" / "Tout afficher",
+  palette anthracite neutre + accent sang sur valeurs hors-cible (plus
+  d'orange).
+- Historique cycles "Visé vs fait" : `CycleReview.muscle_goals_snapshot`
+  optionnel posé au bilan, `CyclesView` affiche `progressed / plateau /
+  sous-volume / sur-volume` par muscle prioritaire.
+- `muscleLabel` unifié dans `lib/progress.ts` (dictionnaire FR sans
+  article : "Pectoraux", "Dos en largeur", "Ischio-jambiers", …).
+  Réexporté depuis `lib/balance-reasons.ts`.
+- Renommage UI **coach-os → Kotsh** dans les phrases user-visibles
+  (DemoMode, AideSheet, filename export `kotsh-export-DATE.json`).
+  Identifiants techniques (`DB_NAME`, `APP_NAME`, paths
+  `/coach-os/`) inchangés.
+- Audit jargon : "RPE" → "effort" dans `PlanDaySheet` (mini-bilan) et
+  `ManualE1rmSheet`. Le glossaire `help-glossary.ts` garde la mention
+  pédagogique.
+
+**Tests fin Conv #14** : **489 Vitest verts**, **21/21 e2e verts**,
+build OK.
+
+**Reliquats post-V1** :
+- Sync cloud Supabase V1.5 (incident iOS Safari).
+- Calibration : recalcul auto charges séries suivantes + écran
+  `Profil > Plafonds`.
+- Estimation plafond par ratios entre exos (bootstrap + reprise).
+- `EquipmentOverride` UI + édition objectifs/programme + bouton
+  "Ajuster" du Bilan + régénération cycle plan.
+- Persistance d'une routine fixée par jour (suite #14b-4 — pour
+  l'instant seul un nudge informatif).
+- Affiner muscles primaires fins (`pec_haut`/`pec_bas`).
+- Champs "exécution" / "erreurs courantes" structurés sur les exos.
+- Parité Python du mapping synonymes (UI-only aujourd'hui).
+
+---
+
 ## Backlog Conv #13 — Tuto démo (persona Alex)
 
 **Objectif** : tutoriel interactif post-onboarding qui montre toutes les
