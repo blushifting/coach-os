@@ -145,12 +145,19 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
-## État courant — fin Conv #16 (2026-05-23) — V1.2.0
+## État courant — fin Conv #14e (2026-05-23) — V1.2.0
+
+> Note de nomenclature : les commits `a475071` et `edbaaf6` portent le
+> label "Conv #16" dans leur message (mismatch — `Conv` correspond à la
+> session Claude Code globale, pas à une phase de travail). Le vrai
+> numéro est **Conv #14e**. Mêmes ajustements pour les commits "Conv
+> #15" (= Conv #14d en réalité).
 
 Itération sur retours d'usage post-V1.1.0. Bump **v1.2.0** (minor :
 nouvelle feature majeure = rééquilibrage durées séances).
 
-**#16-1 — fixes UX démo + SetInput** (commit `a475071`)
+**Conv #14e-1 — fixes UX démo + SetInput** (commit `a475071`,
+labellisé "#16-1")
 - Welcome démo manquante : `resetApp` clear les LS `coach-os.demo-
   welcome-seen` + `coach-os.welcome-dismissed`. `OnboardingPage.
   finalize()` force `resetDemoDismissals()` avant `enterDemoMode`
@@ -169,8 +176,8 @@ nouvelle feature majeure = rééquilibrage durées séances).
   implicite qui repoussait le `+` hors du conteneur
   `overflow-hidden`.
 
-**#16-2 — rééquilibrage généralisé des durées** (commit `c44...`,
-gros chantier)
+**Conv #14e-2 — rééquilibrage généralisé des durées** (intégré au
+commit `edbaaf6`, labellisé "#16-2")
 - Nouveau module `engine/rebalance.ts` appelé en fin de
   `generateCyclePlan` (après `topUpMaintenance` /
   `enforceLengthenedBias` / `resolveCapacityConflict`).
@@ -190,54 +197,54 @@ gros chantier)
 - `target_muscles_focus` volontairement non recalculé (métadonnée
   historique).
 
-**Tests fin Conv #16** : **497 Vitest verts** (+7 sur rebalance),
+**Tests fin Conv #14e** : **497 Vitest verts** (+7 sur rebalance),
 **23/23 e2e verts**.
 
-## État courant — fin Conv #15 (2026-05-22) — V1.1.0
+## État courant — fin Conv #14d (2026-05-22) — V1.1.0
 
 Dump de retours d'usage post-V1 traité en 3 vagues (11 items au total),
 bump **v1.1.0** (minor : changements de comportement visibles).
 
 **Vague 1 — polish UI** (commit `7f3997d`)
 - Header h-12 → h-10 + filigrane K remonté pour aligner avec la barre
-  du step indicator d'onboarding (#15-1).
-- Logo Kotsh footer Profil x2 + padding aéré (#15-2).
+  du step indicator d'onboarding (#14d-1).
+- Logo Kotsh footer Profil x2 + padding aéré (#14d-2).
 - Démo : "ⓘ" devant Étape N/M retiré, Précédent étape 1 rouvre la
   welcome overlay, étape Profil supprimée (5 étapes au lieu de 6).
-  Demo.spec.ts adapté (#15-3).
+  Demo.spec.ts adapté (#14d-3).
 - SetInput refondu en 2 lignes : "Série N" + tick (✓) en haut, valeurs
   reps/kg/effort en bas avec largeurs équilibrées. kg garde flex-1,
-  reps + effort en w-[92px] (#15-4).
+  reps + effort en w-[92px] (#14d-4).
 - CycleBilanPage : "Plafonds — Δ sur le cycle" → "Évolution sur le
   cycle", exId brut → nom français via `exerciseLabel`. Page accepte
   `?cycle=N` pour cibler un bilan archivé. Lien "Voir le bilan complet
-  →" sur chaque CycleCard de Progrès > Cycles (#15-5).
+  →" sur chaque CycleCard de Progrès > Cycles (#14d-5).
 - Infobulle "adherence" dans help-glossary + HelpButton dans
-  ReviewKeyMetrics (#15-6).
+  ReviewKeyMetrics (#14d-6).
 
 **Vague 2 — démo + pédagogie** (commit `afe0314` partie 1)
 - Démo auto-lancée à la fin de l'onboarding via `enterDemoMode()` en
   fin de `finalize()`. LS flag `coach-os.skip-auto-demo` désactive en
-  e2e ; nouveau helper `runOnboardingMinimalWithAutoDemo` (#15-7).
+  e2e ; nouveau helper `runOnboardingMinimalWithAutoDemo` (#14d-7).
 - Bulle démo qui ne masque pas le pointé : `useTargetMeasure`
   détermine si le target est en haut ou en bas de la viewport, le
-  bandeau et la flèche s'adaptent (#15-8).
+  bandeau et la flèche s'adaptent (#14d-8).
 - Nouvelle étape démo "effort" (entre seance et progres-force) avec
   body détaillé. `help-glossary.rpe` enrichi : repères 6-10 + "plus
-  honnête = mieux calibré" (#15-9).
+  honnête = mieux calibré" (#14d-9).
 
 **Vague 3 — fond / algo** (commit `afe0314` partie 2)
 - Calibration range 3-6 → 3-8 reps dans CalibrationBanner. L'algo
   `measurementIsReliable` accepte n_equiv ≤ 15, donc 3-8 reste
-  largement fiable (#15-10).
+  largement fiable (#14d-10).
 - `parameterizeSplit` équilibre désormais sur le **coût estimé en
   exos** par muscle (volume_min + fréquence) plutôt que sur le nombre
   brut de muscles. First-fit decreasing : muscles les plus coûteux
   d'abord. Le scénario full-body 3j default passait de 58/39/31 min
   (max-min 27) à une répartition lissée. Test smoke :
-  `onboarding-preview.test.ts` vérifie max-min ≤ 18 min (#15-11).
+  `onboarding-preview.test.ts` vérifie max-min ≤ 18 min (#14d-11).
 
-**Tests fin Conv #15** : **490 Vitest verts** (+1), **23/23 e2e verts**
+**Tests fin Conv #14d** : **490 Vitest verts** (+1), **23/23 e2e verts**
 (+2 : auto-démo + Précédent étape 1).
 
 ## État courant — fin Conv #14 (2026-05-20) — V1.0.0
