@@ -47,21 +47,30 @@ export function CondensedCalendar({
 
 function Legend() {
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-anthracite-300">
-      <LegendDot color="bg-sang-800/60 border-sang-700" label="fait" />
-      <LegendDot color="bg-anthracite-700 border-anthracite-600" label="prévue" />
-      <LegendDot color="bg-anthracite-800/60 border-dashed border-anthracite-700" label="libre" />
-      <LegendDot color="bg-amber-900/20 border-amber-800/60" label="repos recommandé" />
-      <span className="ml-1">D = déload · Z = repos recommandé</span>
+    <div className="flex flex-col gap-1.5 text-[11px] text-anthracite-200">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+        <LegendDot color="bg-emerald-700/70 border-emerald-500" label="Séance faite" />
+        <LegendDot color="bg-blue-800/60 border-blue-500" label="Séance prévue" />
+        <LegendDot color="bg-anthracite-900/40 border-dashed border-anthracite-700" label="Jour libre" />
+        <LegendDot color="bg-amber-900/40 border-amber-600" label="Repos recommandé (Z)" />
+        <LegendDot color="bg-sang-900/50 border-sang-700" label="Séance sautée" />
+        <LegendDot
+          color="ring-2 ring-sang-500 bg-anthracite-800"
+          label="Aujourd'hui (liseré)"
+        />
+      </div>
+      <span className="text-[10px] text-anthracite-300">
+        D = semaine de déload (charges réduites)
+      </span>
     </div>
   );
 }
 
 function LegendDot({ color, label }: { color: string; label: string }) {
   return (
-    <span className="inline-flex items-center gap-1">
-      <span className={cn('h-3 w-3 rounded border', color)} />
-      {label}
+    <span className="inline-flex items-center gap-1.5">
+      <span className={cn('h-3.5 w-3.5 shrink-0 rounded border', color)} />
+      <span className="leading-tight">{label}</span>
     </span>
   );
 }

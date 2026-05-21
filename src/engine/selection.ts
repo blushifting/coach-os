@@ -30,9 +30,12 @@ export function candidatesForMuscle(
   const preferCompound = options.preferCompound ?? true;
   const excludeIds = options.excludeIds ?? new Set<string>();
   const eq = profile.available_equip;
+  // Conv #15 — fix : un set vide ne court-circuite plus le filtre. On passe
+  // toujours `equip_available` (même vide) : seuls les exos bodyweight purs
+  // (`equip.length === 0`) sont retenus si l'utilisateur ne coche rien.
   let candidates = catalog.filter({
     muscle_primary: muscle,
-    equip_available: eq.size > 0 ? eq : undefined,
+    equip_available: eq,
   });
   candidates = candidates.filter((x) => !excludeIds.has(x.id));
   candidates.sort((a, b) => {
@@ -90,7 +93,8 @@ export function substitute(
   const candidates: Exercise[] = [];
   for (const x of group) {
     if (avoid.has(x.id)) continue;
-    if (eq.size > 0 && x.equip.length > 0) {
+    // Conv #15 — fix : filtre strict même si set vide (bodyweight uniquement).
+    if (x.equip.length > 0) {
       let ok = true;
       for (const e of x.equip) {
         if (!eq.has(e)) {
@@ -160,7 +164,7 @@ export function pickCompoundsForMuscle(
   const cands = catalog
     .filter({
       muscle_primary: muscle,
-      equip_available: eq.size > 0 ? eq : undefined,
+      equip_available: eq,
       compound_only: true,
     })
     .filter((x) => !exclude.has(x.id));
@@ -198,7 +202,7 @@ export function pickIsolationsForMuscle(
   const cands = catalog
     .filter({
       muscle_primary: muscle,
-      equip_available: eq.size > 0 ? eq : undefined,
+      equip_available: eq,
       isolation_only: true,
     })
     .filter((x) => !exclude.has(x.id));

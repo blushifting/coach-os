@@ -173,6 +173,15 @@ export function Step1Profile({ draft, onChange }: Step1Props) {
             />
           ))}
         </div>
+        {draft.equipment.size === 0 && (
+          <p
+            className="mt-3 rounded-lg border border-amber-800/60 bg-amber-900/20 px-3 py-2 text-[11px] leading-relaxed text-amber-100"
+            data-testid="equip-empty-warning"
+          >
+            Aucun équipement coché : seuls les exercices au poids du corps
+            (pompes, tractions, dips libres, fentes…) seront proposés.
+          </p>
+        )}
       </Card>
     </div>
   );

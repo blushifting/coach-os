@@ -70,7 +70,7 @@ const TOUR_STEPS: readonly TourStep[] = [
     route: '/seance/runner',
     title: 'Sa séance du jour',
     body:
-      "Voici l'interface séance. Pour chaque série tu saisis les reps faites, la charge, l'effort ressenti — puis tu coches. Kotsh apprend ton plafond à chaque saisie, pas besoin de calibration préalable.",
+      "Voici l'interface séance. Les valeurs pré-remplies (reps, charge, effort) sont des objectifs à viser — si en réalité tu fais plus ou moins, modifie les chiffres avant de cocher. Kotsh apprend ton plafond à chaque série, pas besoin de calibration préalable.",
     pointTo: '[data-testid="set-row-0"]',
     highlight: {
       selector: '[data-testid="set-row-0"]',

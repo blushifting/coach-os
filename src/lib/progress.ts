@@ -509,6 +509,10 @@ export function computeE1rmHistory(
     const date = fb.feedback.seance_date;
     for (const s of fb.feedback.sets) {
       if (s.reps_done <= 0) continue;
+      // Conv #15 — on ignore les sets de déload (RPE perçu < 6.5) dans la
+      // courbe Force : ils ne reflètent pas le plafond, ils créent un creux
+      // artificiel et illisible en fin de cycle.
+      if (s.rpe_perceived < 6.5) continue;
       let e: number;
       try {
         e = e1rmObserved(s.load_kg, s.reps_done, s.rpe_perceived);

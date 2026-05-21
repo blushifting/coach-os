@@ -22,6 +22,7 @@ import type {
   SessionPlan,
   UserState,
 } from '@/engine/models';
+import type { SessionEntries } from '@/lib/session-runner';
 import type {
   CycleRow,
   E1rmSnapshotRow,
@@ -48,6 +49,14 @@ export interface CoachOsState {
   // --- session UI : séance en cours non encore commitée en DB ---
   currentSessionPlan: SessionPlan | null;
   currentSessionId: number | null;
+  /**
+   * Conv #15 — coches/saisies en cours pour la session active. Sorti du
+   * `useState` local de `SeancePage` pour survivre à la navigation (l'utilisateur
+   * peut consulter le Catalogue ou les Progrès au milieu de la séance sans
+   * perdre ses séries déjà cochées). Reset à chaque changement de
+   * `currentSessionPlan` (nouvelle structure de plan).
+   */
+  currentSessionEntries: SessionEntries | null;
 
   // --- history : vues lues depuis la DB pour l'UI Progrès ---
   history: HistorySnapshot;
@@ -78,6 +87,7 @@ export interface CoachOsActions {
   setUserState: (state: UserState | null) => void;
   setBootstrapped: (b: boolean) => void;
   setCurrentSession: (plan: SessionPlan | null, id: number | null) => void;
+  setCurrentSessionEntries: (entries: SessionEntries | null) => void;
   setHistory: (h: HistorySnapshot) => void;
   setLastEndOfWeek: (r: { event: string; cycle_index: number } | null) => void;
   setLastCycleReview: (r: CycleReview | null) => void;
@@ -96,6 +106,7 @@ const initialState: CoachOsState = {
   userState: null,
   currentSessionPlan: null,
   currentSessionId: null,
+  currentSessionEntries: null,
   history: initialHistory,
   catalog: null,
   bootstrapped: false,
@@ -111,7 +122,11 @@ export const useCoachOsStore = create<CoachOsState & CoachOsActions>((set) => ({
   setUserState: (userState) => set({ userState }),
   setBootstrapped: (bootstrapped) => set({ bootstrapped }),
   setCurrentSession: (currentSessionPlan, currentSessionId) =>
-    set({ currentSessionPlan, currentSessionId }),
+    // Conv #15 — changement de plan ⟹ reset des entries pour éviter d'hériter
+    // de coches d'une session précédente (callers : start/skip/finish session).
+    set({ currentSessionPlan, currentSessionId, currentSessionEntries: null }),
+  setCurrentSessionEntries: (currentSessionEntries) =>
+    set({ currentSessionEntries }),
   setHistory: (history) => set({ history }),
   setLastEndOfWeek: (lastEndOfWeekReview) => set({ lastEndOfWeekReview }),
   setLastCycleReview: (lastCycleReview) => set({ lastCycleReview }),

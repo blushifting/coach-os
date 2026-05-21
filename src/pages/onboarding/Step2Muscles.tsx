@@ -28,6 +28,10 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { MUSCLES, MuscleObjective, type Muscle } from '@/engine/models';
+import {
+  AnatomicalSilhouette,
+  type SilhouetteStatus,
+} from '@/components/AnatomicalSilhouette';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { HelpButton } from '@/components/HelpButton';
@@ -61,6 +65,17 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
     () => MUSCLES.filter((m) => !selectedSet.has(m)),
     [selectedSet],
   );
+
+  // Conv #15 — surlignage silhouette : le top-3 prioritaire est en `highlight`
+  // (rouge plein), les suivants en `ok` (vert atténué) pour différencier
+  // poids relatif sans surcharger. Hors pool = neutre.
+  const silhouetteHighlights = useMemo(() => {
+    const out: Record<string, SilhouetteStatus> = {};
+    draft.priorities.forEach((p, i) => {
+      out[p.muscle] = i < 3 ? 'highlight' : 'ok';
+    });
+    return out;
+  }, [draft.priorities]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -115,6 +130,25 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
         Choisis tes muscles prioritaires et leur ordre d'importance. Glisse pour
         réorganiser. Tu pourras toujours modifier plus tard.
       </p>
+
+      <Card className="flex flex-col items-center gap-2" data-testid="step2-silhouette">
+        <AnatomicalSilhouette
+          view="both"
+          highlights={silhouetteHighlights}
+          className="h-44"
+          testId="onboarding-silhouette"
+        />
+        {draft.priorities.length === 0 ? (
+          <p className="text-[11px] text-anthracite-300">
+            Aperçu des muscles ciblés
+          </p>
+        ) : (
+          <p className="text-[11px] text-anthracite-300">
+            <span className="text-sang-400">Rouge</span> = top 3 ·{' '}
+            <span className="text-emerald-400">Vert</span> = autres
+          </p>
+        )}
+      </Card>
 
       <div className="flex flex-wrap gap-2">
         <Button

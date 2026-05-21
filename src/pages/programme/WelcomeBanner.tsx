@@ -81,6 +81,13 @@ export function WelcomeBanner({ feedbackCount }: WelcomeBannerProps) {
         Tes plafonds s'apprendront automatiquement au fil des séries — pas de
         calibration préalable.
       </p>
+      <p className="rounded-lg border border-sang-800/50 bg-sang-900/15 px-3 py-2 text-[12px] leading-relaxed text-anthracite-100">
+        <span className="font-medium text-sang-300">Comment ça marche : </span>
+        l'app te suggère <span className="font-medium text-white">charge, reps et effort</span> pour chaque série —
+        c'est un <span className="italic">objectif</span>, pas une obligation. Si tu fais plus ou moins en
+        réalité, modifie le résultat saisi : l'algorithme apprend de ton vrai
+        ressenti et ajuste les séries suivantes.
+      </p>
       <div className="mt-2">
         <Button
           variant="secondary"

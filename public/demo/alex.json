@@ -27,14 +27,15 @@
       ]
     },
     "e1rm": {
-      "squat_bb_high": 126.6,
-      "deadlift_conv": 147.1,
-      "bench_bb": 90.2,
-      "ohp_bb_standing": 56.3,
-      "bb_row": 81.8,
-      "pullup_assisted": -20.9,
-      "bb_curl": 35.6,
-      "triceps_pushdown_rope": 26.6
+      "squat_bb_high": 126.7,
+      "deadlift_conv": 158.5,
+      "bench_bb": 93.9,
+      "ohp_bb_standing": 57.6,
+      "bb_row": 84.8,
+      "pullup_assisted": -21.7,
+      "bb_curl": 37.4,
+      "triceps_pushdown_rope": 29.3,
+      "leg_press_45": 211.2
     },
     "k_user": {
       "squat_bb_high": 0.0333,
@@ -44,7 +45,8 @@
       "bb_row": 0.0333,
       "pullup_assisted": 0.0333,
       "bb_curl": 0.0333,
-      "triceps_pushdown_rope": 0.0333
+      "triceps_pushdown_rope": 0.0333,
+      "leg_press_45": 0.0333
     },
     "reps_pr": {},
     "volume_min": {
@@ -317,37 +319,37 @@
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 115,
+            "load_kg": 117.5,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 115,
+            "load_kg": 117.5,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 115,
+            "load_kg": 117.5,
             "rpe_perceived": 7.5
           },
           {
-            "exercise_id": "squat_bb_high",
+            "exercise_id": "leg_press_45",
             "reps_done": 8,
-            "load_kg": 87.5,
+            "load_kg": 145,
             "rpe_perceived": 7.5
           },
           {
-            "exercise_id": "squat_bb_high",
+            "exercise_id": "leg_press_45",
             "reps_done": 8,
-            "load_kg": 87.5,
+            "load_kg": 145,
             "rpe_perceived": 7.5
           },
           {
-            "exercise_id": "squat_bb_high",
+            "exercise_id": "leg_press_45",
             "reps_done": 8,
-            "load_kg": 87.5,
+            "load_kg": 145,
             "rpe_perceived": 7.5
           }
         ],
@@ -500,25 +502,25 @@
           {
             "exercise_id": "bb_row",
             "reps_done": 5,
-            "load_kg": 65,
+            "load_kg": 67.5,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "bb_row",
             "reps_done": 5,
-            "load_kg": 65,
+            "load_kg": 67.5,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "bb_row",
             "reps_done": 5,
-            "load_kg": 65,
+            "load_kg": 67.5,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "bb_row",
             "reps_done": 5,
-            "load_kg": 65,
+            "load_kg": 67.5,
             "rpe_perceived": 7.5
           },
           {
@@ -587,43 +589,43 @@
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 117.5,
+            "load_kg": 120,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 117.5,
+            "load_kg": 120,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 117.5,
+            "load_kg": 120,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 117.5,
+            "load_kg": 120,
             "rpe_perceived": 7.5
           },
           {
-            "exercise_id": "squat_bb_high",
+            "exercise_id": "leg_press_45",
             "reps_done": 8,
-            "load_kg": 87.5,
+            "load_kg": 145,
             "rpe_perceived": 7.5
           },
           {
-            "exercise_id": "squat_bb_high",
+            "exercise_id": "leg_press_45",
             "reps_done": 8,
-            "load_kg": 87.5,
+            "load_kg": 145,
             "rpe_perceived": 7.5
           },
           {
-            "exercise_id": "squat_bb_high",
+            "exercise_id": "leg_press_45",
             "reps_done": 8,
-            "load_kg": 87.5,
+            "load_kg": 145,
             "rpe_perceived": 7.5
           }
         ],
@@ -638,25 +640,25 @@
           {
             "exercise_id": "bench_bb",
             "reps_done": 5,
-            "load_kg": 70,
+            "load_kg": 72.5,
             "rpe_perceived": 6
           },
           {
             "exercise_id": "bench_bb",
             "reps_done": 5,
-            "load_kg": 70,
+            "load_kg": 72.5,
             "rpe_perceived": 6
           },
           {
             "exercise_id": "bench_bb",
             "reps_done": 5,
-            "load_kg": 70,
+            "load_kg": 72.5,
             "rpe_perceived": 6
           },
           {
             "exercise_id": "bench_bb",
             "reps_done": 5,
-            "load_kg": 70,
+            "load_kg": 72.5,
             "rpe_perceived": 6
           },
           {
@@ -725,43 +727,43 @@
           {
             "exercise_id": "squat_bb_high",
             "reps_done": 5,
-            "load_kg": 100,
+            "load_kg": 101.25,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "squat_bb_high",
             "reps_done": 5,
-            "load_kg": 100,
+            "load_kg": 101.25,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "squat_bb_high",
             "reps_done": 5,
-            "load_kg": 100,
+            "load_kg": 101.25,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "squat_bb_high",
             "reps_done": 5,
-            "load_kg": 100,
+            "load_kg": 101.25,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 117.5,
+            "load_kg": 121.25,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 117.5,
+            "load_kg": 121.25,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 117.5,
+            "load_kg": 121.25,
             "rpe_perceived": 7.5
           }
         ],
@@ -863,43 +865,43 @@
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 117.5,
+            "load_kg": 122.5,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 117.5,
+            "load_kg": 122.5,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 117.5,
+            "load_kg": 122.5,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 117.5,
+            "load_kg": 122.5,
             "rpe_perceived": 7.5
           },
           {
-            "exercise_id": "squat_bb_high",
+            "exercise_id": "leg_press_45",
             "reps_done": 8,
-            "load_kg": 87.5,
+            "load_kg": 145,
             "rpe_perceived": 7.5
           },
           {
-            "exercise_id": "squat_bb_high",
+            "exercise_id": "leg_press_45",
             "reps_done": 8,
-            "load_kg": 87.5,
+            "load_kg": 145,
             "rpe_perceived": 7.5
           },
           {
-            "exercise_id": "squat_bb_high",
+            "exercise_id": "leg_press_45",
             "reps_done": 8,
-            "load_kg": 87.5,
+            "load_kg": 145,
             "rpe_perceived": 7.5
           }
         ],
@@ -1007,49 +1009,49 @@
           {
             "exercise_id": "squat_bb_high",
             "reps_done": 7,
-            "load_kg": 102.5,
+            "load_kg": 105,
             "rpe_perceived": 9.5
           },
           {
             "exercise_id": "squat_bb_high",
             "reps_done": 7,
-            "load_kg": 102.5,
+            "load_kg": 105,
             "rpe_perceived": 9.5
           },
           {
             "exercise_id": "squat_bb_high",
             "reps_done": 7,
-            "load_kg": 102.5,
+            "load_kg": 105,
             "rpe_perceived": 9.5
           },
           {
             "exercise_id": "squat_bb_high",
             "reps_done": 7,
-            "load_kg": 102.5,
+            "load_kg": 105,
             "rpe_perceived": 9.5
           },
           {
             "exercise_id": "squat_bb_high",
             "reps_done": 7,
-            "load_kg": 102.5,
+            "load_kg": 105,
             "rpe_perceived": 9.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 117.5,
+            "load_kg": 125,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 117.5,
+            "load_kg": 125,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 117.5,
+            "load_kg": 125,
             "rpe_perceived": 7.5
           }
         ],
@@ -1157,49 +1159,49 @@
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 120,
+            "load_kg": 125,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 120,
+            "load_kg": 125,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 120,
+            "load_kg": 125,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 120,
+            "load_kg": 125,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 120,
+            "load_kg": 125,
             "rpe_perceived": 7.5
           },
           {
-            "exercise_id": "squat_bb_high",
+            "exercise_id": "leg_press_45",
             "reps_done": 8,
-            "load_kg": 90,
+            "load_kg": 150,
             "rpe_perceived": 7.5
           },
           {
-            "exercise_id": "squat_bb_high",
+            "exercise_id": "leg_press_45",
             "reps_done": 8,
-            "load_kg": 90,
+            "load_kg": 150,
             "rpe_perceived": 7.5
           },
           {
-            "exercise_id": "squat_bb_high",
+            "exercise_id": "leg_press_45",
             "reps_done": 8,
-            "load_kg": 90,
+            "load_kg": 150,
             "rpe_perceived": 7.5
           }
         ],
@@ -1283,13 +1285,13 @@
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 87.5,
+            "load_kg": 90,
             "rpe_perceived": 5.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 87.5,
+            "load_kg": 90,
             "rpe_perceived": 5.5
           }
         ],
@@ -1304,13 +1306,13 @@
           {
             "exercise_id": "bb_row",
             "reps_done": 5,
-            "load_kg": 47.5,
+            "load_kg": 50,
             "rpe_perceived": 5.5
           },
           {
             "exercise_id": "bb_row",
             "reps_done": 5,
-            "load_kg": 47.5,
+            "load_kg": 50,
             "rpe_perceived": 5.5
           },
           {
@@ -1328,13 +1330,13 @@
           {
             "exercise_id": "bb_curl",
             "reps_done": 5,
-            "load_kg": 20,
+            "load_kg": 22.5,
             "rpe_perceived": 5.5
           },
           {
             "exercise_id": "bb_curl",
             "reps_done": 5,
-            "load_kg": 20,
+            "load_kg": 22.5,
             "rpe_perceived": 5.5
           },
           {
@@ -1361,25 +1363,25 @@
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 87.5,
+            "load_kg": 90,
             "rpe_perceived": 5.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 87.5,
+            "load_kg": 90,
             "rpe_perceived": 5.5
           },
           {
-            "exercise_id": "squat_bb_high",
+            "exercise_id": "leg_press_45",
             "reps_done": 5,
-            "load_kg": 75,
+            "load_kg": 125,
             "rpe_perceived": 5.5
           },
           {
-            "exercise_id": "squat_bb_high",
+            "exercise_id": "leg_press_45",
             "reps_done": 5,
-            "load_kg": 75,
+            "load_kg": 125,
             "rpe_perceived": 5.5
           }
         ],
@@ -1493,19 +1495,19 @@
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 120,
+            "load_kg": 125,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 120,
+            "load_kg": 125,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 120,
+            "load_kg": 125,
             "rpe_perceived": 7.5
           }
         ],
@@ -1556,19 +1558,19 @@
           {
             "exercise_id": "bb_curl",
             "reps_done": 8,
-            "load_kg": 25,
+            "load_kg": 27.5,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "bb_curl",
             "reps_done": 8,
-            "load_kg": 25,
+            "load_kg": 27.5,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "bb_curl",
             "reps_done": 8,
-            "load_kg": 25,
+            "load_kg": 27.5,
             "rpe_perceived": 7.5
           },
           {
@@ -1601,37 +1603,37 @@
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 120,
+            "load_kg": 127.5,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 120,
+            "load_kg": 127.5,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 120,
+            "load_kg": 127.5,
             "rpe_perceived": 7.5
           },
           {
-            "exercise_id": "front_squat",
+            "exercise_id": "leg_press_45",
             "reps_done": 8,
-            "load_kg": 35,
+            "load_kg": 150,
             "rpe_perceived": 7.5
           },
           {
-            "exercise_id": "front_squat",
+            "exercise_id": "leg_press_45",
             "reps_done": 8,
-            "load_kg": 35,
+            "load_kg": 150,
             "rpe_perceived": 7.5
           },
           {
-            "exercise_id": "front_squat",
+            "exercise_id": "leg_press_45",
             "reps_done": 8,
-            "load_kg": 35,
+            "load_kg": 150,
             "rpe_perceived": 7.5
           }
         ],
@@ -1646,25 +1648,25 @@
           {
             "exercise_id": "bench_bb",
             "reps_done": 7,
-            "load_kg": 72.5,
+            "load_kg": 75,
             "rpe_perceived": 9.5
           },
           {
             "exercise_id": "bench_bb",
             "reps_done": 7,
-            "load_kg": 72.5,
+            "load_kg": 75,
             "rpe_perceived": 9.5
           },
           {
             "exercise_id": "bench_bb",
             "reps_done": 7,
-            "load_kg": 72.5,
+            "load_kg": 75,
             "rpe_perceived": 9.5
           },
           {
             "exercise_id": "bench_bb",
             "reps_done": 7,
-            "load_kg": 72.5,
+            "load_kg": 75,
             "rpe_perceived": 9.5
           },
           {
@@ -1757,19 +1759,19 @@
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 120,
+            "load_kg": 127.5,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 120,
+            "load_kg": 127.5,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 120,
+            "load_kg": 127.5,
             "rpe_perceived": 7.5
           }
         ],
@@ -1784,25 +1786,25 @@
           {
             "exercise_id": "bb_row",
             "reps_done": 5,
-            "load_kg": 67.5,
+            "load_kg": 70,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "bb_row",
             "reps_done": 5,
-            "load_kg": 67.5,
+            "load_kg": 70,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "bb_row",
             "reps_done": 5,
-            "load_kg": 67.5,
+            "load_kg": 70,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "bb_row",
             "reps_done": 5,
-            "load_kg": 67.5,
+            "load_kg": 70,
             "rpe_perceived": 7.5
           },
           {
@@ -1826,19 +1828,19 @@
           {
             "exercise_id": "bb_curl",
             "reps_done": 8,
-            "load_kg": 25,
+            "load_kg": 27.5,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "bb_curl",
             "reps_done": 8,
-            "load_kg": 25,
+            "load_kg": 27.5,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "bb_curl",
             "reps_done": 8,
-            "load_kg": 25,
+            "load_kg": 27.5,
             "rpe_perceived": 7.5
           },
           {
@@ -1871,43 +1873,43 @@
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 4,
-            "load_kg": 120,
+            "load_kg": 130,
             "rpe_perceived": 9
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 4,
-            "load_kg": 120,
+            "load_kg": 130,
             "rpe_perceived": 9
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 4,
-            "load_kg": 120,
+            "load_kg": 130,
             "rpe_perceived": 9
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 4,
-            "load_kg": 120,
+            "load_kg": 130,
             "rpe_perceived": 9
           },
           {
-            "exercise_id": "front_squat",
+            "exercise_id": "leg_press_45",
             "reps_done": 7,
-            "load_kg": 35,
+            "load_kg": 150,
             "rpe_perceived": 9
           },
           {
-            "exercise_id": "front_squat",
+            "exercise_id": "leg_press_45",
             "reps_done": 7,
-            "load_kg": 35,
+            "load_kg": 150,
             "rpe_perceived": 9
           },
           {
-            "exercise_id": "front_squat",
+            "exercise_id": "leg_press_45",
             "reps_done": 7,
-            "load_kg": 35,
+            "load_kg": 150,
             "rpe_perceived": 9
           }
         ],
@@ -2033,19 +2035,19 @@
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 120,
+            "load_kg": 127.5,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 120,
+            "load_kg": 127.5,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 120,
+            "load_kg": 127.5,
             "rpe_perceived": 7.5
           }
         ],
@@ -2060,43 +2062,43 @@
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 120,
+            "load_kg": 130,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 120,
+            "load_kg": 130,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 120,
+            "load_kg": 130,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
-            "load_kg": 120,
+            "load_kg": 130,
             "rpe_perceived": 7.5
           },
           {
-            "exercise_id": "front_squat",
+            "exercise_id": "leg_press_45",
             "reps_done": 8,
-            "load_kg": 35,
+            "load_kg": 150,
             "rpe_perceived": 7.5
           },
           {
-            "exercise_id": "front_squat",
+            "exercise_id": "leg_press_45",
             "reps_done": 8,
-            "load_kg": 35,
+            "load_kg": 150,
             "rpe_perceived": 7.5
           },
           {
-            "exercise_id": "front_squat",
+            "exercise_id": "leg_press_45",
             "reps_done": 8,
-            "load_kg": 35,
+            "load_kg": 150,
             "rpe_perceived": 7.5
           }
         ],
@@ -2111,31 +2113,31 @@
           {
             "exercise_id": "bench_bb",
             "reps_done": 5,
-            "load_kg": 75,
+            "load_kg": 77.5,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "bench_bb",
             "reps_done": 5,
-            "load_kg": 75,
+            "load_kg": 77.5,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "bench_bb",
             "reps_done": 5,
-            "load_kg": 75,
+            "load_kg": 77.5,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "bench_bb",
             "reps_done": 5,
-            "load_kg": 75,
+            "load_kg": 77.5,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "bench_bb",
             "reps_done": 5,
-            "load_kg": 75,
+            "load_kg": 77.5,
             "rpe_perceived": 7.5
           },
           {
@@ -2490,7 +2492,7 @@
               "progression_rule": "double_progression"
             },
             {
-              "exercise_id": "front_squat",
+              "exercise_id": "leg_press_45",
               "base_sets": 3,
               "progression": [
                 3,
@@ -2844,49 +2846,49 @@
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 115,
+                  "load_kg": 117.5,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 115,
+                  "load_kg": 117.5,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 115,
+                  "load_kg": 117.5,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 }
               ]
             },
             {
-              "exercise_id": "squat_bb_high",
+              "exercise_id": "leg_press_45",
               "sets": [
                 {
-                  "exercise_id": "squat_bb_high",
+                  "exercise_id": "leg_press_45",
                   "reps": 8,
-                  "load_kg": 87.5,
+                  "load_kg": 145,
                   "rpe_target": 7.5,
-                  "rest_s": 240
+                  "rest_s": 180
                 },
                 {
-                  "exercise_id": "squat_bb_high",
+                  "exercise_id": "leg_press_45",
                   "reps": 8,
-                  "load_kg": 87.5,
+                  "load_kg": 145,
                   "rpe_target": 7.5,
-                  "rest_s": 240
+                  "rest_s": 180
                 },
                 {
-                  "exercise_id": "squat_bb_high",
+                  "exercise_id": "leg_press_45",
                   "reps": 8,
-                  "load_kg": 87.5,
+                  "load_kg": 145,
                   "rpe_target": 7.5,
-                  "rest_s": 240
+                  "rest_s": 180
                 }
               ]
             }
@@ -3117,28 +3119,28 @@
                 {
                   "exercise_id": "bb_row",
                   "reps": 5,
-                  "load_kg": 65,
+                  "load_kg": 67.5,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 },
                 {
                   "exercise_id": "bb_row",
                   "reps": 5,
-                  "load_kg": 65,
+                  "load_kg": 67.5,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 },
                 {
                   "exercise_id": "bb_row",
                   "reps": 5,
-                  "load_kg": 65,
+                  "load_kg": 67.5,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 },
                 {
                   "exercise_id": "bb_row",
                   "reps": 5,
-                  "load_kg": 65,
+                  "load_kg": 67.5,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 }
@@ -3245,56 +3247,56 @@
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 117.5,
+                  "load_kg": 120,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 117.5,
+                  "load_kg": 120,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 117.5,
+                  "load_kg": 120,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 117.5,
+                  "load_kg": 120,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 }
               ]
             },
             {
-              "exercise_id": "squat_bb_high",
+              "exercise_id": "leg_press_45",
               "sets": [
                 {
-                  "exercise_id": "squat_bb_high",
+                  "exercise_id": "leg_press_45",
                   "reps": 8,
-                  "load_kg": 87.5,
+                  "load_kg": 145,
                   "rpe_target": 7.5,
-                  "rest_s": 240
+                  "rest_s": 180
                 },
                 {
-                  "exercise_id": "squat_bb_high",
+                  "exercise_id": "leg_press_45",
                   "reps": 8,
-                  "load_kg": 87.5,
+                  "load_kg": 145,
                   "rpe_target": 7.5,
-                  "rest_s": 240
+                  "rest_s": 180
                 },
                 {
-                  "exercise_id": "squat_bb_high",
+                  "exercise_id": "leg_press_45",
                   "reps": 8,
-                  "load_kg": 87.5,
+                  "load_kg": 145,
                   "rpe_target": 7.5,
-                  "rest_s": 240
+                  "rest_s": 180
                 }
               ]
             }
@@ -3321,28 +3323,28 @@
                 {
                   "exercise_id": "bench_bb",
                   "reps": 5,
-                  "load_kg": 70,
+                  "load_kg": 72.5,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 },
                 {
                   "exercise_id": "bench_bb",
                   "reps": 5,
-                  "load_kg": 70,
+                  "load_kg": 72.5,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 },
                 {
                   "exercise_id": "bench_bb",
                   "reps": 5,
-                  "load_kg": 70,
+                  "load_kg": 72.5,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 },
                 {
                   "exercise_id": "bench_bb",
                   "reps": 5,
-                  "load_kg": 70,
+                  "load_kg": 72.5,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 }
@@ -3482,21 +3484,21 @@
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 117.5,
+                  "load_kg": 120,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 117.5,
+                  "load_kg": 120,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 117.5,
+                  "load_kg": 120,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 }
@@ -3653,56 +3655,56 @@
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 117.5,
+                  "load_kg": 122.5,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 117.5,
+                  "load_kg": 122.5,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 117.5,
+                  "load_kg": 122.5,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 117.5,
+                  "load_kg": 122.5,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 }
               ]
             },
             {
-              "exercise_id": "squat_bb_high",
+              "exercise_id": "leg_press_45",
               "sets": [
                 {
-                  "exercise_id": "squat_bb_high",
+                  "exercise_id": "leg_press_45",
                   "reps": 8,
-                  "load_kg": 87.5,
+                  "load_kg": 145,
                   "rpe_target": 7.5,
-                  "rest_s": 240
+                  "rest_s": 180
                 },
                 {
-                  "exercise_id": "squat_bb_high",
+                  "exercise_id": "leg_press_45",
                   "reps": 8,
-                  "load_kg": 87.5,
+                  "load_kg": 145,
                   "rpe_target": 7.5,
-                  "rest_s": 240
+                  "rest_s": 180
                 },
                 {
-                  "exercise_id": "squat_bb_high",
+                  "exercise_id": "leg_press_45",
                   "reps": 8,
-                  "load_kg": 87.5,
+                  "load_kg": 145,
                   "rpe_target": 7.5,
-                  "rest_s": 240
+                  "rest_s": 180
                 }
               ]
             }
@@ -3904,21 +3906,21 @@
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 117.5,
+                  "load_kg": 122.5,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 117.5,
+                  "load_kg": 122.5,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 117.5,
+                  "load_kg": 122.5,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 }
@@ -4082,63 +4084,63 @@
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 125,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 125,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 125,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 125,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 125,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 }
               ]
             },
             {
-              "exercise_id": "squat_bb_high",
+              "exercise_id": "leg_press_45",
               "sets": [
                 {
-                  "exercise_id": "squat_bb_high",
+                  "exercise_id": "leg_press_45",
                   "reps": 8,
-                  "load_kg": 90,
+                  "load_kg": 150,
                   "rpe_target": 7.5,
-                  "rest_s": 240
+                  "rest_s": 180
                 },
                 {
-                  "exercise_id": "squat_bb_high",
+                  "exercise_id": "leg_press_45",
                   "reps": 8,
-                  "load_kg": 90,
+                  "load_kg": 150,
                   "rpe_target": 7.5,
-                  "rest_s": 240
+                  "rest_s": 180
                 },
                 {
-                  "exercise_id": "squat_bb_high",
+                  "exercise_id": "leg_press_45",
                   "reps": 8,
-                  "load_kg": 90,
+                  "load_kg": 150,
                   "rpe_target": 7.5,
-                  "rest_s": 240
+                  "rest_s": 180
                 }
               ]
             }
@@ -4277,14 +4279,14 @@
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 87.5,
+                  "load_kg": 90,
                   "rpe_target": 6,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 87.5,
+                  "load_kg": 90,
                   "rpe_target": 6,
                   "rest_s": 240
                 }
@@ -4313,14 +4315,14 @@
                 {
                   "exercise_id": "bb_row",
                   "reps": 5,
-                  "load_kg": 47.5,
+                  "load_kg": 50,
                   "rpe_target": 6,
                   "rest_s": 180
                 },
                 {
                   "exercise_id": "bb_row",
                   "reps": 5,
-                  "load_kg": 47.5,
+                  "load_kg": 50,
                   "rpe_target": 6,
                   "rest_s": 180
                 }
@@ -4351,14 +4353,14 @@
                 {
                   "exercise_id": "bb_curl",
                   "reps": 5,
-                  "load_kg": 20,
+                  "load_kg": 22.5,
                   "rpe_target": 6,
                   "rest_s": 90
                 },
                 {
                   "exercise_id": "bb_curl",
                   "reps": 5,
-                  "load_kg": 20,
+                  "load_kg": 22.5,
                   "rpe_target": 6,
                   "rest_s": 90
                 }
@@ -4406,35 +4408,35 @@
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 87.5,
+                  "load_kg": 90,
                   "rpe_target": 6,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 87.5,
+                  "load_kg": 90,
                   "rpe_target": 6,
                   "rest_s": 240
                 }
               ]
             },
             {
-              "exercise_id": "squat_bb_high",
+              "exercise_id": "leg_press_45",
               "sets": [
                 {
-                  "exercise_id": "squat_bb_high",
+                  "exercise_id": "leg_press_45",
                   "reps": 5,
-                  "load_kg": 75,
+                  "load_kg": 125,
                   "rpe_target": 6,
-                  "rest_s": 240
+                  "rest_s": 180
                 },
                 {
-                  "exercise_id": "squat_bb_high",
+                  "exercise_id": "leg_press_45",
                   "reps": 5,
-                  "load_kg": 75,
+                  "load_kg": 125,
                   "rpe_target": 6,
-                  "rest_s": 240
+                  "rest_s": 180
                 }
               ]
             }
@@ -4608,21 +4610,21 @@
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 125,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 125,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 125,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 }
@@ -4703,21 +4705,21 @@
                 {
                   "exercise_id": "bb_curl",
                   "reps": 8,
-                  "load_kg": 25,
+                  "load_kg": 27.5,
                   "rpe_target": 7.5,
                   "rest_s": 90
                 },
                 {
                   "exercise_id": "bb_curl",
                   "reps": 8,
-                  "load_kg": 25,
+                  "load_kg": 27.5,
                   "rpe_target": 7.5,
                   "rest_s": 90
                 },
                 {
                   "exercise_id": "bb_curl",
                   "reps": 8,
-                  "load_kg": 25,
+                  "load_kg": 27.5,
                   "rpe_target": 7.5,
                   "rest_s": 90
                 }
@@ -4772,49 +4774,49 @@
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 127.5,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 127.5,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 127.5,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 }
               ]
             },
             {
-              "exercise_id": "front_squat",
+              "exercise_id": "leg_press_45",
               "sets": [
                 {
-                  "exercise_id": "front_squat",
+                  "exercise_id": "leg_press_45",
                   "reps": 8,
-                  "load_kg": 35,
+                  "load_kg": 150,
                   "rpe_target": 7.5,
-                  "rest_s": 240
+                  "rest_s": 180
                 },
                 {
-                  "exercise_id": "front_squat",
+                  "exercise_id": "leg_press_45",
                   "reps": 8,
-                  "load_kg": 35,
+                  "load_kg": 150,
                   "rpe_target": 7.5,
-                  "rest_s": 240
+                  "rest_s": 180
                 },
                 {
-                  "exercise_id": "front_squat",
+                  "exercise_id": "leg_press_45",
                   "reps": 8,
-                  "load_kg": 35,
+                  "load_kg": 150,
                   "rpe_target": 7.5,
-                  "rest_s": 240
+                  "rest_s": 180
                 }
               ]
             }
@@ -4841,28 +4843,28 @@
                 {
                   "exercise_id": "bench_bb",
                   "reps": 5,
-                  "load_kg": 72.5,
+                  "load_kg": 75,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 },
                 {
                   "exercise_id": "bench_bb",
                   "reps": 5,
-                  "load_kg": 72.5,
+                  "load_kg": 75,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 },
                 {
                   "exercise_id": "bench_bb",
                   "reps": 5,
-                  "load_kg": 72.5,
+                  "load_kg": 75,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 },
                 {
                   "exercise_id": "bench_bb",
                   "reps": 5,
-                  "load_kg": 72.5,
+                  "load_kg": 75,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 }
@@ -5002,21 +5004,21 @@
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 127.5,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 127.5,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 127.5,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 }
@@ -5045,28 +5047,28 @@
                 {
                   "exercise_id": "bb_row",
                   "reps": 5,
-                  "load_kg": 67.5,
+                  "load_kg": 70,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 },
                 {
                   "exercise_id": "bb_row",
                   "reps": 5,
-                  "load_kg": 67.5,
+                  "load_kg": 70,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 },
                 {
                   "exercise_id": "bb_row",
                   "reps": 5,
-                  "load_kg": 67.5,
+                  "load_kg": 70,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 },
                 {
                   "exercise_id": "bb_row",
                   "reps": 5,
-                  "load_kg": 67.5,
+                  "load_kg": 70,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 }
@@ -5104,21 +5106,21 @@
                 {
                   "exercise_id": "bb_curl",
                   "reps": 8,
-                  "load_kg": 25,
+                  "load_kg": 27.5,
                   "rpe_target": 7.5,
                   "rest_s": 90
                 },
                 {
                   "exercise_id": "bb_curl",
                   "reps": 8,
-                  "load_kg": 25,
+                  "load_kg": 27.5,
                   "rpe_target": 7.5,
                   "rest_s": 90
                 },
                 {
                   "exercise_id": "bb_curl",
                   "reps": 8,
-                  "load_kg": 25,
+                  "load_kg": 27.5,
                   "rpe_target": 7.5,
                   "rest_s": 90
                 }
@@ -5173,56 +5175,56 @@
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 130,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 130,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 130,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 130,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 }
               ]
             },
             {
-              "exercise_id": "front_squat",
+              "exercise_id": "leg_press_45",
               "sets": [
                 {
-                  "exercise_id": "front_squat",
+                  "exercise_id": "leg_press_45",
                   "reps": 8,
-                  "load_kg": 35,
+                  "load_kg": 150,
                   "rpe_target": 7.5,
-                  "rest_s": 240
+                  "rest_s": 180
                 },
                 {
-                  "exercise_id": "front_squat",
+                  "exercise_id": "leg_press_45",
                   "reps": 8,
-                  "load_kg": 35,
+                  "load_kg": 150,
                   "rpe_target": 7.5,
-                  "rest_s": 240
+                  "rest_s": 180
                 },
                 {
-                  "exercise_id": "front_squat",
+                  "exercise_id": "leg_press_45",
                   "reps": 8,
-                  "load_kg": 35,
+                  "load_kg": 150,
                   "rpe_target": 7.5,
-                  "rest_s": 240
+                  "rest_s": 180
                 }
               ]
             }
@@ -5410,21 +5412,21 @@
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 127.5,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 127.5,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 127.5,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 }
@@ -5453,28 +5455,28 @@
                 {
                   "exercise_id": "bb_row",
                   "reps": 5,
-                  "load_kg": 67.5,
+                  "load_kg": 70,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 },
                 {
                   "exercise_id": "bb_row",
                   "reps": 5,
-                  "load_kg": 67.5,
+                  "load_kg": 70,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 },
                 {
                   "exercise_id": "bb_row",
                   "reps": 5,
-                  "load_kg": 67.5,
+                  "load_kg": 70,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 },
                 {
                   "exercise_id": "bb_row",
                   "reps": 5,
-                  "load_kg": 67.5,
+                  "load_kg": 70,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 }
@@ -5512,21 +5514,21 @@
                 {
                   "exercise_id": "bb_curl",
                   "reps": 8,
-                  "load_kg": 25,
+                  "load_kg": 27.5,
                   "rpe_target": 7.5,
                   "rest_s": 90
                 },
                 {
                   "exercise_id": "bb_curl",
                   "reps": 8,
-                  "load_kg": 25,
+                  "load_kg": 27.5,
                   "rpe_target": 7.5,
                   "rest_s": 90
                 },
                 {
                   "exercise_id": "bb_curl",
                   "reps": 8,
-                  "load_kg": 25,
+                  "load_kg": 27.5,
                   "rpe_target": 7.5,
                   "rest_s": 90
                 }
@@ -5581,56 +5583,56 @@
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 130,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 130,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 130,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
-                  "load_kg": 120,
+                  "load_kg": 130,
                   "rpe_target": 7.5,
                   "rest_s": 240
                 }
               ]
             },
             {
-              "exercise_id": "front_squat",
+              "exercise_id": "leg_press_45",
               "sets": [
                 {
-                  "exercise_id": "front_squat",
+                  "exercise_id": "leg_press_45",
                   "reps": 8,
-                  "load_kg": 35,
+                  "load_kg": 150,
                   "rpe_target": 7.5,
-                  "rest_s": 240
+                  "rest_s": 180
                 },
                 {
-                  "exercise_id": "front_squat",
+                  "exercise_id": "leg_press_45",
                   "reps": 8,
-                  "load_kg": 35,
+                  "load_kg": 150,
                   "rpe_target": 7.5,
-                  "rest_s": 240
+                  "rest_s": 180
                 },
                 {
-                  "exercise_id": "front_squat",
+                  "exercise_id": "leg_press_45",
                   "reps": 8,
-                  "load_kg": 35,
+                  "load_kg": 150,
                   "rpe_target": 7.5,
-                  "rest_s": 240
+                  "rest_s": 180
                 }
               ]
             }
@@ -5657,35 +5659,35 @@
                 {
                   "exercise_id": "bench_bb",
                   "reps": 5,
-                  "load_kg": 75,
+                  "load_kg": 77.5,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 },
                 {
                   "exercise_id": "bench_bb",
                   "reps": 5,
-                  "load_kg": 75,
+                  "load_kg": 77.5,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 },
                 {
                   "exercise_id": "bench_bb",
                   "reps": 5,
-                  "load_kg": 75,
+                  "load_kg": 77.5,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 },
                 {
                   "exercise_id": "bench_bb",
                   "reps": 5,
-                  "load_kg": 75,
+                  "load_kg": 77.5,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 },
                 {
                   "exercise_id": "bench_bb",
                   "reps": 5,
-                  "load_kg": 75,
+                  "load_kg": 77.5,
                   "rpe_target": 7.5,
                   "rest_s": 180
                 }
@@ -6023,37 +6025,37 @@
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 115,
+              "load_kg": 117.5,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 115,
+              "load_kg": 117.5,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 115,
+              "load_kg": 117.5,
               "rpe_perceived": 7.5
             },
             {
-              "exercise_id": "squat_bb_high",
+              "exercise_id": "leg_press_45",
               "reps_done": 8,
-              "load_kg": 87.5,
+              "load_kg": 145,
               "rpe_perceived": 7.5
             },
             {
-              "exercise_id": "squat_bb_high",
+              "exercise_id": "leg_press_45",
               "reps_done": 8,
-              "load_kg": 87.5,
+              "load_kg": 145,
               "rpe_perceived": 7.5
             },
             {
-              "exercise_id": "squat_bb_high",
+              "exercise_id": "leg_press_45",
               "reps_done": 8,
-              "load_kg": 87.5,
+              "load_kg": 145,
               "rpe_perceived": 7.5
             }
           ],
@@ -6230,25 +6232,25 @@
             {
               "exercise_id": "bb_row",
               "reps_done": 5,
-              "load_kg": 65,
+              "load_kg": 67.5,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "bb_row",
               "reps_done": 5,
-              "load_kg": 65,
+              "load_kg": 67.5,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "bb_row",
               "reps_done": 5,
-              "load_kg": 65,
+              "load_kg": 67.5,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "bb_row",
               "reps_done": 5,
-              "load_kg": 65,
+              "load_kg": 67.5,
               "rpe_perceived": 7.5
             },
             {
@@ -6325,43 +6327,43 @@
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 117.5,
+              "load_kg": 120,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 117.5,
+              "load_kg": 120,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 117.5,
+              "load_kg": 120,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 117.5,
+              "load_kg": 120,
               "rpe_perceived": 7.5
             },
             {
-              "exercise_id": "squat_bb_high",
+              "exercise_id": "leg_press_45",
               "reps_done": 8,
-              "load_kg": 87.5,
+              "load_kg": 145,
               "rpe_perceived": 7.5
             },
             {
-              "exercise_id": "squat_bb_high",
+              "exercise_id": "leg_press_45",
               "reps_done": 8,
-              "load_kg": 87.5,
+              "load_kg": 145,
               "rpe_perceived": 7.5
             },
             {
-              "exercise_id": "squat_bb_high",
+              "exercise_id": "leg_press_45",
               "reps_done": 8,
-              "load_kg": 87.5,
+              "load_kg": 145,
               "rpe_perceived": 7.5
             }
           ],
@@ -6384,25 +6386,25 @@
             {
               "exercise_id": "bench_bb",
               "reps_done": 5,
-              "load_kg": 70,
+              "load_kg": 72.5,
               "rpe_perceived": 6
             },
             {
               "exercise_id": "bench_bb",
               "reps_done": 5,
-              "load_kg": 70,
+              "load_kg": 72.5,
               "rpe_perceived": 6
             },
             {
               "exercise_id": "bench_bb",
               "reps_done": 5,
-              "load_kg": 70,
+              "load_kg": 72.5,
               "rpe_perceived": 6
             },
             {
               "exercise_id": "bench_bb",
               "reps_done": 5,
-              "load_kg": 70,
+              "load_kg": 72.5,
               "rpe_perceived": 6
             },
             {
@@ -6479,43 +6481,43 @@
             {
               "exercise_id": "squat_bb_high",
               "reps_done": 5,
-              "load_kg": 100,
+              "load_kg": 101.25,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "squat_bb_high",
               "reps_done": 5,
-              "load_kg": 100,
+              "load_kg": 101.25,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "squat_bb_high",
               "reps_done": 5,
-              "load_kg": 100,
+              "load_kg": 101.25,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "squat_bb_high",
               "reps_done": 5,
-              "load_kg": 100,
+              "load_kg": 101.25,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 117.5,
+              "load_kg": 121.25,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 117.5,
+              "load_kg": 121.25,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 117.5,
+              "load_kg": 121.25,
               "rpe_perceived": 7.5
             }
           ],
@@ -6633,43 +6635,43 @@
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 117.5,
+              "load_kg": 122.5,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 117.5,
+              "load_kg": 122.5,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 117.5,
+              "load_kg": 122.5,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 117.5,
+              "load_kg": 122.5,
               "rpe_perceived": 7.5
             },
             {
-              "exercise_id": "squat_bb_high",
+              "exercise_id": "leg_press_45",
               "reps_done": 8,
-              "load_kg": 87.5,
+              "load_kg": 145,
               "rpe_perceived": 7.5
             },
             {
-              "exercise_id": "squat_bb_high",
+              "exercise_id": "leg_press_45",
               "reps_done": 8,
-              "load_kg": 87.5,
+              "load_kg": 145,
               "rpe_perceived": 7.5
             },
             {
-              "exercise_id": "squat_bb_high",
+              "exercise_id": "leg_press_45",
               "reps_done": 8,
-              "load_kg": 87.5,
+              "load_kg": 145,
               "rpe_perceived": 7.5
             }
           ],
@@ -6793,49 +6795,49 @@
             {
               "exercise_id": "squat_bb_high",
               "reps_done": 7,
-              "load_kg": 102.5,
+              "load_kg": 105,
               "rpe_perceived": 9.5
             },
             {
               "exercise_id": "squat_bb_high",
               "reps_done": 7,
-              "load_kg": 102.5,
+              "load_kg": 105,
               "rpe_perceived": 9.5
             },
             {
               "exercise_id": "squat_bb_high",
               "reps_done": 7,
-              "load_kg": 102.5,
+              "load_kg": 105,
               "rpe_perceived": 9.5
             },
             {
               "exercise_id": "squat_bb_high",
               "reps_done": 7,
-              "load_kg": 102.5,
+              "load_kg": 105,
               "rpe_perceived": 9.5
             },
             {
               "exercise_id": "squat_bb_high",
               "reps_done": 7,
-              "load_kg": 102.5,
+              "load_kg": 105,
               "rpe_perceived": 9.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 117.5,
+              "load_kg": 125,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 117.5,
+              "load_kg": 125,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 117.5,
+              "load_kg": 125,
               "rpe_perceived": 7.5
             }
           ],
@@ -6959,49 +6961,49 @@
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 120,
+              "load_kg": 125,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 120,
+              "load_kg": 125,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 120,
+              "load_kg": 125,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 120,
+              "load_kg": 125,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 120,
+              "load_kg": 125,
               "rpe_perceived": 7.5
             },
             {
-              "exercise_id": "squat_bb_high",
+              "exercise_id": "leg_press_45",
               "reps_done": 8,
-              "load_kg": 90,
+              "load_kg": 150,
               "rpe_perceived": 7.5
             },
             {
-              "exercise_id": "squat_bb_high",
+              "exercise_id": "leg_press_45",
               "reps_done": 8,
-              "load_kg": 90,
+              "load_kg": 150,
               "rpe_perceived": 7.5
             },
             {
-              "exercise_id": "squat_bb_high",
+              "exercise_id": "leg_press_45",
               "reps_done": 8,
-              "load_kg": 90,
+              "load_kg": 150,
               "rpe_perceived": 7.5
             }
           ],
@@ -7101,13 +7103,13 @@
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 87.5,
+              "load_kg": 90,
               "rpe_perceived": 5.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 87.5,
+              "load_kg": 90,
               "rpe_perceived": 5.5
             }
           ],
@@ -7130,13 +7132,13 @@
             {
               "exercise_id": "bb_row",
               "reps_done": 5,
-              "load_kg": 47.5,
+              "load_kg": 50,
               "rpe_perceived": 5.5
             },
             {
               "exercise_id": "bb_row",
               "reps_done": 5,
-              "load_kg": 47.5,
+              "load_kg": 50,
               "rpe_perceived": 5.5
             },
             {
@@ -7154,13 +7156,13 @@
             {
               "exercise_id": "bb_curl",
               "reps_done": 5,
-              "load_kg": 20,
+              "load_kg": 22.5,
               "rpe_perceived": 5.5
             },
             {
               "exercise_id": "bb_curl",
               "reps_done": 5,
-              "load_kg": 20,
+              "load_kg": 22.5,
               "rpe_perceived": 5.5
             },
             {
@@ -7195,25 +7197,25 @@
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 87.5,
+              "load_kg": 90,
               "rpe_perceived": 5.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 87.5,
+              "load_kg": 90,
               "rpe_perceived": 5.5
             },
             {
-              "exercise_id": "squat_bb_high",
+              "exercise_id": "leg_press_45",
               "reps_done": 5,
-              "load_kg": 75,
+              "load_kg": 125,
               "rpe_perceived": 5.5
             },
             {
-              "exercise_id": "squat_bb_high",
+              "exercise_id": "leg_press_45",
               "reps_done": 5,
-              "load_kg": 75,
+              "load_kg": 125,
               "rpe_perceived": 5.5
             }
           ],
@@ -7343,19 +7345,19 @@
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 120,
+              "load_kg": 125,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 120,
+              "load_kg": 125,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 120,
+              "load_kg": 125,
               "rpe_perceived": 7.5
             }
           ],
@@ -7414,19 +7416,19 @@
             {
               "exercise_id": "bb_curl",
               "reps_done": 8,
-              "load_kg": 25,
+              "load_kg": 27.5,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "bb_curl",
               "reps_done": 8,
-              "load_kg": 25,
+              "load_kg": 27.5,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "bb_curl",
               "reps_done": 8,
-              "load_kg": 25,
+              "load_kg": 27.5,
               "rpe_perceived": 7.5
             },
             {
@@ -7467,37 +7469,37 @@
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 120,
+              "load_kg": 127.5,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 120,
+              "load_kg": 127.5,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 120,
+              "load_kg": 127.5,
               "rpe_perceived": 7.5
             },
             {
-              "exercise_id": "front_squat",
+              "exercise_id": "leg_press_45",
               "reps_done": 8,
-              "load_kg": 35,
+              "load_kg": 150,
               "rpe_perceived": 7.5
             },
             {
-              "exercise_id": "front_squat",
+              "exercise_id": "leg_press_45",
               "reps_done": 8,
-              "load_kg": 35,
+              "load_kg": 150,
               "rpe_perceived": 7.5
             },
             {
-              "exercise_id": "front_squat",
+              "exercise_id": "leg_press_45",
               "reps_done": 8,
-              "load_kg": 35,
+              "load_kg": 150,
               "rpe_perceived": 7.5
             }
           ],
@@ -7520,25 +7522,25 @@
             {
               "exercise_id": "bench_bb",
               "reps_done": 7,
-              "load_kg": 72.5,
+              "load_kg": 75,
               "rpe_perceived": 9.5
             },
             {
               "exercise_id": "bench_bb",
               "reps_done": 7,
-              "load_kg": 72.5,
+              "load_kg": 75,
               "rpe_perceived": 9.5
             },
             {
               "exercise_id": "bench_bb",
               "reps_done": 7,
-              "load_kg": 72.5,
+              "load_kg": 75,
               "rpe_perceived": 9.5
             },
             {
               "exercise_id": "bench_bb",
               "reps_done": 7,
-              "load_kg": 72.5,
+              "load_kg": 75,
               "rpe_perceived": 9.5
             },
             {
@@ -7639,19 +7641,19 @@
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 120,
+              "load_kg": 127.5,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 120,
+              "load_kg": 127.5,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 120,
+              "load_kg": 127.5,
               "rpe_perceived": 7.5
             }
           ],
@@ -7674,25 +7676,25 @@
             {
               "exercise_id": "bb_row",
               "reps_done": 5,
-              "load_kg": 67.5,
+              "load_kg": 70,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "bb_row",
               "reps_done": 5,
-              "load_kg": 67.5,
+              "load_kg": 70,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "bb_row",
               "reps_done": 5,
-              "load_kg": 67.5,
+              "load_kg": 70,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "bb_row",
               "reps_done": 5,
-              "load_kg": 67.5,
+              "load_kg": 70,
               "rpe_perceived": 7.5
             },
             {
@@ -7716,19 +7718,19 @@
             {
               "exercise_id": "bb_curl",
               "reps_done": 8,
-              "load_kg": 25,
+              "load_kg": 27.5,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "bb_curl",
               "reps_done": 8,
-              "load_kg": 25,
+              "load_kg": 27.5,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "bb_curl",
               "reps_done": 8,
-              "load_kg": 25,
+              "load_kg": 27.5,
               "rpe_perceived": 7.5
             },
             {
@@ -7769,43 +7771,43 @@
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 4,
-              "load_kg": 120,
+              "load_kg": 130,
               "rpe_perceived": 9
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 4,
-              "load_kg": 120,
+              "load_kg": 130,
               "rpe_perceived": 9
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 4,
-              "load_kg": 120,
+              "load_kg": 130,
               "rpe_perceived": 9
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 4,
-              "load_kg": 120,
+              "load_kg": 130,
               "rpe_perceived": 9
             },
             {
-              "exercise_id": "front_squat",
+              "exercise_id": "leg_press_45",
               "reps_done": 7,
-              "load_kg": 35,
+              "load_kg": 150,
               "rpe_perceived": 9
             },
             {
-              "exercise_id": "front_squat",
+              "exercise_id": "leg_press_45",
               "reps_done": 7,
-              "load_kg": 35,
+              "load_kg": 150,
               "rpe_perceived": 9
             },
             {
-              "exercise_id": "front_squat",
+              "exercise_id": "leg_press_45",
               "reps_done": 7,
-              "load_kg": 35,
+              "load_kg": 150,
               "rpe_perceived": 9
             }
           ],
@@ -7947,19 +7949,19 @@
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 120,
+              "load_kg": 127.5,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 120,
+              "load_kg": 127.5,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 120,
+              "load_kg": 127.5,
               "rpe_perceived": 7.5
             }
           ],
@@ -7982,43 +7984,43 @@
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 120,
+              "load_kg": 130,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 120,
+              "load_kg": 130,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 120,
+              "load_kg": 130,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
-              "load_kg": 120,
+              "load_kg": 130,
               "rpe_perceived": 7.5
             },
             {
-              "exercise_id": "front_squat",
+              "exercise_id": "leg_press_45",
               "reps_done": 8,
-              "load_kg": 35,
+              "load_kg": 150,
               "rpe_perceived": 7.5
             },
             {
-              "exercise_id": "front_squat",
+              "exercise_id": "leg_press_45",
               "reps_done": 8,
-              "load_kg": 35,
+              "load_kg": 150,
               "rpe_perceived": 7.5
             },
             {
-              "exercise_id": "front_squat",
+              "exercise_id": "leg_press_45",
               "reps_done": 8,
-              "load_kg": 35,
+              "load_kg": 150,
               "rpe_perceived": 7.5
             }
           ],
@@ -8041,31 +8043,31 @@
             {
               "exercise_id": "bench_bb",
               "reps_done": 5,
-              "load_kg": 75,
+              "load_kg": 77.5,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "bench_bb",
               "reps_done": 5,
-              "load_kg": 75,
+              "load_kg": 77.5,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "bench_bb",
               "reps_done": 5,
-              "load_kg": 75,
+              "load_kg": 77.5,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "bench_bb",
               "reps_done": 5,
-              "load_kg": 75,
+              "load_kg": 77.5,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "bench_bb",
               "reps_done": 5,
-              "load_kg": 75,
+              "load_kg": 77.5,
               "rpe_perceived": 7.5
             },
             {
@@ -8149,7 +8151,7 @@
         "id": 3,
         "date": "2026-03-23",
         "exercise_id": "bench_bb",
-        "e1rm": 85.3,
+        "e1rm": 85.9,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
@@ -8157,7 +8159,7 @@
         "id": 4,
         "date": "2026-03-23",
         "exercise_id": "ohp_bb_standing",
-        "e1rm": 55.2,
+        "e1rm": 55.6,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
@@ -8173,7 +8175,7 @@
         "id": 6,
         "date": "2026-03-23",
         "exercise_id": "pullup_assisted",
-        "e1rm": -20.1,
+        "e1rm": -20.2,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
@@ -8189,44 +8191,52 @@
         "id": 8,
         "date": "2026-03-23",
         "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 25.1,
+        "e1rm": 25.3,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
       {
         "id": 9,
-        "date": "2026-03-25",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 120.5,
+        "date": "2026-03-23",
+        "exercise_id": "leg_press_45",
+        "e1rm": 200,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
       {
         "id": 10,
         "date": "2026-03-25",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 140.6,
+        "exercise_id": "squat_bb_high",
+        "e1rm": 121.2,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
       {
         "id": 11,
         "date": "2026-03-25",
-        "exercise_id": "bench_bb",
-        "e1rm": 85.3,
+        "exercise_id": "deadlift_conv",
+        "e1rm": 141.4,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
       {
         "id": 12,
         "date": "2026-03-25",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 55.2,
+        "exercise_id": "bench_bb",
+        "e1rm": 85.9,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
       {
         "id": 13,
+        "date": "2026-03-25",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 55.6,
+        "cycle_index": 1,
+        "week_in_cycle": 1
+      },
+      {
+        "id": 14,
         "date": "2026-03-25",
         "exercise_id": "bb_row",
         "e1rm": 80,
@@ -8234,15 +8244,15 @@
         "week_in_cycle": 1
       },
       {
-        "id": 14,
+        "id": 15,
         "date": "2026-03-25",
         "exercise_id": "pullup_assisted",
-        "e1rm": -20.1,
+        "e1rm": -20.2,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
       {
-        "id": 15,
+        "id": 16,
         "date": "2026-03-25",
         "exercise_id": "bb_curl",
         "e1rm": 35,
@@ -8250,1930 +8260,2178 @@
         "week_in_cycle": 1
       },
       {
-        "id": 16,
+        "id": 17,
         "date": "2026-03-25",
         "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 25.1,
-        "cycle_index": 1,
-        "week_in_cycle": 1
-      },
-      {
-        "id": 17,
-        "date": "2026-03-27",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 120.5,
+        "e1rm": 25.3,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
       {
         "id": 18,
-        "date": "2026-03-27",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 140.6,
+        "date": "2026-03-25",
+        "exercise_id": "leg_press_45",
+        "e1rm": 200,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
       {
         "id": 19,
         "date": "2026-03-27",
-        "exercise_id": "bench_bb",
-        "e1rm": 85.3,
+        "exercise_id": "squat_bb_high",
+        "e1rm": 121.2,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
       {
         "id": 20,
         "date": "2026-03-27",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 55.2,
+        "exercise_id": "deadlift_conv",
+        "e1rm": 141.4,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
       {
         "id": 21,
         "date": "2026-03-27",
-        "exercise_id": "bb_row",
-        "e1rm": 80.3,
+        "exercise_id": "bench_bb",
+        "e1rm": 85.9,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
       {
         "id": 22,
         "date": "2026-03-27",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.2,
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 55.6,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
       {
         "id": 23,
         "date": "2026-03-27",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.1,
+        "exercise_id": "bb_row",
+        "e1rm": 80.8,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
       {
         "id": 24,
         "date": "2026-03-27",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 25.2,
+        "exercise_id": "pullup_assisted",
+        "e1rm": -20.4,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
       {
         "id": 25,
-        "date": "2026-03-28",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 121,
+        "date": "2026-03-27",
+        "exercise_id": "bb_curl",
+        "e1rm": 35.4,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
       {
         "id": 26,
-        "date": "2026-03-28",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 141.2,
+        "date": "2026-03-27",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 25.6,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
       {
         "id": 27,
-        "date": "2026-03-28",
-        "exercise_id": "bench_bb",
-        "e1rm": 85.3,
+        "date": "2026-03-27",
+        "exercise_id": "leg_press_45",
+        "e1rm": 200,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
       {
         "id": 28,
         "date": "2026-03-28",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 55.2,
+        "exercise_id": "squat_bb_high",
+        "e1rm": 121.2,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
       {
         "id": 29,
         "date": "2026-03-28",
-        "exercise_id": "bb_row",
-        "e1rm": 80.3,
+        "exercise_id": "deadlift_conv",
+        "e1rm": 142.8,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
       {
         "id": 30,
         "date": "2026-03-28",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.2,
+        "exercise_id": "bench_bb",
+        "e1rm": 85.9,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
       {
         "id": 31,
         "date": "2026-03-28",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.1,
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 55.6,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
       {
         "id": 32,
         "date": "2026-03-28",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 25.2,
+        "exercise_id": "bb_row",
+        "e1rm": 80.8,
         "cycle_index": 1,
         "week_in_cycle": 1
       },
       {
         "id": 33,
-        "date": "2026-03-30",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 121,
+        "date": "2026-03-28",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -20.4,
         "cycle_index": 1,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 34,
-        "date": "2026-03-30",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 141.2,
+        "date": "2026-03-28",
+        "exercise_id": "bb_curl",
+        "e1rm": 35.4,
         "cycle_index": 1,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 35,
-        "date": "2026-03-30",
-        "exercise_id": "bench_bb",
-        "e1rm": 85.6,
+        "date": "2026-03-28",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 25.6,
         "cycle_index": 1,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 36,
-        "date": "2026-03-30",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 55.4,
+        "date": "2026-03-28",
+        "exercise_id": "leg_press_45",
+        "e1rm": 202,
         "cycle_index": 1,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 37,
         "date": "2026-03-30",
-        "exercise_id": "bb_row",
-        "e1rm": 80.3,
+        "exercise_id": "squat_bb_high",
+        "e1rm": 121.2,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 38,
         "date": "2026-03-30",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.3,
+        "exercise_id": "deadlift_conv",
+        "e1rm": 142.8,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 39,
         "date": "2026-03-30",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.1,
+        "exercise_id": "bench_bb",
+        "e1rm": 86.8,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 40,
         "date": "2026-03-30",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 25.3,
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 56.2,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 41,
-        "date": "2026-04-01",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 121.5,
+        "date": "2026-03-30",
+        "exercise_id": "bb_row",
+        "e1rm": 80.8,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 42,
-        "date": "2026-04-01",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 141.8,
+        "date": "2026-03-30",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -20.6,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 43,
-        "date": "2026-04-01",
-        "exercise_id": "bench_bb",
-        "e1rm": 85.6,
+        "date": "2026-03-30",
+        "exercise_id": "bb_curl",
+        "e1rm": 35.4,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 44,
-        "date": "2026-04-01",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 55.4,
+        "date": "2026-03-30",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 25.9,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 45,
-        "date": "2026-04-01",
-        "exercise_id": "bb_row",
-        "e1rm": 80.3,
+        "date": "2026-03-30",
+        "exercise_id": "leg_press_45",
+        "e1rm": 202,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 46,
         "date": "2026-04-01",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.3,
+        "exercise_id": "squat_bb_high",
+        "e1rm": 122.4,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 47,
         "date": "2026-04-01",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.1,
+        "exercise_id": "deadlift_conv",
+        "e1rm": 144.2,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 48,
         "date": "2026-04-01",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 25.3,
+        "exercise_id": "bench_bb",
+        "e1rm": 86.8,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 49,
-        "date": "2026-04-03",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 121.5,
+        "date": "2026-04-01",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 56.2,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 50,
-        "date": "2026-04-03",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 141.8,
+        "date": "2026-04-01",
+        "exercise_id": "bb_row",
+        "e1rm": 80.8,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 51,
-        "date": "2026-04-03",
-        "exercise_id": "bench_bb",
-        "e1rm": 85.6,
+        "date": "2026-04-01",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -20.6,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 52,
-        "date": "2026-04-03",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 55.4,
+        "date": "2026-04-01",
+        "exercise_id": "bb_curl",
+        "e1rm": 35.4,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 53,
-        "date": "2026-04-03",
-        "exercise_id": "bb_row",
-        "e1rm": 80.6,
+        "date": "2026-04-01",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 25.9,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 54,
-        "date": "2026-04-03",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.4,
+        "date": "2026-04-01",
+        "exercise_id": "leg_press_45",
+        "e1rm": 202,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 55,
         "date": "2026-04-03",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.2,
+        "exercise_id": "squat_bb_high",
+        "e1rm": 122.4,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 56,
         "date": "2026-04-03",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 25.4,
+        "exercise_id": "deadlift_conv",
+        "e1rm": 144.2,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 57,
-        "date": "2026-04-04",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 122,
+        "date": "2026-04-03",
+        "exercise_id": "bench_bb",
+        "e1rm": 86.8,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 58,
-        "date": "2026-04-04",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 142.4,
+        "date": "2026-04-03",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 56.2,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 59,
-        "date": "2026-04-04",
-        "exercise_id": "bench_bb",
-        "e1rm": 85.6,
+        "date": "2026-04-03",
+        "exercise_id": "bb_row",
+        "e1rm": 81.6,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 60,
-        "date": "2026-04-04",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 55.4,
+        "date": "2026-04-03",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -20.8,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 61,
-        "date": "2026-04-04",
-        "exercise_id": "bb_row",
-        "e1rm": 80.6,
+        "date": "2026-04-03",
+        "exercise_id": "bb_curl",
+        "e1rm": 35.8,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 62,
-        "date": "2026-04-04",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.4,
+        "date": "2026-04-03",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 26.2,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 63,
-        "date": "2026-04-04",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.2,
+        "date": "2026-04-03",
+        "exercise_id": "leg_press_45",
+        "e1rm": 202,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 64,
         "date": "2026-04-04",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 25.4,
+        "exercise_id": "squat_bb_high",
+        "e1rm": 122.4,
         "cycle_index": 1,
         "week_in_cycle": 2
       },
       {
         "id": 65,
-        "date": "2026-04-06",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 122,
+        "date": "2026-04-04",
+        "exercise_id": "deadlift_conv",
+        "e1rm": 145.6,
         "cycle_index": 1,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 66,
-        "date": "2026-04-06",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 142.4,
+        "date": "2026-04-04",
+        "exercise_id": "bench_bb",
+        "e1rm": 86.8,
         "cycle_index": 1,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 67,
-        "date": "2026-04-06",
-        "exercise_id": "bench_bb",
-        "e1rm": 86.6,
+        "date": "2026-04-04",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 56.2,
         "cycle_index": 1,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 68,
-        "date": "2026-04-06",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 56.1,
+        "date": "2026-04-04",
+        "exercise_id": "bb_row",
+        "e1rm": 81.6,
         "cycle_index": 1,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 69,
-        "date": "2026-04-06",
-        "exercise_id": "bb_row",
-        "e1rm": 80.6,
+        "date": "2026-04-04",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -20.8,
         "cycle_index": 1,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 70,
-        "date": "2026-04-06",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.6,
+        "date": "2026-04-04",
+        "exercise_id": "bb_curl",
+        "e1rm": 35.8,
         "cycle_index": 1,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 71,
-        "date": "2026-04-06",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.2,
+        "date": "2026-04-04",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 26.2,
         "cycle_index": 1,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 72,
-        "date": "2026-04-06",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 25.7,
+        "date": "2026-04-04",
+        "exercise_id": "leg_press_45",
+        "e1rm": 204,
         "cycle_index": 1,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 73,
-        "date": "2026-04-08",
+        "date": "2026-04-06",
         "exercise_id": "squat_bb_high",
-        "e1rm": 122.5,
+        "e1rm": 122.4,
         "cycle_index": 1,
         "week_in_cycle": 3
       },
       {
         "id": 74,
-        "date": "2026-04-08",
+        "date": "2026-04-06",
         "exercise_id": "deadlift_conv",
-        "e1rm": 143,
+        "e1rm": 145.6,
         "cycle_index": 1,
         "week_in_cycle": 3
       },
       {
         "id": 75,
-        "date": "2026-04-08",
+        "date": "2026-04-06",
         "exercise_id": "bench_bb",
-        "e1rm": 86.6,
+        "e1rm": 88.1,
         "cycle_index": 1,
         "week_in_cycle": 3
       },
       {
         "id": 76,
-        "date": "2026-04-08",
+        "date": "2026-04-06",
         "exercise_id": "ohp_bb_standing",
-        "e1rm": 56.1,
+        "e1rm": 57,
         "cycle_index": 1,
         "week_in_cycle": 3
       },
       {
         "id": 77,
-        "date": "2026-04-08",
+        "date": "2026-04-06",
         "exercise_id": "bb_row",
-        "e1rm": 80.6,
+        "e1rm": 81.6,
         "cycle_index": 1,
         "week_in_cycle": 3
       },
       {
         "id": 78,
-        "date": "2026-04-08",
+        "date": "2026-04-06",
         "exercise_id": "pullup_assisted",
-        "e1rm": -20.6,
+        "e1rm": -21.1,
         "cycle_index": 1,
         "week_in_cycle": 3
       },
       {
         "id": 79,
-        "date": "2026-04-08",
+        "date": "2026-04-06",
         "exercise_id": "bb_curl",
-        "e1rm": 35.2,
+        "e1rm": 35.8,
         "cycle_index": 1,
         "week_in_cycle": 3
       },
       {
         "id": 80,
-        "date": "2026-04-08",
+        "date": "2026-04-06",
         "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 25.7,
+        "e1rm": 26.6,
         "cycle_index": 1,
         "week_in_cycle": 3
       },
       {
         "id": 81,
-        "date": "2026-04-10",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 122.5,
+        "date": "2026-04-06",
+        "exercise_id": "leg_press_45",
+        "e1rm": 204,
         "cycle_index": 1,
         "week_in_cycle": 3
       },
       {
         "id": 82,
-        "date": "2026-04-10",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 143,
+        "date": "2026-04-08",
+        "exercise_id": "squat_bb_high",
+        "e1rm": 123.6,
         "cycle_index": 1,
         "week_in_cycle": 3
       },
       {
         "id": 83,
-        "date": "2026-04-10",
-        "exercise_id": "bench_bb",
-        "e1rm": 86.6,
+        "date": "2026-04-08",
+        "exercise_id": "deadlift_conv",
+        "e1rm": 147.1,
         "cycle_index": 1,
         "week_in_cycle": 3
       },
       {
         "id": 84,
-        "date": "2026-04-10",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 56.1,
+        "date": "2026-04-08",
+        "exercise_id": "bench_bb",
+        "e1rm": 88.1,
         "cycle_index": 1,
         "week_in_cycle": 3
       },
       {
         "id": 85,
-        "date": "2026-04-10",
-        "exercise_id": "bb_row",
-        "e1rm": 80.9,
+        "date": "2026-04-08",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 57,
         "cycle_index": 1,
         "week_in_cycle": 3
       },
       {
         "id": 86,
-        "date": "2026-04-10",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.7,
+        "date": "2026-04-08",
+        "exercise_id": "bb_row",
+        "e1rm": 81.6,
         "cycle_index": 1,
         "week_in_cycle": 3
       },
       {
         "id": 87,
-        "date": "2026-04-10",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.3,
+        "date": "2026-04-08",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -21.1,
         "cycle_index": 1,
         "week_in_cycle": 3
       },
       {
         "id": 88,
-        "date": "2026-04-10",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 25.8,
+        "date": "2026-04-08",
+        "exercise_id": "bb_curl",
+        "e1rm": 35.8,
         "cycle_index": 1,
         "week_in_cycle": 3
       },
       {
         "id": 89,
-        "date": "2026-04-11",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 123,
+        "date": "2026-04-08",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 26.6,
         "cycle_index": 1,
         "week_in_cycle": 3
       },
       {
         "id": 90,
-        "date": "2026-04-11",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 143.6,
+        "date": "2026-04-08",
+        "exercise_id": "leg_press_45",
+        "e1rm": 204,
         "cycle_index": 1,
         "week_in_cycle": 3
       },
       {
         "id": 91,
-        "date": "2026-04-11",
-        "exercise_id": "bench_bb",
-        "e1rm": 86.6,
+        "date": "2026-04-10",
+        "exercise_id": "squat_bb_high",
+        "e1rm": 123.6,
         "cycle_index": 1,
         "week_in_cycle": 3
       },
       {
         "id": 92,
-        "date": "2026-04-11",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 56.1,
+        "date": "2026-04-10",
+        "exercise_id": "deadlift_conv",
+        "e1rm": 147.1,
         "cycle_index": 1,
         "week_in_cycle": 3
       },
       {
         "id": 93,
-        "date": "2026-04-11",
-        "exercise_id": "bb_row",
-        "e1rm": 80.9,
+        "date": "2026-04-10",
+        "exercise_id": "bench_bb",
+        "e1rm": 88.1,
         "cycle_index": 1,
         "week_in_cycle": 3
       },
       {
         "id": 94,
-        "date": "2026-04-11",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.7,
+        "date": "2026-04-10",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 57,
         "cycle_index": 1,
         "week_in_cycle": 3
       },
       {
         "id": 95,
-        "date": "2026-04-11",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.3,
+        "date": "2026-04-10",
+        "exercise_id": "bb_row",
+        "e1rm": 82.4,
         "cycle_index": 1,
         "week_in_cycle": 3
       },
       {
         "id": 96,
-        "date": "2026-04-11",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 25.8,
+        "date": "2026-04-10",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -21.3,
         "cycle_index": 1,
         "week_in_cycle": 3
       },
       {
         "id": 97,
-        "date": "2026-04-13",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 123,
+        "date": "2026-04-10",
+        "exercise_id": "bb_curl",
+        "e1rm": 36.2,
         "cycle_index": 1,
-        "week_in_cycle": 4
+        "week_in_cycle": 3
       },
       {
         "id": 98,
-        "date": "2026-04-13",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 143.6,
+        "date": "2026-04-10",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 26.9,
         "cycle_index": 1,
-        "week_in_cycle": 4
+        "week_in_cycle": 3
       },
       {
         "id": 99,
-        "date": "2026-04-13",
-        "exercise_id": "bench_bb",
-        "e1rm": 86.9,
+        "date": "2026-04-10",
+        "exercise_id": "leg_press_45",
+        "e1rm": 204,
         "cycle_index": 1,
-        "week_in_cycle": 4
+        "week_in_cycle": 3
       },
       {
         "id": 100,
-        "date": "2026-04-13",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 56.3,
+        "date": "2026-04-11",
+        "exercise_id": "squat_bb_high",
+        "e1rm": 123.6,
         "cycle_index": 1,
-        "week_in_cycle": 4
+        "week_in_cycle": 3
       },
       {
         "id": 101,
-        "date": "2026-04-13",
-        "exercise_id": "bb_row",
-        "e1rm": 80.9,
+        "date": "2026-04-11",
+        "exercise_id": "deadlift_conv",
+        "e1rm": 148.6,
         "cycle_index": 1,
-        "week_in_cycle": 4
+        "week_in_cycle": 3
       },
       {
         "id": 102,
-        "date": "2026-04-13",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.8,
+        "date": "2026-04-11",
+        "exercise_id": "bench_bb",
+        "e1rm": 88.1,
         "cycle_index": 1,
-        "week_in_cycle": 4
+        "week_in_cycle": 3
       },
       {
         "id": 103,
-        "date": "2026-04-13",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.3,
+        "date": "2026-04-11",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 57,
         "cycle_index": 1,
-        "week_in_cycle": 4
+        "week_in_cycle": 3
       },
       {
         "id": 104,
-        "date": "2026-04-13",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 25.9,
+        "date": "2026-04-11",
+        "exercise_id": "bb_row",
+        "e1rm": 82.4,
         "cycle_index": 1,
-        "week_in_cycle": 4
+        "week_in_cycle": 3
       },
       {
         "id": 105,
-        "date": "2026-04-15",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 126.1,
+        "date": "2026-04-11",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -21.3,
         "cycle_index": 1,
-        "week_in_cycle": 4
+        "week_in_cycle": 3
       },
       {
         "id": 106,
-        "date": "2026-04-15",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 144.2,
+        "date": "2026-04-11",
+        "exercise_id": "bb_curl",
+        "e1rm": 36.2,
         "cycle_index": 1,
-        "week_in_cycle": 4
+        "week_in_cycle": 3
       },
       {
         "id": 107,
-        "date": "2026-04-15",
-        "exercise_id": "bench_bb",
-        "e1rm": 86.9,
+        "date": "2026-04-11",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 26.9,
         "cycle_index": 1,
-        "week_in_cycle": 4
+        "week_in_cycle": 3
       },
       {
         "id": 108,
-        "date": "2026-04-15",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 56.3,
+        "date": "2026-04-11",
+        "exercise_id": "leg_press_45",
+        "e1rm": 206,
         "cycle_index": 1,
-        "week_in_cycle": 4
+        "week_in_cycle": 3
       },
       {
         "id": 109,
-        "date": "2026-04-15",
-        "exercise_id": "bb_row",
-        "e1rm": 80.9,
+        "date": "2026-04-13",
+        "exercise_id": "squat_bb_high",
+        "e1rm": 123.6,
         "cycle_index": 1,
         "week_in_cycle": 4
       },
       {
         "id": 110,
-        "date": "2026-04-15",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.8,
+        "date": "2026-04-13",
+        "exercise_id": "deadlift_conv",
+        "e1rm": 148.6,
         "cycle_index": 1,
         "week_in_cycle": 4
       },
       {
         "id": 111,
-        "date": "2026-04-15",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.3,
+        "date": "2026-04-13",
+        "exercise_id": "bench_bb",
+        "e1rm": 89,
         "cycle_index": 1,
         "week_in_cycle": 4
       },
       {
         "id": 112,
-        "date": "2026-04-15",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 25.9,
+        "date": "2026-04-13",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 57.6,
         "cycle_index": 1,
         "week_in_cycle": 4
       },
       {
         "id": 113,
-        "date": "2026-04-17",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 126.1,
+        "date": "2026-04-13",
+        "exercise_id": "bb_row",
+        "e1rm": 82.4,
         "cycle_index": 1,
         "week_in_cycle": 4
       },
       {
         "id": 114,
-        "date": "2026-04-17",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 144.2,
+        "date": "2026-04-13",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -21.5,
         "cycle_index": 1,
         "week_in_cycle": 4
       },
       {
         "id": 115,
-        "date": "2026-04-17",
-        "exercise_id": "bench_bb",
-        "e1rm": 86.9,
+        "date": "2026-04-13",
+        "exercise_id": "bb_curl",
+        "e1rm": 36.2,
         "cycle_index": 1,
         "week_in_cycle": 4
       },
       {
         "id": 116,
-        "date": "2026-04-17",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 56.3,
+        "date": "2026-04-13",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 27.2,
         "cycle_index": 1,
         "week_in_cycle": 4
       },
       {
         "id": 117,
-        "date": "2026-04-17",
-        "exercise_id": "bb_row",
-        "e1rm": 81.2,
+        "date": "2026-04-13",
+        "exercise_id": "leg_press_45",
+        "e1rm": 206,
         "cycle_index": 1,
         "week_in_cycle": 4
       },
       {
         "id": 118,
-        "date": "2026-04-17",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.9,
+        "date": "2026-04-15",
+        "exercise_id": "squat_bb_high",
+        "e1rm": 126.7,
         "cycle_index": 1,
         "week_in_cycle": 4
       },
       {
         "id": 119,
-        "date": "2026-04-17",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.4,
+        "date": "2026-04-15",
+        "exercise_id": "deadlift_conv",
+        "e1rm": 150.1,
         "cycle_index": 1,
         "week_in_cycle": 4
       },
       {
         "id": 120,
-        "date": "2026-04-17",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 26,
+        "date": "2026-04-15",
+        "exercise_id": "bench_bb",
+        "e1rm": 89,
         "cycle_index": 1,
         "week_in_cycle": 4
       },
       {
         "id": 121,
-        "date": "2026-04-18",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 126.6,
+        "date": "2026-04-15",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 57.6,
         "cycle_index": 1,
         "week_in_cycle": 4
       },
       {
         "id": 122,
-        "date": "2026-04-18",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 144.8,
+        "date": "2026-04-15",
+        "exercise_id": "bb_row",
+        "e1rm": 82.4,
         "cycle_index": 1,
         "week_in_cycle": 4
       },
       {
         "id": 123,
-        "date": "2026-04-18",
-        "exercise_id": "bench_bb",
-        "e1rm": 86.9,
+        "date": "2026-04-15",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -21.5,
         "cycle_index": 1,
         "week_in_cycle": 4
       },
       {
         "id": 124,
-        "date": "2026-04-18",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 56.3,
+        "date": "2026-04-15",
+        "exercise_id": "bb_curl",
+        "e1rm": 36.2,
         "cycle_index": 1,
         "week_in_cycle": 4
       },
       {
         "id": 125,
-        "date": "2026-04-18",
-        "exercise_id": "bb_row",
-        "e1rm": 81.2,
+        "date": "2026-04-15",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 27.2,
         "cycle_index": 1,
         "week_in_cycle": 4
       },
       {
         "id": 126,
-        "date": "2026-04-18",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.9,
+        "date": "2026-04-15",
+        "exercise_id": "leg_press_45",
+        "e1rm": 206,
         "cycle_index": 1,
         "week_in_cycle": 4
       },
       {
         "id": 127,
-        "date": "2026-04-18",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.4,
+        "date": "2026-04-17",
+        "exercise_id": "squat_bb_high",
+        "e1rm": 126.7,
         "cycle_index": 1,
         "week_in_cycle": 4
       },
       {
         "id": 128,
-        "date": "2026-04-18",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 26,
+        "date": "2026-04-17",
+        "exercise_id": "deadlift_conv",
+        "e1rm": 150.1,
         "cycle_index": 1,
         "week_in_cycle": 4
       },
       {
         "id": 129,
-        "date": "2026-04-20",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 126.6,
+        "date": "2026-04-17",
+        "exercise_id": "bench_bb",
+        "e1rm": 89,
         "cycle_index": 1,
-        "week_in_cycle": 5
+        "week_in_cycle": 4
       },
       {
         "id": 130,
-        "date": "2026-04-20",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 144.8,
+        "date": "2026-04-17",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 57.6,
         "cycle_index": 1,
-        "week_in_cycle": 5
+        "week_in_cycle": 4
       },
       {
         "id": 131,
-        "date": "2026-04-20",
-        "exercise_id": "bench_bb",
-        "e1rm": 86.9,
+        "date": "2026-04-17",
+        "exercise_id": "bb_row",
+        "e1rm": 83.2,
         "cycle_index": 1,
-        "week_in_cycle": 5
+        "week_in_cycle": 4
       },
       {
         "id": 132,
-        "date": "2026-04-20",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 56.3,
+        "date": "2026-04-17",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -21.7,
         "cycle_index": 1,
-        "week_in_cycle": 5
+        "week_in_cycle": 4
       },
       {
         "id": 133,
-        "date": "2026-04-20",
-        "exercise_id": "bb_row",
-        "e1rm": 81.2,
+        "date": "2026-04-17",
+        "exercise_id": "bb_curl",
+        "e1rm": 36.6,
         "cycle_index": 1,
-        "week_in_cycle": 5
+        "week_in_cycle": 4
       },
       {
         "id": 134,
-        "date": "2026-04-20",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.9,
+        "date": "2026-04-17",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 27.5,
         "cycle_index": 1,
-        "week_in_cycle": 5
+        "week_in_cycle": 4
       },
       {
         "id": 135,
-        "date": "2026-04-20",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.4,
+        "date": "2026-04-17",
+        "exercise_id": "leg_press_45",
+        "e1rm": 206,
         "cycle_index": 1,
-        "week_in_cycle": 5
+        "week_in_cycle": 4
       },
       {
         "id": 136,
-        "date": "2026-04-20",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 26,
+        "date": "2026-04-18",
+        "exercise_id": "squat_bb_high",
+        "e1rm": 126.7,
         "cycle_index": 1,
-        "week_in_cycle": 5
+        "week_in_cycle": 4
       },
       {
         "id": 137,
-        "date": "2026-04-22",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 126.6,
+        "date": "2026-04-18",
+        "exercise_id": "deadlift_conv",
+        "e1rm": 151.6,
         "cycle_index": 1,
-        "week_in_cycle": 5
+        "week_in_cycle": 4
       },
       {
         "id": 138,
-        "date": "2026-04-22",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 144.8,
+        "date": "2026-04-18",
+        "exercise_id": "bench_bb",
+        "e1rm": 89,
         "cycle_index": 1,
-        "week_in_cycle": 5
+        "week_in_cycle": 4
       },
       {
         "id": 139,
-        "date": "2026-04-22",
-        "exercise_id": "bench_bb",
-        "e1rm": 86.9,
+        "date": "2026-04-18",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 57.6,
         "cycle_index": 1,
-        "week_in_cycle": 5
+        "week_in_cycle": 4
       },
       {
         "id": 140,
-        "date": "2026-04-22",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 56.3,
+        "date": "2026-04-18",
+        "exercise_id": "bb_row",
+        "e1rm": 83.2,
         "cycle_index": 1,
-        "week_in_cycle": 5
+        "week_in_cycle": 4
       },
       {
         "id": 141,
-        "date": "2026-04-22",
-        "exercise_id": "bb_row",
-        "e1rm": 81.2,
+        "date": "2026-04-18",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -21.7,
         "cycle_index": 1,
-        "week_in_cycle": 5
+        "week_in_cycle": 4
       },
       {
         "id": 142,
-        "date": "2026-04-22",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.9,
+        "date": "2026-04-18",
+        "exercise_id": "bb_curl",
+        "e1rm": 36.6,
         "cycle_index": 1,
-        "week_in_cycle": 5
+        "week_in_cycle": 4
       },
       {
         "id": 143,
-        "date": "2026-04-22",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.4,
+        "date": "2026-04-18",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 27.5,
         "cycle_index": 1,
-        "week_in_cycle": 5
+        "week_in_cycle": 4
       },
       {
         "id": 144,
-        "date": "2026-04-22",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 26,
+        "date": "2026-04-18",
+        "exercise_id": "leg_press_45",
+        "e1rm": 208.1,
         "cycle_index": 1,
-        "week_in_cycle": 5
+        "week_in_cycle": 4
       },
       {
         "id": 145,
-        "date": "2026-04-24",
+        "date": "2026-04-20",
         "exercise_id": "squat_bb_high",
-        "e1rm": 126.6,
+        "e1rm": 126.7,
         "cycle_index": 1,
         "week_in_cycle": 5
       },
       {
         "id": 146,
-        "date": "2026-04-24",
+        "date": "2026-04-20",
         "exercise_id": "deadlift_conv",
-        "e1rm": 144.8,
+        "e1rm": 151.6,
         "cycle_index": 1,
         "week_in_cycle": 5
       },
       {
         "id": 147,
-        "date": "2026-04-24",
+        "date": "2026-04-20",
         "exercise_id": "bench_bb",
-        "e1rm": 86.9,
+        "e1rm": 89,
         "cycle_index": 1,
         "week_in_cycle": 5
       },
       {
         "id": 148,
-        "date": "2026-04-24",
+        "date": "2026-04-20",
         "exercise_id": "ohp_bb_standing",
-        "e1rm": 56.3,
+        "e1rm": 57.6,
         "cycle_index": 1,
         "week_in_cycle": 5
       },
       {
         "id": 149,
-        "date": "2026-04-24",
+        "date": "2026-04-20",
         "exercise_id": "bb_row",
-        "e1rm": 81.2,
+        "e1rm": 83.2,
         "cycle_index": 1,
         "week_in_cycle": 5
       },
       {
         "id": 150,
-        "date": "2026-04-24",
+        "date": "2026-04-20",
         "exercise_id": "pullup_assisted",
-        "e1rm": -20.9,
+        "e1rm": -21.7,
         "cycle_index": 1,
         "week_in_cycle": 5
       },
       {
         "id": 151,
-        "date": "2026-04-24",
+        "date": "2026-04-20",
         "exercise_id": "bb_curl",
-        "e1rm": 35.4,
+        "e1rm": 36.6,
         "cycle_index": 1,
         "week_in_cycle": 5
       },
       {
         "id": 152,
-        "date": "2026-04-24",
+        "date": "2026-04-20",
         "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 26,
+        "e1rm": 27.5,
         "cycle_index": 1,
         "week_in_cycle": 5
       },
       {
         "id": 153,
-        "date": "2026-04-25",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 126.6,
+        "date": "2026-04-20",
+        "exercise_id": "leg_press_45",
+        "e1rm": 208.1,
         "cycle_index": 1,
         "week_in_cycle": 5
       },
       {
         "id": 154,
-        "date": "2026-04-25",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 144.8,
+        "date": "2026-04-22",
+        "exercise_id": "squat_bb_high",
+        "e1rm": 126.7,
         "cycle_index": 1,
         "week_in_cycle": 5
       },
       {
         "id": 155,
-        "date": "2026-04-25",
-        "exercise_id": "bench_bb",
-        "e1rm": 86.9,
+        "date": "2026-04-22",
+        "exercise_id": "deadlift_conv",
+        "e1rm": 151.6,
         "cycle_index": 1,
         "week_in_cycle": 5
       },
       {
         "id": 156,
-        "date": "2026-04-25",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 56.3,
+        "date": "2026-04-22",
+        "exercise_id": "bench_bb",
+        "e1rm": 89,
         "cycle_index": 1,
         "week_in_cycle": 5
       },
       {
         "id": 157,
-        "date": "2026-04-25",
-        "exercise_id": "bb_row",
-        "e1rm": 81.2,
+        "date": "2026-04-22",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 57.6,
         "cycle_index": 1,
         "week_in_cycle": 5
       },
       {
         "id": 158,
-        "date": "2026-04-25",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.9,
+        "date": "2026-04-22",
+        "exercise_id": "bb_row",
+        "e1rm": 83.2,
         "cycle_index": 1,
         "week_in_cycle": 5
       },
       {
         "id": 159,
-        "date": "2026-04-25",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.4,
+        "date": "2026-04-22",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -21.7,
         "cycle_index": 1,
         "week_in_cycle": 5
       },
       {
         "id": 160,
-        "date": "2026-04-25",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 26,
+        "date": "2026-04-22",
+        "exercise_id": "bb_curl",
+        "e1rm": 36.6,
         "cycle_index": 1,
         "week_in_cycle": 5
       },
       {
         "id": 161,
-        "date": "2026-04-27",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 126.6,
-        "cycle_index": 2,
-        "week_in_cycle": 1
+        "date": "2026-04-22",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 27.5,
+        "cycle_index": 1,
+        "week_in_cycle": 5
       },
       {
         "id": 162,
-        "date": "2026-04-27",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 144.8,
-        "cycle_index": 2,
-        "week_in_cycle": 1
+        "date": "2026-04-22",
+        "exercise_id": "leg_press_45",
+        "e1rm": 208.1,
+        "cycle_index": 1,
+        "week_in_cycle": 5
       },
       {
         "id": 163,
-        "date": "2026-04-27",
-        "exercise_id": "bench_bb",
-        "e1rm": 87.2,
-        "cycle_index": 2,
-        "week_in_cycle": 1
+        "date": "2026-04-24",
+        "exercise_id": "squat_bb_high",
+        "e1rm": 126.7,
+        "cycle_index": 1,
+        "week_in_cycle": 5
       },
       {
         "id": 164,
-        "date": "2026-04-27",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 56.3,
-        "cycle_index": 2,
-        "week_in_cycle": 1
+        "date": "2026-04-24",
+        "exercise_id": "deadlift_conv",
+        "e1rm": 151.6,
+        "cycle_index": 1,
+        "week_in_cycle": 5
       },
       {
         "id": 165,
-        "date": "2026-04-27",
-        "exercise_id": "bb_row",
-        "e1rm": 81.2,
-        "cycle_index": 2,
-        "week_in_cycle": 1
+        "date": "2026-04-24",
+        "exercise_id": "bench_bb",
+        "e1rm": 89,
+        "cycle_index": 1,
+        "week_in_cycle": 5
       },
       {
         "id": 166,
-        "date": "2026-04-27",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.9,
-        "cycle_index": 2,
-        "week_in_cycle": 1
+        "date": "2026-04-24",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 57.6,
+        "cycle_index": 1,
+        "week_in_cycle": 5
       },
       {
         "id": 167,
-        "date": "2026-04-27",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.4,
-        "cycle_index": 2,
-        "week_in_cycle": 1
+        "date": "2026-04-24",
+        "exercise_id": "bb_row",
+        "e1rm": 83.2,
+        "cycle_index": 1,
+        "week_in_cycle": 5
       },
       {
         "id": 168,
-        "date": "2026-04-27",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 26.1,
-        "cycle_index": 2,
-        "week_in_cycle": 1
+        "date": "2026-04-24",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -21.7,
+        "cycle_index": 1,
+        "week_in_cycle": 5
       },
       {
         "id": 169,
-        "date": "2026-04-29",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 126.6,
-        "cycle_index": 2,
-        "week_in_cycle": 1
+        "date": "2026-04-24",
+        "exercise_id": "bb_curl",
+        "e1rm": 36.6,
+        "cycle_index": 1,
+        "week_in_cycle": 5
       },
       {
         "id": 170,
-        "date": "2026-04-29",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 145.4,
-        "cycle_index": 2,
-        "week_in_cycle": 1
+        "date": "2026-04-24",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 27.5,
+        "cycle_index": 1,
+        "week_in_cycle": 5
       },
       {
         "id": 171,
-        "date": "2026-04-29",
-        "exercise_id": "bench_bb",
-        "e1rm": 87.2,
-        "cycle_index": 2,
-        "week_in_cycle": 1
+        "date": "2026-04-24",
+        "exercise_id": "leg_press_45",
+        "e1rm": 208.1,
+        "cycle_index": 1,
+        "week_in_cycle": 5
       },
       {
         "id": 172,
-        "date": "2026-04-29",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 56.3,
-        "cycle_index": 2,
-        "week_in_cycle": 1
+        "date": "2026-04-25",
+        "exercise_id": "squat_bb_high",
+        "e1rm": 126.7,
+        "cycle_index": 1,
+        "week_in_cycle": 5
       },
       {
         "id": 173,
-        "date": "2026-04-29",
-        "exercise_id": "bb_row",
-        "e1rm": 81.2,
-        "cycle_index": 2,
-        "week_in_cycle": 1
+        "date": "2026-04-25",
+        "exercise_id": "deadlift_conv",
+        "e1rm": 151.6,
+        "cycle_index": 1,
+        "week_in_cycle": 5
       },
       {
         "id": 174,
-        "date": "2026-04-29",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.9,
-        "cycle_index": 2,
-        "week_in_cycle": 1
+        "date": "2026-04-25",
+        "exercise_id": "bench_bb",
+        "e1rm": 89,
+        "cycle_index": 1,
+        "week_in_cycle": 5
       },
       {
         "id": 175,
-        "date": "2026-04-29",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.4,
-        "cycle_index": 2,
-        "week_in_cycle": 1
+        "date": "2026-04-25",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 57.6,
+        "cycle_index": 1,
+        "week_in_cycle": 5
       },
       {
         "id": 176,
-        "date": "2026-04-29",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 26.1,
-        "cycle_index": 2,
-        "week_in_cycle": 1
+        "date": "2026-04-25",
+        "exercise_id": "bb_row",
+        "e1rm": 83.2,
+        "cycle_index": 1,
+        "week_in_cycle": 5
       },
       {
         "id": 177,
-        "date": "2026-05-01",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 126.6,
-        "cycle_index": 2,
-        "week_in_cycle": 1
+        "date": "2026-04-25",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -21.7,
+        "cycle_index": 1,
+        "week_in_cycle": 5
       },
       {
         "id": 178,
-        "date": "2026-05-01",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 145.4,
-        "cycle_index": 2,
-        "week_in_cycle": 1
+        "date": "2026-04-25",
+        "exercise_id": "bb_curl",
+        "e1rm": 36.6,
+        "cycle_index": 1,
+        "week_in_cycle": 5
       },
       {
         "id": 179,
-        "date": "2026-05-01",
-        "exercise_id": "bench_bb",
-        "e1rm": 87.2,
-        "cycle_index": 2,
-        "week_in_cycle": 1
+        "date": "2026-04-25",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 27.5,
+        "cycle_index": 1,
+        "week_in_cycle": 5
       },
       {
         "id": 180,
-        "date": "2026-05-01",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 56.3,
-        "cycle_index": 2,
-        "week_in_cycle": 1
+        "date": "2026-04-25",
+        "exercise_id": "leg_press_45",
+        "e1rm": 208.1,
+        "cycle_index": 1,
+        "week_in_cycle": 5
       },
       {
         "id": 181,
-        "date": "2026-05-01",
-        "exercise_id": "bb_row",
-        "e1rm": 81.5,
+        "date": "2026-04-27",
+        "exercise_id": "squat_bb_high",
+        "e1rm": 126.7,
         "cycle_index": 2,
         "week_in_cycle": 1
       },
       {
         "id": 182,
-        "date": "2026-05-01",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.9,
+        "date": "2026-04-27",
+        "exercise_id": "deadlift_conv",
+        "e1rm": 151.6,
         "cycle_index": 2,
         "week_in_cycle": 1
       },
       {
         "id": 183,
-        "date": "2026-05-01",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.5,
+        "date": "2026-04-27",
+        "exercise_id": "bench_bb",
+        "e1rm": 89.9,
         "cycle_index": 2,
         "week_in_cycle": 1
       },
       {
         "id": 184,
-        "date": "2026-05-01",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 26.2,
+        "date": "2026-04-27",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 57.6,
         "cycle_index": 2,
         "week_in_cycle": 1
       },
       {
         "id": 185,
-        "date": "2026-05-02",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 126.6,
+        "date": "2026-04-27",
+        "exercise_id": "bb_row",
+        "e1rm": 83.2,
         "cycle_index": 2,
         "week_in_cycle": 1
       },
       {
         "id": 186,
-        "date": "2026-05-02",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 146,
+        "date": "2026-04-27",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -21.7,
         "cycle_index": 2,
         "week_in_cycle": 1
       },
       {
         "id": 187,
-        "date": "2026-05-02",
-        "exercise_id": "bench_bb",
-        "e1rm": 87.2,
+        "date": "2026-04-27",
+        "exercise_id": "bb_curl",
+        "e1rm": 36.6,
         "cycle_index": 2,
         "week_in_cycle": 1
       },
       {
         "id": 188,
-        "date": "2026-05-02",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 56.3,
+        "date": "2026-04-27",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 27.8,
         "cycle_index": 2,
         "week_in_cycle": 1
       },
       {
         "id": 189,
-        "date": "2026-05-02",
-        "exercise_id": "bb_row",
-        "e1rm": 81.5,
+        "date": "2026-04-27",
+        "exercise_id": "leg_press_45",
+        "e1rm": 208.1,
         "cycle_index": 2,
         "week_in_cycle": 1
       },
       {
         "id": 190,
-        "date": "2026-05-02",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.9,
+        "date": "2026-04-29",
+        "exercise_id": "squat_bb_high",
+        "e1rm": 126.7,
         "cycle_index": 2,
         "week_in_cycle": 1
       },
       {
         "id": 191,
-        "date": "2026-05-02",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.5,
+        "date": "2026-04-29",
+        "exercise_id": "deadlift_conv",
+        "e1rm": 153.1,
         "cycle_index": 2,
         "week_in_cycle": 1
       },
       {
         "id": 192,
-        "date": "2026-05-02",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 26.2,
+        "date": "2026-04-29",
+        "exercise_id": "bench_bb",
+        "e1rm": 89.9,
         "cycle_index": 2,
         "week_in_cycle": 1
       },
       {
         "id": 193,
-        "date": "2026-05-04",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 126.6,
+        "date": "2026-04-29",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 57.6,
         "cycle_index": 2,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 194,
-        "date": "2026-05-04",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 146,
+        "date": "2026-04-29",
+        "exercise_id": "bb_row",
+        "e1rm": 83.2,
         "cycle_index": 2,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 195,
-        "date": "2026-05-04",
-        "exercise_id": "bench_bb",
-        "e1rm": 89.4,
+        "date": "2026-04-29",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -21.7,
         "cycle_index": 2,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 196,
-        "date": "2026-05-04",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 56.3,
+        "date": "2026-04-29",
+        "exercise_id": "bb_curl",
+        "e1rm": 36.6,
         "cycle_index": 2,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 197,
-        "date": "2026-05-04",
-        "exercise_id": "bb_row",
-        "e1rm": 81.5,
+        "date": "2026-04-29",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 27.8,
         "cycle_index": 2,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 198,
-        "date": "2026-05-04",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.9,
+        "date": "2026-04-29",
+        "exercise_id": "leg_press_45",
+        "e1rm": 208.1,
         "cycle_index": 2,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 199,
-        "date": "2026-05-04",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.5,
+        "date": "2026-05-01",
+        "exercise_id": "squat_bb_high",
+        "e1rm": 126.7,
         "cycle_index": 2,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 200,
-        "date": "2026-05-04",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 26.3,
+        "date": "2026-05-01",
+        "exercise_id": "deadlift_conv",
+        "e1rm": 153.1,
         "cycle_index": 2,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 201,
-        "date": "2026-05-06",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 126.6,
+        "date": "2026-05-01",
+        "exercise_id": "bench_bb",
+        "e1rm": 89.9,
         "cycle_index": 2,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 202,
-        "date": "2026-05-06",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 146.6,
+        "date": "2026-05-01",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 57.6,
         "cycle_index": 2,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 203,
-        "date": "2026-05-06",
-        "exercise_id": "bench_bb",
-        "e1rm": 89.4,
+        "date": "2026-05-01",
+        "exercise_id": "bb_row",
+        "e1rm": 84,
         "cycle_index": 2,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 204,
-        "date": "2026-05-06",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 56.3,
+        "date": "2026-05-01",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -21.7,
         "cycle_index": 2,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 205,
-        "date": "2026-05-06",
-        "exercise_id": "bb_row",
-        "e1rm": 81.5,
+        "date": "2026-05-01",
+        "exercise_id": "bb_curl",
+        "e1rm": 37,
         "cycle_index": 2,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 206,
-        "date": "2026-05-06",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.9,
+        "date": "2026-05-01",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 28.1,
         "cycle_index": 2,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 207,
-        "date": "2026-05-06",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.5,
+        "date": "2026-05-01",
+        "exercise_id": "leg_press_45",
+        "e1rm": 208.1,
         "cycle_index": 2,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 208,
-        "date": "2026-05-06",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 26.3,
+        "date": "2026-05-02",
+        "exercise_id": "squat_bb_high",
+        "e1rm": 126.7,
         "cycle_index": 2,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 209,
-        "date": "2026-05-08",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 126.6,
+        "date": "2026-05-02",
+        "exercise_id": "deadlift_conv",
+        "e1rm": 154.6,
         "cycle_index": 2,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 210,
-        "date": "2026-05-08",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 146.6,
+        "date": "2026-05-02",
+        "exercise_id": "bench_bb",
+        "e1rm": 89.9,
         "cycle_index": 2,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 211,
-        "date": "2026-05-08",
-        "exercise_id": "bench_bb",
-        "e1rm": 89.4,
+        "date": "2026-05-02",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 57.6,
         "cycle_index": 2,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 212,
-        "date": "2026-05-08",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 56.3,
+        "date": "2026-05-02",
+        "exercise_id": "bb_row",
+        "e1rm": 84,
         "cycle_index": 2,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 213,
-        "date": "2026-05-08",
-        "exercise_id": "bb_row",
-        "e1rm": 81.8,
+        "date": "2026-05-02",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -21.7,
         "cycle_index": 2,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 214,
-        "date": "2026-05-08",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.9,
+        "date": "2026-05-02",
+        "exercise_id": "bb_curl",
+        "e1rm": 37,
         "cycle_index": 2,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 215,
-        "date": "2026-05-08",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.6,
+        "date": "2026-05-02",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 28.1,
         "cycle_index": 2,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 216,
-        "date": "2026-05-08",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 26.4,
+        "date": "2026-05-02",
+        "exercise_id": "leg_press_45",
+        "e1rm": 210.2,
         "cycle_index": 2,
-        "week_in_cycle": 2
+        "week_in_cycle": 1
       },
       {
         "id": 217,
-        "date": "2026-05-09",
+        "date": "2026-05-04",
         "exercise_id": "squat_bb_high",
-        "e1rm": 126.6,
+        "e1rm": 126.7,
         "cycle_index": 2,
         "week_in_cycle": 2
       },
       {
         "id": 218,
-        "date": "2026-05-09",
+        "date": "2026-05-04",
         "exercise_id": "deadlift_conv",
-        "e1rm": 145.9,
+        "e1rm": 154.6,
         "cycle_index": 2,
         "week_in_cycle": 2
       },
       {
         "id": 219,
-        "date": "2026-05-09",
+        "date": "2026-05-04",
         "exercise_id": "bench_bb",
-        "e1rm": 89.4,
+        "e1rm": 92.1,
         "cycle_index": 2,
         "week_in_cycle": 2
       },
       {
         "id": 220,
-        "date": "2026-05-09",
+        "date": "2026-05-04",
         "exercise_id": "ohp_bb_standing",
-        "e1rm": 56.3,
+        "e1rm": 57.6,
         "cycle_index": 2,
         "week_in_cycle": 2
       },
       {
         "id": 221,
-        "date": "2026-05-09",
+        "date": "2026-05-04",
         "exercise_id": "bb_row",
-        "e1rm": 81.8,
+        "e1rm": 84,
         "cycle_index": 2,
         "week_in_cycle": 2
       },
       {
         "id": 222,
-        "date": "2026-05-09",
+        "date": "2026-05-04",
         "exercise_id": "pullup_assisted",
-        "e1rm": -20.9,
+        "e1rm": -21.7,
         "cycle_index": 2,
         "week_in_cycle": 2
       },
       {
         "id": 223,
-        "date": "2026-05-09",
+        "date": "2026-05-04",
         "exercise_id": "bb_curl",
-        "e1rm": 35.6,
+        "e1rm": 37,
         "cycle_index": 2,
         "week_in_cycle": 2
       },
       {
         "id": 224,
-        "date": "2026-05-09",
+        "date": "2026-05-04",
         "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 26.4,
+        "e1rm": 28.4,
         "cycle_index": 2,
         "week_in_cycle": 2
       },
       {
         "id": 225,
-        "date": "2026-05-11",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 126.6,
+        "date": "2026-05-04",
+        "exercise_id": "leg_press_45",
+        "e1rm": 210.2,
         "cycle_index": 2,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 226,
-        "date": "2026-05-11",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 145.9,
+        "date": "2026-05-06",
+        "exercise_id": "squat_bb_high",
+        "e1rm": 126.7,
         "cycle_index": 2,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 227,
-        "date": "2026-05-11",
-        "exercise_id": "bench_bb",
-        "e1rm": 89.8,
+        "date": "2026-05-06",
+        "exercise_id": "deadlift_conv",
+        "e1rm": 156.1,
         "cycle_index": 2,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 228,
-        "date": "2026-05-11",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 56.3,
+        "date": "2026-05-06",
+        "exercise_id": "bench_bb",
+        "e1rm": 92.1,
         "cycle_index": 2,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 229,
-        "date": "2026-05-11",
-        "exercise_id": "bb_row",
-        "e1rm": 81.8,
+        "date": "2026-05-06",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 57.6,
         "cycle_index": 2,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 230,
-        "date": "2026-05-11",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.9,
+        "date": "2026-05-06",
+        "exercise_id": "bb_row",
+        "e1rm": 84,
         "cycle_index": 2,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 231,
-        "date": "2026-05-11",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.6,
+        "date": "2026-05-06",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -21.7,
         "cycle_index": 2,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 232,
-        "date": "2026-05-11",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 26.5,
+        "date": "2026-05-06",
+        "exercise_id": "bb_curl",
+        "e1rm": 37,
         "cycle_index": 2,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 233,
-        "date": "2026-05-13",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 126.6,
+        "date": "2026-05-06",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 28.4,
         "cycle_index": 2,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 234,
-        "date": "2026-05-13",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 146.5,
+        "date": "2026-05-06",
+        "exercise_id": "leg_press_45",
+        "e1rm": 210.2,
         "cycle_index": 2,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 235,
-        "date": "2026-05-13",
-        "exercise_id": "bench_bb",
-        "e1rm": 89.8,
+        "date": "2026-05-08",
+        "exercise_id": "squat_bb_high",
+        "e1rm": 126.7,
         "cycle_index": 2,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 236,
-        "date": "2026-05-13",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 56.3,
+        "date": "2026-05-08",
+        "exercise_id": "deadlift_conv",
+        "e1rm": 156.1,
         "cycle_index": 2,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 237,
-        "date": "2026-05-13",
-        "exercise_id": "bb_row",
-        "e1rm": 81.8,
+        "date": "2026-05-08",
+        "exercise_id": "bench_bb",
+        "e1rm": 92.1,
         "cycle_index": 2,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 238,
-        "date": "2026-05-13",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.9,
+        "date": "2026-05-08",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 57.6,
         "cycle_index": 2,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 239,
-        "date": "2026-05-13",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.6,
+        "date": "2026-05-08",
+        "exercise_id": "bb_row",
+        "e1rm": 84.8,
         "cycle_index": 2,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 240,
-        "date": "2026-05-13",
-        "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 26.5,
+        "date": "2026-05-08",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -21.7,
         "cycle_index": 2,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 241,
-        "date": "2026-05-16",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 126.6,
+        "date": "2026-05-08",
+        "exercise_id": "bb_curl",
+        "e1rm": 37.4,
         "cycle_index": 2,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 242,
-        "date": "2026-05-16",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 147.1,
+        "date": "2026-05-08",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 28.7,
         "cycle_index": 2,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 243,
-        "date": "2026-05-16",
-        "exercise_id": "bench_bb",
-        "e1rm": 89.8,
+        "date": "2026-05-08",
+        "exercise_id": "leg_press_45",
+        "e1rm": 210.2,
         "cycle_index": 2,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 244,
-        "date": "2026-05-16",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 56.3,
+        "date": "2026-05-09",
+        "exercise_id": "squat_bb_high",
+        "e1rm": 126.7,
         "cycle_index": 2,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 245,
-        "date": "2026-05-16",
-        "exercise_id": "bb_row",
-        "e1rm": 81.8,
+        "date": "2026-05-09",
+        "exercise_id": "deadlift_conv",
+        "e1rm": 155.3,
         "cycle_index": 2,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 246,
-        "date": "2026-05-16",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.9,
+        "date": "2026-05-09",
+        "exercise_id": "bench_bb",
+        "e1rm": 92.1,
         "cycle_index": 2,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 247,
-        "date": "2026-05-16",
-        "exercise_id": "bb_curl",
-        "e1rm": 35.6,
+        "date": "2026-05-09",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 57.6,
         "cycle_index": 2,
-        "week_in_cycle": 3
+        "week_in_cycle": 2
       },
       {
         "id": 248,
-        "date": "2026-05-16",
+        "date": "2026-05-09",
+        "exercise_id": "bb_row",
+        "e1rm": 84.8,
+        "cycle_index": 2,
+        "week_in_cycle": 2
+      },
+      {
+        "id": 249,
+        "date": "2026-05-09",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -21.7,
+        "cycle_index": 2,
+        "week_in_cycle": 2
+      },
+      {
+        "id": 250,
+        "date": "2026-05-09",
+        "exercise_id": "bb_curl",
+        "e1rm": 37.4,
+        "cycle_index": 2,
+        "week_in_cycle": 2
+      },
+      {
+        "id": 251,
+        "date": "2026-05-09",
         "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 26.5,
+        "e1rm": 28.7,
+        "cycle_index": 2,
+        "week_in_cycle": 2
+      },
+      {
+        "id": 252,
+        "date": "2026-05-09",
+        "exercise_id": "leg_press_45",
+        "e1rm": 209.1,
+        "cycle_index": 2,
+        "week_in_cycle": 2
+      },
+      {
+        "id": 253,
+        "date": "2026-05-11",
+        "exercise_id": "squat_bb_high",
+        "e1rm": 126.7,
         "cycle_index": 2,
         "week_in_cycle": 3
       },
       {
-        "id": 249,
-        "date": "2026-05-18",
-        "exercise_id": "squat_bb_high",
-        "e1rm": 126.6,
-        "cycle_index": 2,
-        "week_in_cycle": 4
-      },
-      {
-        "id": 250,
-        "date": "2026-05-18",
-        "exercise_id": "deadlift_conv",
-        "e1rm": 147.1,
-        "cycle_index": 2,
-        "week_in_cycle": 4
-      },
-      {
-        "id": 251,
-        "date": "2026-05-18",
-        "exercise_id": "bench_bb",
-        "e1rm": 90.2,
-        "cycle_index": 2,
-        "week_in_cycle": 4
-      },
-      {
-        "id": 252,
-        "date": "2026-05-18",
-        "exercise_id": "ohp_bb_standing",
-        "e1rm": 56.3,
-        "cycle_index": 2,
-        "week_in_cycle": 4
-      },
-      {
-        "id": 253,
-        "date": "2026-05-18",
-        "exercise_id": "bb_row",
-        "e1rm": 81.8,
-        "cycle_index": 2,
-        "week_in_cycle": 4
-      },
-      {
         "id": 254,
-        "date": "2026-05-18",
-        "exercise_id": "pullup_assisted",
-        "e1rm": -20.9,
+        "date": "2026-05-11",
+        "exercise_id": "deadlift_conv",
+        "e1rm": 155.3,
         "cycle_index": 2,
-        "week_in_cycle": 4
+        "week_in_cycle": 3
       },
       {
         "id": 255,
-        "date": "2026-05-18",
+        "date": "2026-05-11",
+        "exercise_id": "bench_bb",
+        "e1rm": 93,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 256,
+        "date": "2026-05-11",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 57.6,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 257,
+        "date": "2026-05-11",
+        "exercise_id": "bb_row",
+        "e1rm": 84.8,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 258,
+        "date": "2026-05-11",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -21.7,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 259,
+        "date": "2026-05-11",
         "exercise_id": "bb_curl",
-        "e1rm": 35.6,
+        "e1rm": 37.4,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 260,
+        "date": "2026-05-11",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 29,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 261,
+        "date": "2026-05-11",
+        "exercise_id": "leg_press_45",
+        "e1rm": 209.1,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 262,
+        "date": "2026-05-13",
+        "exercise_id": "squat_bb_high",
+        "e1rm": 126.7,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 263,
+        "date": "2026-05-13",
+        "exercise_id": "deadlift_conv",
+        "e1rm": 156.9,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 264,
+        "date": "2026-05-13",
+        "exercise_id": "bench_bb",
+        "e1rm": 93,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 265,
+        "date": "2026-05-13",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 57.6,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 266,
+        "date": "2026-05-13",
+        "exercise_id": "bb_row",
+        "e1rm": 84.8,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 267,
+        "date": "2026-05-13",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -21.7,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 268,
+        "date": "2026-05-13",
+        "exercise_id": "bb_curl",
+        "e1rm": 37.4,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 269,
+        "date": "2026-05-13",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 29,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 270,
+        "date": "2026-05-13",
+        "exercise_id": "leg_press_45",
+        "e1rm": 209.1,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 271,
+        "date": "2026-05-16",
+        "exercise_id": "squat_bb_high",
+        "e1rm": 126.7,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 272,
+        "date": "2026-05-16",
+        "exercise_id": "deadlift_conv",
+        "e1rm": 158.5,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 273,
+        "date": "2026-05-16",
+        "exercise_id": "bench_bb",
+        "e1rm": 93,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 274,
+        "date": "2026-05-16",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 57.6,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 275,
+        "date": "2026-05-16",
+        "exercise_id": "bb_row",
+        "e1rm": 84.8,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 276,
+        "date": "2026-05-16",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -21.7,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 277,
+        "date": "2026-05-16",
+        "exercise_id": "bb_curl",
+        "e1rm": 37.4,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 278,
+        "date": "2026-05-16",
+        "exercise_id": "triceps_pushdown_rope",
+        "e1rm": 29,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 279,
+        "date": "2026-05-16",
+        "exercise_id": "leg_press_45",
+        "e1rm": 211.2,
+        "cycle_index": 2,
+        "week_in_cycle": 3
+      },
+      {
+        "id": 280,
+        "date": "2026-05-18",
+        "exercise_id": "squat_bb_high",
+        "e1rm": 126.7,
         "cycle_index": 2,
         "week_in_cycle": 4
       },
       {
-        "id": 256,
+        "id": 281,
+        "date": "2026-05-18",
+        "exercise_id": "deadlift_conv",
+        "e1rm": 158.5,
+        "cycle_index": 2,
+        "week_in_cycle": 4
+      },
+      {
+        "id": 282,
+        "date": "2026-05-18",
+        "exercise_id": "bench_bb",
+        "e1rm": 93.9,
+        "cycle_index": 2,
+        "week_in_cycle": 4
+      },
+      {
+        "id": 283,
+        "date": "2026-05-18",
+        "exercise_id": "ohp_bb_standing",
+        "e1rm": 57.6,
+        "cycle_index": 2,
+        "week_in_cycle": 4
+      },
+      {
+        "id": 284,
+        "date": "2026-05-18",
+        "exercise_id": "bb_row",
+        "e1rm": 84.8,
+        "cycle_index": 2,
+        "week_in_cycle": 4
+      },
+      {
+        "id": 285,
+        "date": "2026-05-18",
+        "exercise_id": "pullup_assisted",
+        "e1rm": -21.7,
+        "cycle_index": 2,
+        "week_in_cycle": 4
+      },
+      {
+        "id": 286,
+        "date": "2026-05-18",
+        "exercise_id": "bb_curl",
+        "e1rm": 37.4,
+        "cycle_index": 2,
+        "week_in_cycle": 4
+      },
+      {
+        "id": 287,
         "date": "2026-05-18",
         "exercise_id": "triceps_pushdown_rope",
-        "e1rm": 26.6,
+        "e1rm": 29.3,
+        "cycle_index": 2,
+        "week_in_cycle": 4
+      },
+      {
+        "id": 288,
+        "date": "2026-05-18",
+        "exercise_id": "leg_press_45",
+        "e1rm": 211.2,
         "cycle_index": 2,
         "week_in_cycle": 4
       }
@@ -10187,14 +10445,15 @@
         "review": {
           "cycle_index": 1,
           "plafonds_progression": {
-            "squat_bb_high": 6.6,
-            "deadlift_conv": 4.8,
-            "bench_bb": 1.6,
-            "ohp_bb_standing": 1.1,
-            "bb_row": 1.2,
-            "pullup_assisted": -0.8,
-            "bb_curl": 0.4,
-            "triceps_pushdown_rope": 0.9
+            "squat_bb_high": 6.7,
+            "deadlift_conv": 11.6,
+            "bench_bb": 3.1,
+            "ohp_bb_standing": 2,
+            "bb_row": 3.2,
+            "pullup_assisted": -1.5,
+            "bb_curl": 1.6,
+            "triceps_pushdown_rope": 2.2,
+            "leg_press_45": 8.1
           },
           "muscles_progresses": [
             "pectoraux",
@@ -10210,16 +10469,32 @@
             "obliques"
           ],
           "muscles_overshoot": [],
-          "adherence_pct": 100,
-          "volume_total_kg": 57010,
+          "adherence_pct": 1,
+          "volume_total_kg": 63884,
           "PRs": [
             [
               "squat_bb_high",
-              6.6
+              6.7
             ],
             [
               "deadlift_conv",
-              4.8
+              11.6
+            ],
+            [
+              "bench_bb",
+              3.1
+            ],
+            [
+              "bb_row",
+              3.2
+            ],
+            [
+              "triceps_pushdown_rope",
+              2.2
+            ],
+            [
+              "leg_press_45",
+              8.1
             ]
           ],
           "suggested_action": "continuer",
@@ -10289,21 +10564,21 @@
             {
               "exercise_id": "deadlift_conv",
               "reps": 5,
-              "load_kg": 122.5,
+              "load_kg": 130,
               "rpe_target": 7.5,
               "rest_s": 240
             },
             {
               "exercise_id": "deadlift_conv",
               "reps": 5,
-              "load_kg": 122.5,
+              "load_kg": 130,
               "rpe_target": 7.5,
               "rest_s": 240
             },
             {
               "exercise_id": "deadlift_conv",
               "reps": 5,
-              "load_kg": 122.5,
+              "load_kg": 130,
               "rpe_target": 7.5,
               "rest_s": 240
             }

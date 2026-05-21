@@ -145,6 +145,84 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
+## État courant — fin Conv #15 (2026-05-21) — V1.3.0
+
+Itération sur retours d'usage Azur post-V1.2.0. Bump **v1.3.0** (mix
+fixes + features UX significatives : silhouette muscles, persistance
+entries séance).
+
+**Bugs corrigés**
+- **Équipement non filtré** (`engine/selection.ts`) — un Set vide ne
+  court-circuite plus le filtre catalog. Si l'utilisateur ne coche
+  aucun équipement dans l'onboarding, seuls les exos `equip.length === 0`
+  (bodyweight pur) sont proposés. Banner d'info ajouté dans
+  `Step1Profile` quand `draft.equipment.size === 0`.
+- **Adhérence 10000 %** dans le bilan démo Alex — schéma attend une
+  fraction 0-1, le générateur écrivait `100`. Fix dans
+  `scripts/generate-alex-demo.mts` + régénération de `alex.json`.
+- **Vue séance non scrollable + perte des coches** — `SeancePage`
+  rendait directement le `SessionRunner` dans un AppShell
+  `overflow-hidden`, et stockait `entries` en `useState` local
+  (démontage = perte). Refonte :
+  - wrapper `<main>` avec `overflow-y-auto`,
+  - header avec bouton `← Programme` (séance "en pause"),
+  - `entries` migrés dans le store global
+    (`currentSessionEntries`) — survivent à la nav vers Catalogue,
+    Progrès, etc.,
+  - clé de réconciliation = `currentSessionId` (changement d'ID ⟹
+    init fresh, remplacement d'exo intra-session ⟹ préserve les
+    exos inchangés).
+
+**Polish UX**
+- **Silhouette muscles dans Step2 onboarding** : `AnatomicalSilhouette
+  view="both"` affichée. Top-3 prioritaire = `highlight`, autres =
+  `ok`, hors pool = neutre. Mise à jour live au fil du drag&drop.
+- **Calendrier — couleurs distinctes** : vert succès = séance faite,
+  bleu = prévue, dashed anthracite = libre, sang barré = sautée,
+  ambre = repos recommandé. Légende refondue (puces 14px, labels
+  longs : "Séance faite" au lieu de "fait", entrée explicite pour
+  "Aujourd'hui (liseré)").
+- **Pédagogie calibration**
+  - `WelcomeBanner` : encart explicite "L'app te suggère charge/
+    reps/effort comme objectif — modifie si la réalité diffère,
+    l'algo apprend".
+  - Step démo `seance` reformulé : "Les valeurs pré-remplies sont
+    des objectifs à viser — si en réalité tu fais plus ou moins,
+    modifie les chiffres avant de cocher."
+
+**Visu force Alex — courbe squat retravaillée**
+- Avant : dents de scie 125/118 (squat inscrit à la fois en main
+  force et accessoire hyp, e1rm Epley différent) + creux final à
+  98 (déload).
+- Fix générateur : accessoire Lower B = `leg_press_45` au lieu d'un
+  2e squat. Progression e1rm rehaussée à +1 %/séance (palier
+  inc_kg=1.25 absorbe les +0.4 % précédents). `loadBias +1.25` sur
+  W3D1 squat (mini-saut visible). `loadBias +2.5` sur le PR W4D1.
+- Fix algo : `computeE1rmHistory` filtre désormais les sets
+  `rpe_perceived < 6.5` (élimine les déloads de la courbe Force
+  pour tout le monde, pas que la démo).
+- Résultat squat : 125 → 125 → 126.6 → 131.3 (PR), au lieu de
+  125/118/125/118/128/121/98/98.
+
+**Notes techniques**
+- `package.json > demo:generate` : ajout du flag
+  `--tsconfig tsconfig.app.json` (tsx ne lisait pas les `paths` du
+  tsconfig racine — references vides — depuis l'ajout de
+  `@/lib/onboarding-preview` dans `engine/rebalance.ts` Conv #14e).
+- `store/index.ts > currentSessionEntries` : sortie typée en
+  `SessionEntries | null`. `setCurrentSession` clear automatiquement
+  les entries pour éviter les fuites entre sessions.
+
+**Tests fin Conv #15** : **497 Vitest verts** (aucun changement de
+contrat), **23/23 e2e verts**.
+
+**Backlog Conv #16** (notes Azur pour la suite)
+- Chercher une **silhouette muscles plus réaliste / human-like** —
+  la silhouette RBH actuelle est trop stylisée/robotique. Idée
+  retenue, exécution à revoir.
+- **Refondre la visualisation du progrès en volume** (onglet
+  Progrès > Volume) — actuellement très peu lisible.
+
 ## État courant — fin Conv #14e (2026-05-23) — V1.2.0
 
 > Note de nomenclature : les commits `a475071` et `edbaaf6` portent le

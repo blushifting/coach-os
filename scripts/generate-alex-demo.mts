@@ -97,6 +97,8 @@ const ALEX_INITIAL_E1RM: Record<string, number> = {
   pullup_assisted: -20, // load négatif = assistance
   bb_curl: 35,
   triceps_pushdown_rope: 25,
+  // Conv #15 — accessoire jambes ajouté à Lower B (cf. buildCyclePlan).
+  leg_press_45: 200,
 };
 
 /** k_user par défaut (cf. prescription.ts, k de Epley standard). */
@@ -181,7 +183,10 @@ function buildCyclePlan(cycleIdx: number, swapped: boolean): WeeklyTemplate {
         target_muscles_focus: ['ischios', 'fessiers', 'quadriceps'],
         exercises: [
           makePE({ id: 'deadlift_conv', base: 4, prog: PROG_MAIN, role: 'main_hinge', intensity: 'force', rule: ProgressionRule.DOUBLE_PROGRESSION }),
-          makePE({ id: squatId, base: 3, prog: PROG_ACC, intensity: 'hyp' }),
+          // Conv #15 — accessoire jambes : leg press au lieu d'un 2e squat.
+          // Évite l'effet "dents de scie" sur la courbe Force du squat main
+          // (charge/reps différents entre rôle main et accessoire).
+          makePE({ id: 'leg_press_45', base: 3, prog: PROG_ACC, intensity: 'hyp' }),
         ],
       },
     ],
@@ -272,8 +277,12 @@ function buildSchedule(): Scripted[] {
   // W1-W2 : tout normal, légère baisse de RPE perçu = sain (progresse)
   // W3 D0 : RPE bas franchement sur bench → l'algo va monter la charge (saut palier)
   tag('C1W3D0').perturb = { rpeBias: -1.5 }; // bench affiché trop facile
-  // W4 D1 : PR sur squat (charge atteinte, +2 reps)
-  tag('C1W4D1').perturb = { prExo: 'squat_bb_high', prExtraReps: 2 };
+  // Conv #15 — petit saut palier squat à W3D1 pour rendre la courbe Force
+  // moins plate avant le PR de W4. +1.25 kg = un cran inc_kg.
+  tag('C1W3D1').perturb = { loadBias: 1.25 };
+  // W4 D1 : PR sur squat (charge atteinte, +2 reps, charge +2.5 kg pour
+  // que le PR soit visible dans la courbe Force).
+  tag('C1W4D1').perturb = { prExo: 'squat_bb_high', prExtraReps: 2, loadBias: 2.5 };
   // W5 (déload) : charges réduites côté algo, RPE faible = OK
   for (let d = 0; d < 4; d++) tag(`C1W5D${d}`).perturb = { rpeBias: -0.5 };
 
@@ -439,9 +448,13 @@ function progressE1rms(ctx: PlayerCtx, sc: Scripted, touchedExos: Set<string>): 
     } else if (p.rpeBias !== undefined && p.rpeBias > 0.5) {
       delta = -cur * 0.005; // RPE haut : léger recul (informatif)
     } else if (p.rpeBias !== undefined && p.rpeBias < -0.5) {
-      delta = cur * 0.012; // RPE bas : saut palier +1.2 %
+      delta = cur * 0.015; // RPE bas : saut palier +1.5 %
     } else {
-      delta = cur * 0.004; // séance normale : +0.4 %
+      // Conv #15 — progression rehaussée de +0.4 %/séance à +1.0 %/séance.
+      // À ce rythme la charge prescrite (palier inc_kg) bouge réellement
+      // sur 5 séances et la courbe Force devient visible (sinon arrondi
+      // au palier 1.25 kg gomme tout le progrès).
+      delta = cur * 0.01;
     }
     ctx.state.e1rm[exId] = Math.round((cur + delta) * 10) / 10;
   }
@@ -523,7 +536,7 @@ function buildCycle1Review(ctx: PlayerCtx): CycleReview {
     muscles_plateau: [],
     muscles_undertrained: ['mollets', 'abdos', 'obliques'],
     muscles_overshoot: [],
-    adherence_pct: 100,
+    adherence_pct: 1,
     volume_total_kg: Math.round(volumeTotal),
     PRs: prs,
     suggested_action: SuggestedAction.CONTINUER_PAREIL,

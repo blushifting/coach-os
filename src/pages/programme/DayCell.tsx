@@ -6,23 +6,27 @@ interface DayCellProps {
   readonly onClick: (day: CalendarDay) => void;
 }
 
+// Conv #15 — refonte couleurs calendrier : familles de couleurs distinctes
+// par statut, à fort contraste. Vert = fait, bleu = prévue, anthracite dashed
+// = libre, sang barré = sautée, ambre = repos recommandé, opacité réduite pour
+// le passé "rest-past".
 const STATUS_BASE: Record<CalendarDay['status'], string> = {
-  completed: 'bg-sang-800/60 border-sang-700 text-white',
-  planned: 'bg-anthracite-700 border-anthracite-600 text-white',
-  skipped: 'bg-anthracite-900 border-anthracite-800 text-anthracite-300 line-through',
-  'rest-past': 'bg-anthracite-900 border-anthracite-800 text-anthracite-300',
-  'free-future': 'bg-anthracite-800/60 border-dashed border-anthracite-700 text-anthracite-300',
+  completed: 'bg-emerald-700/70 border-emerald-500 text-white',
+  planned: 'bg-blue-800/60 border-blue-500 text-white',
+  skipped: 'bg-sang-900/50 border-sang-700 text-sang-300 line-through',
+  'rest-past': 'bg-anthracite-900 border-anthracite-800 text-anthracite-400',
+  'free-future': 'bg-anthracite-900/40 border-dashed border-anthracite-700 text-anthracite-400',
 };
 
 const REST_SUGGESTED_OVERLAY =
-  'bg-amber-900/20 border-amber-800/60 text-amber-100';
+  'bg-amber-900/40 border-amber-600 text-amber-100';
 
 const STATUS_BADGE_LABEL: Record<CalendarDay['status'], string> = {
-  completed: 'fait',
-  planned: 'prévue',
-  skipped: 'sautée',
-  'rest-past': '',
-  'free-future': '',
+  completed: 'séance faite',
+  planned: 'séance prévue',
+  skipped: 'séance sautée',
+  'rest-past': 'repos',
+  'free-future': 'jour libre',
 };
 
 export function DayCell({ day, onClick }: DayCellProps) {
