@@ -3,6 +3,8 @@ import { Link, Navigate } from 'react-router-dom';
 import { Card } from '@/components/Card';
 import { ChevronRight } from '@/components/icons';
 import { useCoachOsStore } from '@/store';
+import { useDemoMode } from '@/store/selectors';
+import { parseDateKey } from '@/lib/dashboard';
 import {
   buildCalendarMatrix,
   computeCycleProgress,
@@ -30,33 +32,44 @@ import { Widgets } from './Widgets';
 export default function ProgrammePage() {
   const userState = useCoachOsStore((s) => s.userState);
   const history = useCoachOsStore((s) => s.history);
+  const demoActive = useDemoMode();
+  const currentSessionPlan = useCoachOsStore((s) => s.currentSessionPlan);
   const [openDay, setOpenDay] = useState<CalendarDay | null>(null);
 
   const catalog = useCoachOsStore((s) => s.catalog);
   const dashboard = useMemo(() => {
     if (userState === null) return null;
+    // Conv #16 — en mode démo, on ancre "now" sur la date de la séance du
+    // jour Alex (snapshot) plutôt que sur la vraie date système. Sans ça,
+    // le marqueur "today" du calendrier était posé à la vraie date (mardi
+    // 19 mai pour Alex vs aujourd'hui réel pour l'utilisateur), créant
+    // une incohérence avec le texte du tour ("Alex est mardi").
+    const now =
+      demoActive && currentSessionPlan !== null
+        ? parseDateKey(currentSessionPlan.seance_date)
+        : new Date();
     // Conv #11h — alignement streak sur les semaines du programme.
     const currentCycle = history.cycles.find(
       (c) => c.cycle_index === userState.cycle_index,
     );
     const cycleStart = currentCycle?.start_date ?? null;
     return {
-      streak: computeStreak(history.feedbacks, new Date(), cycleStart),
+      streak: computeStreak(history.feedbacks, now, cycleStart),
       cycleProgress: computeCycleProgress(userState, history.feedbacks),
       weekSessions: computeWeekSessions(userState, history.feedbacks),
       nextBilanDate: nextCycleReviewDate(userState, history.cycles),
-      cycleTime: computeCycleTimeProgress(userState, history.cycles),
+      cycleTime: computeCycleTimeProgress(userState, history.cycles, now),
       cycleFinished: isCycleFinished(userState, history.feedbacks),
       matrix: buildCalendarMatrix(
         userState,
         history.cycles,
         history.sessions,
         history.feedbacks,
-        new Date(),
+        now,
         catalog,
       ),
     };
-  }, [userState, history, catalog]);
+  }, [userState, history, catalog, demoActive, currentSessionPlan]);
 
   if (userState === null) {
     return <Navigate to="/welcome" replace />;
@@ -102,7 +115,10 @@ export default function ProgrammePage() {
         <CondensedCalendar
           matrix={dashboard.matrix}
           currentWeekInCycle={userState.current_week_in_cycle}
-          onDayClick={setOpenDay}
+          // Conv #16 — calendrier non-interactif en mode démo, sinon
+          // l'utilisateur peut ouvrir la PlanDaySheet d'Alex et bloquer
+          // le tour guidé (la sheet masque le bandeau démo).
+          onDayClick={demoActive ? () => undefined : setOpenDay}
         />
       )}
 

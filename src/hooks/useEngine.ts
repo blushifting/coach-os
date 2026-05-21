@@ -548,6 +548,15 @@ export async function resetApp(): Promise<void> {
     lastCycleReview: null,
     catalog,
   });
+  // Conv #16 — reset des dismissals LS de la démo. Sans ça, un user
+  // qui reset l'app après avoir déjà vu la welcome overlay (via Profil >
+  // Aide) skiperait l'intro lors du prochain onboarding auto-launch.
+  try {
+    localStorage.removeItem('coach-os.demo-welcome-seen');
+    localStorage.removeItem('coach-os.welcome-dismissed');
+  } catch {
+    /* ignore */
+  }
 }
 
 // =============================================================================

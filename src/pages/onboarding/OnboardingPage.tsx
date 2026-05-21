@@ -22,6 +22,7 @@ import {
   startUser,
 } from '@/hooks/useEngine';
 import { enterDemoMode } from '@/lib/demo';
+import { resetDemoDismissals } from '@/components/DemoMode';
 import {
   buildMuscleGoals,
   buildProfile,
@@ -160,6 +161,11 @@ export default function OnboardingPage() {
       // ce comportement (utilisé par les helpers e2e).
       try {
         if (localStorage.getItem('coach-os.skip-auto-demo') !== '1') {
+          // Conv #16 — force le reset des dismissals pour garantir que la
+          // welcome overlay s'affiche au 1er lancement post-onboarding,
+          // même si l'utilisateur a déjà vu la démo via Profil > Aide
+          // précédemment (cas reset app).
+          resetDemoDismissals();
           void enterDemoMode().catch(() => {
             /* la démo est facultative */
           });

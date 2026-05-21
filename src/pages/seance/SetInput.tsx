@@ -157,7 +157,7 @@ export function SetInput({
           max={99}
           disabled={disableInputs}
           onChange={(v) => onChange({ reps: v })}
-          widthClass="w-[92px]"
+          widthClass="w-[112px]"
         />
 
         <LoadField
@@ -180,7 +180,7 @@ export function SetInput({
           toneClass={effortTone(entry.rpe)}
           onChange={(v) => onChange({ rpe: v ?? RPE_MIN })}
           dataAttr={{ 'data-rpe': entry.rpe }}
-          widthClass="w-[92px]"
+          widthClass="w-[112px]"
         />
       </div>
     </div>
@@ -251,7 +251,7 @@ function Stepper({
           aria-label={`Diminuer ${label}`}
           disabled={disabled || isAtMin}
           onClick={() => bump(-step)}
-          className="flex w-8 items-center justify-center bg-anthracite-800 text-base text-anthracite-200 transition active:scale-95 disabled:cursor-not-allowed disabled:text-anthracite-500"
+          className="flex w-9 shrink-0 items-center justify-center bg-anthracite-800 text-base text-anthracite-200 transition active:scale-95 disabled:cursor-not-allowed disabled:text-anthracite-500"
         >
           −
         </button>
@@ -279,7 +279,11 @@ function Stepper({
             onChange(clamp(parsed));
           }}
           className={cn(
-            'h-11 flex-1 border-x border-anthracite-700 px-1 text-center text-base font-semibold tabular-nums outline-none transition disabled:opacity-60',
+            // Conv #16 — `min-w-0` retire la min-width par défaut (~150px)
+            // des `<input type="number">` qui repoussait le bouton + hors
+            // du conteneur `overflow-hidden`. `text-sm` au lieu de
+            // `text-base` pour rééquilibrer visuellement vs kg (flex-1).
+            'h-11 min-w-0 flex-1 border-x border-anthracite-700 px-1 text-center text-sm font-semibold tabular-nums outline-none transition disabled:opacity-60',
             toneClass ??
               'bg-anthracite-800 text-white focus:border-sang-700/50',
           )}
@@ -290,7 +294,7 @@ function Stepper({
           aria-label={`Augmenter ${label}`}
           disabled={disabled || isAtMax}
           onClick={() => bump(step)}
-          className="flex w-8 items-center justify-center bg-anthracite-800 text-base text-anthracite-200 transition active:scale-95 disabled:cursor-not-allowed disabled:text-anthracite-500"
+          className="flex w-9 shrink-0 items-center justify-center bg-anthracite-800 text-base text-anthracite-200 transition active:scale-95 disabled:cursor-not-allowed disabled:text-anthracite-500"
         >
           +
         </button>
