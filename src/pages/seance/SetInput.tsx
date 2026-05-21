@@ -107,74 +107,82 @@ export function SetInput({
       data-done={entry.done ? 'true' : 'false'}
       data-locked={checkLocked ? 'true' : 'false'}
       className={cn(
-        'flex items-stretch gap-2 rounded-lg border px-2 py-2 text-sm transition-colors duration-300',
+        'rounded-lg border px-2 py-2 text-sm transition-colors duration-300',
         entry.done
           ? 'border-sang-700/70 bg-sang-900/25'
           : 'border-anthracite-700 bg-anthracite-900/70',
         justChecked && 'animate-row-flash',
       )}
     >
-      <span
-        className={cn(
-          'flex w-6 items-center justify-center font-display text-lg leading-none tabular-nums tracking-wide',
-          entry.done ? 'text-sang-400' : 'text-anthracite-300',
-        )}
-      >
-        S{index + 1}
-      </span>
+      {/* Conv #15-4 — Numéro de série + tick montés sur une rangée du haut
+          pour libérer toute la largeur aux 3 valeurs (reps / kg / effort).
+          Avant : tout sur une ligne, kg trop comprimé. */}
+      <div className="mb-1 flex items-center justify-between">
+        <span
+          className={cn(
+            'font-display text-sm leading-none tabular-nums tracking-wide',
+            entry.done ? 'text-sang-400' : 'text-anthracite-300',
+          )}
+        >
+          Série {index + 1}
+        </span>
+        <button
+          type="button"
+          data-testid={`toggle-done-${index}`}
+          aria-label={entry.done ? 'Annuler la série (déverrouille la saisie)' : 'Valider la série'}
+          title={checkTitle}
+          disabled={disableCheck}
+          onClick={() => onChange({ done: !entry.done })}
+          className={cn(
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-base transition-all duration-200 active:scale-95',
+            entry.done
+              ? 'bg-gradient-to-b from-sang-500 to-sang-700 text-white shadow-glow-sang'
+              : disableCheck
+                ? 'cursor-not-allowed bg-anthracite-800 text-anthracite-500'
+                : 'bg-anthracite-700 text-anthracite-300 hover:text-white',
+            justChecked && 'animate-tick-pop',
+          )}
+        >
+          ✓
+        </button>
+      </div>
 
-      <Stepper
-        testId={`reps-${index}`}
-        label="reps"
-        value={entry.reps}
-        step={1}
-        min={0}
-        max={99}
-        disabled={disableInputs}
-        onChange={(v) => onChange({ reps: v })}
-      />
+      <div className="flex items-stretch gap-1.5">
+        <Stepper
+          testId={`reps-${index}`}
+          label="reps"
+          value={entry.reps}
+          step={1}
+          min={0}
+          max={99}
+          disabled={disableInputs}
+          onChange={(v) => onChange({ reps: v })}
+          widthClass="w-[92px]"
+        />
 
-      <LoadField
-        index={index}
-        load={effectiveLoad}
-        bodyweightOnly={bodyweightOnly}
-        bwToggle={bwToggle}
-        disabled={disableInputs}
-        onChange={(v) => onChange({ load_kg: v })}
-      />
+        <LoadField
+          index={index}
+          load={effectiveLoad}
+          bodyweightOnly={bodyweightOnly}
+          bwToggle={bwToggle}
+          disabled={disableInputs}
+          onChange={(v) => onChange({ load_kg: v })}
+        />
 
-      <Stepper
-        testId={`rpe-${index}`}
-        label="effort"
-        value={entry.rpe}
-        step={RPE_STEP}
-        min={RPE_MIN}
-        max={RPE_MAX}
-        disabled={disableInputs}
-        toneClass={effortTone(entry.rpe)}
-        onChange={(v) => onChange({ rpe: v ?? RPE_MIN })}
-        dataAttr={{ 'data-rpe': entry.rpe }}
-      />
-
-      <button
-        type="button"
-        data-testid={`toggle-done-${index}`}
-        aria-label={entry.done ? 'Annuler la série (déverrouille la saisie)' : 'Valider la série'}
-        title={checkTitle}
-        disabled={disableCheck}
-        onClick={() => onChange({ done: !entry.done })}
-        className={cn(
-          'flex h-11 w-11 shrink-0 items-center justify-center self-end rounded-full text-lg transition-all duration-200 active:scale-95',
-          entry.done
-            ? 'bg-gradient-to-b from-sang-500 to-sang-700 text-white shadow-glow-sang'
-            : disableCheck
-              ? 'cursor-not-allowed bg-anthracite-800 text-anthracite-500'
-              : 'bg-anthracite-700 text-anthracite-300 hover:text-white',
-          justChecked && 'animate-tick-pop',
-        )}
-      >
-        ✓
-      </button>
+        <Stepper
+          testId={`rpe-${index}`}
+          label="effort"
+          value={entry.rpe}
+          step={RPE_STEP}
+          min={RPE_MIN}
+          max={RPE_MAX}
+          disabled={disableInputs}
+          toneClass={effortTone(entry.rpe)}
+          onChange={(v) => onChange({ rpe: v ?? RPE_MIN })}
+          dataAttr={{ 'data-rpe': entry.rpe }}
+          widthClass="w-[92px]"
+        />
+      </div>
     </div>
   );
 }
@@ -194,6 +202,11 @@ interface StepperProps {
   readonly toneClass?: string;
   readonly onChange: (v: number | null) => void;
   readonly dataAttr?: Record<string, string | number>;
+  /**
+   * Conv #15-4 — largeur fixe pour reps/effort (max 2 chiffres + 0.5),
+   * laisse `flex-1` à kg qui peut atteindre 3+ chiffres.
+   */
+  readonly widthClass?: string;
 }
 
 function Stepper({
@@ -207,6 +220,7 @@ function Stepper({
   toneClass,
   onChange,
   dataAttr,
+  widthClass,
 }: StepperProps) {
   function clamp(v: number): number {
     if (Number.isNaN(v)) return min;
@@ -226,7 +240,7 @@ function Stepper({
   const isAtMax = value !== null && max !== undefined && value >= max;
 
   return (
-    <div className="flex flex-1 flex-col gap-0.5">
+    <div className={cn('flex flex-col gap-0.5', widthClass ?? 'flex-1')}>
       <span className="text-[10px] uppercase tracking-wide text-anthracite-300">
         {label}
       </span>

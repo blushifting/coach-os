@@ -40,11 +40,13 @@ function BrandWatermark() {
   return (
     <div
       aria-hidden="true"
-      // Conv #11i bis — top aligné au padding-top du Header (0.75rem) pour
-      // alignement vertical strict du K avec le titre. `flex h-12 items-center`
-      // centre le K verticalement sur la même ligne que le titre h-12.
-      className="pointer-events-none fixed left-3 z-50 flex h-12 items-center"
-      style={{ top: 'max(env(safe-area-inset-top), 0.75rem)' }}
+      // Conv #15-1 — hauteur réduite (h-10 = 40px au lieu de h-12 = 48px) et
+      // top remonté à 0.4rem pour aligner verticalement le K avec la barre du
+      // StepIndicator de l'onboarding (qui est nettement plus haute que le
+      // précédent centre du Header). `flex items-center` centre le K dans
+      // l'espace réduit.
+      className="pointer-events-none fixed left-3 z-50 flex h-10 items-center"
+      style={{ top: 'max(env(safe-area-inset-top), 0.4rem)' }}
       data-testid="brand-watermark"
     >
       <img

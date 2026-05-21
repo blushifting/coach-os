@@ -12,7 +12,8 @@ export type HelpTopic =
   | 'hypertrophie'
   | 'vsSem1'
   | 'prDuJour'
-  | 'deltoides';
+  | 'deltoides'
+  | 'adherence';
 
 export interface HelpEntry {
   readonly title: string;
@@ -82,6 +83,14 @@ export const HELP_GLOSSARY: Readonly<Record<HelpTopic, HelpEntry>> = {
   prDuJour: {
     title: 'PR du jour',
     body: "Record personnel de la séance : meilleure performance (charge × reps × RPE) atteinte aujourd'hui sur un exercice, comparée à toutes les séances précédentes.",
+  },
+  adherence: {
+    title: 'Adhérence',
+    body:
+      "Pourcentage de séances effectivement faites sur les séances planifiées du cycle (5 semaines). " +
+      "100 % = tu as fait toutes les séances prévues. 60 % = tu en as raté 4 sur 10. " +
+      "Plus l'adhérence est haute, plus les ajustements de Kotsh (charges, volume, déload) reflètent ta réalité — " +
+      "et plus tu progresses. C'est l'indicateur le plus simple pour suivre ta régularité.",
   },
   deltoides: {
     title: 'Pourquoi 2 deltoïdes seulement (lat + post) ?',

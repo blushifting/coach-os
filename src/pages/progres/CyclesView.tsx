@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import type { Catalog } from '@/engine/catalog';
 import { Card } from '@/components/Card';
 import { cn } from '@/lib/cn';
@@ -113,6 +114,16 @@ function CycleCard({ item, catalog }: CycleCardProps) {
       {item.objectivesByMuscle !== null && (
         <ObjectivesOutcomeSection items={item.objectivesByMuscle} />
       )}
+
+      {/* Conv #15-5 — lien vers le bilan complet de ce cycle (vu depuis
+          Progrès > Cycles, ouverture d'un bilan archivé). */}
+      <Link
+        to={`/cycle-bilan?cycle=${item.cycleIndex}`}
+        className="mt-1 self-end text-xs text-sang-400 underline-offset-2 hover:underline"
+        data-testid={`open-bilan-${item.cycleIndex}`}
+      >
+        Voir le bilan complet →
+      </Link>
     </Card>
   );
 }

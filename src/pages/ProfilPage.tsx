@@ -358,11 +358,11 @@ export default function ProfilPage() {
       />
 
       <footer
-        className="mt-2 flex items-center justify-center gap-2 pt-4 text-anthracite-400"
+        className="mt-4 flex items-center justify-center gap-3 pt-6 text-anthracite-400"
         data-testid="profil-footer"
       >
-        <KotshLogo className="text-sm" ringClassName="text-sang-700" />
-        <span className="text-xs tabular-nums">v{__APP_VERSION__}</span>
+        <KotshLogo className="text-2xl" ringClassName="text-sang-600" />
+        <span className="text-sm tabular-nums">v{__APP_VERSION__}</span>
       </footer>
     </section>
   );

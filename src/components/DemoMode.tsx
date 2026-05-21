@@ -95,14 +95,9 @@ const TOUR_STEPS: readonly TourStep[] = [
       "À la fin du cycle, Kotsh résume tes progrès muscle par muscle et te suggère la suite : continuer pareil, ajuster les objectifs, ou déloader. Ici : continuer.",
     pointTo: '[data-testid="cycle-bilan-page"]',
   },
-  {
-    id: 'profil',
-    route: '/profil',
-    title: 'Son profil',
-    body:
-      "Alex : 30 ans, 75 kg, intermédiaire. 6 muscles prioritaires en force (pectoraux, quadriceps, dos…), bras et épaules en hypertrophie. Tu fixeras le tien à la fin de la démo.",
-    pointTo: '[data-testid="profil-identity-summary"]',
-  },
+  // Conv #15-3 — étape 'profil' retirée : le profil est déjà fixé par
+  // l'utilisateur avant de lancer la démo, donc le panneau "Alex : 30 ans,
+  // 75 kg…" sème la confusion. On enchaîne direct du bilan vers la sortie.
   {
     id: 'done',
     route: '/programme',
@@ -301,9 +296,6 @@ function GuidedTourBanner({
         >
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
-              <span className="inline-block rounded-full bg-sang-600 px-1.5 text-white">
-                ⓘ
-              </span>{' '}
               Étape {index + 1} / {total}
             </span>
           </div>
@@ -317,7 +309,6 @@ function GuidedTourBanner({
             <Button
               variant="secondary"
               onClick={onPrev}
-              disabled={index === 0}
               data-testid="btn-tour-prev"
             >
               Précédent
@@ -440,7 +431,16 @@ export function DemoModeProvider() {
     setStepIndex((i) => Math.min(i + 1, TOUR_STEPS.length - 1));
   }, []);
   const prev = useCallback(() => {
-    setStepIndex((i) => Math.max(i - 1, 0));
+    // Conv #15-3 — depuis l'étape 1, "Précédent" rouvre la welcome overlay
+    // (alors qu'auparavant le bouton était simplement disabled). Permet de
+    // revoir l'intro persona à tout moment.
+    setStepIndex((i) => {
+      if (i === 0) {
+        setWelcomeOpen(true);
+        return 0;
+      }
+      return i - 1;
+    });
   }, []);
   const finish = useCallback(() => {
     exitDemoMode();

@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { HelpButton } from '@/components/HelpButton';
 import { useEngine } from '@/hooks/useEngine';
 import { useCoachOsStore } from '@/store';
 import { selectCycles } from '@/store/selectors';
 import type { CycleReview } from '@/engine/models';
+import { exerciseLabel, muscleLabel } from '@/lib/progress';
 import { pickReviewToDisplay, suggestedActionLabel } from './selectors';
 
 /**
@@ -21,7 +23,23 @@ import { pickReviewToDisplay, suggestedActionLabel } from './selectors';
 export default function CycleBilanPage() {
   const lastCycleReview = useCoachOsStore((s) => s.lastCycleReview);
   const cycles = useCoachOsStore(selectCycles);
-  const review = pickReviewToDisplay(lastCycleReview, cycles);
+  const catalog = useCoachOsStore((s) => s.catalog);
+  const [search] = useSearchParams();
+  // Conv #15-5 — Si on arrive avec `?cycle=N`, on cible explicitement le
+  // bilan de ce cycle (ouvert depuis Progrès > Cycles). Sinon comportement
+  // historique : dernier bilan disponible.
+  const targetCycleParam = search.get('cycle');
+  const targetCycleIndex =
+    targetCycleParam !== null && Number.isFinite(Number(targetCycleParam))
+      ? Number(targetCycleParam)
+      : null;
+  const review =
+    targetCycleIndex !== null
+      ? cycles.find((c) => c.cycle_index === targetCycleIndex)?.review ?? null
+      : pickReviewToDisplay(lastCycleReview, cycles);
+  // Si on a un cycle ciblé, on N'A PAS d'actions à proposer (c'est un bilan
+  // archivé, pas une fin de cycle en cours).
+  const isArchived = targetCycleIndex !== null;
 
   return (
     <section className="flex flex-col gap-4 pb-4" data-testid="cycle-bilan-page">
@@ -51,10 +69,18 @@ export default function CycleBilanPage() {
       ) : (
         <>
           <ReviewKeyMetrics review={review} />
-          <ReviewPlafonds review={review} />
+          <ReviewPlafonds review={review} catalog={catalog} />
           <ReviewMuscles review={review} />
           {review.warnings.length > 0 && <ReviewWarnings review={review} />}
-          <ReviewActions review={review} />
+          {isArchived ? (
+            <Link to="/progres">
+              <Button variant="secondary" fullWidth data-testid="back-to-progres">
+                Retour aux cycles
+              </Button>
+            </Link>
+          ) : (
+            <ReviewActions review={review} />
+          )}
         </>
       )}
     </section>
@@ -63,10 +89,12 @@ export default function CycleBilanPage() {
 
 function ReviewKeyMetrics({ review }: { review: CycleReview }) {
   // Conv #11i — animation reveal-up staggered (cascade 0 / 80 / 160 ms).
+  // Conv #15-6 — HelpButton sur Adhérence (notion peu intuitive).
   return (
     <Card data-testid="bilan-key-metrics" className="grid grid-cols-3 gap-3">
       <Metric
         label="Adhérence"
+        helpTopic="adherence"
         value={`${Math.round(review.adherence_pct * 100)} %`}
         delay={0}
       />
@@ -80,13 +108,26 @@ function ReviewKeyMetrics({ review }: { review: CycleReview }) {
   );
 }
 
-function Metric({ label, value, delay = 0 }: { label: string; value: string; delay?: number }) {
+function Metric({
+  label,
+  value,
+  delay = 0,
+  helpTopic,
+}: {
+  label: string;
+  value: string;
+  delay?: number;
+  helpTopic?: import('@/lib/help-glossary').HelpTopic;
+}) {
   return (
     <div
       className="flex animate-reveal-up flex-col gap-0.5"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <span className="text-xs uppercase tracking-wide text-anthracite-300">{label}</span>
+      <span className="flex items-center gap-1 text-xs uppercase tracking-wide text-anthracite-300">
+        {label}
+        {helpTopic && <HelpButton topic={helpTopic} label={`Aide : ${label}`} />}
+      </span>
       <span className="font-display text-2xl leading-none text-white tabular-nums">
         {value}
       </span>
@@ -94,7 +135,13 @@ function Metric({ label, value, delay = 0 }: { label: string; value: string; del
   );
 }
 
-function ReviewPlafonds({ review }: { review: CycleReview }) {
+function ReviewPlafonds({
+  review,
+  catalog,
+}: {
+  review: CycleReview;
+  catalog: import('@/engine/catalog').Catalog | null;
+}) {
   const entries = Object.entries(review.plafonds_progression).sort((a, b) => b[1] - a[1]);
   if (entries.length === 0) {
     return (
@@ -106,7 +153,10 @@ function ReviewPlafonds({ review }: { review: CycleReview }) {
   }
   return (
     <Card data-testid="bilan-plafonds" className="flex flex-col gap-2">
-      <h2 className="text-sm font-semibold text-white">Plafonds — Δ sur le cycle</h2>
+      {/* Conv #15-5 — "Δ sur le cycle" → "Évolution sur le cycle" (mot FR). */}
+      <h2 className="text-sm font-semibold text-white">
+        Plafonds — Évolution sur le cycle
+      </h2>
       <ul className="flex flex-col gap-1">
         {entries.slice(0, 6).map(([exId, delta], i) => (
           <li
@@ -115,14 +165,17 @@ function ReviewPlafonds({ review }: { review: CycleReview }) {
             style={{ animationDelay: `${200 + i * 60}ms` }}
             data-testid={`plafond-${exId}`}
           >
-            <span className="text-anthracite-300">{exId}</span>
+            {/* Conv #15-5 — exId brut → nom français via catalog. */}
+            <span className="min-w-0 truncate pr-2 text-anthracite-300">
+              {exerciseLabel(exId, catalog)}
+            </span>
             <span
               className={
                 delta > 0
-                  ? 'tabular-nums text-white'
+                  ? 'shrink-0 tabular-nums text-white'
                   : delta < 0
-                  ? 'tabular-nums text-sang-500'
-                  : 'tabular-nums text-anthracite-300'
+                  ? 'shrink-0 tabular-nums text-sang-500'
+                  : 'shrink-0 tabular-nums text-anthracite-300'
               }
             >
               {delta > 0 ? '+' : ''}
@@ -170,7 +223,7 @@ function MuscleRow({
                 : 'rounded bg-sang-900/60 px-2 py-0.5 text-xs text-sang-500'
             }
           >
-            {m}
+            {muscleLabel(m)}
           </span>
         ))}
       </div>

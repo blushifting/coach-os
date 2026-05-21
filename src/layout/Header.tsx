@@ -22,10 +22,12 @@ export function Header() {
       // (`AppShell.BrandWatermark`, fixed left-3 w-8). `pl-20` (#11i bis) pour
       // créer un écart visuel net entre le K et le titre, plutôt que de les
       // coller.
+      // Conv #15-1 — hauteur réduite (h-10) + paddingTop 0.4rem pour matcher
+      // le centre vertical de la barre du StepIndicator d'onboarding.
       className="sticky top-0 z-10 flex items-center border-b border-sang-700/25 bg-graphite-950/85 pl-20 pr-5 backdrop-blur-md"
-      style={{ paddingTop: 'max(env(safe-area-inset-top), 0.75rem)' }}
+      style={{ paddingTop: 'max(env(safe-area-inset-top), 0.4rem)' }}
     >
-      <div className="flex h-12 w-full items-center justify-between">
+      <div className="flex h-10 w-full items-center justify-between">
         <h1 className="font-display text-2xl uppercase leading-none tracking-[0.06em] text-white">
           {title}
         </h1>

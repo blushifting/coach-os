@@ -2,13 +2,14 @@ import { expect, test } from '@playwright/test';
 import { runOnboardingMinimal } from './_helpers';
 
 /**
- * E2E mode démo persona Alex — Conv #13e (refonte tour guidé).
+ * E2E mode démo persona Alex — Conv #13e (refonte tour guidé),
+ * Conv #15-3 (étape Profil retirée → 5 étapes).
  *
  * Parcours :
  *   1. Onboarding préset par défaut → arrive sur `/programme`.
  *   2. WelcomeBanner CTA → enterDemoMode → overlay welcome démo.
  *   3. Commencer la visite → bandeau étape 1 (Programme).
- *   4. Suivant × N → on traverse les 6 étapes, chacune sur sa route.
+ *   4. Suivant × N → on traverse les 5 étapes, chacune sur sa route.
  *   5. Démarrer ma vraie 1re séance → exit + retour /programme.
  */
 
@@ -29,7 +30,7 @@ test.beforeEach(async ({ context }) => {
   });
 });
 
-test("démo Alex : tour guidé complet 6 étapes + sortie", async ({ page }) => {
+test("démo Alex : tour guidé complet 5 étapes + sortie", async ({ page }) => {
   await runOnboardingMinimal(page);
 
   // 1. WelcomeBanner CTA → entrée démo
@@ -61,12 +62,7 @@ test("démo Alex : tour guidé complet 6 étapes + sortie", async ({ page }) => 
   await expect(page.getByTestId('demo-tour-step-cycle-bilan')).toBeVisible();
   await expect(page).toHaveURL(/\/cycle-bilan$/);
 
-  // 7. Suivant → étape 5 = Profil
-  await page.getByTestId('btn-tour-next').click();
-  await expect(page.getByTestId('demo-tour-step-profil')).toBeVisible();
-  await expect(page).toHaveURL(/\/profil$/);
-
-  // 8. Suivant → étape 6 = Sortie (bouton Démarrer ma vraie 1re séance)
+  // 7. Suivant → étape 5 = Sortie (bouton Démarrer ma vraie 1re séance)
   await page.getByTestId('btn-tour-next').click();
   await expect(page.getByTestId('demo-tour-step-done')).toBeVisible();
   await expect(page.getByTestId('btn-tour-finish')).toBeVisible();
@@ -92,6 +88,19 @@ test('démo Alex : bouton Précédent revient à l\'étape précédente', async 
   await page.getByTestId('btn-tour-prev').click();
   await expect(page.getByTestId('demo-tour-step-programme')).toBeVisible();
   await expect(page).toHaveURL(/\/programme$/);
+});
+
+test('démo Alex : Précédent étape 1 rouvre la welcome overlay (Conv #15-3)', async ({
+  page,
+}) => {
+  await runOnboardingMinimal(page);
+  await page.getByTestId('btn-start-demo-from-welcome').click();
+  await page.getByTestId('btn-demo-start').click();
+  await expect(page.getByTestId('demo-tour-step-programme')).toBeVisible();
+
+  // Précédent depuis étape 1 → ré-ouvre l'overlay welcome
+  await page.getByTestId('btn-tour-prev').click();
+  await expect(page.getByTestId('demo-welcome-overlay')).toBeVisible();
 });
 
 test('démo Alex : Quitter la démo à mi-parcours restaure l\'état', async ({
