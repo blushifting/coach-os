@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { runOnboardingMinimal } from './_helpers';
+import {
+  runOnboardingMinimal,
+  runOnboardingMinimalWithAutoDemo,
+} from './_helpers';
 
 /**
  * E2E mode démo persona Alex — Conv #13e (refonte tour guidé),
@@ -30,7 +33,7 @@ test.beforeEach(async ({ context }) => {
   });
 });
 
-test("démo Alex : tour guidé complet 5 étapes + sortie", async ({ page }) => {
+test("démo Alex : tour guidé complet 6 étapes + sortie", async ({ page }) => {
   await runOnboardingMinimal(page);
 
   // 1. WelcomeBanner CTA → entrée démo
@@ -52,17 +55,22 @@ test("démo Alex : tour guidé complet 5 étapes + sortie", async ({ page }) => 
   await expect(page.getByTestId('demo-tour-step-seance')).toBeVisible();
   await expect(page).toHaveURL(/\/seance\/runner$/);
 
-  // 5. Suivant → étape 3 = Force (sur /progres, sous-onglet "force" auto-cliqué)
+  // 5. Suivant → étape 3 = Effort (Conv #15-9)
+  await page.getByTestId('btn-tour-next').click();
+  await expect(page.getByTestId('demo-tour-step-effort')).toBeVisible();
+  await expect(page).toHaveURL(/\/seance\/runner$/);
+
+  // 6. Suivant → étape 4 = Force (sur /progres, sous-onglet "force" auto-cliqué)
   await page.getByTestId('btn-tour-next').click();
   await expect(page.getByTestId('demo-tour-step-progres-force')).toBeVisible();
   await expect(page).toHaveURL(/\/progres$/);
 
-  // 6. Suivant → étape 4 = Bilan de cycle
+  // 7. Suivant → étape 5 = Bilan de cycle
   await page.getByTestId('btn-tour-next').click();
   await expect(page.getByTestId('demo-tour-step-cycle-bilan')).toBeVisible();
   await expect(page).toHaveURL(/\/cycle-bilan$/);
 
-  // 7. Suivant → étape 5 = Sortie (bouton Démarrer ma vraie 1re séance)
+  // 8. Suivant → étape 6 = Sortie (bouton Démarrer ma vraie 1re séance)
   await page.getByTestId('btn-tour-next').click();
   await expect(page.getByTestId('demo-tour-step-done')).toBeVisible();
   await expect(page.getByTestId('btn-tour-finish')).toBeVisible();
@@ -122,6 +130,16 @@ test('démo Alex : Quitter la démo à mi-parcours restaure l\'état', async ({
   await page.getByTestId('btn-start-demo-from-welcome').click();
   await page.getByTestId('btn-demo-start').click();
   await expect(page.getByTestId('demo-tour-step-programme')).toBeVisible();
+});
+
+test('démo Alex : auto-lancée à la fin de l\'onboarding (Conv #15-7)', async ({
+  page,
+}) => {
+  await runOnboardingMinimalWithAutoDemo(page);
+  // La welcome overlay démo apparaît automatiquement (sans clic sur le
+  // WelcomeBanner) puisque l'onboarding vient de se terminer.
+  await expect(page.getByTestId('demo-welcome-overlay')).toBeVisible();
+  await expect(page.getByTestId('btn-exit-demo')).toBeVisible();
 });
 
 test('démo Alex : relance depuis Profil > Aide', async ({ page }) => {

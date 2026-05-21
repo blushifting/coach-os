@@ -21,6 +21,7 @@ import {
   generateInitialCyclePlan,
   startUser,
 } from '@/hooks/useEngine';
+import { enterDemoMode } from '@/lib/demo';
 import {
   buildMuscleGoals,
   buildProfile,
@@ -151,6 +152,21 @@ export default function OnboardingPage() {
         await applyVariantReplacements(variantReplacements);
       }
       navigate('/programme', { replace: true });
+      // Conv #15-7 — auto-lance la visite guidée Alex immédiatement après
+      // l'onboarding. La welcome overlay apparaît dans DemoModeProvider dès
+      // que `demoMode` passe à true. Best-effort : si l'asset alex.json
+      // fail (e2e, offline au 1er lancement), l'utilisateur reste sur le
+      // WelcomeBanner normal. Le flag LS `coach-os.skip-auto-demo` désactive
+      // ce comportement (utilisé par les helpers e2e).
+      try {
+        if (localStorage.getItem('coach-os.skip-auto-demo') !== '1') {
+          void enterDemoMode().catch(() => {
+            /* la démo est facultative */
+          });
+        }
+      } catch {
+        /* LS indispo (private mode iOS, etc.) — pas de démo auto */
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Erreur inattendue';
       setError(msg);

@@ -19,7 +19,12 @@ import {
   weeklyVolumeByMuscle,
   type VariantReplacement,
 } from '@/lib/onboarding-preview';
-import { ExType, type DayTemplate, type WeeklyTemplate } from '@/engine/models';
+import {
+  ExType,
+  Objective,
+  type DayTemplate,
+  type WeeklyTemplate,
+} from '@/engine/models';
 import { profile } from '../engine/_helpers';
 
 const catalog = new Catalog();
@@ -219,5 +224,35 @@ describe('estimateExerciseDurationMinutes / analyzeProgramTension (Conv #11h)', 
     const tension = analyzeProgramTension(tpl, catalog);
     expect(tension.maxMin).toBe(0);
     expect(tension.tooLong).toBe(false);
+  });
+
+  /**
+   * Conv #15-11 — full-body 3j avec préset par défaut (scénario Azur) doit
+   * produire des durées de séance équilibrées. Avant la refonte de
+   * `parameterizeSplit`, le préset générait ~58/39/31 min (max-min = 27 min,
+   * ratio 1.87). On vérifie que la disparité est désormais contenue.
+   */
+  it('full-body 3j default : durées équilibrées entre les jours (Conv #15-11)', () => {
+    const p = profile({
+      sessions_per_week: 3,
+      objective: Objective.HYPERTROPHIE,
+    });
+    const goals = bootstrapMuscleGoalsFromProfile(p, [
+      'pectoraux',
+      'dos_largeur',
+      'quadriceps',
+      'ischios',
+    ]);
+    const { template, blocking } = buildPreviewTemplate(p, goals, null, catalog);
+    expect(blocking).toEqual([]);
+    expect(template).not.toBeNull();
+    const tension = analyzeProgramTension(template!, catalog);
+    const nonEmpty = tension.durationsMin.filter((d) => d > 0);
+    expect(nonEmpty.length).toBeGreaterThan(0);
+    const max = Math.max(...nonEmpty);
+    const min = Math.min(...nonEmpty);
+    // Tolérance : on accepte jusqu'à 18 min de disparité (ratio ~1.45 sur
+    // un max ~50 min). Au-delà, c'est le déséquilibre Azur.
+    expect(max - min).toBeLessThanOrEqual(18);
   });
 });

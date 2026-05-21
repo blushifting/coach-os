@@ -152,6 +152,27 @@ const STATUS_ORDER: Record<MuscleStatus, number> = {
  * Ordre de placement (cf. 09 §4.6) : statut PRIORITAIRE avant SUGGERE,
  * puis priority_rank ascendant.
  */
+/**
+ * Coût estimé (≈ nb d'exos) qu'un muscle ajoutera à un jour, basé sur
+ * son volume cible et sa fréquence. Sert au tri d'équilibrage de
+ * `parameterizeSplit` (Conv #15-11) — auparavant on comptait juste le
+ * nombre de muscles, ce qui sous-estimait les muscles prioritaires
+ * hypertrophie (3-4 exos) face aux MAINTIEN (1 exo).
+ */
+function expectedExosForMuscle(
+  muscle: string,
+  goal: MuscleGoal,
+  state: UserState,
+): number {
+  if (goal.status === MuscleStatus.NON_COUVERT) return 0;
+  const freq =
+    goal.status === MuscleStatus.PRIORITAIRE ? targetFrequency(muscle, state) : 1;
+  if (freq === 0) return 0;
+  const [vMin] = effectiveVolumeBounds(state, muscle);
+  const vSession = freq > 0 ? vMin / freq : vMin;
+  return exosCountForVolume(vSession);
+}
+
 export function parameterizeSplit(
   split: SplitTemplate,
   muscleGoals: Record<string, MuscleGoal>,
@@ -164,11 +185,32 @@ export function parameterizeSplit(
     target_muscles_focus: [],
   }));
 
+  // Conv #15-11 — coût accumulé par jour (≈ nb d'exos attendus). On place
+  // chaque muscle sur le(s) jour(s) le(s) moins chargé(s) plutôt que le(s)
+  // jour(s) avec le moins de muscles. Évite que le jour 1 récupère tous
+  // les muscles prioritaires hypertrophie (3-4 exos chacun) pendant que
+  // les autres jours ramassent les maintiens (1 exo).
+  const costByDay: number[] = daysMeta.map(() => 0);
+
+  // Pré-calcul du coût attendu par muscle (utilisé pour MAJ costByDay au
+  // placement et pour ordre "first-fit decreasing").
+  const muscleCost = new Map<string, number>();
+  for (const [muscle, goal] of Object.entries(muscleGoals)) {
+    muscleCost.set(muscle, expectedExosForMuscle(muscle, goal, state));
+  }
+
   const sortedGoals = Object.entries(muscleGoals).slice().sort((a, b) => {
     const sa = STATUS_ORDER[a[1].status];
     const sb = STATUS_ORDER[b[1].status];
     if (sa !== sb) return sa - sb;
-    return a[1].priority_rank - b[1].priority_rank;
+    if (a[1].priority_rank !== b[1].priority_rank) {
+      return a[1].priority_rank - b[1].priority_rank;
+    }
+    // Conv #15-11 — départage par coût décroissant pour placer d'abord
+    // les muscles les plus coûteux (heuristique first-fit decreasing).
+    const ca = muscleCost.get(a[0]) ?? 0;
+    const cb = muscleCost.get(b[0]) ?? 0;
+    return cb - ca;
   });
 
   for (const [muscle, goal] of sortedGoals) {
@@ -177,15 +219,27 @@ export function parameterizeSplit(
       goal.status === MuscleStatus.PRIORITAIRE ? targetFrequency(muscle, state) : 1;
     if (freq === 0) continue;
 
-    const eligible = daysMeta.filter((d) => muscleBelongsToSlot(muscle, d.slot_kind));
-    if (eligible.length === 0) continue;
-    eligible.sort((a, b) => a.target_muscles_focus.length - b.target_muscles_focus.length);
+    const eligibleIndices = daysMeta
+      .map((d, i) => ({ d, i }))
+      .filter(({ d }) => muscleBelongsToSlot(muscle, d.slot_kind));
+    if (eligibleIndices.length === 0) continue;
+    // Conv #15-11 — tri par coût croissant des jours (vs. ancien
+    // tri par nb de muscles). Départage stable par day_index pour rester
+    // déterministe.
+    eligibleIndices.sort((a, b) => {
+      const ca = costByDay[a.i] ?? 0;
+      const cb = costByDay[b.i] ?? 0;
+      if (ca !== cb) return ca - cb;
+      return a.i - b.i;
+    });
 
+    const cost = muscleCost.get(muscle) ?? 0;
     let placed = 0;
-    for (const d of eligible) {
+    for (const { d, i } of eligibleIndices) {
       if (placed >= freq) break;
       if (!d.target_muscles_focus.includes(muscle)) {
         d.target_muscles_focus.push(muscle);
+        costByDay[i] = (costByDay[i] ?? 0) + cost;
         placed += 1;
       }
     }

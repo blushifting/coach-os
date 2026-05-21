@@ -32,10 +32,14 @@ export const HELP_GLOSSARY: Readonly<Record<HelpTopic, HelpEntry>> = {
   rpe: {
     title: 'Effort',
     body:
-      "Note l'intensité ressentie en fin de série, sur une échelle de 6 à 10. " +
-      "Effort 8/10 = il te restait 2 reps en réserve. Effort 10/10 = échec total (impossible de faire une rep de plus). " +
+      "Note l'intensité ressentie en fin de série, sur une échelle de 6 à 10 " +
+      "(en dessous de 6 c'est trop facile pour stimuler du muscle). " +
+      "Repères : 6 = il restait 4 reps en réserve, 7 = 3 reps, 8 = 2 reps, " +
+      "9 = 1 rep, 10 = échec total (impossible d'en faire une de plus). " +
       "C'est ce que les coachs appellent RPE (Rate of Perceived Exertion). " +
-      "Kotsh s'en sert pour ajuster automatiquement tes charges : si l'effort est plus bas que prévu, on monte ; s'il est plus haut, on baisse.",
+      "Kotsh s'en sert pour ajuster automatiquement la charge à la séance " +
+      "suivante : effort plus bas que la cible → on monte ; plus haut → on " +
+      "baisse. Plus tu es honnête dans la note, mieux Kotsh calibre.",
   },
   cycle: {
     title: 'Cycle',

@@ -3,7 +3,7 @@
  * (Conv #12b). Apparaît si la confidence est `'not_calibrated'` ou `'stale'`.
  *
  * - `'not_calibrated'` : l'exo n'a jamais été mesuré → texte pédagogique
- *   "On apprend ta charge — vise 3-6 reps avec 2-3 reps en réserve".
+ *   "On apprend ta charge — vise 3-8 reps avec 2-3 reps en réserve".
  *   Lien discret "Je connais déjà mon plafond" → ouvre `ManualE1rmSheet`.
  * - `'stale'` : dernière mesure > 8 sem → texte plus court invitant à
  *   refaire une vraie série. Pas de sheet manuelle ici (la mesure se fait
@@ -95,7 +95,7 @@ export function CalibrationBanner({
             —{' '}
             {isStale
               ? 'plafond pas mesuré depuis 8 semaines, cette série le rafraîchira.'
-              : 'vise 3-6 reps en gardant 2-3 reps en réserve (effort 7-8/10).'}
+              : 'vise 3-8 reps en gardant 2-3 reps en réserve (effort 7-8/10). Toute série fiable (effort ≥ 7, ≤ ~12 reps) sert à calibrer.'}
           </p>
         )}
 

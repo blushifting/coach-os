@@ -70,13 +70,23 @@ const TOUR_STEPS: readonly TourStep[] = [
     route: '/seance/runner',
     title: 'Sa séance du jour',
     body:
-      "Voici l'interface séance. Pour chaque série tu coches dès que tu l'as faite, puis tu indiques ton effort perçu (sur 10). Kotsh apprend ton plafond à chaque saisie — pas besoin de calibration préalable.",
+      "Voici l'interface séance. Pour chaque série tu saisis les reps faites, la charge, l'effort ressenti — puis tu coches. Kotsh apprend ton plafond à chaque saisie, pas besoin de calibration préalable.",
     pointTo: '[data-testid="set-row-0"]',
     highlight: {
       selector: '[data-testid="set-row-0"]',
       className: 'animate-row-flash',
       durationMs: 700,
     },
+  },
+  // Conv #15-9 — étape dédiée à l'effort (notion clé, mal comprise au 1er
+  // contact). Pointe directement sur la cellule "effort" de la 1re série.
+  {
+    id: 'effort',
+    route: '/seance/runner',
+    title: "L'effort, le cœur du système",
+    body:
+      "À la fin de chaque série, note l'effort ressenti sur 10. Repère : 6 = facile, il restait 4 reps en réserve. 8 = dur, 2 reps en réserve. 10 = échec, impossible d'en faire une de plus. Kotsh s'en sert pour ajuster automatiquement tes charges à la séance suivante — c'est ce qui rend le programme autorégulé.",
+    pointTo: '[data-testid="input-rpe-0"]',
   },
   {
     id: 'progres-force',
@@ -205,18 +215,48 @@ function useDialogOverlaying(): boolean {
 // Bandeau narratif + flèche pointeur
 // =============================================================================
 
-function PointerArrow({ targetSelector }: { targetSelector: string }) {
-  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+/**
+ * Position du bandeau démo par rapport au target.
+ * Conv #15-8 — `'bottom'` (default historique) ou `'top'` selon que le
+ * target est dans la moitié haute (bandeau en bas) ou basse (bandeau
+ * en haut) de la viewport, pour ne pas masquer le pointé.
+ */
+type BannerSide = 'top' | 'bottom';
+
+interface TargetMeasure {
+  /** x du centre du target. */
+  readonly cx: number;
+  /** y du centre du target. */
+  readonly cy: number;
+  /** Côté où placer le bandeau pour ne pas masquer le target. */
+  readonly side: BannerSide;
+}
+
+/**
+ * Mesure la position d'un élément ciblé par sélecteur CSS. Réobserve sur
+ * resize / scroll / mutation pour suivre les routes async.
+ */
+function useTargetMeasure(targetSelector: string | undefined): TargetMeasure | null {
+  const [m, setM] = useState<TargetMeasure | null>(null);
 
   useEffect(() => {
+    if (targetSelector === undefined) {
+      setM(null);
+      return;
+    }
     function refresh() {
-      const el = document.querySelector(targetSelector);
+      const el = document.querySelector(targetSelector!);
       if (el === null) {
-        setPos(null);
+        setM(null);
         return;
       }
       const r = el.getBoundingClientRect();
-      setPos({ x: r.left + r.width / 2, y: r.top });
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      // Si la moitié basse de la viewport → bandeau en haut, pour ne pas
+      // masquer le target.
+      const side: BannerSide = cy > window.innerHeight / 2 ? 'top' : 'bottom';
+      setM({ cx, cy, side });
     }
     refresh();
     const ro = new ResizeObserver(refresh);
@@ -235,26 +275,40 @@ function PointerArrow({ targetSelector }: { targetSelector: string }) {
     };
   }, [targetSelector]);
 
-  if (pos === null) return null;
-  // Flèche SVG verticale pointant vers le haut (target), placée juste
-  // au-dessus du bandeau (qui occupe les ~140 px du bas).
-  const arrowBottomPx = 152; // hauteur bandeau approx + marge
+  return m;
+}
+
+function PointerArrow({ measure }: { measure: TargetMeasure }) {
+  // Conv #15-8 — flèche orientée selon le côté du bandeau.
+  // - Bandeau en bas → flèche au-dessus du bandeau, pointe vers le haut.
+  // - Bandeau en haut → flèche sous le bandeau, pointe vers le bas.
+  const isBottomBanner = measure.side === 'bottom';
+  // Distance entre l'extrémité de la flèche et le bord du bandeau.
+  const BANNER_OFFSET = 152; // hauteur bandeau approx + marge
+  const baseStyle: React.CSSProperties = {
+    left: measure.cx - 14,
+    width: 28,
+    height: 36,
+  };
+  const style: React.CSSProperties = isBottomBanner
+    ? { ...baseStyle, bottom: BANNER_OFFSET }
+    : { ...baseStyle, top: BANNER_OFFSET };
+  // 2 paths SVG : un avec flèche vers le haut (bandeau en bas), un vers le
+  // bas (bandeau en haut).
+  const arrowPath = isBottomBanner
+    ? 'M14 0 L14 28 M14 28 L6 20 M14 28 L22 20'
+    : 'M14 36 L14 8 M14 8 L6 16 M14 8 L22 16';
   return (
     <svg
       aria-hidden="true"
       data-testid="demo-pointer-arrow"
       className="pointer-events-none fixed z-[53]"
-      style={{
-        left: pos.x - 14,
-        bottom: arrowBottomPx,
-        width: 28,
-        height: 36,
-      }}
+      style={style}
       viewBox="0 0 28 36"
       fill="none"
     >
       <path
-        d="M14 0 L14 28 M14 28 L6 20 M14 28 L22 20"
+        d={arrowPath}
         stroke="#e11d48"
         strokeWidth="3"
         strokeLinecap="round"
@@ -281,15 +335,24 @@ function GuidedTourBanner({
   onFinish: () => void;
 }) {
   const hidden = useDialogOverlaying();
+  const measure = useTargetMeasure(step.pointTo);
   if (hidden) return null;
   const isLast = index === total - 1;
+  // Conv #15-8 — bandeau au-dessus si le target est en bas, sinon en bas.
+  // Pas de measure (target absent ou non spécifié) → bottom par défaut.
+  const side: BannerSide = measure?.side ?? 'bottom';
+  const bannerPositionStyle: React.CSSProperties =
+    side === 'bottom'
+      ? { bottom: 'max(env(safe-area-inset-bottom), 4.25rem)' }
+      : { top: 'max(env(safe-area-inset-top), 3.5rem)' };
   return (
     <>
-      {step.pointTo !== undefined && <PointerArrow targetSelector={step.pointTo} />}
+      {measure !== null && <PointerArrow measure={measure} />}
       <div
         data-testid={`demo-tour-step-${step.id}`}
+        data-banner-side={side}
         className="pointer-events-auto fixed left-3 right-3 z-[54] mx-auto max-w-md"
-        style={{ bottom: 'max(env(safe-area-inset-bottom), 4.25rem)' }}
+        style={bannerPositionStyle}
       >
         <Card
           className="relative flex flex-col gap-2 border-2 border-sang-600 shadow-glow-sang-lg ring-2 ring-sang-600/20"
