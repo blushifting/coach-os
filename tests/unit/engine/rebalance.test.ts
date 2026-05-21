@@ -23,6 +23,7 @@ import { startUser } from '@/engine/engine';
 import { analyzeProgramTension } from '@/lib/onboarding-preview';
 import {
   exercisePrimaires,
+  MuscleStatus,
   Objective,
   type WeeklyTemplate,
 } from '@/engine/models';
@@ -97,7 +98,7 @@ describe('rebalance via generateCyclePlan — full-body 3j', () => {
     // Pour chaque muscle prioritaire, vérifie qu'il est travaillé sur
     // ≥ 2 jours différents (cible bootstrap pour 3 séances/sem).
     const priorities = Object.entries(state.muscle_goals)
-      .filter(([, g]) => g.status === 'PRIORITAIRE')
+      .filter(([, g]) => g.status === MuscleStatus.PRIORITAIRE)
       .map(([m]) => m);
     for (const muscle of priorities) {
       let count = 0;

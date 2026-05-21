@@ -145,6 +145,54 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
+## État courant — fin Conv #16 (2026-05-23) — V1.2.0
+
+Itération sur retours d'usage post-V1.1.0. Bump **v1.2.0** (minor :
+nouvelle feature majeure = rééquilibrage durées séances).
+
+**#16-1 — fixes UX démo + SetInput** (commit `a475071`)
+- Welcome démo manquante : `resetApp` clear les LS `coach-os.demo-
+  welcome-seen` + `coach-os.welcome-dismissed`. `OnboardingPage.
+  finalize()` force `resetDemoDismissals()` avant `enterDemoMode`
+  → la welcome overlay est garantie au 1er auto-launch
+  post-onboarding, même après reset app.
+- Cohérence date snapshot Alex : `ProgrammePage` utilise
+  `currentSessionPlan.seance_date` comme "now" en mode démo (via
+  `parseDateKey`). Avant : marqueur today posé à la vraie date
+  système, incohérent avec le texte "Alex est mardi".
+- Calendrier non-interactif en mode démo : `onDayClick=noop` quand
+  `demoActive` → la `PlanDaySheet` ne s'ouvre plus pendant le tour
+  (sinon elle masquait le bandeau démo).
+- SetInput largeur reps/effort : `92px` → `112px`. Boutons `−`/`+`
+  passés `w-8` → `w-9` (32→36px) pour tap targets ≥ 44px. `min-w-0`
+  + `text-sm` sur l'input number pour retirer la min-width
+  implicite qui repoussait le `+` hors du conteneur
+  `overflow-hidden`.
+
+**#16-2 — rééquilibrage généralisé des durées** (commit `c44...`,
+gros chantier)
+- Nouveau module `engine/rebalance.ts` appelé en fin de
+  `generateCyclePlan` (après `topUpMaintenance` /
+  `enforceLengthenedBias` / `resolveCapacityConflict`).
+- Algo glouton **intra-groupe `slot_kind`** : UPPER avec UPPER,
+  LOWER avec LOWER, FULLBODY entre eux. Respecte l'esprit du split.
+- À chaque itération : identifie L (long) + S (short) du groupe,
+  énumère toutes les **opérations candidates** (Move = déplacer un
+  exo L→S ; Swap = échanger un exo L↔S), retient celle qui maximise
+  le gain sur `max-min`. Accepte seulement si :
+  - gain ≥ 3 min (pas de micro-swap),
+  - fréquence muscle prioritaire préservée (`targetFrequency`),
+  - aucun jour ne devient vide,
+  - pas de doublon `exercise_id` créé.
+- Stop quand plus d'op valide à ≥ 3 min OU 10 itérations atteintes.
+- Généralisable à tous les programmes (custom "haut du corps × 3",
+  etc.) — pas de cas spécial full-body / UL / PPL.
+- `target_muscles_focus` volontairement non recalculé (métadonnée
+  historique).
+
+**Tests fin Conv #16** : **497 Vitest verts** (+7 sur rebalance),
+**23/23 e2e verts**.
+
 ## État courant — fin Conv #15 (2026-05-22) — V1.1.0
 
 Dump de retours d'usage post-V1 traité en 3 vagues (11 items au total),
