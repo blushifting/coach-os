@@ -56,6 +56,7 @@ import {
   MAX_TOTAL_SETS_PER_SESSION,
 } from './selection';
 import { pythonRound } from './prescription';
+import { rebalanceCycleDurations } from './rebalance';
 
 // =============================================================================
 // Types intermédiaires
@@ -610,5 +611,17 @@ export function generateCyclePlan(
   enforceLengthenedBias(weekly, state, catalog);
   resolveCapacityConflict(weekly, state.profile.level, state);
 
-  return weekly;
+  // Conv #16-2 — rééquilibrage des durées de séance. Opère intra-groupe
+  // par slot_kind (UPPER avec UPPER, LOWER avec LOWER, FULLBODY entre
+  // eux, etc.) → préserve l'esprit du split. N'altère pas si les jours
+  // sont déjà équilibrés ou si les contraintes (fréquence muscle, jour
+  // non vide) bloquent les opérations.
+  const slotKinds = daysMeta.map((dm) => dm.slot_kind);
+  const { template: rebalanced } = rebalanceCycleDurations(
+    weekly,
+    slotKinds,
+    state,
+    catalog,
+  );
+  return rebalanced;
 }
