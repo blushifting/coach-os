@@ -145,6 +145,53 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
+## État courant — fin Conv #15 (2026-05-22) — V1.1.0
+
+Dump de retours d'usage post-V1 traité en 3 vagues (11 items au total),
+bump **v1.1.0** (minor : changements de comportement visibles).
+
+**Vague 1 — polish UI** (commit `7f3997d`)
+- Header h-12 → h-10 + filigrane K remonté pour aligner avec la barre
+  du step indicator d'onboarding (#15-1).
+- Logo Kotsh footer Profil x2 + padding aéré (#15-2).
+- Démo : "ⓘ" devant Étape N/M retiré, Précédent étape 1 rouvre la
+  welcome overlay, étape Profil supprimée (5 étapes au lieu de 6).
+  Demo.spec.ts adapté (#15-3).
+- SetInput refondu en 2 lignes : "Série N" + tick (✓) en haut, valeurs
+  reps/kg/effort en bas avec largeurs équilibrées. kg garde flex-1,
+  reps + effort en w-[92px] (#15-4).
+- CycleBilanPage : "Plafonds — Δ sur le cycle" → "Évolution sur le
+  cycle", exId brut → nom français via `exerciseLabel`. Page accepte
+  `?cycle=N` pour cibler un bilan archivé. Lien "Voir le bilan complet
+  →" sur chaque CycleCard de Progrès > Cycles (#15-5).
+- Infobulle "adherence" dans help-glossary + HelpButton dans
+  ReviewKeyMetrics (#15-6).
+
+**Vague 2 — démo + pédagogie** (commit `afe0314` partie 1)
+- Démo auto-lancée à la fin de l'onboarding via `enterDemoMode()` en
+  fin de `finalize()`. LS flag `coach-os.skip-auto-demo` désactive en
+  e2e ; nouveau helper `runOnboardingMinimalWithAutoDemo` (#15-7).
+- Bulle démo qui ne masque pas le pointé : `useTargetMeasure`
+  détermine si le target est en haut ou en bas de la viewport, le
+  bandeau et la flèche s'adaptent (#15-8).
+- Nouvelle étape démo "effort" (entre seance et progres-force) avec
+  body détaillé. `help-glossary.rpe` enrichi : repères 6-10 + "plus
+  honnête = mieux calibré" (#15-9).
+
+**Vague 3 — fond / algo** (commit `afe0314` partie 2)
+- Calibration range 3-6 → 3-8 reps dans CalibrationBanner. L'algo
+  `measurementIsReliable` accepte n_equiv ≤ 15, donc 3-8 reste
+  largement fiable (#15-10).
+- `parameterizeSplit` équilibre désormais sur le **coût estimé en
+  exos** par muscle (volume_min + fréquence) plutôt que sur le nombre
+  brut de muscles. First-fit decreasing : muscles les plus coûteux
+  d'abord. Le scénario full-body 3j default passait de 58/39/31 min
+  (max-min 27) à une répartition lissée. Test smoke :
+  `onboarding-preview.test.ts` vérifie max-min ≤ 18 min (#15-11).
+
+**Tests fin Conv #15** : **490 Vitest verts** (+1), **23/23 e2e verts**
+(+2 : auto-démo + Précédent étape 1).
+
 ## État courant — fin Conv #14 (2026-05-20) — V1.0.0
 
 Conv #14 = pass UI / UX en 3 sous-conv (#14a/b/c). Bump **package.json
