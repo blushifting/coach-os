@@ -333,21 +333,53 @@ ajouté ; nombreuses corrections de textes + polish UX).
 
 **Tests fin Conv #15 vague 3** : **497 Vitest + 23/23 e2e verts**.
 
-**Backlog Conv #17** (décalé depuis #16 — Conv #16 a été utilisée par la
-refonte calibration) — chantiers visuels / refonte UX
-- Silhouette muscles plus human-like (RBH trop stylisée).
-- Refonte visu volume (Progrès > Volume "très moche").
-- Audit réalisme des plafonds Alex (200 kg presse à jambes etc.).
-- Step2 onboarding : silhouette cliquable pour ajouter le muscle,
-  liste priorités en dessous, "ajouter manuellement" plus bas.
-- Simplifier l'aide : un gros bouton "Aide" dans Profil qui ouvre
-  les différentes options.
+**Backlog Conv #17** — chantiers UX / refonte visuelle (léger à moyen)
+- Silhouette muscles plus human-like (asset SVG anatomique réaliste
+  vs RBH stylisé).
+- Refonte visu volume (Progrès > Volume "très moche") — brainstorm
+  avant code.
+- Audit réalisme plafonds Alex (200 kg presse à jambes etc.).
+- Step2 onboarding : silhouette cliquable en haut, priorités en
+  dessous, "ajouter manuellement" en bas.
+- **Refonte bouton "Aide" Profil** : remplacer la Card "Aide / Ouvrir"
+  peu ergonomique par un gros bouton "Aide" évident. Contenu de la
+  `AideSheet` inchangé. Les HelpButton "?" répartis dans l'app
+  (ForceView, VolumeView, Step2, Widgets, etc.) restent en place —
+  c'est l'inverse du "regrouper l'aide", on garde les deux entrées.
+- **Édition plafond hors séance** via Catalogue : bouton dans
+  `CatalogueDetailSheet` qui ouvre `ManualE1rmSheet` (déjà existante).
+- **Mode démo protection paranoïaque** : audit léger pour vérifier
+  qu'aucune mutation persistante ne fuit. Les "+/-", saisies en
+  séance et navigation Progrès restent libres — on bloque uniquement
+  les écritures DB (déjà partiellement traité Conv #16 sur les
+  boutons Terminer/Sauter/Annuler).
+- Réflexion préalable "muscles primaires fins" (pec_haut/pec_bas) :
+  ce que ça implique côté catalogue + UX. Décision avant code.
 
-**Backlog Conv #18+ (gros chantier, état)** (décalé depuis #17)
-- Modifier le profil ou les priorités après onboarding : reprendre
-  un mini onboarding partiel + terminer prématurément le cycle en
-  cours avec bilan archivé (mais pas affiché dans la foulée pour ne
-  pas divertir).
+**Backlog Conv #18 — gros chantier édition / migration**
+- Édition profil/priorités après onboarding → reprise mini-onboarding
+  partiel + terminer prématurément le cycle en cours avec bilan
+  archivé (consultable depuis Progrès > Cycles plus tard, pas
+  affiché dans la foulée pour ne pas divertir).
+- EquipmentOverride UI + boutons "Ajuster les objectifs" / "Changer
+  de programme" du Bilan + régénération cycle plan.
+- Persistance d'une routine fixée par jour (actuellement nudge
+  informatif).
+
+**Reliquat indéterminé**
+- Sync cloud Supabase (V1.5 originellement, post-V1, incident iOS Safari).
+- Enrichissement pédagogique des fiches exo (champs Setup / Exécution
+  / Erreurs courantes) — gros travail de contenu, à faire un jour.
+
+**Retiré du backlog (Conv #16)**
+- Estimation plafond par ratios entre exos : rendu obsolète par la
+  nouvelle procédure de calibration (bootstrap profil → calibration
+  série-par-série dès la 1re séance de l'exo).
+- Rééquilibrage durées résiduel : pas observé en pratique, à
+  ré-ouvrir si cas concret remonte.
+- Parité Python du mapping synonymes : UI-only, le Python n'a pas
+  besoin de la recherche fuzzy. À porter si jamais le prototype en
+  devient consommateur.
 
 ## État courant — fin Conv #15 vague 2 (2026-05-21) — V1.4.0
 
