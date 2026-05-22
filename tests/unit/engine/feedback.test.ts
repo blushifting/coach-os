@@ -79,6 +79,41 @@ describe('updateE1rmForExercise', () => {
     ];
     expect(updateE1rmForExercise(state, ex, fbs)).toBeNull();
   });
+
+  // Conv #16 — skipEma : la 1re séance d'un exo remplace le bootstrap
+  // heuristique par l'agrégation directe (pas de mélange via EMA).
+  it('skipEma=true : remplace le plafond par e1rmAgg sans filtre EMA', () => {
+    const state = startUserStub(profileIntermediaireH());
+    // Bootstrap heuristique posé à 75 (sous-estimé).
+    state.e1rm['bench_bb'] = 75;
+    const ex = catalog.get('bench_bb');
+    // Une série révélatrice : 100 kg × 5 RPE 8 → e1rm_obs ≈ 123.3 kg.
+    const fbs: SetFeedback[] = [
+      { exercise_id: 'bench_bb', reps_done: 5, load_kg: 100, rpe_perceived: 8 },
+    ];
+    const res = updateE1rmForExercise(state, ex, fbs, undefined, { skipEma: true });
+    expect(res).not.toBeNull();
+    const [old, next] = res!;
+    expect(old).toBe(75);
+    // Sans EMA → next ≈ e1rm_obs (pas un mélange 0.3×123 + 0.7×75 = 89.4).
+    expect(next).toBeGreaterThan(120);
+    expect(next).toBeLessThan(126);
+  });
+
+  it('skipEma=false (défaut) : mélange via EMA (comportement séance ≥ 2)', () => {
+    const state = startUserStub(profileIntermediaireH());
+    state.e1rm['bench_bb'] = 75;
+    const ex = catalog.get('bench_bb');
+    const fbs: SetFeedback[] = [
+      { exercise_id: 'bench_bb', reps_done: 5, load_kg: 100, rpe_perceived: 8 },
+    ];
+    const res = updateE1rmForExercise(state, ex, fbs);
+    expect(res).not.toBeNull();
+    const [, next] = res!;
+    // Mélange EMA visible : next entre old (75) et e1rmAgg (~123).
+    expect(next).toBeGreaterThan(80);
+    expect(next).toBeLessThan(110);
+  });
 });
 
 // =============================================================================

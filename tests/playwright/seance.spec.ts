@@ -40,6 +40,12 @@ test('seance : depuis programme → runner → terminer → bilan → retour', a
   const firstSet = page.getByTestId('set-row-0').first();
   await expect(firstSet).toBeVisible();
 
+  // Conv #16 : pour un fresh user post-onboarding, tous les exos sont en
+  // mode calibration → reps + effort sont vides à l'init. On doit les
+  // renseigner avant de pouvoir cocher la série.
+  await page.getByTestId('input-reps-0').first().fill('8');
+  await page.getByTestId('input-rpe-0').first().fill('7');
+
   // Valider la 1re série du 1er exo
   await page.getByTestId('toggle-done-0').first().click();
   await expect(page.getByTestId('set-row-0').first()).toHaveAttribute('data-done', 'true');

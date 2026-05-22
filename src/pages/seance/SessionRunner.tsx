@@ -11,6 +11,7 @@ import type { Catalog } from '@/engine/catalog';
 import type { SessionPlan } from '@/engine/models';
 import { useEngine } from '@/hooks/useEngine';
 import { useCoachOsStore } from '@/store';
+import { useDemoMode } from '@/store/selectors';
 import {
   countDoneSets,
   countPlannedSets,
@@ -20,7 +21,6 @@ import {
   updateSetEntry,
 } from '@/lib/session-runner';
 import { e1rmConfidenceFor } from '@/lib/calibration-status';
-import { measurementIsReliable } from '@/engine/prescription';
 import { bootstrapE1rmIfMissing } from '@/engine/engine';
 import { CalibrationBanner } from './CalibrationBanner';
 import { ExerciseDetailSheet } from './ExerciseDetailSheet';
@@ -51,6 +51,7 @@ export function SessionRunner({
   const engine = useEngine();
   const navigate = useNavigate();
   const userState = useCoachOsStore((s) => s.userState);
+  const demoActive = useDemoMode();
   const snapshots = useCoachOsStore((s) => s.history.e1rmSnapshots);
   const [detail, setDetail] = useState<{ exerciseId: string; itemIndex: number } | null>(null);
   const [confirmSkip, setConfirmSkip] = useState(false);
@@ -128,8 +129,12 @@ export function SessionRunner({
   }
 
   // Wrap onEntriesChange : à chaque transition `done=false → done=true`
-  // d'une série fiable, recalibrer les charges des séries non-cochées du
-  // même exo (cf. recalibrateUpcomingSets).
+  // d'une série, on déclenche le recalibrage **uniquement pour les exos en
+  // mode calibration** (`confidence !== 'measured'`, Conv #16). Pour les exos
+  // déjà calibrés, on laisse les charges prescrites intactes en cours de
+  // séance — l'algo fin de séance s'occupera de la mise à jour stable du
+  // plafond. `recalibrateUpcomingSets` accepte aussi les séries non fiables :
+  // dans ce cas il ne touche pas aux charges mais peut pré-remplir les reps.
   const handleEntriesChange = useCallback(
     (next: SessionEntries) => {
       if (catalog === null) {
@@ -145,7 +150,7 @@ export function SessionRunner({
           const oe = oldRow[j];
           if (!ne || !oe) continue;
           if (ne.done && !oe.done) {
-            if (ne.reps !== null && ne.reps > 0 && measurementIsReliable(ne.reps, ne.rpe)) {
+            if (ne.reps !== null && ne.reps > 0) {
               triggeredIdx = i;
               break;
             }
@@ -153,18 +158,24 @@ export function SessionRunner({
         }
       }
       if (triggeredIdx >= 0 && e1rmInitialRef.current !== null) {
-        next = recalibrateUpcomingSets({
-          entries: next,
-          plan,
-          catalog,
-          bodyweightKg: bodyweight,
-          e1rmInitial: e1rmInitialRef.current,
-          itemIdx: triggeredIdx,
-        });
+        const exId = plan.items[triggeredIdx]?.exercise_id;
+        const isCalibrating =
+          exId !== undefined &&
+          (confidenceByExo[exId] ?? 'measured') !== 'measured';
+        if (isCalibrating) {
+          next = recalibrateUpcomingSets({
+            entries: next,
+            plan,
+            catalog,
+            bodyweightKg: bodyweight,
+            e1rmInitial: e1rmInitialRef.current,
+            itemIdx: triggeredIdx,
+          });
+        }
       }
       onEntriesChange(next);
     },
-    [catalog, entries, plan, bodyweight, onEntriesChange],
+    [catalog, entries, plan, bodyweight, onEntriesChange, confidenceByExo],
   );
 
   return (
@@ -270,6 +281,7 @@ export function SessionRunner({
                       index={j}
                       entry={entry}
                       chargeType={chargeType}
+                      rpeTarget={item.sets[j]?.rpe_target}
                       checkLocked={j > 0 && !entrySets[j - 1]!.done}
                       onChange={(patch) =>
                         handleEntriesChange(updateSetEntry(entries, i, j, patch))
@@ -288,7 +300,7 @@ export function SessionRunner({
         size="lg"
         fullWidth
         onClick={() => setConfirmFinish(true)}
-        disabled={finishing || done === 0}
+        disabled={finishing || done === 0 || demoActive}
         data-testid="btn-finish-session"
       >
         {finishing ? 'Enregistrement…' : 'Terminer la séance'}
@@ -321,13 +333,14 @@ export function SessionRunner({
         onCancel={() => setConfirmFinish(false)}
       />
 
-      {/* Conv #14b-3 — sortie alternative : marquer la séance comme sautée. */}
+      {/* Conv #14b-3 — sortie alternative : marquer la séance comme sautée.
+          Verrouillé en mode démo (protection mutations, Conv #16). */}
       <Button
         variant="ghost"
         size="md"
         fullWidth
         onClick={() => setConfirmSkip(true)}
-        disabled={finishing || skipping || cancelling}
+        disabled={finishing || skipping || cancelling || demoActive}
         data-testid="btn-skip-session"
       >
         {skipping ? 'Marquage…' : 'Sauter cette séance'}
@@ -341,7 +354,7 @@ export function SessionRunner({
         size="md"
         fullWidth
         onClick={() => setConfirmCancel(true)}
-        disabled={finishing || skipping || cancelling}
+        disabled={finishing || skipping || cancelling || demoActive}
         data-testid="btn-cancel-session"
       >
         {cancelling ? 'Annulation…' : 'Annuler la séance'}

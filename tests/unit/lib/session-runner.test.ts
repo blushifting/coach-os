@@ -5,17 +5,23 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildSessionFeedback,
+  computeLiveE1rmFromEntries,
   computeSessionSummary,
   computeSessionVolume,
   countDoneSets,
   countPlannedSets,
   initEntries,
+  lastCheckedSetIsUnreliable,
   listDayCandidates,
+  recalibrateUpcomingSets,
+  suggestNextLoadAfterUnreliable,
   updateSetEntry,
+  type SessionEntries,
 } from '@/lib/session-runner';
 import type { SessionFeedback, SessionPlan } from '@/engine/models';
 import type { FeedbackRow } from '@/db/schema';
 import type { RecordFeedbackResult } from '@/engine/engine';
+import { Catalog } from '@/engine/catalog';
 
 // =============================================================================
 // Fixtures
@@ -74,12 +80,23 @@ function makeFeedbackRow(
 // =============================================================================
 
 describe('initEntries', () => {
-  it('reflète les consignes du plan', () => {
+  it('mode normal : reps cibles pré-remplies, charge prescrite, effort vide', () => {
     const entries = initEntries(makePlan());
     expect(entries).toHaveLength(2);
     expect(entries[0]).toHaveLength(2);
     expect(entries[1]).toHaveLength(1);
-    expect(entries[0]![0]).toEqual({ reps: 5, load_kg: 80, rpe: 8, done: false });
+    // Conv #16 : rpe = null par défaut (pas de biais d'ancrage sur l'effort).
+    expect(entries[0]![0]).toEqual({ reps: 5, load_kg: 80, rpe: null, done: false });
+  });
+
+  it('mode calibration : reps vides pour les exos non calibrés', () => {
+    const entries = initEntries(makePlan(), {
+      calibrationExoIds: new Set(['bench_press']),
+    });
+    // bench_press en calibration → reps null
+    expect(entries[0]![0]).toEqual({ reps: null, load_kg: 80, rpe: null, done: false });
+    // shoulder_press en mode normal → reps pré-remplies
+    expect(entries[1]![0]).toEqual({ reps: 8, load_kg: 40, rpe: null, done: false });
   });
 });
 
@@ -87,7 +104,7 @@ describe('updateSetEntry', () => {
   it('mute uniquement la case ciblée, retourne une nouvelle matrice', () => {
     const e0 = initEntries(makePlan());
     const e1 = updateSetEntry(e0, 0, 1, { reps: 6, done: true });
-    expect(e1[0]![1]).toEqual({ reps: 6, load_kg: 80, rpe: 8, done: true });
+    expect(e1[0]![1]).toEqual({ reps: 6, load_kg: 80, rpe: null, done: true });
     expect(e1[0]![0]).toEqual(e0[0]![0]);
     expect(e1[1]).toEqual(e0[1]);
     expect(e1).not.toBe(e0);
@@ -115,10 +132,11 @@ describe('buildSessionFeedback', () => {
     expect(buildSessionFeedback(makePlan(), e)).toBeNull();
   });
 
-  it('retient uniquement les sets done avec reps > 0', () => {
+  it('retient uniquement les sets done avec reps > 0 ET rpe renseigné', () => {
     let e = initEntries(makePlan());
-    e = updateSetEntry(e, 0, 0, { done: true });
-    e = updateSetEntry(e, 0, 1, { done: true, reps: 0 }); // skip (reps=0)
+    // Conv #16 : rpe doit être renseigné explicitement par l'user — on simule.
+    e = updateSetEntry(e, 0, 0, { done: true, rpe: 8 });
+    e = updateSetEntry(e, 0, 1, { done: true, reps: 0, rpe: 8 }); // skip (reps=0)
     e = updateSetEntry(e, 1, 0, { done: true, reps: 8, load_kg: 42, rpe: 9 });
     const fb = buildSessionFeedback(makePlan(), e);
     expect(fb).not.toBeNull();
@@ -129,7 +147,7 @@ describe('buildSessionFeedback', () => {
 
   it('reporte les métadonnées du plan', () => {
     let e = initEntries(makePlan());
-    e = updateSetEntry(e, 0, 0, { done: true });
+    e = updateSetEntry(e, 0, 0, { done: true, rpe: 8 });
     const fb = buildSessionFeedback(makePlan(), e)!;
     expect(fb.seance_date).toBe('2026-05-13');
     expect(fb.cycle_index).toBe(1);
@@ -142,8 +160,8 @@ describe('buildSessionFeedback', () => {
   // pas remonter comme un faux 0.
   it('skip un set done si reps === null', () => {
     let e = initEntries(makePlan());
-    e = updateSetEntry(e, 0, 0, { done: true, reps: null });
-    e = updateSetEntry(e, 1, 0, { done: true, reps: 8 });
+    e = updateSetEntry(e, 0, 0, { done: true, reps: null, rpe: 8 });
+    e = updateSetEntry(e, 1, 0, { done: true, reps: 8, rpe: 8 });
     const fb = buildSessionFeedback(makePlan(), e);
     expect(fb).not.toBeNull();
     expect(fb!.sets).toHaveLength(1);
@@ -152,8 +170,20 @@ describe('buildSessionFeedback', () => {
 
   it('skip un set done si load_kg === null', () => {
     let e = initEntries(makePlan());
-    e = updateSetEntry(e, 0, 0, { done: true, load_kg: null });
-    e = updateSetEntry(e, 1, 0, { done: true });
+    e = updateSetEntry(e, 0, 0, { done: true, load_kg: null, rpe: 8 });
+    e = updateSetEntry(e, 1, 0, { done: true, rpe: 8 });
+    const fb = buildSessionFeedback(makePlan(), e);
+    expect(fb).not.toBeNull();
+    expect(fb!.sets).toHaveLength(1);
+    expect(fb!.sets[0]!.exercise_id).toBe('shoulder_press');
+  });
+
+  // Conv #16 — rpe null = série non comptée pour le feedback (au même titre
+  // que reps null), car l'effort est obligatoire pour calculer le plafond.
+  it('skip un set done si rpe === null', () => {
+    let e = initEntries(makePlan());
+    e = updateSetEntry(e, 0, 0, { done: true }); // rpe reste null par défaut
+    e = updateSetEntry(e, 1, 0, { done: true, rpe: 8 });
     const fb = buildSessionFeedback(makePlan(), e);
     expect(fb).not.toBeNull();
     expect(fb!.sets).toHaveLength(1);
@@ -162,7 +192,7 @@ describe('buildSessionFeedback', () => {
 
   it('accepte load_kg === 0 (poids du corps)', () => {
     let e = initEntries(makePlan());
-    e = updateSetEntry(e, 0, 0, { done: true, load_kg: 0, reps: 8 });
+    e = updateSetEntry(e, 0, 0, { done: true, load_kg: 0, reps: 8, rpe: 8 });
     const fb = buildSessionFeedback(makePlan(), e);
     expect(fb).not.toBeNull();
     expect(fb!.sets).toHaveLength(1);
@@ -262,5 +292,174 @@ describe('listDayCandidates', () => {
       { dayIndex: 1, label: 'Pull', doneCountThisWeek: 1 },
       { dayIndex: 2, label: 'Legs', doneCountThisWeek: 0 },
     ]);
+  });
+});
+
+// =============================================================================
+// Calibration intra-séance (Conv #16)
+// =============================================================================
+
+const catalog = new Catalog();
+
+function makeCalibPlan(): SessionPlan {
+  return {
+    seance_date: '2026-05-13',
+    week_in_cycle: 1,
+    cycle_index: 1,
+    rpe_target: 7,
+    label: 'Legs',
+    items: [
+      {
+        exercise_id: 'leg_press_45',
+        sets: [
+          { exercise_id: 'leg_press_45', reps: 8, load_kg: 50, rpe_target: 7, rest_s: 120 },
+          { exercise_id: 'leg_press_45', reps: 8, load_kg: 50, rpe_target: 7, rest_s: 120 },
+          { exercise_id: 'leg_press_45', reps: 8, load_kg: 50, rpe_target: 7, rest_s: 120 },
+        ],
+      },
+    ],
+  };
+}
+
+describe('computeLiveE1rmFromEntries', () => {
+  const exo = catalog.get('leg_press_45');
+
+  it('null si aucune série cochée', () => {
+    expect(computeLiveE1rmFromEntries(exo, 75, [])).toBeNull();
+  });
+
+  it('null si la série cochée a rpe = null', () => {
+    const entries = [{ reps: 8, load_kg: 80, rpe: null, done: true }];
+    expect(computeLiveE1rmFromEntries(exo, 75, entries)).toBeNull();
+  });
+
+  it('null si la série cochée est non fiable (n_eq > 15)', () => {
+    // 15 reps RPE 5 → n_eq=20, ignoré.
+    const entries = [{ reps: 15, load_kg: 50, rpe: 5, done: true }];
+    expect(computeLiveE1rmFromEntries(exo, 75, entries)).toBeNull();
+  });
+
+  it('moyenne pondérée de 2 séries fiables — pas un simple max', () => {
+    const entries = [
+      { reps: 12, load_kg: 80, rpe: 7, done: true }, // e1rm ≈ 120
+      { reps: 10, load_kg: 80, rpe: 7.5, done: true }, // e1rm ≈ 113.3
+      { reps: 8, load_kg: 50, rpe: 7, done: false }, // pas done → ignoré
+    ];
+    const r = computeLiveE1rmFromEntries(exo, 75, entries);
+    expect(r).not.toBeNull();
+    // Moyenne pondérée → entre les deux observés, pas le max.
+    expect(r!).toBeGreaterThan(113);
+    expect(r!).toBeLessThan(120);
+  });
+});
+
+describe('lastCheckedSetIsUnreliable', () => {
+  it('null si la dernière cochée est fiable', () => {
+    const entries = [{ reps: 8, load_kg: 80, rpe: 8, done: true }];
+    expect(lastCheckedSetIsUnreliable(entries)).toBeNull();
+  });
+
+  it('retourne la série si la dernière cochée a n_eq > 15', () => {
+    const entries = [{ reps: 15, load_kg: 50, rpe: 5, done: true }];
+    expect(lastCheckedSetIsUnreliable(entries)).toEqual({
+      reps: 15,
+      load_kg: 50,
+      rpe: 5,
+    });
+  });
+
+  it('ignore les séries non cochées avant', () => {
+    const entries = [
+      { reps: 8, load_kg: 80, rpe: 8, done: false },
+      { reps: 15, load_kg: 50, rpe: 5, done: true },
+    ];
+    expect(lastCheckedSetIsUnreliable(entries)).not.toBeNull();
+  });
+});
+
+describe('suggestNextLoadAfterUnreliable', () => {
+  it('propose une charge plus haute quand la série a été trop facile', () => {
+    const exo = catalog.get('leg_press_45');
+    const r = suggestNextLoadAfterUnreliable({
+      exercise: exo,
+      bodyweightKg: 75,
+      reps: 15,
+      rpe: 5,
+      load_kg: 50,
+    });
+    expect(r).not.toBeNull();
+    expect(r!).toBeGreaterThan(50);
+  });
+});
+
+describe('recalibrateUpcomingSets', () => {
+  it('ajuste les charges des séries non-cochées proportionnellement', () => {
+    const plan = makeCalibPlan();
+    // Bootstrap : 50 kg → e1RM initial estimé ~75 (calculé par bootstrap).
+    // L'user a fait série 1 à 80 kg × 10 RPE 7 → e1rm_obs ≈ 113.
+    const entries: SessionEntries = [
+      [
+        { reps: 10, load_kg: 80, rpe: 7, done: true },
+        { reps: null, load_kg: 50, rpe: null, done: false },
+        { reps: null, load_kg: 50, rpe: null, done: false },
+      ],
+    ];
+    const next = recalibrateUpcomingSets({
+      entries,
+      plan,
+      catalog,
+      bodyweightKg: 75,
+      e1rmInitial: { leg_press_45: 75 },
+      itemIdx: 0,
+    });
+    // Séries 2 et 3 : load doit avoir augmenté (ratio ≈ 1.5).
+    expect(next[0]![1]!.load_kg).toBeGreaterThan(50);
+    expect(next[0]![2]!.load_kg).toBeGreaterThan(50);
+    // Et leurs reps sont pré-remplies avec la cible programme (8).
+    expect(next[0]![1]!.reps).toBe(8);
+    expect(next[0]![2]!.reps).toBe(8);
+  });
+
+  it("ne touche pas aux séries où l'user a déjà modifié la charge", () => {
+    const plan = makeCalibPlan();
+    const entries: SessionEntries = [
+      [
+        { reps: 10, load_kg: 80, rpe: 7, done: true },
+        { reps: null, load_kg: 100, rpe: null, done: false }, // user déjà touché
+        { reps: null, load_kg: 50, rpe: null, done: false },
+      ],
+    ];
+    const next = recalibrateUpcomingSets({
+      entries,
+      plan,
+      catalog,
+      bodyweightKg: 75,
+      e1rmInitial: { leg_press_45: 75 },
+      itemIdx: 0,
+    });
+    expect(next[0]![1]!.load_kg).toBe(100); // respecté
+    expect(next[0]![2]!.load_kg).toBeGreaterThan(50); // ajusté
+  });
+
+  it('ne touche pas si écart < 5 %', () => {
+    const plan = makeCalibPlan();
+    const entries: SessionEntries = [
+      [
+        // 50 kg × 8 RPE 7 → e1rm_obs ≈ 68.3 → si baseline = 68.3, ratio = 1.0.
+        { reps: 8, load_kg: 50, rpe: 7, done: true },
+        { reps: null, load_kg: 50, rpe: null, done: false },
+      ],
+    ];
+    const next = recalibrateUpcomingSets({
+      entries,
+      plan,
+      catalog,
+      bodyweightKg: 75,
+      e1rmInitial: { leg_press_45: 68.3 },
+      itemIdx: 0,
+    });
+    expect(next[0]![1]!.load_kg).toBe(50);
+    // Pré-remplissage des reps reste actif même si charge inchangée.
+    expect(next[0]![1]!.reps).toBe(8);
   });
 });

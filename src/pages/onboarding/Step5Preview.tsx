@@ -174,6 +174,7 @@ export function Step5Preview({
       <div className="flex flex-col gap-3">
         {effectiveTemplate.days.map((day, di) => {
           const dayMin = catalog === null ? 0 : estimateDayDurationMinutes(day, catalog);
+          const nSets = day.exercises.reduce((acc, e) => acc + e.base_sets, 0);
           return (
           <Card key={di} className="flex flex-col gap-2" data-testid={`day-card-${di}`}>
             <header className="flex items-baseline justify-between">
@@ -182,7 +183,7 @@ export function Step5Preview({
                 className="text-[11px] text-anthracite-300"
                 data-testid={`day-duration-${di}`}
               >
-                {day.exercises.length} exos · ~{Math.round(dayMin)} min
+                {day.exercises.length} exos · {nSets} séries · ~{Math.round(dayMin)} min
               </span>
             </header>
             {day.target_muscles_focus.length > 0 && (

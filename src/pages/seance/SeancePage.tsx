@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useEngine } from '@/hooks/useEngine';
 import { useCoachOsStore } from '@/store';
@@ -10,6 +10,7 @@ import {
   type SessionEntries,
   type SessionSummaryData,
 } from '@/lib/session-runner';
+import { isNotCalibrated, isStale } from '@/lib/calibration-status';
 import { ChevronLeft } from '@/components/icons';
 import { SessionRunner } from './SessionRunner';
 import { SessionSummary } from './SessionSummary';
@@ -42,6 +43,7 @@ export default function SeancePage() {
   const storedEntries = useCoachOsStore((s) => s.currentSessionEntries);
   const setStoredEntries = useCoachOsStore((s) => s.setCurrentSessionEntries);
   const feedbacks = useCoachOsStore((s) => s.history.feedbacks);
+  const snapshots = useCoachOsStore((s) => s.history.e1rmSnapshots);
 
   const [finishing, setFinishing] = useState(false);
   const [summary, setSummary] = useState<{
@@ -52,6 +54,42 @@ export default function SeancePage() {
   // Source de vérité : store. Si le store n'a pas encore d'entries (1er render
   // après démarrage de séance), on init et on persiste immédiatement.
   const entries: SessionEntries = storedEntries ?? [];
+
+  // Conv #16 — Exos en mode calibration pour cette séance : ceux qui n'ont
+  // pas encore de snapshot e1RM "récent" en BDD (`not_calibrated` ou `stale`).
+  // Stable par session : capturé en ref au 1er mount d'une séance donnée pour
+  // que le statut ne bascule pas pendant la séance (le snapshot ne se crée
+  // qu'à la fin via `recordFeedback`).
+  const calibrationSetRef = useRef<{
+    sessionId: number | null;
+    set: ReadonlySet<string>;
+  } | null>(null);
+  const computeCalibrationSet = useCallback(
+    (plan: SessionPlan): ReadonlySet<string> => {
+      const today = new Date();
+      const out = new Set<string>();
+      for (const item of plan.items) {
+        if (
+          isNotCalibrated(item.exercise_id, snapshots) ||
+          isStale(item.exercise_id, snapshots, today)
+        ) {
+          out.add(item.exercise_id);
+        }
+      }
+      return out;
+    },
+    [snapshots],
+  );
+  const calibrationExoIds = useMemo<ReadonlySet<string>>(() => {
+    if (currentSessionPlan === null) return new Set();
+    const cached = calibrationSetRef.current;
+    if (cached !== null && cached.sessionId === currentSessionId) {
+      return cached.set;
+    }
+    const next = computeCalibrationSet(currentSessionPlan);
+    calibrationSetRef.current = { sessionId: currentSessionId, set: next };
+    return next;
+  }, [currentSessionPlan, currentSessionId, computeCalibrationSet]);
 
   // (Re)initialise les entrées quand le plan en cours change.
   // Cas particuliers (Conv #10d / #15) :
@@ -84,13 +122,17 @@ export default function SeancePage() {
           (row, i) => row.length === currentSessionPlan.items[i]!.sets.length,
         );
       if (!compatible) {
-        setStoredEntries(initEntries(currentSessionPlan));
+        setStoredEntries(
+          initEntries(currentSessionPlan, { calibrationExoIds }),
+        );
       }
       return;
     }
     const sessionChanged = currentSessionId !== prevId;
     if (sessionChanged) {
-      setStoredEntries(initEntries(currentSessionPlan));
+      setStoredEntries(
+        initEntries(currentSessionPlan, { calibrationExoIds }),
+      );
       return;
     }
     // Même session : tester si la structure du plan a changé (remplacement d'exo).
@@ -106,10 +148,11 @@ export default function SeancePage() {
       const expectedLen = item.sets.length;
       const exoChanged = prevItem?.exercise_id !== item.exercise_id;
       if (exoChanged || currentRow === undefined || currentRow.length !== expectedLen) {
+        const isCalibration = calibrationExoIds.has(item.exercise_id);
         return item.sets.map((s) => ({
-          reps: s.reps,
+          reps: isCalibration ? null : s.reps,
           load_kg: s.load_kg,
-          rpe: s.rpe_target,
+          rpe: null,
           done: false,
         }));
       }

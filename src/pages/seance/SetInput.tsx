@@ -22,13 +22,16 @@ interface SetInputProps {
    *  - autres → input kg standard.
    */
   readonly chargeType?: ChargeType;
+  /** Cible RPE de la prescription, affichée discrètement à côté du label "effort". */
+  readonly rpeTarget?: number;
 }
 
 const RPE_MIN = 6;
 const RPE_MAX = 10;
 const RPE_STEP = 0.5;
 
-function effortTone(rpe: number): string {
+function effortTone(rpe: number | null): string {
+  if (rpe === null) return 'border-anthracite-700 bg-anthracite-800 text-anthracite-100';
   if (rpe <= 7) return 'border-anthracite-700 bg-anthracite-800 text-anthracite-100';
   if (rpe <= 8) return 'border-amber-700/60 bg-amber-900/30 text-amber-100';
   if (rpe <= 9) return 'border-sang-700/70 bg-sang-900/30 text-sang-100';
@@ -58,6 +61,7 @@ export function SetInput({
   onChange,
   checkLocked = false,
   chargeType,
+  rpeTarget,
 }: SetInputProps) {
   const bodyweightOnly = isBodyweightOnly(chargeType);
   const bwToggle = allowsBodyweightToggle(chargeType);
@@ -68,7 +72,8 @@ export function SetInput({
   const canCheck =
     entry.reps !== null &&
     entry.reps > 0 &&
-    (bodyweightOnly || entry.load_kg !== null);
+    (bodyweightOnly || entry.load_kg !== null) &&
+    entry.rpe !== null;
 
   const locked = entry.done;
   const disableInputs = locked;
@@ -79,7 +84,7 @@ export function SetInput({
     : checkLocked
       ? 'Termine la série précédente d’abord'
       : !canCheck
-        ? 'Renseigne reps et charge avant de valider'
+        ? 'Renseigne reps, charge et effort avant de valider'
         : undefined;
 
   // Conv #11i — animation cochage : `justChecked` actif 600 ms après le
@@ -171,15 +176,15 @@ export function SetInput({
 
         <Stepper
           testId={`rpe-${index}`}
-          label="effort"
+          label={rpeTarget !== undefined ? `effort • cible ${rpeTarget}` : 'effort'}
           value={entry.rpe}
           step={RPE_STEP}
           min={RPE_MIN}
           max={RPE_MAX}
           disabled={disableInputs}
           toneClass={effortTone(entry.rpe)}
-          onChange={(v) => onChange({ rpe: v ?? RPE_MIN })}
-          dataAttr={{ 'data-rpe': entry.rpe }}
+          onChange={(v) => onChange({ rpe: v })}
+          dataAttr={entry.rpe !== null ? { 'data-rpe': entry.rpe } : undefined}
           widthClass="w-[112px]"
         />
       </div>

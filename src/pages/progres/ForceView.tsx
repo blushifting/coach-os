@@ -224,32 +224,38 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
         />
       ))}
 
-      {/* Étoiles "record" (Conv #15 vague 3, ex-chips PR) — au-dessus de
-          chaque point qui bat le précédent record d'au moins +2 kg. Étoile
-          jaune-doré pleine avec liseré pour ressortir sur la polyline. Le
-          sens de l'étoile est expliqué dans le step démo correspondant. */}
+      {/* Étoiles "record" — au-dessus de chaque point qui bat le précédent
+          record d'au moins +2 kg. Étoile jaune-doré pleine avec liseré pour
+          ressortir sur la polyline.
+
+          Conv #16 — fix positionnement : on wrappe l'animation `reveal-up`
+          dans un <g> INTERNE. L'animation CSS pose un `transform` qui
+          écrasait le `transform="translate(...)"` SVG si appliqué sur le
+          même nœud, et toutes les étoiles s'empilaient en 0,0. Avec deux
+          niveaux de <g> (externe = position, interne = animation), les
+          transforms ne se marchent plus dessus. */}
       {xy.map(([x, y], i) => {
         if (!prFlags[i]) return null;
-        // Étoile 5 branches centrée, rayon 5 px, point au-dessus du sommet du
-        // point de la courbe. Path : M (haut) puis alternance rayon externe /
-        // interne tous les 36°.
         const cx = x;
         const cy = Math.max(MT - 2, y - 9);
         return (
           <g
             key={`pr-${i}`}
-            className="animate-reveal-up"
-            style={{ animationDelay: `${700 + i * 60}ms`, animationFillMode: 'both' }}
-            data-testid="force-pr-chip"
             transform={`translate(${cx} ${cy})`}
+            data-testid="force-pr-chip"
           >
-            <polygon
-              points="0,-5 1.5,-1.5 5,-1.5 2.2,0.7 3.3,4.5 0,2.2 -3.3,4.5 -2.2,0.7 -5,-1.5 -1.5,-1.5"
-              fill="#fbbf24"
-              stroke="#fff"
-              strokeWidth={0.6}
-              strokeLinejoin="round"
-            />
+            <g
+              className="animate-reveal-up"
+              style={{ animationDelay: `${700 + i * 60}ms`, animationFillMode: 'both' }}
+            >
+              <polygon
+                points="0,-5 1.5,-1.5 5,-1.5 2.2,0.7 3.3,4.5 0,2.2 -3.3,4.5 -2.2,0.7 -5,-1.5 -1.5,-1.5"
+                fill="#fbbf24"
+                stroke="#fff"
+                strokeWidth={0.6}
+                strokeLinejoin="round"
+              />
+            </g>
           </g>
         );
       })}

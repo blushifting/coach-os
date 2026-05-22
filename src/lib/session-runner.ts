@@ -15,16 +15,21 @@ import type {
   RecordFeedbackResult,
 } from '@/engine/engine';
 import type {
+  Exercise,
   SessionFeedback,
   SessionPlan,
   SetFeedback,
 } from '@/engine/models';
 import type { Catalog } from '@/engine/catalog';
 import {
-  e1rmObserved,
   effectiveLoadForE1rm,
+  externalLoadFromE1rm,
+  EPLEY_K,
   measurementIsReliable,
+  roundToIncrement,
+  targetLoad,
 } from '@/engine/prescription';
+import { aggregateE1rmWeighted } from '@/engine/feedback';
 import type { FeedbackRow } from '@/db/schema';
 
 // =============================================================================
@@ -56,31 +61,54 @@ export interface SetEntry {
    * `null` = champ vidé par l'utilisateur (input vide affiché tel quel).
    * Permet d'éviter le default à 0 qui force des "07"/"08" quand on reprend
    * la saisie (Conv #11e). La coche est bloquée tant que c'est `null`.
+   *
+   * En mode calibration (1re séance d'un exo), `reps` est `null` dès l'init
+   * pour ne pas biaiser le user — il doit aller chercher un vrai effort.
    */
   readonly reps: number | null;
   /** Idem `reps` : `null` = champ vidé. 0 reste une valeur valide (poids du corps). */
   readonly load_kg: number | null;
-  readonly rpe: number;
+  /**
+   * `null` par défaut (Conv #16) : l'effort est une mesure subjective de
+   * l'user, pas une prescription. On ne pré-remplit pas pour éviter le biais
+   * d'ancrage. La cible RPE reste affichée à côté à titre indicatif.
+   */
+  readonly rpe: number | null;
   /** L'user a marqué cette série comme "faite" (= elle ira au feedback). */
   readonly done: boolean;
 }
 
 export type SessionEntries = ReadonlyArray<ReadonlyArray<SetEntry>>;
 
+export interface InitEntriesOptions {
+  /**
+   * Ensemble des `exercise_id` à initialiser en mode calibration : `reps`
+   * vide (sinon = cible programme), `load_kg` reste la prescription bootstrap.
+   * En mode normal (hors de cet ensemble), `reps` est pré-remplie avec la
+   * cible programme. Dans tous les cas, `rpe` est vide (cf. SetEntry.rpe).
+   */
+  readonly calibrationExoIds?: ReadonlySet<string> | null;
+}
+
 /**
  * Initialise la matrice d'entrées (par exo, par set) à partir des consignes du
- * `SessionPlan` : reps cibles, charge cible, RPE cible.
- * `done = false` par défaut — l'user "valide" ses séries au fur et à mesure.
+ * `SessionPlan`. `done = false` par défaut — l'user "valide" ses séries au fur
+ * et à mesure.
  */
-export function initEntries(plan: SessionPlan): SessionEntries {
-  return plan.items.map((item) =>
-    item.sets.map((s) => ({
-      reps: s.reps,
+export function initEntries(
+  plan: SessionPlan,
+  options: InitEntriesOptions = {},
+): SessionEntries {
+  const calib = options.calibrationExoIds ?? null;
+  return plan.items.map((item) => {
+    const isCalibration = calib !== null && calib.has(item.exercise_id);
+    return item.sets.map((s) => ({
+      reps: isCalibration ? null : s.reps,
       load_kg: s.load_kg,
-      rpe: s.rpe_target,
+      rpe: null,
       done: false,
-    })),
-  );
+    }));
+  });
 }
 
 export function updateSetEntry(
@@ -96,18 +124,101 @@ export function updateSetEntry(
 }
 
 /**
- * Conv #15 vague 2 — Recalibrage continu en cours de séance.
+ * Calcule le plafond "live" d'un exo en cours de séance, par moyenne pondérée
+ * de toutes les séries fiables déjà cochées. Cohérent avec l'algo fin-de-séance
+ * (`updateE1rmForExercise`) — pas de filtre EMA ici car la baseline (bootstrap
+ * heuristique) n'est pas une vraie mesure.
  *
- * Quand l'utilisateur valide une série fiable (`done=true` ET RPE / reps dans
- * la plage utilisable par Epley), on recalcule l'e1RM observé live (max sur
- * les séries déjà validées de cet exo) et on ajuste les charges des séries
- * non-cochées du même exo proportionnellement.
+ * `null` si aucune série cochée fiable / si rpe ou reps absents.
+ */
+export function computeLiveE1rmFromEntries(
+  exercise: Exercise,
+  bodyweightKg: number,
+  entries: ReadonlyArray<SetEntry>,
+): number | null {
+  const reliable = entries.flatMap((e) => {
+    if (!e.done) return [];
+    if (e.reps === null || e.reps <= 0) return [];
+    if (e.load_kg === null) return [];
+    if (e.rpe === null) return [];
+    if (!measurementIsReliable(e.reps, e.rpe)) return [];
+    return [{ load_kg: e.load_kg, reps: e.reps, rpe: e.rpe }];
+  });
+  return aggregateE1rmWeighted(reliable, exercise, bodyweightKg);
+}
+
+/**
+ * Est-ce que la dernière série cochée de cet exo était non fiable ? Sert à
+ * afficher un message correctif dans le bandeau de calibration.
+ */
+export function lastCheckedSetIsUnreliable(entries: ReadonlyArray<SetEntry>): {
+  reps: number;
+  rpe: number;
+  load_kg: number;
+} | null {
+  for (let i = entries.length - 1; i >= 0; i--) {
+    const e = entries[i]!;
+    if (!e.done) continue;
+    if (e.reps === null || e.rpe === null || e.load_kg === null) return null;
+    if (!measurementIsReliable(e.reps, e.rpe)) {
+      return { reps: e.reps, rpe: e.rpe, load_kg: e.load_kg };
+    }
+    return null;
+  }
+  return null;
+}
+
+/**
+ * Quand la dernière série est non fiable (trop facile : n_équiv > 15), propose
+ * une charge plus adaptée pour la série suivante : on extrapole un plafond à
+ * partir de la série non fiable, puis on cible ~80 % de ce plafond pour la
+ * prochaine tentative — censé tomber à ~5 reps avec un vrai effort.
+ *
+ * Retourne `null` si extrapolation impossible.
+ */
+export function suggestNextLoadAfterUnreliable(args: {
+  exercise: Exercise;
+  bodyweightKg: number;
+  reps: number;
+  rpe: number;
+  load_kg: number;
+}): number | null {
+  const { exercise, bodyweightKg, reps, rpe, load_kg } = args;
+  if (reps <= 0 || load_kg < 0) return null;
+  // Extrapole un plafond approximatif depuis cette série (même formule Epley
+  // que e1rmObserved, mais accepté quel que soit n_équiv puisqu'on n'a que ça).
+  const totalLoad = effectiveLoadForE1rm(load_kg, exercise, bodyweightKg);
+  if (totalLoad <= 0) return null;
+  const extrapolatedE1rm = totalLoad * (1 + EPLEY_K * (reps + (10 - rpe)));
+  // Cible : ~5 reps à RPE 7.5 → bonne calibration.
+  const targetTotal = targetLoad(extrapolatedE1rm, 5, 7.5);
+  const extLoad = externalLoadFromE1rm(targetTotal, exercise, bodyweightKg);
+  const inc = exercise.inc_kg > 0 ? exercise.inc_kg : 1.25;
+  const rounded = roundToIncrement(extLoad, inc);
+  return rounded > 0 ? rounded : null;
+}
+
+/**
+ * Conv #15 vague 2, refondu Conv #16 — Recalibrage continu en cours de séance.
+ *
+ * **Périmètre** : appelé uniquement pour les exos en mode calibration (= pas
+ * encore de snapshot e1RM en base, donc 1re séance de cet exo). Le caller
+ * (SessionRunner) gate l'appel par `confidence !== 'measured'`.
+ *
+ * Quand l'utilisateur valide une série fiable (`done=true` ET reps/rpe dans
+ * la plage utilisable par Epley), on calcule l'e1RM observé live via moyenne
+ * pondérée des séries fiables déjà validées (cf. `computeLiveE1rmFromEntries`,
+ * cohérent avec `updateE1rmForExercise` fin de séance) et on ajuste les
+ * charges des séries non-cochées du même exo proportionnellement.
+ *
+ * On en profite aussi pour pré-remplir les `reps` des séries non-cochées
+ * encore vides avec la cible programme du plan — une fois qu'une 1re série
+ * fiable a posé un repère, on bascule en flow normal pour la suite.
  *
  * Garde-fous :
- *  - Seuil de variation 5 % : on ne touche pas pour des micro-écarts.
+ *  - Seuil de variation 5 % : on ne touche pas les charges pour des micro-écarts.
  *  - On n'écrase que les `load_kg` encore identiques à la prescription
- *    originale du plan (heuristique "non touché par l'user"). Dès qu'un set
- *    a été ajusté (algo) ou modifié (user), on le respecte.
+ *    originale du plan (heuristique "non touché par l'user").
  *  - Arrondi sur `inc_kg` de l'exo (paliers réels de la machine/barre).
  *  - Aucune mutation : retourne une nouvelle `SessionEntries`.
  */
@@ -128,22 +239,11 @@ export function recalibrateUpcomingSets(args: {
   if (e1rmStart === undefined || e1rmStart <= 0) return entries;
 
   const exoEntries = entries[itemIdx] ?? [];
-  let liveE1rm: number | null = null;
-  for (const e of exoEntries) {
-    if (!e.done) continue;
-    if (e.reps === null || e.reps <= 0 || e.load_kg === null) continue;
-    if (!measurementIsReliable(e.reps, e.rpe)) continue;
-    try {
-      const total = effectiveLoadForE1rm(e.load_kg, exo, bodyweightKg);
-      const v = e1rmObserved(total, e.reps, e.rpe);
-      if (liveE1rm === null || v > liveE1rm) liveE1rm = v;
-    } catch {
-      // RPE/reps hors plage Epley : ignore.
-    }
-  }
+  const liveE1rm = computeLiveE1rmFromEntries(exo, bodyweightKg, exoEntries);
   if (liveE1rm === null) return entries;
+
   const ratio = liveE1rm / e1rmStart;
-  if (Math.abs(ratio - 1) < 0.05) return entries;
+  const significant = Math.abs(ratio - 1) >= 0.05;
 
   const inc = exo.inc_kg > 0 ? exo.inc_kg : 1.25;
   return entries.map((sets, i) => {
@@ -151,13 +251,22 @@ export function recalibrateUpcomingSets(args: {
     return sets.map((s, j) => {
       if (s.done) return s;
       const planLoad = item.sets[j]?.load_kg ?? null;
-      if (planLoad === null) return s;
-      // Heuristique "non touché par user/algo" : on n'écrase que si la
-      // valeur actuelle correspond exactement à la prescription d'origine.
-      if (s.load_kg !== planLoad) return s;
-      const adjusted = Math.max(0, Math.round((planLoad * ratio) / inc) * inc);
-      if (adjusted === planLoad) return s;
-      return { ...s, load_kg: adjusted };
+      const planReps = item.sets[j]?.reps ?? null;
+
+      let nextLoad = s.load_kg;
+      if (significant && planLoad !== null && s.load_kg === planLoad) {
+        const adjusted = Math.max(
+          0,
+          Math.round((planLoad * ratio) / inc) * inc,
+        );
+        if (adjusted !== planLoad) nextLoad = adjusted;
+      }
+      // Pré-remplissage reps : on n'écrit que sur les séries où l'user n'a
+      // pas encore touché (reps null).
+      const nextReps = s.reps === null && planReps !== null ? planReps : s.reps;
+
+      if (nextLoad === s.load_kg && nextReps === s.reps) return s;
+      return { ...s, load_kg: nextLoad, reps: nextReps };
     });
   });
 }
@@ -197,6 +306,7 @@ export function buildSessionFeedback(
       if (!s.done) continue;
       if (s.reps === null || s.reps <= 0) continue;
       if (s.load_kg === null) continue;
+      if (s.rpe === null) continue;
       sets.push({
         exercise_id: item.exercise_id,
         reps_done: s.reps,

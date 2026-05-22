@@ -283,11 +283,11 @@ function ReviewActions({ review }: { review: CycleReview }) {
         </Button>
         <Button variant="secondary" fullWidth disabled data-testid="action-ajuster">
           Ajuster les objectifs
-          <span className="ml-2 text-xs opacity-70">Conv #6c</span>
+          <span className="ml-2 text-xs opacity-70">bientôt</span>
         </Button>
         <Button variant="secondary" fullWidth disabled data-testid="action-changer">
           Changer de programme
-          <span className="ml-2 text-xs opacity-70">Conv #6c</span>
+          <span className="ml-2 text-xs opacity-70">bientôt</span>
         </Button>
       </div>
     </Card>

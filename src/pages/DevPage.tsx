@@ -90,7 +90,7 @@ export default function DevPage() {
         />
       </Section>
 
-      <Section title="Polices titres (Conv #14a-4)">
+      <Section title="Polices titres">
         <Card>
           <p className="mb-2 text-sm text-anthracite-200">
             Comparateur 4 polices côte à côte (Oswald / Big Shoulders / Barlow

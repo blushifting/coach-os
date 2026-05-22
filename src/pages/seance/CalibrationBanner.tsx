@@ -1,29 +1,30 @@
 /**
  * Banner de calibration affiché au-dessus des séries d'un exo en séance
- * (Conv #12b). Apparaît si la confidence est `'not_calibrated'` ou `'stale'`.
+ * (Conv #12b, refondu Conv #16). Apparaît si la confidence est
+ * `'not_calibrated'` ou `'stale'`.
  *
- * - `'not_calibrated'` : l'exo n'a jamais été mesuré → texte pédagogique
- *   "On apprend ta charge — vise 3-8 reps avec 2-3 reps en réserve".
- *   Lien discret "Je connais déjà mon plafond" → ouvre `ManualE1rmSheet`.
- * - `'stale'` : dernière mesure > 8 sem → texte plus court invitant à
- *   refaire une vraie série. Pas de sheet manuelle ici (la mesure se fait
- *   naturellement en série).
+ * États affichés (du plus rare au plus fréquent) :
+ *  - `liveE1rm !== null` : au moins une série fiable cochée. On affiche
+ *    "Plafond appris : X kg" (moyenne pondérée des séries fiables, cohérent
+ *    avec l'algo fin-de-séance).
+ *  - Dernière série cochée non fiable (trop facile, n_équiv > 15) : message
+ *    correctif + charge auto-suggérée pour la série suivante. L'user comprend
+ *    pourquoi ça n'a pas calibré et a un point de départ pour la suivante.
+ *  - Aucune série cochée encore : texte pédagogique appuyé sur l'importance
+ *    d'aller chercher un effort 7-8/10. Lien discret "Je connais mon plafond".
  *
- * Live feedback : si l'utilisateur a déjà coché ≥1 série fiable de cet exo
- * pendant la séance en cours, on affiche "Plafond appris : X kg" calculé via
- * `e1rmObserved` (max des séries fiables). Permet de voir tout de suite que
- * l'app a compris la charge — UX clé du remplacement de Séance 0.
+ * Bandeau invisible si `confidence === 'measured'` (mode normal, vue épurée).
  */
 
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/Button';
-import {
-  effectiveLoadForE1rm,
-  e1rmObserved,
-  measurementIsReliable,
-} from '@/engine/prescription';
 import type { Exercise } from '@/engine/models';
-import type { SetEntry } from '@/lib/session-runner';
+import {
+  computeLiveE1rmFromEntries,
+  lastCheckedSetIsUnreliable,
+  suggestNextLoadAfterUnreliable,
+  type SetEntry,
+} from '@/lib/session-runner';
 import type { E1rmConfidence } from '@/lib/calibration-status';
 import { ManualE1rmSheet } from './ManualE1rmSheet';
 
@@ -34,28 +35,6 @@ interface CalibrationBannerProps {
   readonly entries: ReadonlyArray<SetEntry>;
 }
 
-function computeLiveE1rm(
-  exercise: Exercise,
-  bodyweightKg: number,
-  entries: ReadonlyArray<SetEntry>,
-): number | null {
-  let best: number | null = null;
-  for (const e of entries) {
-    if (!e.done) continue;
-    if (e.reps === null || e.reps <= 0) continue;
-    if (e.load_kg === null) continue;
-    if (!measurementIsReliable(e.reps, e.rpe)) continue;
-    try {
-      const total = effectiveLoadForE1rm(e.load_kg, exercise, bodyweightKg);
-      const v = e1rmObserved(total, e.reps, e.rpe);
-      if (best === null || v > best) best = v;
-    } catch {
-      // RPE/reps hors plage Epley : on ignore
-    }
-  }
-  return best;
-}
-
 export function CalibrationBanner({
   exercise,
   bodyweightKg,
@@ -63,18 +42,29 @@ export function CalibrationBanner({
   entries,
 }: CalibrationBannerProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
+
   const liveE1rm = useMemo(
-    () => computeLiveE1rm(exercise, bodyweightKg, entries),
+    () => computeLiveE1rmFromEntries(exercise, bodyweightKg, entries),
     [exercise, bodyweightKg, entries],
   );
+  const unreliable = useMemo(
+    () => (liveE1rm === null ? lastCheckedSetIsUnreliable(entries) : null),
+    [entries, liveE1rm],
+  );
+  const suggestedLoad = useMemo(() => {
+    if (unreliable === null) return null;
+    return suggestNextLoadAfterUnreliable({
+      exercise,
+      bodyweightKg,
+      reps: unreliable.reps,
+      rpe: unreliable.rpe,
+      load_kg: unreliable.load_kg,
+    });
+  }, [unreliable, exercise, bodyweightKg]);
 
   if (confidence === 'measured') return null;
 
   const isStale = confidence === 'stale';
-  const learnedText =
-    liveE1rm !== null
-      ? `Plafond appris : ${liveE1rm.toFixed(1)} kg — ajuste les séries suivantes si besoin.`
-      : null;
 
   return (
     <>
@@ -85,7 +75,27 @@ export function CalibrationBanner({
       >
         {liveE1rm !== null ? (
           <p className="text-sang-200">
-            <span className="font-semibold text-white">{learnedText}</span>
+            <span className="font-semibold text-white">
+              Plafond appris : {liveE1rm.toFixed(1)} kg
+            </span>{' '}
+            — les séries suivantes sont ajustées automatiquement.
+          </p>
+        ) : unreliable !== null ? (
+          <p>
+            <span className="font-semibold text-sang-300">
+              Trop facile pour calibrer
+            </span>{' '}
+            — vise un effort 7-8/10 (2-3 reps en réserve avant l'échec).
+            {suggestedLoad !== null ? (
+              <>
+                {' '}
+                À la série suivante, essaie autour de{' '}
+                <span className="font-semibold text-white">
+                  {suggestedLoad} kg
+                </span>
+                .
+              </>
+            ) : null}
           </p>
         ) : (
           <p>
@@ -95,11 +105,11 @@ export function CalibrationBanner({
             —{' '}
             {isStale
               ? 'plafond pas mesuré depuis 8 semaines, cette série le rafraîchira.'
-              : 'vise 3-8 reps en gardant 2-3 reps en réserve (effort 7-8/10). Toute série fiable (effort ≥ 7, ≤ ~12 reps) sert à calibrer.'}
+              : "vise un vrai effort 7-8/10 (2-3 reps en réserve). C'est cet effort élevé qui permet à l'appli d'apprendre ton plafond — fais 3-12 reps puis renseigne reps + effort ressenti."}
           </p>
         )}
 
-        {!isStale && liveE1rm === null ? (
+        {!isStale && liveE1rm === null && unreliable === null ? (
           <div className="flex">
             <Button
               variant="ghost"

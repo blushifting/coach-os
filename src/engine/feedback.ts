@@ -36,8 +36,62 @@ export function measurementWeight(reps: number, rpe: number): number {
 }
 
 // =============================================================================
-// 2. Mise à jour de l'e1RM pour un exercice donné
+// 2. Agrégation pondérée des e1RM observés (réutilisable côté UI)
 // =============================================================================
+
+export interface ReliableSetForE1rm {
+  readonly load_kg: number;
+  readonly reps: number;
+  readonly rpe: number;
+}
+
+/**
+ * Moyenne pondérée des e1RM observés d'un ensemble de séries fiables.
+ * Poids = `1/(1 + n_équiv/10)` — les séries plus proches du 1RM pèsent plus.
+ * Hypothèse : tous les éléments passent `measurementIsReliable`.
+ *
+ * Retourne `null` si l'ensemble est vide ou si aucune série n'est exploitable
+ * par Epley (RPE/reps hors plage).
+ */
+export function aggregateE1rmWeighted(
+  sets: readonly ReliableSetForE1rm[],
+  exercise: Exercise,
+  bodyweightKg: number,
+  k: number = EPLEY_K,
+): number | null {
+  if (sets.length === 0) return null;
+  let num = 0;
+  let den = 0;
+  for (const s of sets) {
+    try {
+      const total = effectiveLoadForE1rm(s.load_kg, exercise, bodyweightKg);
+      const e1 = e1rmObserved(total, s.reps, s.rpe, k);
+      const w = measurementWeight(s.reps, s.rpe);
+      num += w * e1;
+      den += w;
+    } catch {
+      // RPE/reps hors plage : on ignore cette série.
+    }
+  }
+  if (den === 0) return null;
+  return num / den;
+}
+
+// =============================================================================
+// 3. Mise à jour de l'e1RM pour un exercice donné
+// =============================================================================
+
+export interface UpdateE1rmOptions {
+  /**
+   * Si `true`, on remplace l'ancien plafond par la nouvelle agrégation sans
+   * appliquer le filtre EMA. À utiliser quand l'ancien plafond stocké n'est
+   * qu'un bootstrap heuristique (1re séance d'un exo) : mélanger via EMA une
+   * valeur agrégée fiable avec une estimation grossière pourrirait la mesure.
+   *
+   * Défaut : `false` (comportement EMA standard, séances ≥ 2 d'un exo).
+   */
+  readonly skipEma?: boolean;
+}
 
 /**
  * Met à jour `state.e1rm[exercise.id]` à partir des séries faites sur cet exo.
@@ -49,6 +103,7 @@ export function updateE1rmForExercise(
   exercise: Exercise,
   feedbacks: readonly SetFeedback[],
   k: number = EPLEY_K,
+  options: UpdateE1rmOptions = {},
 ): readonly [number, number] | null {
   if (exercise.e1RM_app === E1RMApp.NON) {
     return null;
@@ -72,6 +127,14 @@ export function updateE1rmForExercise(
   const sumWeights = weights.reduce((a, b) => a + b, 0);
   const e1rmAgg =
     weights.reduce((acc, w, i) => acc + w * e1rmsObs[i]!, 0) / sumWeights;
+
+  // 1re séance d'un exo : on prend e1rmAgg sans EMA (l'ancien plafond, s'il
+  // existe, n'est qu'un bootstrap heuristique — pas une vraie mesure).
+  if (options.skipEma) {
+    const old = state.e1rm[exercise.id] ?? e1rmAgg;
+    state.e1rm[exercise.id] = e1rmAgg;
+    return [old, e1rmAgg] as const;
+  }
 
   // α basé sur la mesure la plus fiable (n_équiv le plus petit).
   let bestIdx = 0;

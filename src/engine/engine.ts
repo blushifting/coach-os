@@ -505,6 +505,16 @@ export interface RecordFeedbackOptions {
    * pour report sur la prochaine séance de la semaine (Conv #11a).
    */
   plan?: SessionPlan | null;
+  /**
+   * Ensemble des exos qui étaient déjà calibrés *avant* cette séance (= un
+   * snapshot e1RM existait pour eux en BDD). Les exos absents sont en
+   * première vraie mesure : on saute le filtre EMA pour ne pas mélanger
+   * l'agrégation fiable avec un éventuel bootstrap heuristique. Cf. décision
+   * conv #16 — calibration série-par-série uniquement à la 1re séance d'un exo.
+   *
+   * Si non fourni, fallback comportement historique (EMA partout).
+   */
+  calibratedExoIds?: ReadonlySet<string> | null;
 }
 
 export function recordFeedback(
@@ -518,10 +528,12 @@ export function recordFeedback(
     (byEx[f.exercise_id] ??= []).push(f);
   }
 
+  const calibrated = options.calibratedExoIds ?? null;
   const summary: RecordFeedbackResult = {};
   for (const [exId, fbs] of Object.entries(byEx)) {
     const ex = catalog.get(exId);
-    summary[exId] = updateE1rmForExercise(state, ex, fbs);
+    const skipEma = calibrated !== null && !calibrated.has(exId);
+    summary[exId] = updateE1rmForExercise(state, ex, fbs, undefined, { skipEma });
     if (ex.e1RM_app === E1RMApp.PARTIAL || ex.e1RM_app === E1RMApp.NON) {
       maybeProgressReps(state, ex, fbs);
     }

@@ -445,7 +445,15 @@ export async function recordFeedbackAndCommit(
   // Conv #11a : on passe le plan courant pour que le moteur calcule la dette
   // de volume non réalisée et l'accumule dans `next.weekly_volume_debt`.
   const plan = useCoachOsStore.getState().currentSessionPlan;
-  const summary = engine.recordFeedback(next, catalog, feedback, { plan });
+  // Conv #16 : on identifie les exos déjà calibrés (= au moins un snapshot
+  // e1RM en BDD avant cette séance) pour distinguer "1re séance" (skipEma)
+  // de "séances suivantes" (EMA standard).
+  const snapshots = useCoachOsStore.getState().history.e1rmSnapshots;
+  const calibratedExoIds = new Set(snapshots.map((s) => s.exercise_id));
+  const summary = engine.recordFeedback(next, catalog, feedback, {
+    plan,
+    calibratedExoIds,
+  });
   const sessionId = useCoachOsStore.getState().currentSessionId;
   await txCommitSessionFeedback({ feedback, state: next, sessionId });
   useCoachOsStore.setState({

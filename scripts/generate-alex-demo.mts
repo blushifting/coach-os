@@ -101,6 +101,19 @@ const ALEX_INITIAL_E1RM: Record<string, number> = {
   leg_press_45: 200,
 };
 
+/**
+ * Plafonds à poser à la transition cycle 1 → cycle 2, pour les 3 exos
+ * swappés (front_squat, pullup, ohp_db_seated). Sans ça, aucun snapshot
+ * e1RM n'est créé pour ces exos → ils apparaissent "non calibrés" dans
+ * l'UI démo, ce qui casse la cohérence ("Alex est censé être un user
+ * confirmé depuis 8+ semaines"). Conv #16.
+ */
+const ALEX_SWAP_E1RM: Record<string, number> = {
+  front_squat: 95, // front squat = ~80 % du back squat
+  pullup: 78, // tractions libres : bw 75 + ~3 kg de lest équivalent
+  ohp_db_seated: 50, // DM ~10 % en dessous de OHP barre debout
+};
+
 /** k_user par défaut (cf. prescription.ts, k de Epley standard). */
 const DEFAULT_K = 0.0333;
 
@@ -650,6 +663,12 @@ function main(): void {
       state.current_cycle_plan = cycle2Plan;
       state.cycle_index = 2;
       state.current_week_in_cycle = 1;
+      // Conv #16 — poser les plafonds initiaux pour les exos swappés. Sans
+      // ça, `snapshotE1rms` ne crée jamais d'entrée pour eux (la fonction
+      // n'itère que sur state.e1rm) → l'UI les voit "non calibrés".
+      for (const [id, val] of Object.entries(ALEX_SWAP_E1RM)) {
+        if (state.e1rm[id] === undefined) state.e1rm[id] = val;
+      }
       cycles.push({
         cycle_index: 2,
         start_date: addDays(CYCLE_1_START, 5 * 7),

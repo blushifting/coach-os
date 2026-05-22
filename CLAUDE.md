@@ -145,6 +145,113 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
+## État courant — fin Conv #16 (2026-05-22) — V1.6.0
+
+Refonte de l'algorithme de calibration des plafonds (e1RM) suite à
+audit Azur. L'algo "fin de séance" était déjà conforme ; le recalibrage
+intra-séance tournait sur toutes les séances au lieu d'être limité à la
+1re séance de chaque exo, et utilisait `max` au lieu d'une moyenne
+pondérée cohérente avec l'algo fin-de-séance. Refonte sans casser le
+flow utilisateur.
+
+**Algo "fin de séance" (`updateE1rmForExercise`)**
+- Nouveau flag `skipEma` dans `UpdateE1rmOptions`. Si `true`, on
+  remplace `state.e1rm[exoId]` par l'agrégation pondérée directe
+  (pas de filtre EMA). À utiliser pour la 1re vraie mesure d'un exo
+  pour ne pas mélanger l'agrégation fiable avec un bootstrap heuristique.
+- `recordFeedback` accepte `calibratedExoIds: ReadonlySet<string>` : les
+  exos absents de ce set ont `skipEma=true`. Le set est calculé par
+  `useEngine.recordFeedbackAndCommit` à partir des snapshots e1RM en
+  BDD (un snapshot existant = exo déjà calibré).
+- Nouvelle fonction `aggregateE1rmWeighted` exposée depuis `feedback.ts`
+  pour réutilisation côté UI (live e1RM intra-séance).
+
+**Algo "intra-séance" (`recalibrateUpcomingSets`)**
+- Gating : appelé uniquement quand `confidence !== 'measured'` pour
+  l'exo (`SessionRunner.handleEntriesChange`). En mode normal,
+  aucune modification des charges en cours de séance — l'algo fin
+  de séance prend le relais.
+- Plafond live = moyenne pondérée des séries fiables cochées
+  (`computeLiveE1rmFromEntries`), pas un simple `max`. Cohérent
+  avec l'algo fin-de-séance.
+- Pré-remplissage automatique des reps des séries non-cochées avec
+  la cible programme dès qu'une 1re série fiable a posé un repère.
+- Garde-fous existants conservés : seuil 5 %, respect des charges
+  modifiées par l'user, arrondi `inc_kg`.
+
+**UX calibration**
+- `SetEntry.rpe` : `number | null` (avant : `number`). Pré-remplissage
+  retiré pour éviter le biais d'ancrage — l'effort est une mesure
+  subjective qui doit venir de l'user. Cible RPE affichée en label
+  discret à côté de la case ("effort • cible 7").
+- En mode calibration, les **reps sont aussi vides à l'init** pour
+  ne pas suggérer un nombre qui pourrait amener à une série non
+  fiable. Bandeau pédagogique renforcé : "vise un vrai effort 7-8/10
+  (2-3 reps en réserve). C'est cet effort élevé qui permet à l'appli
+  d'apprendre ton plafond — fais 3-12 reps puis renseigne reps +
+  effort ressenti."
+- Garde-fou série non fiable : si la dernière série cochée a
+  `n_équiv > 15`, le bandeau affiche "Trop facile pour calibrer" +
+  une charge auto-suggérée pour la série suivante via
+  `suggestNextLoadAfterUnreliable` (extrapolation Epley → cible 5
+  reps RPE 7.5, arrondi `inc_kg`).
+- `buildSessionFeedback` rejette désormais les séries avec
+  `rpe === null` (au même titre que `reps === null`).
+- `SetInput` : coche désactivée tant que reps OU charge OU effort
+  est vide. Message d'aide adapté.
+
+**API engine récentes (durables)**
+- `feedback.ts` : `aggregateE1rmWeighted(sets, exercise, bw, k?)`,
+  `UpdateE1rmOptions.skipEma`.
+- `engine.ts` : `RecordFeedbackOptions.calibratedExoIds`.
+- `lib/session-runner.ts` : `computeLiveE1rmFromEntries`,
+  `lastCheckedSetIsUnreliable`, `suggestNextLoadAfterUnreliable`,
+  `InitEntriesOptions.calibrationExoIds`.
+- `SetInput` : prop `rpeTarget?` (label discret), `entry.rpe` peut
+  être null.
+
+**Décisions définitives (acquises) — ne pas remettre dans le backlog**
+- **Calibration intra-séance gated par exo** (Conv #16) : tourne
+  uniquement pour `confidence !== 'measured'`. Distinction "1re
+  séance" vs "séances suivantes" se fait **par exo** (présence d'un
+  snapshot e1RM en BDD), pas globalement sur l'utilisateur.
+- **Skip EMA à la 1re vraie mesure d'un exo** (Conv #16) : on ne
+  mélange pas une agrégation fiable avec un bootstrap heuristique.
+- **Case effort vide par défaut** (Conv #16) : aucun pré-remplissage
+  RPE, pour éviter le biais d'ancrage. Cible RPE en label seulement.
+- **Reps vide à l'init en mode calibration** (Conv #16) : on ne
+  veut pas suggérer un nombre qui force le user dans une série non
+  fiable. Pré-remplie une fois qu'une série fiable a posé un repère.
+
+**Ajustements UX livrés dans la même conv**
+- `Step5Preview` (preview onboarding) : sous-titre des cartes jour
+  passé de "X exos · ~Z min" à "X exos · Y séries · ~Z min" pour
+  parité avec le `PlanDaySheet`.
+- Démo Alex : boutons "Terminer / Sauter / Annuler la séance" du
+  `SessionRunner` désactivés (`disabled: demoActive`). Verrou
+  cohérent avec le calendrier non-cliquable et "Continuer pareil"
+  bloqué en démo.
+- Démo Alex : 3 exos swappés au cycle 2 (`front_squat`, `pullup`,
+  `ohp_db_seated`) n'avaient AUCUN snapshot e1RM → ils s'affichaient
+  "non calibré" dans l'UI démo. `generate-alex-demo.mts` pose
+  désormais des plafonds initiaux pour ces exos au moment de la
+  bascule cycle 1 → cycle 2 (`ALEX_SWAP_E1RM`). Régénération démo
+  passe de 288 à **324 snapshots**.
+- `ForceView` (Progrès > Force) : les étoiles "record" s'affichaient
+  toutes en (0,0) au lieu d'au-dessus des points correspondants.
+  Cause : l'animation CSS `reveal-up` pose un `transform` qui
+  écrasait le `transform="translate(cx cy)"` SVG appliqué sur le
+  même `<g>`. Fix : wrap dans deux niveaux de `<g>` (externe pour
+  la position, interne pour l'animation).
+- Audit jargon dev visible dans l'app : retiré les "Conv #6c" qui
+  apparaissaient en sous-label des boutons disabled de `CycleBilanPage`
+  (remplacés par "bientôt"), et le "(Conv #14a-4)" du titre Section
+  de `DevPage`. Reste : tous les autres "Conv #X" sont dans des
+  commentaires (// ou /*) et ne fuient pas à l'écran.
+
+**Tests fin Conv #16** : **512 Vitest + 23/23 e2e verts** (+15 unitaires
+sur les nouvelles fonctions).
+
 ## État courant — fin Conv #15 vague 3 (2026-05-22) — V1.5.0
 
 Itération sur dump 14 retours Azur post-V1.4.0. Bump **v1.5.0**
@@ -226,7 +333,8 @@ ajouté ; nombreuses corrections de textes + polish UX).
 
 **Tests fin Conv #15 vague 3** : **497 Vitest + 23/23 e2e verts**.
 
-**Backlog Conv #16** (mis à jour) — chantiers visuels / refonte UX
+**Backlog Conv #17** (décalé depuis #16 — Conv #16 a été utilisée par la
+refonte calibration) — chantiers visuels / refonte UX
 - Silhouette muscles plus human-like (RBH trop stylisée).
 - Refonte visu volume (Progrès > Volume "très moche").
 - Audit réalisme des plafonds Alex (200 kg presse à jambes etc.).
@@ -235,7 +343,7 @@ ajouté ; nombreuses corrections de textes + polish UX).
 - Simplifier l'aide : un gros bouton "Aide" dans Profil qui ouvre
   les différentes options.
 
-**Backlog Conv #17+ (gros chantier, état)**
+**Backlog Conv #18+ (gros chantier, état)** (décalé depuis #17)
 - Modifier le profil ou les priorités après onboarding : reprendre
   un mini onboarding partiel + terminer prématurément le cycle en
   cours avec bilan archivé (mais pas affiché dans la foulée pour ne
