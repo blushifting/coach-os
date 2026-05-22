@@ -52,7 +52,7 @@ export function SessionSummary({ label, data, catalog, onClose }: SessionSummary
       </Card>
 
       <Card data-testid="summary-prs" className="flex flex-col gap-2">
-        <h3 className="text-sm font-semibold text-white">PR du jour</h3>
+        <h3 className="text-sm font-semibold text-white">Records du jour</h3>
         {data.prs.length === 0 ? (
           <p className="text-xs text-anthracite-300">
             Pas de plafond cassé aujourd'hui — c'est normal, ça vient.

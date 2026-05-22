@@ -144,7 +144,7 @@ const BOOTSTRAP_PCT: Record<string, number> = {
   obliques: 0.2, lombaires: 0.5, mollets: 1.0,
 };
 
-function bootstrapE1rmIfMissing(state: UserState, exercise: Exercise): number {
+export function bootstrapE1rmIfMissing(state: UserState, exercise: Exercise): number {
   if (exercise.id in state.e1rm) return state.e1rm[exercise.id]!;
   const bw = state.profile.bodyweight_kg;
   const primaires = exercisePrimaires(exercise);

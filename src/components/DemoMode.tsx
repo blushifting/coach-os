@@ -29,6 +29,8 @@ import { exitDemoMode } from '@/lib/demo';
 // Script du tour — 6 étapes
 // =============================================================================
 
+type BannerSide = 'top' | 'bottom';
+
 interface TourStep {
   id: string;
   /** Route à atteindre. Le tour y navigue automatiquement. */
@@ -43,6 +45,13 @@ interface TourStep {
    * pas (timing route), la flèche est cachée silencieusement.
    */
   pointTo?: string;
+  /**
+   * Conv #15 vague 3 — force la position du bandeau ('top' ou 'bottom').
+   * Sans ça, défaut = 'bottom' (auto-positionnement Conv #14d retiré car
+   * il sautait visuellement entre étapes — Azur préfère une position
+   * stable).
+   */
+  bannerSide?: BannerSide;
   /**
    * Si défini, déclenche une animation visuelle ciblée à l'arrivée sur la
    * route — pour V1, juste une class CSS posée 600 ms sur l'élément.
@@ -62,8 +71,9 @@ const TOUR_STEPS: readonly TourStep[] = [
     route: '/programme',
     title: "Le programme d'Alex",
     body:
-      "Alex est mardi de la semaine 4 de son 2ᵉ cycle (les cycles font 5 semaines : 4 d'entraînement + 1 de déload). Hier il a fait Upper A, aujourd'hui c'est Lower A. Le calendrier ci-dessous montre les 8 dernières semaines : séances faites en vert, prévues en bleu, repos en grisé.",
+      "Alex est mardi de la semaine 4 de son 2ᵉ cycle (les cycles font 5 semaines : 4 d'entraînement + 1 de déload). Hier il a fait Upper A, aujourd'hui c'est Lower A. Le calendrier ci-dessous montre les semaines du cycle en cours, avec les séances faites en vert, prévues en bleu et le repos en grisé.",
     pointTo: '[data-testid="condensed-calendar"]',
+    bannerSide: 'top',
   },
   {
     id: 'seance',
@@ -93,7 +103,7 @@ const TOUR_STEPS: readonly TourStep[] = [
     route: '/progres',
     title: 'Ses plafonds qui montent',
     body:
-      "Au bout de 8 semaines, voici la progression d'Alex sur ses gros exercices. Les points hauts = records personnels. Les plateaux ou petits creux ponctuels = semaines plus dures (fatigue, RPE haut) ou semaine de déload (charges réduites volontairement à -40 % pour récupérer). Kotsh s'adapte automatiquement.",
+      "Voici la progression d'Alex sur ses gros exercices. Les étoiles ★ marquent les records personnels (plafond battu d'au moins 2 kg). Les plateaux ou petits creux ponctuels correspondent à une semaine plus dure (fatigue, effort perçu élevé) ; les semaines de déload réduisent volontairement les charges pour récupérer, sans qu'elles n'apparaissent comme du recul. Kotsh s'adapte automatiquement.",
     pointTo: '[data-testid="force-view"]',
     clickOnEnter: '[data-testid="tab-force"]',
   },
@@ -141,13 +151,13 @@ function WelcomeOverlay({ onStart }: { onStart: () => void }) {
         <h2 className="mt-1 font-display text-2xl leading-tight text-white">
           {snap.persona.label}
         </h2>
-        <p className="mt-3 text-sm leading-relaxed text-anthracite-200">
+        <p className="mt-3 text-justify text-sm leading-relaxed text-anthracite-200 hyphens-auto">
           {snap.persona.summary}
         </p>
-        <p className="mt-3 text-xs leading-relaxed text-anthracite-300">
+        <p className="mt-3 text-justify text-xs leading-relaxed text-anthracite-300 hyphens-auto">
           Tu peux quitter à tout moment via le bouton{' '}
           <span className="text-sang-400">Quitter la démo</span> en haut à
-          droite — tes vraies données ne sont jamais modifiées.
+          droite. Tes vraies données ne sont jamais modifiées.
         </p>
         <div className="mt-5 flex flex-col gap-2">
           <Button
@@ -215,14 +225,6 @@ function useDialogOverlaying(): boolean {
 // Bandeau narratif + flèche pointeur
 // =============================================================================
 
-/**
- * Position du bandeau démo par rapport au target.
- * Conv #15-8 — `'bottom'` (default historique) ou `'top'` selon que le
- * target est dans la moitié haute (bandeau en bas) ou basse (bandeau
- * en haut) de la viewport, pour ne pas masquer le pointé.
- */
-type BannerSide = 'top' | 'bottom';
-
 interface TargetMeasure {
   /** x du centre du target. */
   readonly cx: number;
@@ -278,11 +280,11 @@ function useTargetMeasure(targetSelector: string | undefined): TargetMeasure | n
   return m;
 }
 
-function PointerArrow({ measure }: { measure: TargetMeasure }) {
-  // Conv #15-8 — flèche orientée selon le côté du bandeau.
-  // - Bandeau en bas → flèche au-dessus du bandeau, pointe vers le haut.
-  // - Bandeau en haut → flèche sous le bandeau, pointe vers le bas.
-  const isBottomBanner = measure.side === 'bottom';
+function PointerArrow({ measure, side }: { measure: TargetMeasure; side: BannerSide }) {
+  // Conv #15-8 / #15 vague 3 — flèche orientée selon le côté EFFECTIF du
+  // bandeau (passé par le parent, plus calculé depuis measure.side car
+  // on a maintenant une position fixe par step).
+  const isBottomBanner = side === 'bottom';
   // Distance entre l'extrémité de la flèche et le bord du bandeau.
   const BANNER_OFFSET = 152; // hauteur bandeau approx + marge
   const baseStyle: React.CSSProperties = {
@@ -338,16 +340,18 @@ function GuidedTourBanner({
   const measure = useTargetMeasure(step.pointTo);
   if (hidden) return null;
   const isLast = index === total - 1;
-  // Conv #15-8 — bandeau au-dessus si le target est en bas, sinon en bas.
-  // Pas de measure (target absent ou non spécifié) → bottom par défaut.
-  const side: BannerSide = measure?.side ?? 'bottom';
+  // Conv #15 vague 3 — position fixe par step (défaut 'bottom'). L'auto-
+  // positionnement de Conv #14d était trop instable visuellement (le
+  // bandeau sautait entre les étapes). Azur préfère une position stable :
+  // 'top' uniquement sur l'étape 1 (programme), 'bottom' partout ailleurs.
+  const side: BannerSide = step.bannerSide ?? 'bottom';
   const bannerPositionStyle: React.CSSProperties =
     side === 'bottom'
       ? { bottom: 'max(env(safe-area-inset-bottom), 4.25rem)' }
       : { top: 'max(env(safe-area-inset-top), 3.5rem)' };
   return (
     <>
-      {measure !== null && <PointerArrow measure={measure} />}
+      {measure !== null && <PointerArrow measure={measure} side={side} />}
       <div
         data-testid={`demo-tour-step-${step.id}`}
         data-banner-side={side}
@@ -365,7 +369,7 @@ function GuidedTourBanner({
           <h3 className="font-display text-base leading-snug text-white">
             {step.title}
           </h3>
-          <p className="text-xs leading-relaxed text-anthracite-200">
+          <p className="text-justify text-xs leading-relaxed text-anthracite-200 hyphens-auto">
             {step.body}
           </p>
           <div className="mt-1 flex gap-2">

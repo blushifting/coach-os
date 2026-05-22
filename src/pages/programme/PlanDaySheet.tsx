@@ -22,6 +22,7 @@ import type {
   SetFeedback,
   WeeklyTemplate,
 } from '@/engine/models';
+import { estimateDayDurationMinutes } from '@/lib/onboarding-preview';
 
 interface PlanDaySheetProps {
   readonly open: boolean;
@@ -212,6 +213,7 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
             )}
             <FreeFutureBlock
               cyclePlan={cyclePlan}
+              catalog={catalog}
               isToday={isToday}
               isDeload={day.isDeload}
               pending={pending}
@@ -328,6 +330,7 @@ function PlannedSessionBlock({
 
 function FreeFutureBlock({
   cyclePlan,
+  catalog,
   isToday,
   isDeload,
   pending,
@@ -335,6 +338,7 @@ function FreeFutureBlock({
   onPick,
 }: {
   readonly cyclePlan: WeeklyTemplate | null;
+  readonly catalog: Catalog | null;
   readonly isToday: boolean;
   readonly isDeload: boolean;
   readonly pending: number | null;
@@ -352,9 +356,9 @@ function FreeFutureBlock({
     <div className="flex flex-col gap-2" data-testid="day-status-text">
       <p className="text-sm text-anthracite-300">
         {isToday
-          ? "Choisis une séance à programmer et démarrer maintenant"
-          : 'Choisis une séance à programmer ce jour'}
-        {isDeload && <span className="text-sang-500"> (semaine de déload)</span>} :
+          ? 'Choisis la séance à démarrer maintenant'
+          : 'Choisis la séance à programmer ce jour'}
+        {isDeload && <span className="text-sang-500"> (semaine de déload)</span>}.
       </p>
       {suggestion !== null && (
         <p
@@ -372,6 +376,10 @@ function FreeFutureBlock({
       <ul className="flex flex-col gap-2">
         {cyclePlan.days.map((d, i) => {
           const isSuggested = suggestion?.suggestedDayIndex === i;
+          const nExos = d.exercises.length;
+          const nSets = d.exercises.reduce((acc, e) => acc + e.base_sets, 0);
+          const durationMin =
+            catalog !== null ? Math.round(estimateDayDurationMinutes(d, catalog)) : 0;
           return (
             <li key={i}>
               <Button
@@ -381,9 +389,16 @@ function FreeFutureBlock({
                 disabled={pending !== null}
                 onClick={() => onPick(i)}
                 data-testid={`plan-slot-${i}`}
+                className="!h-auto !min-h-[2.75rem] flex-col gap-0.5 py-2"
               >
-                {pending === i ? '…' : d.label}
-                {isSuggested ? ' ★' : ''}
+                <span className="font-medium">
+                  {pending === i ? '…' : d.label}
+                  {isSuggested ? ' ★' : ''}
+                </span>
+                <span className="text-[11px] font-normal opacity-75 tabular-nums">
+                  {nExos} exos · {nSets} séries
+                  {durationMin > 0 ? ` · ~${durationMin} min` : ''}
+                </span>
               </Button>
             </li>
           );

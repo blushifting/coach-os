@@ -21,6 +21,7 @@ import {
 } from '@/lib/session-runner';
 import { e1rmConfidenceFor } from '@/lib/calibration-status';
 import { measurementIsReliable } from '@/engine/prescription';
+import { bootstrapE1rmIfMissing } from '@/engine/engine';
 import { CalibrationBanner } from './CalibrationBanner';
 import { ExerciseDetailSheet } from './ExerciseDetailSheet';
 import { PatternIcon } from './PatternIcon';
@@ -54,7 +55,10 @@ export function SessionRunner({
   const [detail, setDetail] = useState<{ exerciseId: string; itemIndex: number } | null>(null);
   const [confirmSkip, setConfirmSkip] = useState(false);
   const [confirmFinish, setConfirmFinish] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
   const [skipping, setSkipping] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const sessionId = useCoachOsStore.getState().currentSessionId;
   const done = countDoneSets(entries);
   const total = countPlannedSets(entries);
   const incomplete = done < total;
@@ -67,6 +71,20 @@ export function SessionRunner({
       navigate('/programme');
     } finally {
       setSkipping(false);
+    }
+  }
+
+  // Conv #15 vague 3 — annulation : supprime la session de la DB (vs skip
+  // qui la marque `status='skipped'`). La case calendrier redevient libre.
+  async function handleCancel() {
+    setConfirmCancel(false);
+    if (sessionId === null) return;
+    setCancelling(true);
+    try {
+      await engine.cancelPlannedSession(sessionId);
+      navigate('/programme');
+    } finally {
+      setCancelling(false);
     }
   }
 
@@ -89,13 +107,24 @@ export function SessionRunner({
   }, [plan.items, userState?.e1rm, snapshots]);
   const bodyweight = userState?.profile.bodyweight_kg ?? 75;
 
-  // Conv #15 vague 2 — snapshot des e1RM au mount du runner (figé pour
+  // Conv #15 vague 2/3 — snapshot des e1RM au mount du runner (figé pour
   // toute la séance). Sert de baseline pour `recalibrateUpcomingSets`.
-  // Si on change de plan (autre session), l'effet hors-Runner se charge
-  // de re-monter — ce ref reste lié à un unique runner.
-  const e1rmInitialRef = useRef<Record<string, number>>({});
-  if (Object.keys(e1rmInitialRef.current).length === 0 && userState?.e1rm) {
-    e1rmInitialRef.current = { ...userState.e1rm };
+  // Inclut le bootstrap heuristique des exos non encore calibrés (pour
+  // un fresh user post-onboarding, `state.e1rm` est vide — sans bootstrap
+  // le ratio serait toujours undefined et le recalibrage no-op). Le
+  // remount à chaque sessionId (key dans SeancePage) rafraîchit ce snapshot.
+  const e1rmInitialRef = useRef<Record<string, number> | null>(null);
+  if (e1rmInitialRef.current === null && userState !== null && catalog !== null) {
+    const snap: Record<string, number> = { ...userState.e1rm };
+    for (const item of plan.items) {
+      if (snap[item.exercise_id] === undefined && catalog.has(item.exercise_id)) {
+        snap[item.exercise_id] = bootstrapE1rmIfMissing(
+          userState,
+          catalog.get(item.exercise_id),
+        );
+      }
+    }
+    e1rmInitialRef.current = snap;
   }
 
   // Wrap onEntriesChange : à chaque transition `done=false → done=true`
@@ -123,7 +152,7 @@ export function SessionRunner({
           }
         }
       }
-      if (triggeredIdx >= 0) {
+      if (triggeredIdx >= 0 && e1rmInitialRef.current !== null) {
         next = recalibrateUpcomingSets({
           entries: next,
           plan,
@@ -298,11 +327,41 @@ export function SessionRunner({
         size="md"
         fullWidth
         onClick={() => setConfirmSkip(true)}
-        disabled={finishing || skipping}
+        disabled={finishing || skipping || cancelling}
         data-testid="btn-skip-session"
       >
-        {skipping ? 'Annulation…' : 'Sauter cette séance'}
+        {skipping ? 'Marquage…' : 'Sauter cette séance'}
       </Button>
+
+      {/* Conv #15 vague 3 — annuler : retire complètement la séance, comme
+          si elle n'avait pas été programmée. Distinct de "Sauter" (qui
+          laisse une trace barrée dans le calendrier). */}
+      <Button
+        variant="ghost"
+        size="md"
+        fullWidth
+        onClick={() => setConfirmCancel(true)}
+        disabled={finishing || skipping || cancelling}
+        data-testid="btn-cancel-session"
+      >
+        {cancelling ? 'Annulation…' : 'Annuler la séance'}
+      </Button>
+
+      <Dialog
+        open={confirmCancel}
+        title="Annuler la séance ?"
+        description={
+          <>
+            La séance sera retirée du calendrier comme si elle n'avait jamais
+            été programmée. Tes coches éventuelles ne seront pas enregistrées.
+          </>
+        }
+        confirmLabel="Annuler la séance"
+        cancelLabel="Continuer"
+        destructive
+        onConfirm={handleCancel}
+        onCancel={() => setConfirmCancel(false)}
+      />
 
       <Dialog
         open={confirmSkip}

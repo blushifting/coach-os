@@ -224,45 +224,32 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
         />
       ))}
 
-      {/* Chips PR (Conv #14a) — au-dessus de chaque point qui bat le
-          précédent record d'au moins +2 kg. Petit badge sang avec liseré
-          clair pour ressortir sur la polyline. */}
+      {/* Étoiles "record" (Conv #15 vague 3, ex-chips PR) — au-dessus de
+          chaque point qui bat le précédent record d'au moins +2 kg. Étoile
+          jaune-doré pleine avec liseré pour ressortir sur la polyline. Le
+          sens de l'étoile est expliqué dans le step démo correspondant. */}
       {xy.map(([x, y], i) => {
         if (!prFlags[i]) return null;
-        const chipW = 22;
-        const chipH = 12;
-        const cx = Math.max(ML + chipW / 2, Math.min(W - chipW / 2, x));
-        // Place le chip 8 px au-dessus du point, sans déborder du haut.
-        const cy = Math.max(MT - 4, y - 10);
+        // Étoile 5 branches centrée, rayon 5 px, point au-dessus du sommet du
+        // point de la courbe. Path : M (haut) puis alternance rayon externe /
+        // interne tous les 36°.
+        const cx = x;
+        const cy = Math.max(MT - 2, y - 9);
         return (
           <g
             key={`pr-${i}`}
             className="animate-reveal-up"
             style={{ animationDelay: `${700 + i * 60}ms`, animationFillMode: 'both' }}
             data-testid="force-pr-chip"
+            transform={`translate(${cx} ${cy})`}
           >
-            <rect
-              x={cx - chipW / 2}
-              y={cy - chipH / 2}
-              width={chipW}
-              height={chipH}
-              rx={3}
-              fill="#7a1a25"
-              stroke="#cc4a59"
-              strokeWidth={0.75}
+            <polygon
+              points="0,-5 1.5,-1.5 5,-1.5 2.2,0.7 3.3,4.5 0,2.2 -3.3,4.5 -2.2,0.7 -5,-1.5 -1.5,-1.5"
+              fill="#fbbf24"
+              stroke="#fff"
+              strokeWidth={0.6}
+              strokeLinejoin="round"
             />
-            <text
-              x={cx}
-              y={cy}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fontSize="8"
-              fontWeight="700"
-              fill="#fff"
-              letterSpacing="0.5"
-            >
-              PR
-            </text>
           </g>
         );
       })}

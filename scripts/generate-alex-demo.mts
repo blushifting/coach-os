@@ -685,12 +685,40 @@ function main(): void {
     date: DEMO_TODAY,
   });
 
+  // Conv #15 vague 3 — Alex a aussi 2 séances **prévues** plus tard dans la
+  // semaine (Upper B le jeudi, Lower B le samedi). Sans ça, la démo
+  // montrait uniquement les séances passées + celle du jour, l'utilisateur
+  // ne voyait jamais une case "planned" (bleu) dans le calendrier.
+  const PLANNED_OFFSETS: Array<{ dayIdx: 0 | 1 | 2 | 3; offset: number }> = [
+    { dayIdx: 2, offset: 2 }, // jeudi (Upper B)
+    { dayIdx: 3, offset: 4 }, // samedi (Lower B)
+  ];
+  for (const p of PLANNED_OFFSETS) {
+    const date = addDays(DEMO_TODAY, p.offset);
+    const plan = planFromTemplate(ctx, {
+      tag: `C2W4D${p.dayIdx}-planned`,
+      cycle: 2,
+      weekInCycle: 4,
+      dayIdx: p.dayIdx,
+      date,
+    });
+    ctx.sessions.push({
+      id: ctx.nextSessionId++,
+      seance_date: date,
+      week_in_cycle: 4,
+      cycle_index: 2,
+      plan,
+      status: 'planned',
+      created_at: DEMO_TODAY + 'T08:00:00.000Z',
+    });
+  }
+
   const snapshot: DemoSnapshot = {
     persona: {
       id: 'alex',
-      label: 'Visite guidée de Kotsh',
+      label: "Découvre Kotsh via le profil d'Alex",
       summary:
-        "Pour te montrer comment l'app marche en pratique, on va parcourir ensemble le profil d'Alex — un utilisateur fictif qui a déjà joué 8 semaines (2 cycles de 5 et 3 semaines). Tu verras un programme actif, des séances passées, des plafonds qui progressent, et un bilan de cycle — tout ce que tu auras toi-même dans quelques semaines. Tes vraies données restent intactes pendant la visite.",
+        "Pour te montrer comment l'app marche en pratique, on va parcourir ensemble le profil d'Alex — un utilisateur fictif qui a effectué 8 semaines d'entraînement (les 5 du cycle 1 + 3 sur les 5 du cycle 2 en cours). Tu verras un programme actif, des séances passées, des plafonds qui progressent, et un bilan de cycle — tout ce que tu auras toi-même dans quelques semaines. Tes vraies données restent intactes pendant la visite.",
     },
     generated_at: DEMO_TODAY,
     user_state: serializeUserState(state),

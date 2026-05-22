@@ -98,7 +98,7 @@ export default function ProgrammePage() {
   if (dashboard === null) return null;
 
   return (
-    <section className="flex flex-col gap-4 pb-4" data-testid="programme-page">
+    <section className="flex flex-col gap-3" data-testid="programme-page">
       <WelcomeBanner feedbackCount={history.feedbacks.length} />
 
       <Widgets

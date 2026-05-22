@@ -71,15 +71,12 @@ export default function SeancePage() {
     prevSessionIdRef.current = currentSessionId;
     if (currentSessionPlan === null) return;
 
-    const sessionChanged = currentSessionId !== prevId;
-    if (sessionChanged) {
-      // Vraie nouvelle session (sessionId différent) : on reset toujours.
-      setStoredEntries(initEntries(currentSessionPlan));
-      return;
-    }
+    // Conv #15 vague 3 — ordre des conditions corrigé : le 1er mount
+    // doit être traité AVANT le `sessionChanged` (sinon `prevId === null`
+    // déclenche à tort un reset au remount du composant alors qu'on veut
+    // préserver `storedEntries`). Le `sessionChanged` ne s'applique qu'aux
+    // changements de session pendant qu'on reste monté.
     if (prev === null) {
-      // 1er mount du composant. Si le store a déjà des entries cohérentes
-      // (retour sur /seance/runner après navigation), on les garde.
       const compatible =
         storedEntries !== null &&
         storedEntries.length === currentSessionPlan.items.length &&
@@ -89,6 +86,11 @@ export default function SeancePage() {
       if (!compatible) {
         setStoredEntries(initEntries(currentSessionPlan));
       }
+      return;
+    }
+    const sessionChanged = currentSessionId !== prevId;
+    if (sessionChanged) {
+      setStoredEntries(initEntries(currentSessionPlan));
       return;
     }
     // Même session : tester si la structure du plan a changé (remplacement d'exo).

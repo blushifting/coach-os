@@ -40,13 +40,14 @@ const TUTORIALS: readonly Tutorial[] = [
   },
   {
     id: 'first-session',
-    title: 'Première séance (calibration)',
+    title: 'Première séance (calibration transparente)',
     body:
-      "La séance 0 te demande de tester 1 ou 2 séries proches de l'échec sur chaque " +
-      "exercice clé. Tu rentres le poids, le nombre de reps et ton effort perçu (sur 10 — " +
-      "c'est ce qu'on appelle aussi RPE dans le jargon muscu). L'app en déduit ton plafond " +
-      "(charge max pour 1 rep) pour chaque exo via la formule d'Epley étendue, et calibre " +
-      "tes charges de travail pour le reste du cycle.",
+      "Pas de séance de test dédiée : Kotsh apprend tes plafonds en marchant. " +
+      "À ta 1re séance, l'app pré-remplit des charges raisonnables selon ton poids et ton " +
+      "niveau ; tu modifies si la réalité diffère. Pour chaque série tu saisis reps faites, " +
+      "charge et effort perçu (sur 10, aussi appelé RPE). L'algo en déduit ton plafond via " +
+      "la formule d'Epley étendue, et affine séance après séance — sans phase de calibration " +
+      "préalable.",
   },
   {
     id: 'feedback',
@@ -101,10 +102,10 @@ export function AideSheet({ open, onClose }: AideSheetProps) {
             </h4>
             <Card>
               <p className="text-sm leading-relaxed text-anthracite-200">
-                Découvre Kotsh avec un utilisateur fictif (Alex), 8 semaines
-                d'entraînement Upper/Lower déjà jouées. Tu navigues dans
-                l'app comme si c'étaient tes données — ton vrai profil revient
-                en sortie.
+                Découvre Kotsh via un utilisateur fictif (Alex) qui a effectué
+                8 semaines d'entraînement Upper/Lower. Tu navigues dans
+                l'app comme si c'étaient tes données — ton vrai profil
+                revient en sortie.
               </p>
               <div className="mt-3">
                 <Button

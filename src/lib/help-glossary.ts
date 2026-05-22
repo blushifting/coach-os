@@ -85,8 +85,8 @@ export const HELP_GLOSSARY: Readonly<Record<HelpTopic, HelpEntry>> = {
     body: "Comparaison de la charge actuelle avec celle de la semaine 1 du cycle en cours. Mesure la progression nette intra-cycle, avant déload.",
   },
   prDuJour: {
-    title: 'PR du jour',
-    body: "Record personnel de la séance : meilleure performance (charge × reps × RPE) atteinte aujourd'hui sur un exercice, comparée à toutes les séances précédentes.",
+    title: 'Record du jour',
+    body: "Record personnel de la séance : meilleure performance (charge × reps × effort) atteinte aujourd'hui sur un exercice, comparée à toutes les séances précédentes. Représenté par une étoile sur les courbes de force.",
   },
   adherence: {
     title: 'Adhérence',

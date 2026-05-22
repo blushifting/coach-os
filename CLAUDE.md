@@ -145,6 +145,102 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
+## État courant — fin Conv #15 vague 3 (2026-05-22) — V1.5.0
+
+Itération sur dump 14 retours Azur post-V1.4.0. Bump **v1.5.0**
+(2 fixes critiques : persistance + recalibrage qui ne marchaient
+PAS réellement en V1.4 malgré le commit ; bouton "Annuler la séance"
+ajouté ; nombreuses corrections de textes + polish UX).
+
+**Fixes critiques (annoncés mais cassés en V1.4)**
+- **Persistance entries au remount SeancePage** : l'ordre des conditions
+  dans le useEffect était mauvais. `sessionChanged = currentSessionId
+  !== prevId` se déclenchait à tort au remount (prevId = null), forçant
+  `initEntries` AVANT que le check "1er mount" puisse préserver
+  `storedEntries`. Fix : tester `prev === null` d'abord (préserve si
+  compatible), `sessionChanged` ensuite (init seulement si on était
+  déjà monté).
+- **Recalibrage continu pour fresh user** : `state.e1rm` est vide pour
+  un utilisateur post-onboarding (bootstrap se fait à la volée sans
+  persister). Mon ref captait donc `{}` → `e1rmStart` undefined →
+  no-op systématique. Fix : `bootstrapE1rmIfMissing` exporté depuis
+  `engine.ts`, snapshot enrichi au mount du SessionRunner avec le
+  bootstrap heuristique pour les exos non encore mesurés.
+- **Bouton "Annuler la séance"** dans SessionRunner : `cancelPlannedSession`
+  appelé après confirmation Dialog. Distinct de "Sauter" (qui marque
+  status='skipped', case barrée dans le calendrier) — annuler supprime
+  la ligne, comme si la séance n'avait jamais été programmée.
+
+**Polish UX**
+- Doublon "visite guidée" : le tag rouge restait, le label persona
+  changé en "Découvre Kotsh via le profil d'Alex".
+- "joué" → "effectué" partout (persona.summary, AideSheet).
+- Bulle démo : position fixe par step (`bannerSide?: 'top' | 'bottom'`
+  dans TourStep) — 'top' uniquement sur step 1 (programme), 'bottom'
+  partout ailleurs. L'auto-positionnement de Conv #14d sautait
+  visuellement entre étapes.
+- Textes longs : `text-justify hyphens-auto` sur les paragraphes du
+  WelcomeBanner, WelcomeOverlay (intro + sortie), et bandeau démo
+  (step.body). ":" déplacés / supprimés quand ils traînaient en fin
+  de ligne.
+- PlanDaySheet FreeFutureBlock : "Choisis la séance à programmer ce
+  jour" (sans "et démarrer maintenant" qui débordait), boutons
+  enrichis avec "X exos · Y séries · ~Z min" en sous-titre.
+- Bilan cycle : `text-xl` + `whitespace-nowrap` sur les Metrics
+  (volume "1 234 kg" reste sur une ligne). Label "PR" → "Records".
+- Bilan séance : "PR du jour" → "Records du jour".
+- ForceView : chips "PR" remplacés par des **étoiles dorées** sur les
+  points qui battent le record d'au moins +2 kg. Sens expliqué dans
+  le step démo correspondant.
+- AideSheet "Première séance (calibration)" : retiré toute mention de
+  "séance 0" (rayée de l'app depuis Conv #12a), texte refondu sur
+  la calibration transparente.
+- WelcomeBanner et démo step 1 : "8 semaines" → "semaines du cycle
+  en cours" (calendrier ne montre QUE 5 semaines).
+- Bouton "Continuer pareil" du bilan cycle : **disabled en mode démo**
+  pour éviter qu'on valide accidentellement le bilan d'Alex.
+- ProgrammePage : `gap-3` + retrait `pb-4` → plus de scroll de 1-2 px
+  parasitaire sur l'onglet Séances.
+
+**Démo Alex**
+- Step 1 (programme) — reformulation : "Le calendrier ci-dessous
+  montre les semaines du cycle en cours, séances faites en vert,
+  prévues en bleu et le repos en grisé." `bannerSide: 'top'`.
+- Step 4 (progres-force) — réécrit : étoiles ★ expliquées, déload
+  positionné comme volontaire et non comme recul.
+- Persona.label "Visite guidée de Kotsh" → "Découvre Kotsh via le
+  profil d'Alex" (évite la redondance avec le tag rouge "Visite
+  guidée").
+
+**Logique**
+- **Séance sautée ≠ repos jour suivant** : `dashboard.ts`
+  `prevWasSkipped` filtré explicitement. Une séance `status='skipped'`
+  ne déclenche plus `restSuggested` ni `recentMuscles` sur le
+  lendemain.
+
+**Démo Alex (données)**
+- 2 séances **planned** ajoutées (Upper B jeudi + Lower B samedi),
+  pour que la démo montre aussi des cases bleues "prévue" dans le
+  calendrier, pas seulement les passées + le jour.
+- `alex.json` : 35 sessions (33 + 2 planned).
+
+**Tests fin Conv #15 vague 3** : **497 Vitest + 23/23 e2e verts**.
+
+**Backlog Conv #16** (mis à jour) — chantiers visuels / refonte UX
+- Silhouette muscles plus human-like (RBH trop stylisée).
+- Refonte visu volume (Progrès > Volume "très moche").
+- Audit réalisme des plafonds Alex (200 kg presse à jambes etc.).
+- Step2 onboarding : silhouette cliquable pour ajouter le muscle,
+  liste priorités en dessous, "ajouter manuellement" plus bas.
+- Simplifier l'aide : un gros bouton "Aide" dans Profil qui ouvre
+  les différentes options.
+
+**Backlog Conv #17+ (gros chantier, état)**
+- Modifier le profil ou les priorités après onboarding : reprendre
+  un mini onboarding partiel + terminer prématurément le cycle en
+  cours avec bilan archivé (mais pas affiché dans la foulée pour ne
+  pas divertir).
+
 ## État courant — fin Conv #15 vague 2 (2026-05-21) — V1.4.0
 
 Suite immédiate de la vague 1 (V1.3.0) sur 14 nouveaux retours Azur.

@@ -5,7 +5,7 @@ import { Card } from '@/components/Card';
 import { HelpButton } from '@/components/HelpButton';
 import { useEngine } from '@/hooks/useEngine';
 import { useCoachOsStore } from '@/store';
-import { selectCycles } from '@/store/selectors';
+import { selectCycles, useDemoMode } from '@/store/selectors';
 import type { CycleReview } from '@/engine/models';
 import { exerciseLabel, muscleLabel } from '@/lib/progress';
 import { pickReviewToDisplay, suggestedActionLabel } from './selectors';
@@ -56,7 +56,7 @@ export default function CycleBilanPage() {
         <Card data-testid="bilan-empty">
           <p className="text-sm text-anthracite-300">
             Aucun bilan disponible pour le moment. Termine un cycle complet pour
-            voir s'afficher tes plafonds, PR, et l'adhérence.
+            voir s'afficher tes plafonds, tes records et l'adhérence.
           </p>
           <div className="mt-3">
             <Link to="/programme">
@@ -103,7 +103,8 @@ function ReviewKeyMetrics({ review }: { review: CycleReview }) {
         value={`${Math.round(review.volume_total_kg).toLocaleString('fr-FR')} kg`}
         delay={80}
       />
-      <Metric label="PR" value={`${review.PRs.length}`} delay={160} />
+      {/* Conv #15 vague 3 — "PR" → "Records" (terme FR explicite). */}
+      <Metric label="Records" value={`${review.PRs.length}`} delay={160} />
     </Card>
   );
 }
@@ -128,7 +129,9 @@ function Metric({
         {label}
         {helpTopic && <HelpButton topic={helpTopic} label={`Aide : ${label}`} />}
       </span>
-      <span className="font-display text-2xl leading-none text-white tabular-nums">
+      {/* Conv #15 vague 3 — text-xl + whitespace-nowrap pour éviter
+          que "kg" passe à la ligne sur des volumes 4-5 chiffres. */}
+      <span className="font-display text-xl leading-none text-white tabular-nums whitespace-nowrap">
         {value}
       </span>
     </div>
@@ -247,6 +250,7 @@ function ReviewWarnings({ review }: { review: CycleReview }) {
 function ReviewActions({ review }: { review: CycleReview }) {
   const engine = useEngine();
   const navigate = useNavigate();
+  const demoActive = useDemoMode();
   const [pending, setPending] = useState(false);
   const suggested = suggestedActionLabel(review.suggested_action);
 
@@ -265,10 +269,13 @@ function ReviewActions({ review }: { review: CycleReview }) {
       <h2 className="text-sm font-semibold text-white">Et maintenant ?</h2>
       <p className="text-xs text-anthracite-300">Suggestion du moteur : {suggested}.</p>
       <div className="mt-2 flex flex-col gap-2">
+        {/* Conv #15 vague 3 — en mode démo, "Continuer" est verrouillé :
+            sinon l'utilisateur peut accidentellement valider le bilan
+            d'Alex (= passer au cycle suivant dans le snapshot démo). */}
         <Button
           variant="primary"
           fullWidth
-          disabled={pending}
+          disabled={pending || demoActive}
           onClick={continueAsIs}
           data-testid="action-continuer"
         >

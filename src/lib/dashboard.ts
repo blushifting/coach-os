@@ -354,10 +354,15 @@ export function buildCalendarMatrix(
       }
 
       // Repos recommandé : si la veille a une séance prévue ou faite.
+      // Conv #15 vague 3 — une séance `skipped` (sautée) ne crée PAS de
+      // fatigue à reposer le lendemain : on filtre explicitement. Même
+      // chose pour les muscles "récents" du sheet d'avertissement.
       const prevDate = dateKey(addDays(date, -1));
       const prevSess = sessionByDate.get(prevDate);
       const prevHasFeedback = feedbackDates.has(prevDate);
+      const prevWasSkipped = prevSess?.status === 'skipped';
       const prevIsActive =
+        !prevWasSkipped &&
         prevSess !== undefined &&
         (prevSess.status === 'planned' ||
           prevSess.status === 'completed' ||

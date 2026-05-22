@@ -75,17 +75,17 @@ export function WelcomeBanner({ feedbackCount }: WelcomeBannerProps) {
       <h2 className="pr-8 font-display text-2xl leading-tight tracking-wide text-white">
         Ton cycle commence aujourd'hui
       </h2>
-      <p className="text-sm leading-relaxed text-anthracite-200">
+      <p className="text-justify text-sm leading-relaxed text-anthracite-200 hyphens-auto">
         Pour démarrer ta 1re séance, tape la case{' '}
         <span className="font-medium text-white">d'aujourd'hui</span> dans le
         calendrier ci-dessous (entourée en rouge). Tu peux aussi taper une
         autre case pour planifier la séance d'un autre jour. Tes plafonds
-        s'apprendront automatiquement au fil des séries — pas de calibration
+        s'apprendront automatiquement au fil des séries, pas de calibration
         préalable.
       </p>
-      <p className="rounded-lg border border-sang-800/50 bg-sang-900/15 px-3 py-2 text-[12px] leading-relaxed text-anthracite-100">
+      <p className="text-justify rounded-lg border border-sang-800/50 bg-sang-900/15 px-3 py-2 text-[12px] leading-relaxed text-anthracite-100 hyphens-auto">
         <span className="font-medium text-sang-300">Comment ça marche : </span>
-        l'app te suggère <span className="font-medium text-white">charge, reps et effort</span> pour chaque série —
+        l'app te suggère <span className="font-medium text-white">charge, reps et effort</span> pour chaque série,
         c'est un <span className="italic">objectif</span>, pas une obligation. Si tu fais plus ou moins en
         réalité, modifie le résultat saisi : l'algorithme apprend de ton vrai
         ressenti et ajuste les séries suivantes.
