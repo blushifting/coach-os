@@ -72,8 +72,23 @@ export default function SeancePage() {
     if (currentSessionPlan === null) return;
 
     const sessionChanged = currentSessionId !== prevId;
-    if (sessionChanged || prev === null) {
+    if (sessionChanged) {
+      // Vraie nouvelle session (sessionId différent) : on reset toujours.
       setStoredEntries(initEntries(currentSessionPlan));
+      return;
+    }
+    if (prev === null) {
+      // 1er mount du composant. Si le store a déjà des entries cohérentes
+      // (retour sur /seance/runner après navigation), on les garde.
+      const compatible =
+        storedEntries !== null &&
+        storedEntries.length === currentSessionPlan.items.length &&
+        storedEntries.every(
+          (row, i) => row.length === currentSessionPlan.items[i]!.sets.length,
+        );
+      if (!compatible) {
+        setStoredEntries(initEntries(currentSessionPlan));
+      }
       return;
     }
     // Même session : tester si la structure du plan a changé (remplacement d'exo).
@@ -167,6 +182,9 @@ export default function SeancePage() {
 
       <main className="flex-1 overflow-y-auto px-4 py-3 pb-32">
         <SessionRunner
+          // Conv #15 vague 2 — key sur sessionId pour garantir le remount à
+          // chaque vraie nouvelle session (snapshot e1rmInitialRef refait).
+          key={currentSessionId ?? 'no-session'}
           plan={currentSessionPlan}
           catalog={catalog}
           entries={entries}

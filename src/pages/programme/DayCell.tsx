@@ -31,6 +31,13 @@ const STATUS_BADGE_LABEL: Record<CalendarDay['status'], string> = {
 
 export function DayCell({ day, onClick }: DayCellProps) {
   const dayOfMonth = Number(day.date.slice(-2));
+  // Conv #15 vague 2 — `cn()` simple ne fait pas de tailwind-merge, donc
+  // accumuler `bg-anthracite-*` + `bg-amber-*` laisse Tailwind trancher par
+  // ordre alphabétique (amber défini avant anthracite → anthracite gagne).
+  // Si `restSuggested`, on remplace les classes de fond/bordure, sans cumul.
+  const statusClasses = day.restSuggested
+    ? REST_SUGGESTED_OVERLAY
+    : STATUS_BASE[day.status];
   return (
     <button
       type="button"
@@ -40,8 +47,7 @@ export function DayCell({ day, onClick }: DayCellProps) {
       data-deload={day.isDeload ? 'true' : 'false'}
       className={cn(
         'flex aspect-square flex-col items-center justify-center gap-0.5 rounded-lg border text-xs transition active:scale-95',
-        STATUS_BASE[day.status],
-        day.restSuggested && REST_SUGGESTED_OVERLAY,
+        statusClasses,
         day.isToday && 'ring-2 ring-sang-500',
         day.isDeload && 'opacity-90',
       )}

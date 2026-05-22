@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -15,10 +15,12 @@ import {
   countDoneSets,
   countPlannedSets,
   formatRest,
+  recalibrateUpcomingSets,
   type SessionEntries,
   updateSetEntry,
 } from '@/lib/session-runner';
 import { e1rmConfidenceFor } from '@/lib/calibration-status';
+import { measurementIsReliable } from '@/engine/prescription';
 import { CalibrationBanner } from './CalibrationBanner';
 import { ExerciseDetailSheet } from './ExerciseDetailSheet';
 import { PatternIcon } from './PatternIcon';
@@ -51,9 +53,11 @@ export function SessionRunner({
   const snapshots = useCoachOsStore((s) => s.history.e1rmSnapshots);
   const [detail, setDetail] = useState<{ exerciseId: string; itemIndex: number } | null>(null);
   const [confirmSkip, setConfirmSkip] = useState(false);
+  const [confirmFinish, setConfirmFinish] = useState(false);
   const [skipping, setSkipping] = useState(false);
   const done = countDoneSets(entries);
   const total = countPlannedSets(entries);
+  const incomplete = done < total;
 
   async function handleSkip() {
     setConfirmSkip(false);
@@ -85,6 +89,55 @@ export function SessionRunner({
   }, [plan.items, userState?.e1rm, snapshots]);
   const bodyweight = userState?.profile.bodyweight_kg ?? 75;
 
+  // Conv #15 vague 2 — snapshot des e1RM au mount du runner (figé pour
+  // toute la séance). Sert de baseline pour `recalibrateUpcomingSets`.
+  // Si on change de plan (autre session), l'effet hors-Runner se charge
+  // de re-monter — ce ref reste lié à un unique runner.
+  const e1rmInitialRef = useRef<Record<string, number>>({});
+  if (Object.keys(e1rmInitialRef.current).length === 0 && userState?.e1rm) {
+    e1rmInitialRef.current = { ...userState.e1rm };
+  }
+
+  // Wrap onEntriesChange : à chaque transition `done=false → done=true`
+  // d'une série fiable, recalibrer les charges des séries non-cochées du
+  // même exo (cf. recalibrateUpcomingSets).
+  const handleEntriesChange = useCallback(
+    (next: SessionEntries) => {
+      if (catalog === null) {
+        onEntriesChange(next);
+        return;
+      }
+      let triggeredIdx = -1;
+      for (let i = 0; i < next.length && triggeredIdx < 0; i++) {
+        const newRow = next[i] ?? [];
+        const oldRow = entries[i] ?? [];
+        for (let j = 0; j < newRow.length; j++) {
+          const ne = newRow[j];
+          const oe = oldRow[j];
+          if (!ne || !oe) continue;
+          if (ne.done && !oe.done) {
+            if (ne.reps !== null && ne.reps > 0 && measurementIsReliable(ne.reps, ne.rpe)) {
+              triggeredIdx = i;
+              break;
+            }
+          }
+        }
+      }
+      if (triggeredIdx >= 0) {
+        next = recalibrateUpcomingSets({
+          entries: next,
+          plan,
+          catalog,
+          bodyweightKg: bodyweight,
+          e1rmInitial: e1rmInitialRef.current,
+          itemIdx: triggeredIdx,
+        });
+      }
+      onEntriesChange(next);
+    },
+    [catalog, entries, plan, bodyweight, onEntriesChange],
+  );
+
   return (
     <div className="flex flex-col gap-3" data-testid="session-runner">
       <Card accent data-testid="session-progress" className="flex items-center justify-between">
@@ -97,7 +150,9 @@ export function SessionRunner({
           </span>
           <span className="flex items-center gap-1.5 text-xs text-anthracite-300">
             Cycle {plan.cycle_index} · S{plan.week_in_cycle} · Effort cible{' '}
-            <span className="tabular-nums text-anthracite-100">{plan.rpe_target}/10</span>
+            <span className="tabular-nums text-anthracite-100">
+              {(Math.round(plan.rpe_target * 2) / 2).toFixed(1)}/10
+            </span>
             <HelpButton topic="rpe" label="Aide : effort cible" />
           </span>
         </div>
@@ -188,7 +243,7 @@ export function SessionRunner({
                       chargeType={chargeType}
                       checkLocked={j > 0 && !entrySets[j - 1]!.done}
                       onChange={(patch) =>
-                        onEntriesChange(updateSetEntry(entries, i, j, patch))
+                        handleEntriesChange(updateSetEntry(entries, i, j, patch))
                       }
                     />
                   ))}
@@ -203,15 +258,39 @@ export function SessionRunner({
         variant="primary"
         size="lg"
         fullWidth
-        onClick={() => {
-          triggerHaptic('session-done');
-          onFinish();
-        }}
+        onClick={() => setConfirmFinish(true)}
         disabled={finishing || done === 0}
         data-testid="btn-finish-session"
       >
         {finishing ? 'Enregistrement…' : 'Terminer la séance'}
       </Button>
+
+      <Dialog
+        open={confirmFinish}
+        title="Terminer la séance ?"
+        description={
+          incomplete ? (
+            <>
+              Tu as coché <strong>{done}/{total}</strong> séries. Une fois
+              terminée, tu ne pourras plus modifier la séance — les séries non
+              cochées seront comptées comme non faites (dette de volume).
+            </>
+          ) : (
+            <>
+              Toutes les séries sont cochées. La séance sera enregistrée et
+              tes plafonds seront mis à jour.
+            </>
+          )
+        }
+        confirmLabel="Terminer"
+        cancelLabel="Continuer la séance"
+        onConfirm={() => {
+          setConfirmFinish(false);
+          triggerHaptic('session-done');
+          onFinish();
+        }}
+        onCancel={() => setConfirmFinish(false)}
+      />
 
       {/* Conv #14b-3 — sortie alternative : marquer la séance comme sautée. */}
       <Button

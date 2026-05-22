@@ -19,6 +19,12 @@ import type {
   SessionPlan,
   SetFeedback,
 } from '@/engine/models';
+import type { Catalog } from '@/engine/catalog';
+import {
+  e1rmObserved,
+  effectiveLoadForE1rm,
+  measurementIsReliable,
+} from '@/engine/prescription';
 import type { FeedbackRow } from '@/db/schema';
 
 // =============================================================================
@@ -86,6 +92,73 @@ export function updateSetEntry(
   return entries.map((sets, i) => {
     if (i !== itemIdx) return sets;
     return sets.map((s, j) => (j === setIdx ? { ...s, ...patch } : s));
+  });
+}
+
+/**
+ * Conv #15 vague 2 — Recalibrage continu en cours de séance.
+ *
+ * Quand l'utilisateur valide une série fiable (`done=true` ET RPE / reps dans
+ * la plage utilisable par Epley), on recalcule l'e1RM observé live (max sur
+ * les séries déjà validées de cet exo) et on ajuste les charges des séries
+ * non-cochées du même exo proportionnellement.
+ *
+ * Garde-fous :
+ *  - Seuil de variation 5 % : on ne touche pas pour des micro-écarts.
+ *  - On n'écrase que les `load_kg` encore identiques à la prescription
+ *    originale du plan (heuristique "non touché par l'user"). Dès qu'un set
+ *    a été ajusté (algo) ou modifié (user), on le respecte.
+ *  - Arrondi sur `inc_kg` de l'exo (paliers réels de la machine/barre).
+ *  - Aucune mutation : retourne une nouvelle `SessionEntries`.
+ */
+export function recalibrateUpcomingSets(args: {
+  entries: SessionEntries;
+  plan: SessionPlan;
+  catalog: Catalog;
+  bodyweightKg: number;
+  e1rmInitial: Record<string, number>;
+  itemIdx: number;
+}): SessionEntries {
+  const { entries, plan, catalog, bodyweightKg, e1rmInitial, itemIdx } = args;
+  const item = plan.items[itemIdx];
+  if (item === undefined) return entries;
+  if (!catalog.has(item.exercise_id)) return entries;
+  const exo = catalog.get(item.exercise_id);
+  const e1rmStart = e1rmInitial[item.exercise_id];
+  if (e1rmStart === undefined || e1rmStart <= 0) return entries;
+
+  const exoEntries = entries[itemIdx] ?? [];
+  let liveE1rm: number | null = null;
+  for (const e of exoEntries) {
+    if (!e.done) continue;
+    if (e.reps === null || e.reps <= 0 || e.load_kg === null) continue;
+    if (!measurementIsReliable(e.reps, e.rpe)) continue;
+    try {
+      const total = effectiveLoadForE1rm(e.load_kg, exo, bodyweightKg);
+      const v = e1rmObserved(total, e.reps, e.rpe);
+      if (liveE1rm === null || v > liveE1rm) liveE1rm = v;
+    } catch {
+      // RPE/reps hors plage Epley : ignore.
+    }
+  }
+  if (liveE1rm === null) return entries;
+  const ratio = liveE1rm / e1rmStart;
+  if (Math.abs(ratio - 1) < 0.05) return entries;
+
+  const inc = exo.inc_kg > 0 ? exo.inc_kg : 1.25;
+  return entries.map((sets, i) => {
+    if (i !== itemIdx) return sets;
+    return sets.map((s, j) => {
+      if (s.done) return s;
+      const planLoad = item.sets[j]?.load_kg ?? null;
+      if (planLoad === null) return s;
+      // Heuristique "non touché par user/algo" : on n'écrase que si la
+      // valeur actuelle correspond exactement à la prescription d'origine.
+      if (s.load_kg !== planLoad) return s;
+      const adjusted = Math.max(0, Math.round((planLoad * ratio) / inc) * inc);
+      if (adjusted === planLoad) return s;
+      return { ...s, load_kg: adjusted };
+    });
   });
 }
 

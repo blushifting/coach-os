@@ -4,7 +4,7 @@
  */
 
 import type { Exercise, ExerciseDict } from './models';
-import { E1RMApp, ExType, exerciseFromDict, exercisePrimaires } from './models';
+import { ChargeType, E1RMApp, ExType, exerciseFromDict, exercisePrimaires } from './models';
 import rawExercises from '../data/exercises.json';
 import { EXERCISE_SYNONYMES } from '../data/exercise-synonymes';
 
@@ -153,6 +153,19 @@ export class Catalog {
             }
           }
           if (!ok) continue;
+        } else if (
+          // Conv #15 vague 2 — garde-fou : certains exos du catalogue ont
+          // `equip=[]` mais une `charge` qui requiert clairement un appareil
+          // (crunch_machine, good_morning_machine, leg_curl_standing,
+          // pushup_loaded, etc.). On filtre via la charge plutôt que de
+          // patcher le JSON, plus robuste face à d'autres oublis.
+          (x.charge === ChargeType.MACHINE_STACK ||
+            x.charge === ChargeType.CABLE ||
+            x.charge === ChargeType.BODYWEIGHT_LOADED ||
+            x.charge === ChargeType.BODYWEIGHT_ASSISTED) &&
+          opts.equip_available.size === 0
+        ) {
+          continue;
         }
       }
       if (opts.tags_in && !opts.tags_in.some((t) => x.tags.includes(t))) continue;

@@ -60,9 +60,9 @@ const TOUR_STEPS: readonly TourStep[] = [
   {
     id: 'programme',
     route: '/programme',
-    title: 'Le programme d\'Alex',
+    title: "Le programme d'Alex",
     body:
-      "Alex est mardi de la semaine 4. Hier (lundi), il a fait son Upper A. Aujourd'hui : Lower A. Le calendrier montre toutes les séances déjà jouées sur 8 semaines.",
+      "Alex est mardi de la semaine 4 de son 2ᵉ cycle (les cycles font 5 semaines : 4 d'entraînement + 1 de déload). Hier il a fait Upper A, aujourd'hui c'est Lower A. Le calendrier ci-dessous montre les 8 dernières semaines : séances faites en vert, prévues en bleu, repos en grisé.",
     pointTo: '[data-testid="condensed-calendar"]',
   },
   {
@@ -93,7 +93,7 @@ const TOUR_STEPS: readonly TourStep[] = [
     route: '/progres',
     title: 'Ses plafonds qui montent',
     body:
-      "Au bout de 8 semaines, voici la progression d'Alex sur ses gros exercices. Le squat est passé de 120 à 127 kg. Les points hauts = records personnels.",
+      "Au bout de 8 semaines, voici la progression d'Alex sur ses gros exercices. Les points hauts = records personnels. Les plateaux ou petits creux ponctuels = semaines plus dures (fatigue, RPE haut) ou semaine de déload (charges réduites volontairement à -40 % pour récupérer). Kotsh s'adapte automatiquement.",
     pointTo: '[data-testid="force-view"]',
     clickOnEnter: '[data-testid="tab-force"]',
   },

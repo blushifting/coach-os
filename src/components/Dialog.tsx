@@ -51,13 +51,19 @@ export function Dialog({
           <div className="mt-2 text-sm leading-relaxed text-anthracite-300">{description}</div>
         )}
         <div className="mt-5 flex gap-2">
-          <Button variant="secondary" fullWidth onClick={onCancel}>
+          <Button
+            variant="secondary"
+            fullWidth
+            onClick={onCancel}
+            data-testid="dialog-cancel"
+          >
             {cancelLabel}
           </Button>
           <Button
             variant={destructive ? 'danger' : 'primary'}
             fullWidth
             onClick={onConfirm}
+            data-testid="dialog-confirm"
           >
             {confirmLabel}
           </Button>

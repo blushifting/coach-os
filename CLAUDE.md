@@ -145,6 +145,89 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
+## État courant — fin Conv #15 vague 2 (2026-05-21) — V1.4.0
+
+Suite immédiate de la vague 1 (V1.3.0) sur 14 nouveaux retours Azur.
+Bump **v1.4.0** (minor : 2 nouvelles features algorithmiques majeures
+— recalibrage continu + suggestion variée).
+
+**Bugs corrigés**
+- **Bodyweight strict** : `crunch_machine`, `good_morning_machine`,
+  `leg_curl_standing` ont `equip=[]` dans le catalog malgré
+  `charge=machine_stack`. Garde-fou ajouté dans `catalog.filter` :
+  charge ∈ {MACHINE_STACK, CABLE, BODYWEIGHT_LOADED,
+  BODYWEIGHT_ASSISTED} + `equip_available` vide ⟹ skip. Plus robuste
+  qu'un patch JSON (couvre d'autres oublis éventuels).
+- **Calendrier "repos recommandé" pas orange** : `cn()` accumulait
+  `bg-anthracite-*` + `bg-amber-*`, Tailwind tranchait alphabétiquement
+  en faveur d'anthracite. Fix dans `DayCell` : override complet du
+  STATUS_BASE par REST_SUGGESTED_OVERLAY si `restSuggested`.
+- **Persistance séance KO** : le clic sur la case du jour rouvrait la
+  sheet "Démarrer la séance" et perdait les coches. 3 fixes :
+  1. `ProgrammePage.handleDayClick` — si session active sur la même
+     date, court-circuite la sheet et navigue direct vers
+     `/seance/runner`.
+  2. `loadPlannedSessionForRunner` — skip le `setState` si même
+     sessionId déjà actif (évite de provoquer un re-init via le
+     useEffect SeancePage).
+  3. `SeancePage` useEffect — au 1er mount, si `storedEntries` est
+     déjà cohérent (même nb d'items + nb de sets), on le garde plutôt
+     que d'écraser via `initEntries`.
+  4. `skip` / `finish` / `cancel` / `reset` / `import` :
+     `currentSessionEntries: null` ajouté aux clears pour propreté.
+
+**Polish UX**
+- Légende calendrier — retiré "(liseré)" sur la puce "Aujourd'hui".
+- `Step2Muscles` — layout `grid-cols-[1fr_auto]` : liste priorités à
+  gauche (truncate), silhouette compacte (w-[120px] h-40) à droite.
+  `SortablePriorityRow` réduit à h-7 / text-xs, boutons objectif en
+  text-[10px]. But : tout voir sans scroller sur mobile.
+- `TabbedLayout` — `scrollTop = 0` sur change `pathname` (sinon scroll
+  laissé sur Catalogue persistait sur Programme).
+- `WelcomeBanner` — texte refait : "tape la case d'aujourd'hui
+  (entourée en rouge)" au lieu de l'inexistant "onglet Séance".
+- `SessionRunner` — `rpe_target` affiché arrondi 0.5 (`Math.round(× 2)
+  / 2`). Termine "Effort cible 6.3/10" au lieu de "6.33333…/10".
+- `SessionRunner` — Dialog de confirmation avant `onFinish` : "Tu as
+  coché X/Y séries…" / "Toutes les séries sont cochées…". Évite
+  l'erreur de manip qui clôturait définitivement.
+
+**Textes démo Alex (visite guidée)**
+- WelcomeOverlay : `persona.label` → "Visite guidée de Kotsh" (plus
+  de "Coach OS"). `persona.summary` réécrite pour expliquer qu'on
+  parcourt le profil d'un utilisateur fictif (Alex), pas un truc qui
+  sort de nulle part.
+- Step 1 (programme) : "8 semaines" → "4 semaines + 1 déload =
+  5 semaines par cycle". Suppression de "séances déjà jouées".
+- Step 4 (progres-force) : retiré le chiffre "120 → 127 kg". Ajouté
+  explication des creux ponctuels et de la semaine de déload (-40 %).
+- Régénération `alex.json` via `npm run demo:generate`.
+
+**Algos** (les 2 vraies features de V1.4)
+- **Suggestion de séance variée** (`PlanDaySheet`) — `variationSuggestion`
+  trouve la dernière séance complétée dans les 7 derniers jours,
+  localise son label dans `current_cycle_plan.days`, suggère le label
+  suivant (modulo nb de jours). Affichage : badge ★ + variant primary
+  sur le bouton suggéré + encart "💡 Tu as fait Full A récemment —
+  pour varier, suggérée : Full B".
+- **Recalibrage continu en cours de séance**
+  (`recalibrateUpcomingSets` dans `lib/session-runner.ts`,
+  `SessionRunner.handleEntriesChange`) — à chaque transition
+  `done false → true` d'une série fiable (`measurementIsReliable`
+  passe), on calcule `e1rm_live` (max sur séries done fiables de
+  l'exo) et un `ratio = e1rm_live / e1rm_initial`. Si |ratio − 1| ≥
+  0.05, on ajuste `load_kg` des séries non-cochées du même exo
+  proportionnellement, arrondi à `inc_kg`. Heuristique
+  "non touché par user" : on n'écrase que les `load_kg` encore
+  identiques à la prescription d'origine du plan (dès qu'une charge a
+  été ajustée par algo ou modifiée par user, on respecte).
+  `e1rm_initial` figé via `useRef` au mount du SessionRunner (clé
+  `currentSessionId` dans SeancePage pour garantir le remount à
+  chaque vraie nouvelle session).
+
+**Tests fin Conv #15 vague 2** : **497 Vitest + 23/23 e2e verts**
+(seance.spec.ts ajusté pour cliquer le nouveau `dialog-confirm`).
+
 ## État courant — fin Conv #15 (2026-05-21) — V1.3.0
 
 Itération sur retours d'usage Azur post-V1.2.0. Bump **v1.3.0** (mix

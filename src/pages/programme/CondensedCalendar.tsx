@@ -56,7 +56,7 @@ function Legend() {
         <LegendDot color="bg-sang-900/50 border-sang-700" label="Séance sautée" />
         <LegendDot
           color="ring-2 ring-sang-500 bg-anthracite-800"
-          label="Aujourd'hui (liseré)"
+          label="Aujourd'hui"
         />
       </div>
       <span className="text-[10px] text-anthracite-300">

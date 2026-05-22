@@ -76,10 +76,12 @@ export function WelcomeBanner({ feedbackCount }: WelcomeBannerProps) {
         Ton cycle commence aujourd'hui
       </h2>
       <p className="text-sm leading-relaxed text-anthracite-200">
-        Lance ta 1re séance via l'onglet <span className="font-medium text-white">Séance</span>{' '}
-        en bas, ou tape une case du calendrier pour planifier un autre jour.
-        Tes plafonds s'apprendront automatiquement au fil des séries — pas de
-        calibration préalable.
+        Pour démarrer ta 1re séance, tape la case{' '}
+        <span className="font-medium text-white">d'aujourd'hui</span> dans le
+        calendrier ci-dessous (entourée en rouge). Tu peux aussi taper une
+        autre case pour planifier la séance d'un autre jour. Tes plafonds
+        s'apprendront automatiquement au fil des séries — pas de calibration
+        préalable.
       </p>
       <p className="rounded-lg border border-sang-800/50 bg-sang-900/15 px-3 py-2 text-[12px] leading-relaxed text-anthracite-100">
         <span className="font-medium text-sang-300">Comment ça marche : </span>

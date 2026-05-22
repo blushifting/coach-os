@@ -688,9 +688,9 @@ function main(): void {
   const snapshot: DemoSnapshot = {
     persona: {
       id: 'alex',
-      label: 'Alex — Upper/Lower 4j',
+      label: 'Visite guidée de Kotsh',
       summary:
-        '8 semaines déjà jouées par Alex. On va regarder ensemble comment Coach OS suit sa progression — pour que tu sois prêt à démarrer ta vraie 1re séance.',
+        "Pour te montrer comment l'app marche en pratique, on va parcourir ensemble le profil d'Alex — un utilisateur fictif qui a déjà joué 8 semaines (2 cycles de 5 et 3 semaines). Tu verras un programme actif, des séances passées, des plafonds qui progressent, et un bilan de cycle — tout ce que tu auras toi-même dans quelques semaines. Tes vraies données restent intactes pendant la visite.",
     },
     generated_at: DEMO_TODAY,
     user_state: serializeUserState(state),

@@ -274,10 +274,16 @@ export async function loadPlannedSessionForRunner(
       `Tu pourras la démarrer le jour prévu.`,
     );
   }
-  useCoachOsStore.setState({
-    currentSessionPlan: row.plan,
-    currentSessionId: sessionId,
-  });
+  // Conv #15 vague 2 — si on rouvre la session déjà en cours, ne pas
+  // ré-écrire le plan (sinon la ref change et SeancePage re-init les entries
+  // via son useEffect, perdant les coches en cours).
+  const store = useCoachOsStore.getState();
+  if (store.currentSessionId !== sessionId || store.currentSessionPlan === null) {
+    useCoachOsStore.setState({
+      currentSessionPlan: row.plan,
+      currentSessionId: sessionId,
+    });
+  }
   return { plan: row.plan, sessionId };
 }
 
@@ -348,6 +354,7 @@ export async function cancelPlannedSession(sessionId: number): Promise<void> {
     useCoachOsStore.setState({
       currentSessionPlan: null,
       currentSessionId: null,
+      currentSessionEntries: null,
     });
   }
   await refreshHistory();
@@ -369,6 +376,7 @@ export async function skipCurrentSession(): Promise<void> {
   useCoachOsStore.setState({
     currentSessionPlan: null,
     currentSessionId: null,
+    currentSessionEntries: null,
   });
   await refreshHistory();
 }
@@ -444,6 +452,7 @@ export async function recordFeedbackAndCommit(
     userState: next,
     currentSessionPlan: null,
     currentSessionId: null,
+    currentSessionEntries: null,
   });
   await refreshHistory();
   return summary;
@@ -542,6 +551,7 @@ export async function resetApp(): Promise<void> {
     userState: null,
     currentSessionPlan: null,
     currentSessionId: null,
+    currentSessionEntries: null,
     history: { sessions: [], feedbacks: [], e1rmSnapshots: [], cycles: [] },
     bootstrapped: true,
     lastEndOfWeekReview: null,
@@ -576,6 +586,7 @@ export async function importDataFromJson(json: string): Promise<void> {
     bootstrapped: true,
     currentSessionPlan: null,
     currentSessionId: null,
+    currentSessionEntries: null,
     lastEndOfWeekReview: null,
     lastCycleReview: null,
   });

@@ -49,6 +49,7 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
   const navigate = useNavigate();
   const catalog = useCoachOsStore((s) => s.catalog);
   const feedbacks = useCoachOsStore((s) => s.history.feedbacks);
+  const userState = useCoachOsStore((s) => s.userState);
   const [pending, setPending] = useState<number | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [plannedSession, setPlannedSession] = useState<SessionRow | null>(null);
@@ -67,6 +68,34 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
     const suggestions = detectPeriodicity(feedbacks);
     return suggestionForDay(day, suggestions);
   }, [day, feedbacks]);
+
+  // Conv #15 vague 2 — suggestion de variation de séance : si Alex a fait
+  // "Full A" hier, on suggère "Full B" puis "Full C" plutôt qu'un nouveau
+  // "Full A". Logic : prend le label de la dernière séance complétée dans
+  // les 7 derniers jours, trouve son index dans `current_cycle_plan.days`,
+  // suggère le day suivant (cyclique).
+  const variationSuggestion = useMemo(() => {
+    const cyclePlan = userState?.current_cycle_plan ?? null;
+    if (cyclePlan === null || day === null) return null;
+    const dayDate = new Date(day.date + 'T00:00:00');
+    // Cherche la dernière séance faite avant `day.date`, dans les 7j.
+    let latest: { date: string; label: string } | null = null;
+    for (const fb of feedbacks) {
+      const fbDate = fb.feedback.seance_date;
+      if (fbDate >= day.date) continue;
+      const diffMs = dayDate.getTime() - new Date(fbDate + 'T00:00:00').getTime();
+      const diffDays = diffMs / (1000 * 60 * 60 * 24);
+      if (diffDays > 7) continue;
+      if (latest === null || fbDate > latest.date) {
+        latest = { date: fbDate, label: fb.feedback.label };
+      }
+    }
+    if (latest === null) return null;
+    const idx = cyclePlan.days.findIndex((d) => d.label === latest!.label);
+    if (idx < 0) return null;
+    const nextIdx = (idx + 1) % cyclePlan.days.length;
+    return { suggestedDayIndex: nextIdx, previousLabel: latest.label };
+  }, [day, feedbacks, userState]);
 
   // Charge la session planifiée correspondant à ce jour (si statut planned).
   useEffect(() => {
@@ -186,6 +215,7 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
               isToday={isToday}
               isDeload={day.isDeload}
               pending={pending}
+              suggestion={variationSuggestion}
               onPick={(dayIndex) => planSession(dayIndex, isToday)}
             />
           </>
@@ -301,12 +331,14 @@ function FreeFutureBlock({
   isToday,
   isDeload,
   pending,
+  suggestion,
   onPick,
 }: {
   readonly cyclePlan: WeeklyTemplate | null;
   readonly isToday: boolean;
   readonly isDeload: boolean;
   readonly pending: number | null;
+  readonly suggestion: { suggestedDayIndex: number; previousLabel: string } | null;
   readonly onPick: (dayIndex: number) => void;
 }) {
   if (cyclePlan === null || cyclePlan.days.length === 0) {
@@ -324,21 +356,38 @@ function FreeFutureBlock({
           : 'Choisis une séance à programmer ce jour'}
         {isDeload && <span className="text-sang-500"> (semaine de déload)</span>} :
       </p>
+      {suggestion !== null && (
+        <p
+          className="rounded-lg border border-sang-800/50 bg-sang-900/15 px-3 py-2 text-xs leading-relaxed text-anthracite-100"
+          data-testid="variation-suggestion"
+        >
+          💡 Tu as fait <strong className="text-white">{suggestion.previousLabel}</strong>{' '}
+          récemment — pour varier, suggérée :{' '}
+          <strong className="text-sang-300">
+            {cyclePlan.days[suggestion.suggestedDayIndex]?.label}
+          </strong>
+          .
+        </p>
+      )}
       <ul className="flex flex-col gap-2">
-        {cyclePlan.days.map((d, i) => (
-          <li key={i}>
-            <Button
-              variant="secondary"
-              size="md"
-              fullWidth
-              disabled={pending !== null}
-              onClick={() => onPick(i)}
-              data-testid={`plan-slot-${i}`}
-            >
-              {pending === i ? '…' : d.label}
-            </Button>
-          </li>
-        ))}
+        {cyclePlan.days.map((d, i) => {
+          const isSuggested = suggestion?.suggestedDayIndex === i;
+          return (
+            <li key={i}>
+              <Button
+                variant={isSuggested ? 'primary' : 'secondary'}
+                size="md"
+                fullWidth
+                disabled={pending !== null}
+                onClick={() => onPick(i)}
+                data-testid={`plan-slot-${i}`}
+              >
+                {pending === i ? '…' : d.label}
+                {isSuggested ? ' ★' : ''}
+              </Button>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

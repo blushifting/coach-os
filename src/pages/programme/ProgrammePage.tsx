@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/Card';
 import { ChevronRight } from '@/components/icons';
 import { useCoachOsStore } from '@/store';
@@ -34,7 +34,25 @@ export default function ProgrammePage() {
   const history = useCoachOsStore((s) => s.history);
   const demoActive = useDemoMode();
   const currentSessionPlan = useCoachOsStore((s) => s.currentSessionPlan);
+  const currentSessionId = useCoachOsStore((s) => s.currentSessionId);
+  const navigate = useNavigate();
   const [openDay, setOpenDay] = useState<CalendarDay | null>(null);
+
+  // Conv #15 vague 2 — si l'utilisateur clique sur la case du jour ET qu'une
+  // séance est déjà en cours pour cette date, on saute la sheet "Démarrer"
+  // et on rouvre direct la séance (entries du store déjà préservés).
+  function handleDayClick(day: CalendarDay) {
+    if (
+      !demoActive &&
+      currentSessionPlan !== null &&
+      currentSessionId !== null &&
+      currentSessionPlan.seance_date === day.date
+    ) {
+      navigate('/seance/runner');
+      return;
+    }
+    setOpenDay(day);
+  }
 
   const catalog = useCoachOsStore((s) => s.catalog);
   const dashboard = useMemo(() => {
@@ -118,7 +136,7 @@ export default function ProgrammePage() {
           // Conv #16 — calendrier non-interactif en mode démo, sinon
           // l'utilisateur peut ouvrir la PlanDaySheet d'Alex et bloquer
           // le tour guidé (la sheet masque le bandeau démo).
-          onDayClick={demoActive ? () => undefined : setOpenDay}
+          onDayClick={demoActive ? () => undefined : handleDayClick}
         />
       )}
 

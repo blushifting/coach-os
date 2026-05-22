@@ -44,8 +44,9 @@ test('seance : depuis programme → runner → terminer → bilan → retour', a
   await page.getByTestId('toggle-done-0').first().click();
   await expect(page.getByTestId('set-row-0').first()).toHaveAttribute('data-done', 'true');
 
-  // Terminer la séance
+  // Terminer la séance → dialog de confirmation (Conv #15 vague 2)
   await page.getByTestId('btn-finish-session').click();
+  await page.getByTestId('dialog-confirm').click();
 
   // État C : bilan
   await expect(page.getByTestId('session-summary')).toBeVisible();
