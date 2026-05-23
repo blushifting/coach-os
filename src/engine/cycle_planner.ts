@@ -19,6 +19,7 @@ import type {
   Catalog,
 } from './catalog';
 import type {
+  DayTemplate,
   Exercise,
   MuscleGoal,
   PlannedExercise,
@@ -577,6 +578,90 @@ export function rotateEmphasis(
 }
 
 // =============================================================================
+// 7.5 Fusion d'exercices équivalents (Conv #19)
+// =============================================================================
+
+/**
+ * Clé d'équivalence pour la fusion d'exos après choix de variantes.
+ * Deux exos sont équivalents s'ils partagent :
+ *  - le même `pattern` (mouvement de base)
+ *  - les mêmes muscles primaires (coef ≥ 1.0), set comparé par contenu
+ *  - le même `charge` type (DUMBBELL vs BARBELL etc. restent distincts)
+ *
+ * Validé par Azur (Conv #19) — strict pour éviter des fusions douteuses
+ * (bench barre vs haltère restent séparés car charge différente).
+ */
+function equivalenceKey(ex: Exercise): string {
+  const primaries = exercisePrimaires(ex).slice().sort().join(',');
+  return `${ex.pattern}|${primaries}|${ex.charge}`;
+}
+
+/**
+ * Fusionne dans un jour les exos équivalents (cf. `equivalenceKey`) en
+ * additionnant `base_sets` et `progression`. Le 1er exo rencontré sert d'ancre
+ * (conserve son `exercise_id`, `role`, `intensity_scheme`, `progression_rule`).
+ *
+ * Cas typique : après `applyVariantReplacements` (Step5 onboarding), 2 slots
+ * d'une même séance peuvent pointer vers le même `exercise_id` ou vers 2 exos
+ * équivalents (ex: compound + isolation choisis par l'algo se retrouvent en
+ * 2× bench_db si l'user remplace l'isolation par un compound équivalent).
+ *
+ * Cap : la somme de `base_sets` et chaque point de `progression` est cappée à
+ * `MAX_SETS_PER_SESSION_PER_MUSCLE` pour éviter d'exploser le volume.
+ */
+export function mergeEquivalentExercises(
+  day: DayTemplate,
+  catalog: Catalog,
+): DayTemplate {
+  const byKey = new Map<string, number>(); // key → index dans `exercises`
+  const merged: PlannedExercise[] = [];
+  for (const planned of day.exercises) {
+    if (!catalog.has(planned.exercise_id)) {
+      merged.push(planned);
+      continue;
+    }
+    const ex = catalog.get(planned.exercise_id);
+    const key = equivalenceKey(ex);
+    const existingIdx = byKey.get(key);
+    if (existingIdx === undefined) {
+      byKey.set(key, merged.length);
+      merged.push(planned);
+      continue;
+    }
+    const existing = merged[existingIdx]!;
+    const cap = MAX_SETS_PER_SESSION_PER_MUSCLE;
+    const fusedSets = Math.min(cap, existing.base_sets + planned.base_sets);
+    const len = Math.max(existing.progression.length, planned.progression.length);
+    const fusedProg: number[] = [];
+    for (let i = 0; i < len; i++) {
+      const a = existing.progression[i] ?? existing.base_sets;
+      const b = planned.progression[i] ?? planned.base_sets;
+      fusedProg.push(Math.min(cap, a + b));
+    }
+    merged[existingIdx] = {
+      ...existing,
+      base_sets: fusedSets,
+      progression: fusedProg,
+      role: existing.role ?? planned.role,
+      intensity_scheme: existing.intensity_scheme ?? planned.intensity_scheme,
+      progression_rule: existing.progression_rule ?? planned.progression_rule,
+    };
+  }
+  return { ...day, exercises: merged };
+}
+
+/**
+ * Variante WeeklyTemplate : applique `mergeEquivalentExercises` à chaque jour.
+ * Mute le `WeeklyTemplate` (remplace `days` par les jours fusionnés).
+ */
+export function mergeEquivalentExercisesInPlan(
+  weekly: WeeklyTemplate,
+  catalog: Catalog,
+): void {
+  weekly.days = weekly.days.map((d) => mergeEquivalentExercises(d, catalog));
+}
+
+// =============================================================================
 // 8. Point d'entrée : generateCyclePlan (cf. 09 §9.2)
 // =============================================================================
 
@@ -623,5 +708,12 @@ export function generateCyclePlan(
     state,
     catalog,
   );
+
+  // Conv #19 — Fusion d'exos équivalents (même pattern + primaires + charge).
+  // Évite d'avoir 2 slots "même exo" après que composeSession + lengthened
+  // bias + top-up maintenance ont sélectionné des doublons fonctionnels.
+  // Sera aussi rappelée après `applyVariantReplacements`.
+  mergeEquivalentExercisesInPlan(rebalanced, catalog);
+
   return rebalanced;
 }

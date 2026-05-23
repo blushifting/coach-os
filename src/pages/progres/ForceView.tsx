@@ -114,9 +114,9 @@ const PR_THRESHOLD_KG = 2;
  */
 function MiniLine({ points, current, testId }: MiniLineProps) {
   const W = 320;
-  const H = 80;
+  const H = 84;
   const ML = 28; // marge gauche (labels Y)
-  const MT = 12; // marge haute (chips PR)
+  const MT = 16; // marge haute (étoiles records — clearance constante au-dessus du point max)
   const MB = 4; // marge basse
   const innerW = W - ML;
   const innerH = H - MT - MB;
@@ -249,7 +249,7 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
       {xy.map(([x, y], i) => {
         if (!prFlags[i]) return null;
         const cx = x;
-        const cy = Math.max(MT - 2, y - 9);
+        const cy = y - 9;
         return (
           <g
             key={`pr-${i}`}

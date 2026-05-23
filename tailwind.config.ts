@@ -104,19 +104,15 @@ const config: Config = {
           '0%': { strokeDashoffset: '1' },
           '100%': { strokeDashoffset: '0' },
         },
-        // Conv #17b — wave radiale dorée sur la roue accomplie : un cercle
-        // SVG agrandit son rayon (via attribute `r` animé en CSS via
-        // `transform: scale()` sur le `<circle>`) et fade en parallèle.
-        // Une fois suffit pour attirer l'œil au moment de l'accomplissement.
-        'gold-wave': {
-          '0%': { transform: 'scale(0.55)', opacity: '0.85' },
-          '100%': { transform: 'scale(1.35)', opacity: '0' },
-        },
-        // Pulse doux du disque central (un seul cycle).
-        'gold-pulse': {
-          '0%': { transform: 'scale(0.6)', opacity: '0.4' },
-          '55%': { transform: 'scale(1.18)', opacity: '1' },
-          '100%': { transform: 'scale(1)', opacity: '1' },
+        // Conv #19 — wave circulaire dorée sur la roue accomplie : un trait
+        // doré qui se trace tout autour du pourtour (1 tour complet), puis
+        // fade en fin. Démarre depuis le top SVG (= dernier bout de la wheel
+        // rouge à completion), sens horaire. Requiert pathLength=1 +
+        // strokeDasharray=1 sur le <circle>.
+        'gold-trace': {
+          '0%': { strokeDashoffset: '1', opacity: '0.95' },
+          '75%': { strokeDashoffset: '0', opacity: '0.95' },
+          '100%': { strokeDashoffset: '0', opacity: '0' },
         },
       },
       animation: {
@@ -124,8 +120,7 @@ const config: Config = {
         'row-flash': 'row-flash 600ms ease-out',
         'reveal-up': 'reveal-up 420ms cubic-bezier(0.16, 1, 0.3, 1) both',
         'draw-line': 'draw-line 900ms cubic-bezier(0.4, 0, 0.2, 1) forwards',
-        'gold-wave': 'gold-wave 1300ms cubic-bezier(0.22, 0.61, 0.36, 1) 1 forwards',
-        'gold-pulse': 'gold-pulse 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 1 forwards',
+        'gold-trace': 'gold-trace 1400ms cubic-bezier(0.4, 0, 0.2, 1) 1 forwards',
       },
       boxShadow: {
         // Conv #11c — halo rouge diffus pour les éléments primaires hover/focus.

@@ -15,7 +15,11 @@ import { useMemo } from 'react';
 import { Catalog } from '@/engine/catalog';
 import * as engine from '@/engine/engine';
 import { applyBalanceRules } from '@/engine/balance';
-import { generateCyclePlan, rotateEmphasis } from '@/engine/cycle_planner';
+import {
+  generateCyclePlan,
+  mergeEquivalentExercisesInPlan,
+  rotateEmphasis,
+} from '@/engine/cycle_planner';
 import { fitGuidedProgram, getGuidedProgram } from '@/engine/guided_programs';
 import { initialVolumeBounds } from '@/engine/volume';
 import { SuggestedAction } from '@/engine/models';
@@ -45,7 +49,7 @@ import {
   txSaveUserStateOnly,
   txUpdateSessionPlan,
 } from '@/db/transactions';
-import { effectiveLoadForE1rm } from '@/engine/prescription';
+import { buildPrescription, effectiveLoadForE1rm } from '@/engine/prescription';
 import type { Exercise } from '@/engine/models';
 import { importFromJsonString } from '@/io/import';
 import { useCoachOsStore, type HistorySnapshot } from '@/store';
@@ -217,6 +221,11 @@ export async function applyVariantReplacements(
     if (slot === undefined) continue;
     slot.exercise_id = r.newExerciseId;
   }
+  // Conv #19 — Après remplacement de variantes, deux slots peuvent maintenant
+  // pointer vers des exos équivalents (même pattern + primaires + charge).
+  // On fusionne en additionnant les séries.
+  const catalog = requireCatalog();
+  mergeEquivalentExercisesInPlan(next.current_cycle_plan, catalog);
   await txSaveUserStateOnly(next);
   useCoachOsStore.setState({ userState: next });
   return next;
@@ -434,8 +443,62 @@ export async function setManualE1rm(args: SetManualE1rmArgs): Promise<UserState>
     cycleIndex: next.cycle_index,
     weekInCycle: next.current_week_in_cycle,
   });
+
+  // Conv #19 — Si une séance est en cours et contient cet exo, recale les
+  // charges des sets non-cochés à partir du nouveau plafond. Sinon l'exo
+  // reste "coincé" sur les charges issues du bootstrap heuristique alors
+  // que la confidence est passée à 'measured' (banner disparu mais charges
+  // pas mises à jour → impression d'état intermédiaire).
+  const store = useCoachOsStore.getState();
+  const plan = store.currentSessionPlan;
+  const sessionId = store.currentSessionId;
+  const touched =
+    plan !== null && plan.items.some((it) => it.exercise_id === args.exerciseId);
+  if (plan !== null && sessionId !== null && touched) {
+    const prescription = buildPrescription(
+      args.exercise,
+      e1rmTotal,
+      next.profile,
+      next.current_week_in_cycle,
+      {
+        muscleGoals:
+          Object.keys(next.muscle_goals).length > 0 ? next.muscle_goals : null,
+        recoveryMode: next.recovery_mode,
+        state: next,
+      },
+    );
+    const newItems = plan.items.map((it) =>
+      it.exercise_id === args.exerciseId
+        ? { exercise_id: it.exercise_id, sets: it.sets.map(() => prescription) }
+        : it,
+    );
+    const newPlan: SessionPlan = { ...plan, items: newItems };
+    await txUpdateSessionPlan(sessionId, newPlan, next);
+
+    const entries = store.currentSessionEntries;
+    const newEntries =
+      entries === null
+        ? entries
+        : entries.map((row, i) => {
+            const item = newItems[i];
+            if (!item || item.exercise_id !== args.exerciseId) return row;
+            return row.map((s, j) => {
+              if (s.done) return s;
+              const planSet = item.sets[j];
+              if (!planSet) return s;
+              const nextReps = s.reps === null ? planSet.reps : s.reps;
+              return { ...s, load_kg: planSet.load_kg, reps: nextReps };
+            });
+          });
+    useCoachOsStore.setState({
+      userState: next,
+      currentSessionPlan: newPlan,
+      currentSessionEntries: newEntries,
+    });
+  } else {
+    useCoachOsStore.setState({ userState: next });
+  }
   await refreshHistory();
-  useCoachOsStore.setState({ userState: next });
   return next;
 }
 

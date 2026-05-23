@@ -71,37 +71,24 @@ export function ProgressRing({
             style={{ transition: 'stroke-dasharray 360ms cubic-bezier(0.4, 0, 0.2, 1)' }}
           />
         )}
-        {/* Conv #17 — Symbole accomplissement : disque doré central + wave
-            radiale dorée qui s'élargit et fade en parallèle. La wave attire
-            l'œil au mount (au moment du complete). Le disque pulse une fois.
-            Tous les transforms sont centrés sur (cx, cy) via transformOrigin
-            pour fonctionner correctement en SVG. */}
+        {/* Conv #19 — Symbole accomplissement : un trait doré qui se trace
+            sur 1 tour complet le long du pourtour, démarrant depuis le top du
+            SVG (= dernier bout de la wheel rouge en completion), puis fade
+            en fin. Pas de disque central, pas de wave radiale (qui faisaient
+            doublon avec le track doré + visuellement chargés). */}
         {isComplete && (
-          <>
-            <circle
-              cx={size / 2}
-              cy={size / 2}
-              r={r}
-              fill="none"
-              stroke="#d4a052"
-              strokeWidth={Math.max(1.5, strokeWidth - 1)}
-              className="animate-gold-wave"
-              style={{
-                transformOrigin: `${size / 2}px ${size / 2}px`,
-                pointerEvents: 'none',
-              }}
-            />
-            <circle
-              cx={size / 2}
-              cy={size / 2}
-              r={Math.max(2, strokeWidth - 0.5)}
-              fill="#d4a052"
-              className="animate-gold-pulse"
-              style={{
-                transformOrigin: `${size / 2}px ${size / 2}px`,
-              }}
-            />
-          </>
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={r}
+            fill="none"
+            stroke="#d4a052"
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            pathLength={1}
+            className="animate-gold-trace"
+            style={{ strokeDasharray: 1, pointerEvents: 'none' }}
+          />
         )}
       </svg>
       {showLabel && (

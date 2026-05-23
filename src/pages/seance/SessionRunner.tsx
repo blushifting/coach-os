@@ -17,14 +17,30 @@ import {
   formatRest,
   recalibrateUpcomingSets,
   type SessionEntries,
+  type SetEntry,
   updateSetEntry,
 } from '@/lib/session-runner';
 import { e1rmConfidenceFor } from '@/lib/calibration-status';
 import { bootstrapE1rmIfMissing } from '@/engine/engine';
+import { measurementIsReliable } from '@/engine/prescription';
 import { CalibrationBanner } from './CalibrationBanner';
 import { ExerciseDetailSheet } from './ExerciseDetailSheet';
 import { PatternIcon } from './PatternIcon';
 import { SetInput } from './SetInput';
+
+/**
+ * Une série est "comptable pour live e1rm" si elle peut être incluse dans le
+ * calcul `computeLiveE1rmFromEntries` (= recalibrage intra-séance). Mêmes
+ * conditions : done + reps>0 + load_kg + rpe + n_equiv ≤ 15 (fiable Epley).
+ */
+function isCountableForLiveE1rm(s: SetEntry | undefined): boolean {
+  if (!s) return false;
+  if (!s.done) return false;
+  if (s.reps === null || s.reps <= 0) return false;
+  if (s.load_kg === null) return false;
+  if (s.rpe === null) return false;
+  return measurementIsReliable(s.reps, s.rpe);
+}
 
 interface SessionRunnerProps {
   readonly plan: SessionPlan;
@@ -127,13 +143,18 @@ export function SessionRunner({
     e1rmInitialRef.current = snap;
   }
 
-  // Wrap onEntriesChange : à chaque transition `done=false → done=true`
-  // d'une série, on déclenche le recalibrage **uniquement pour les exos en
-  // mode calibration** (`confidence !== 'measured'`, Conv #16). Pour les exos
-  // déjà calibrés, on laisse les charges prescrites intactes en cours de
-  // séance — l'algo fin de séance s'occupera de la mise à jour stable du
-  // plafond. `recalibrateUpcomingSets` accepte aussi les séries non fiables :
-  // dans ce cas il ne touche pas aux charges mais peut pré-remplir les reps.
+  // Wrap onEntriesChange : à chaque fois qu'une série devient "fiable pour
+  // calibration" (cf. `isCountableForLiveE1rm`), on déclenche le recalibrage
+  // **uniquement pour les exos en mode calibration** (`confidence !==
+  // 'measured'`, Conv #16). Pour les exos déjà calibrés, on laisse les charges
+  // prescrites intactes en cours de séance — l'algo fin de séance s'occupera
+  // de la mise à jour stable du plafond.
+  //
+  // Conv #19 — Le trigger ne dépend plus de la seule transition `done`. Le
+  // workflow réel est : reps+kg → cocher (done=true) → RPE après coche. Si
+  // on déclenchait sur done false→true uniquement, on rateait la mesure car
+  // `liveE1rm` est null sans rpe. Désormais on déclenche dès qu'une série
+  // passe à "fiable pour e1rm" (done + reps + load + rpe + n_equiv ≤ 15).
   const handleEntriesChange = useCallback(
     (next: SessionEntries) => {
       if (catalog === null) {
@@ -148,11 +169,19 @@ export function SessionRunner({
           const ne = newRow[j];
           const oe = oldRow[j];
           if (!ne || !oe) continue;
-          if (ne.done && !oe.done) {
-            if (ne.reps !== null && ne.reps > 0) {
-              triggeredIdx = i;
-              break;
-            }
+          // Cas 1 : transition done=false→true avec reps valides — déclenche
+          // le pré-remplissage des reps sur les séries non-cochées (UX).
+          const newDone =
+            ne.done && !oe.done && ne.reps !== null && ne.reps > 0;
+          // Cas 2 : la série vient de devenir fiable pour le live e1rm
+          // (typiquement : l'user a coché puis renseigné le rpe). Déclenche
+          // le recalibrage des charges. Sans ce 2e cas (Conv #19), le rpe
+          // saisi après la coche ne propageait jamais aux sets suivants.
+          const newReliable =
+            isCountableForLiveE1rm(ne) && !isCountableForLiveE1rm(oe);
+          if (newDone || newReliable) {
+            triggeredIdx = i;
+            break;
           }
         }
       }

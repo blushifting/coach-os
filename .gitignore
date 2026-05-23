@@ -49,3 +49,6 @@ pnpm-debug.log*
 
 # TypeScript caches
 *.tsbuildinfo
+
+# Local scratch (previews de design, expérimentations hors repo)
+temp/

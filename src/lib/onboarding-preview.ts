@@ -182,18 +182,26 @@ export function muscleDeltaForSwap(
 // =============================================================================
 
 /**
- * Heuristiques de durée — calibrées sur l'indice d'Azur "6 exos calibrés en
- * 45-50 min" (≈ 8 min/exo en mode calibration). Pour une séance normale,
- * sans test plafond, on tourne autour de 8-10 min/exo selon les sets/repos.
+ * Heuristiques de durée — recalibrées Conv #19 sur observation Azur (4 exos /
+ * 14 séries estimés 33 min vs réel 45 min, soit +36 %). Sous-estimation venait
+ * de constantes trop optimistes (temps réel d'exécution incl. respiration entre
+ * reps, repos qui dérive en pratique, setup réel avec warm-up) + absence de
+ * transition entre exos.
  *
- * Composantes : setup (changement d'exo, ajustement matériel) + sets × (temps
- * d'exécution + repos). Repos plus long sur compounds (~120 s) que sur
- * isolations (~60 s).
+ * Composantes : setup (warm-up + ajustement matériel) + sets × (exécution +
+ * repos) + transitions entre exos. Repos plus long sur compounds que sur
+ * isolations.
  */
-const SETUP_S = 60;
-const SET_EXEC_S = 30;
-const REST_COMPOUND_S = 120;
-const REST_ISOLATION_S = 60;
+const SETUP_S = 75;
+const SET_EXEC_S = 40;
+const REST_COMPOUND_S = 150;
+const REST_ISOLATION_S = 80;
+/**
+ * Transition d'un exo au suivant (rangement matériel, déplacement, première
+ * série de warm-up). Comptée 1× par exo sauf le dernier — modélisé en ajoutant
+ * `TRANSITION_S` à chaque exo et en soustrayant 1× au niveau du day.
+ */
+const TRANSITION_S = 60;
 
 /** Seuil au-dessus duquel on alerte sur la durée d'une séance (minutes). */
 export const SESSION_DURATION_WARN_MIN = 75;
@@ -203,7 +211,7 @@ export function estimateExerciseDurationMinutes(
   exType: ExType,
 ): number {
   const restS = exType === ExType.COMPOUND ? REST_COMPOUND_S : REST_ISOLATION_S;
-  const totalS = SETUP_S + planned.base_sets * (SET_EXEC_S + restS);
+  const totalS = SETUP_S + planned.base_sets * (SET_EXEC_S + restS) + TRANSITION_S;
   return totalS / 60;
 }
 
@@ -212,11 +220,16 @@ export function estimateDayDurationMinutes(
   catalog: Catalog,
 ): number {
   let total = 0;
+  let counted = 0;
   for (const ex of day.exercises) {
     if (!catalog.has(ex.exercise_id)) continue;
     const e = catalog.get(ex.exercise_id);
     total += estimateExerciseDurationMinutes(ex, e.type);
+    counted += 1;
   }
+  // On compte une transition par exo dans `estimateExerciseDurationMinutes`,
+  // mais le dernier exo n'a pas de transition derrière → on retire 1×.
+  if (counted > 0) total -= TRANSITION_S / 60;
   return total;
 }
 
