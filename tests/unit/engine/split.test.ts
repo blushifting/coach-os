@@ -176,6 +176,55 @@ describe('muscleBelongsToSlot', () => {
         muscleBelongsToSlot('abdos', SlotKind.LOWER),
     ).toBe(true);
   });
+
+  // Conv #17c — chaque muscle canonique (MUSCLES) doit pouvoir être placé
+  // sur **au moins un slot** de chaque split canonique, sinon il serait
+  // silencieusement ignoré par parameterizeSplit. Garde-fou contre la
+  // régression du bug obliques (ignoré sur UL/PPL) et trapezes_hauts
+  // (ignoré sur PPL).
+  it('obliques éligible sur UL et PPL (pas seulement FULL)', () => {
+    expect(muscleBelongsToSlot('obliques', SlotKind.UPPER)).toBe(true);
+    expect(muscleBelongsToSlot('obliques', SlotKind.LOWER)).toBe(true);
+    expect(muscleBelongsToSlot('obliques', SlotKind.PUSH)).toBe(true);
+    expect(muscleBelongsToSlot('obliques', SlotKind.PULL)).toBe(true);
+    expect(muscleBelongsToSlot('obliques', SlotKind.LEGS)).toBe(true);
+  });
+
+  it('trapezes_hauts éligible sur PULL en plus de UPPER', () => {
+    expect(muscleBelongsToSlot('trapezes_hauts', SlotKind.UPPER)).toBe(true);
+    expect(muscleBelongsToSlot('trapezes_hauts', SlotKind.PULL)).toBe(true);
+  });
+
+  it('garde-fou : tout muscle canonique a au moins un slot par split', () => {
+    const MUSCLES_LIST = [
+      'pectoraux',
+      'dos_largeur',
+      'dos_epaisseur',
+      'trapezes_hauts',
+      'quadriceps',
+      'ischios',
+      'fessiers',
+      'mollets',
+      'deltos_lateraux',
+      'deltos_posterieurs',
+      'biceps',
+      'triceps',
+      'abdos',
+      'obliques',
+      'lombaires',
+    ] as const;
+    const splits: ReadonlyArray<{ name: string; slots: SlotKind[] }> = [
+      { name: 'FB', slots: [SlotKind.FULL] },
+      { name: 'UL', slots: [SlotKind.UPPER, SlotKind.LOWER] },
+      { name: 'PPL', slots: [SlotKind.PUSH, SlotKind.PULL, SlotKind.LEGS] },
+    ];
+    for (const m of MUSCLES_LIST) {
+      for (const split of splits) {
+        const ok = split.slots.some((s) => muscleBelongsToSlot(m, s));
+        expect(ok, `${m} doit être placé sur ${split.name}`).toBe(true);
+      }
+    }
+  });
 });
 
 // =============================================================================

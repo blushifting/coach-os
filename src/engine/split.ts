@@ -142,16 +142,42 @@ export const ALL_SPLITS: readonly SplitTemplate[] = [
 // =============================================================================
 
 /**
+ * Muscles canoniques (MUSCLES) qui ne sont dans aucune liste push/pull/
+ * upper/lower mais qu'on veut quand même rattacher à certains slots non-FULL.
+ * Conv #17c — sans ce patch, `parameterizeSplit` ignorait silencieusement
+ * `obliques` (sur UL/PPL/LEGS) et `trapezes_hauts` (sur PPL), ce qui faisait
+ * qu'un user marquant ces muscles PRIORITAIRES + split UL/PPL se retrouvait
+ * sans aucun exo dédié. Les constantes PUSH/PULL/CORE de `balance.ts`
+ * **ne sont pas modifiées** pour préserver le comportement par défaut des
+ * règles R1 (push/pull balance) et R3 (core suggéré).
+ *
+ *  - `obliques` : assimilable au core, éligible à tous les slots non-FULL.
+ *  - `trapezes_hauts` : mouvements de tirage scapulaire (shrug, upright row)
+ *    → naturel sur PULL en plus d'UPPER.
+ */
+const SLOT_EXTRA_MUSCLES: Record<SlotKind, ReadonlySet<string>> = {
+  [SlotKind.FULL]: new Set(),
+  [SlotKind.UPPER]: new Set(['obliques']),
+  [SlotKind.LOWER]: new Set(['obliques']),
+  [SlotKind.PUSH]: new Set(['obliques']),
+  [SlotKind.PULL]: new Set(['obliques', 'trapezes_hauts']),
+  [SlotKind.LEGS]: new Set(['obliques']),
+};
+
+/**
  * True si ce muscle est éligible à un slot de ce type.
  *   - FULL : tous les muscles
- *   - UPPER : haut du corps + core (insertion fin de séance)
- *   - LOWER : bas du corps + core/lombaires
- *   - PUSH/PULL/LEGS : groupes spécifiques + core
+ *   - UPPER : haut du corps + core + extras (obliques)
+ *   - LOWER : bas du corps + core + extras (obliques)
+ *   - PUSH : groupes spécifiques + core + extras (obliques)
+ *   - PULL : groupes spécifiques + core + extras (obliques, trapezes_hauts)
+ *   - LEGS : bas du corps + core + extras (obliques)
  */
 export function muscleBelongsToSlot(muscle: string, kind: SlotKind): boolean {
   if (kind === SlotKind.FULL) return true;
 
   const isCore = (CORE_MUSCLES as readonly string[]).includes(muscle);
+  if (SLOT_EXTRA_MUSCLES[kind].has(muscle)) return true;
 
   switch (kind) {
     case SlotKind.UPPER:
