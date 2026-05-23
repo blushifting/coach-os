@@ -16,6 +16,7 @@ import { alternativeVariantsFor } from '@/lib/calibration';
 import { muscleLabel } from '@/lib/progress';
 import { formatRest } from '@/lib/session-runner';
 import { useCoachOsStore } from '@/store';
+import { useDemoMode } from '@/store/selectors';
 import { PatternIcon } from './PatternIcon';
 import { VariantPickerSheet } from '@/components/VariantPickerSheet';
 
@@ -49,6 +50,9 @@ export function ExerciseDetailSheet({
   const equipment = useCoachOsStore(
     (s) => s.userState?.profile.available_equip ?? null,
   );
+  // Conv #17 — protection démo : le remplacement d'exo écrit en DB
+  // (replaceSessionExercise) donc on désactive le bouton en mode démo.
+  const demoActive = useDemoMode();
   const [pickerOpen, setPickerOpen] = useState(false);
   // Mode élargi par défaut : Azur veut beaucoup de flexibilité en séance.
   const [expanded, setExpanded] = useState(true);
@@ -217,8 +221,9 @@ export function ExerciseDetailSheet({
               variant="secondary"
               fullWidth
               onClick={() => setPickerOpen(true)}
-              disabled={replacing}
+              disabled={replacing || demoActive}
               data-testid="btn-replace-exercise"
+              title={demoActive ? 'Désactivé en mode démo' : undefined}
             >
               {replacing ? 'Remplacement…' : 'Remplacer cet exo'}
             </Button>

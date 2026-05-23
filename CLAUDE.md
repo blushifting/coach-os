@@ -145,6 +145,114 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
+## État courant — fin Conv #17 (2026-05-23) — V1.7.0
+
+Vague de raffinages UX + refonte de l'onglet Progrès. 12 chantiers livrés
+en une conv : 4 retours dump Azur + le backlog Conv #17 quasi-complet.
+
+**Onglet Progrès — fusion Couverture + Volume**
+- Suppression de l'onglet "Couverture" séparé. L'ancien `VolumeView`
+  (barres hebdo) est supprimé. Le nouveau `VolumeView` (qui remplace
+  `CoverageView` en lieu et place du fichier supprimé) combine :
+  - silhouette anatomique colorée selon le statut hebdo en cours
+    (`statusToSilhouette` sur `MuscleCoverage.status`)
+  - silhouette **cliquable** (`onMuscleClick`) → scroll vers la carte
+    + liseré gold de sélection (`selectedMuscle` prop)
+  - liste de cartes muscle triées (PRIORITAIRE par rank user → SUGGERE
+    → NON_COUVERT) avec mini-courbe d'évolution semainière
+  - dernier point (semaine en cours) en pointillé / contour vide pour
+    signaler "incomplet"
+  - zone cible [V_min, V_max] légèrement teintée en arrière-plan
+- `ProgresPage` : 3 tabs (Volume / Force / Cycles), Volume par défaut.
+- e2e `progres.spec.ts` mis à jour pour la nouvelle structure.
+
+**Step2 onboarding cliquable** (`Step2Muscles`)
+- Silhouette en haut, **grande** (h-56), cliquable : tap muscle =
+  toggle (ajoute s'il est absent, retire s'il est déjà rangé).
+- Liste priorités full-width sous la silhouette (drag&drop conservé).
+- Section "Ajouter manuellement" en bas pour les muscles non visibles
+  sur la silhouette (deltos antérieurs, lombaires, etc.).
+
+**Silhouette cliquable — composant générique** (`AnatomicalSilhouette`)
+- Nouvelles props `onMuscleClick?: (muscle: string) => void` +
+  `selectedMuscle?: string | null`. `aria-hidden` retiré quand
+  cliquable, rôle ARIA "group".
+- Chaque `<g data-muscle="X">` devient cliquable (cursor:pointer,
+  onClick). Le muscle sélectionné reçoit un stroke amber-300.
+- Réutilisé par : VolumeView (Progrès) + Step2 onboarding.
+
+**Roue d'avancement complétée — état accomplissement** (`ProgressRing`)
+- `isComplete` (value ≥ total) → stroke doré `#d4a052` + halo
+  intérieur `rgba(212,160,82,0.16)` + petit disque doré central
+  (rayon ≈ strokeWidth). Distinct du tick (✓ séries) et de l'étoile
+  (records). Sobre, non-figuratif.
+- `CyclePctWidget` masque le label "100 %" superposé quand complet
+  (le disque doré sert de signal).
+
+**Audit & corrections diverses**
+- `SetInput effortTone` : teinte rouge retirée pour RPE ≥ 9. Reste
+  uniquement la teinte ambre (RPE ≥ 8) comme signal d'effort élevé.
+- `CycleBilanPage` ReviewKeyMetrics : `items-center text-center` →
+  Volume centré dans sa cellule grid (au lieu d'aligné à gauche).
+  + HelpButton sur Volume avec topic `volumeTotalCycle` (entrée
+  glossaire ajoutée).
+- `ForceView` : sous le nom de l'exo, affichage discret "N séances"
+  pour expliquer la variabilité du nombre de points par courbe
+  (cause : fréquence variable, substitutions cycle 1→2, filtre
+  déloads RPE < 6.5).
+- `CatalogueDetailSheet` : bouton "Modifier mon plafond" qui ouvre
+  `ManualE1rmSheet` par-dessus (sheet sur sheet). Désactivé en démo.
+- `ProfilPage` : Card "Aide / Ouvrir" remplacée par gros bouton
+  secondary size=lg + sous-titre. Bannière "Mode démo actif" en haut
+  + boutons Modifier identité, Modifier objectifs, Importer désactivés
+  en démo (Reset reste actif pour sortie forte).
+- `ExerciseDetailSheet` : bouton "Remplacer cet exo" désactivé en
+  démo (écrit en DB via `replaceSessionExercise`).
+
+**Audit réalisme plafonds Alex**
+- Globalement plausibles pour un intermédiaire 75 kg 2-3 ans (deadlift
+  158, squat 127, bench 94, leg press 211, etc.).
+- Une correction : `ALEX_SWAP_E1RM.ohp_db_seated` 50 → **25** kg/haltère.
+  La convention `ManualE1rmSheet loadLabel` pour DUMBBELL est
+  "par haltère", donc 50 = 100 kg total = irréaliste. 25 kg/main =
+  ~50 kg total ≈ −10 % vs OHP barre debout (cohérent avec le
+  commentaire d'origine qui pensait "total"). `alex.json` régénéré.
+
+**Décisions définitives (acquises) — ne pas remettre dans le backlog**
+- **Pec_haut / pec_bas — pas de découpage** (Conv #17) : on garde
+  `pectoraux` comme muscle unique. Argument : un découpage rigide
+  serait plus simpliste que la réalité (continuum d'angles, sternal
+  dominant partout) ; la complexité catalogue n'apporterait rien
+  qu'on ne fasse déjà via les tags (`pec_haut`, `incline_30/45`,
+  `decline`, `lengthened_bias`). Les apps de référence (Hevy, Strong,
+  RP Hypertrophy) traitent pec comme un seul muscle. Cf. EMG Trebs
+  2010 / Lauver 2016 / Schick 2010 et hypertrophie Chaves 2020 /
+  Rodríguez-Ridao 2020.
+
+**API engine récentes (durables)**
+- `AnatomicalSilhouette` : props `onMuscleClick?`, `selectedMuscle?`.
+- `VolumeView` (progres) : signature `{coverage, volume, muscleGoals}`.
+- Topic `volumeTotalCycle` ajouté au glossaire help.
+- `ALEX_SWAP_E1RM.ohp_db_seated = 25` (convention "par haltère").
+
+**Tests fin Conv #17** : **512 Vitest + 23/23 e2e verts**.
+
+**Backlog Conv #18** — édition profil + asset silhouette + reliquat
+- Modifier le profil / priorités après onboarding (gros chantier).
+- EquipmentOverride UI + boutons "Ajuster les objectifs" / "Changer
+  de programme" du Bilan + régénération cycle plan.
+- Persistance d'une routine fixée par jour.
+
+**Backlog indéterminé**
+- Silhouette muscles plus human-like : différé. Les assets trouvés
+  (Wikimedia, GitHub workout-planner) n'apportent pas un gain
+  suffisant vs le RBH actuel pour justifier le chantier. À ré-évaluer
+  si un meilleur asset apparaît.
+- Sync cloud Supabase (post-V1).
+- Enrichissement fiches exo (Setup/Exécution/Erreurs).
+
+---
+
 ## État courant — fin Conv #16 (2026-05-22) — V1.6.0
 
 Refonte de l'algorithme de calibration des plafonds (e1RM) suite à

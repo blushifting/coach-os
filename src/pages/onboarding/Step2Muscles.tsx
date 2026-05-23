@@ -152,72 +152,81 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
         )}
       </div>
 
-      {/* Conv #15 vague 2 — layout 2 colonnes : priorités à gauche (2/3),
-          silhouette à droite (1/3). But : tout voir sans scroller. */}
-      <div className="grid grid-cols-[1fr_auto] gap-2">
-        <Card className="min-w-0">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm font-medium text-white">Tes priorités</span>
-            <span className="text-xs text-anthracite-300 tabular-nums">
-              {draft.priorities.length}
-            </span>
-          </div>
-
-          {draft.priorities.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-anthracite-700 px-2 py-4 text-center text-[11px] text-anthracite-300">
-              Aucun muscle pour l'instant.
-            </div>
-          ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={onDragEnd}
-            >
-              <SortableContext
-                items={draft.priorities.map((p) => p.muscle)}
-                strategy={verticalListSortingStrategy}
-              >
-                <ul className="flex flex-col gap-1.5" data-testid="priorities-list">
-                  {draft.priorities.map((p, i) => (
-                    <SortablePriorityRow
-                      key={p.muscle}
-                      rank={i + 1}
-                      priority={p}
-                      onSetObjective={(obj) => setObjective(p.muscle, obj)}
-                      onRemove={() => removeMuscle(p.muscle)}
-                    />
-                  ))}
-                </ul>
-              </SortableContext>
-            </DndContext>
+      {/* Conv #17 — refonte : silhouette **cliquable** grande en haut. Tap
+          un muscle = toggle (ajoute s'il est absent, retire s'il est déjà
+          dans le ranking). Liste priorités full-width dessous. Le panneau
+          "Ajouter manuellement" reste en bas pour les muscles qui ne sont
+          pas accessibles via la silhouette (mappage RBH limité). */}
+      <Card
+        className="flex flex-col items-center gap-2 p-3"
+        data-testid="step2-silhouette"
+      >
+        <AnatomicalSilhouette
+          view="both"
+          highlights={silhouetteHighlights}
+          onMuscleClick={(m) =>
+            selectedSet.has(m) ? removeMuscle(m) : addMuscle(m as Muscle)
+          }
+          className="h-56"
+          testId="onboarding-silhouette"
+        />
+        <p className="text-center text-[10px] leading-tight text-anthracite-300">
+          Touche un muscle pour l'ajouter ou le retirer.{' '}
+          {draft.priorities.length > 0 && (
+            <>
+              <span className="text-sang-400">●</span> top 3{' '}
+              <span className="text-emerald-400">●</span> autres
+            </>
           )}
-        </Card>
+        </p>
+      </Card>
 
-        <Card
-          className="flex w-[120px] flex-col items-center gap-1 p-2"
-          data-testid="step2-silhouette"
-        >
-          <AnatomicalSilhouette
-            view="both"
-            highlights={silhouetteHighlights}
-            className="h-40"
-            testId="onboarding-silhouette"
-          />
-          <p className="text-center text-[9px] leading-tight text-anthracite-300">
-            {draft.priorities.length === 0 ? (
-              'Aperçu'
-            ) : (
-              <>
-                <span className="text-sang-400">●</span> top 3{' '}
-                <span className="text-emerald-400">●</span> autres
-              </>
-            )}
-          </p>
-        </Card>
-      </div>
+      <Card className="min-w-0">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-sm font-medium text-white">Tes priorités</span>
+          <span className="text-xs text-anthracite-300 tabular-nums">
+            {draft.priorities.length}
+          </span>
+        </div>
+
+        {draft.priorities.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-anthracite-700 px-2 py-4 text-center text-[11px] text-anthracite-300">
+            Aucun muscle pour l'instant. Touche la silhouette ci-dessus.
+          </div>
+        ) : (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={onDragEnd}
+          >
+            <SortableContext
+              items={draft.priorities.map((p) => p.muscle)}
+              strategy={verticalListSortingStrategy}
+            >
+              <ul className="flex flex-col gap-1.5" data-testid="priorities-list">
+                {draft.priorities.map((p, i) => (
+                  <SortablePriorityRow
+                    key={p.muscle}
+                    rank={i + 1}
+                    priority={p}
+                    onSetObjective={(obj) => setObjective(p.muscle, obj)}
+                    onRemove={() => removeMuscle(p.muscle)}
+                  />
+                ))}
+              </ul>
+            </SortableContext>
+          </DndContext>
+        )}
+      </Card>
 
       <Card>
-        <div className="mb-3 text-sm font-medium text-white">Ajouter un muscle</div>
+        <div className="mb-3 text-sm font-medium text-white">
+          Ajouter manuellement
+        </div>
+        <p className="mb-2 text-[11px] text-anthracite-300">
+          Pour les muscles non visibles sur la silhouette (deltoïdes antérieurs,
+          lombaires, etc.).
+        </p>
         {available.length === 0 ? (
           <div className="text-xs text-anthracite-300">
             Tous les muscles canoniques sont sélectionnés.

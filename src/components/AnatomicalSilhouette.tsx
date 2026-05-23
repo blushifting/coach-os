@@ -45,6 +45,14 @@ export interface AnatomicalSilhouetteProps {
   readonly view?: 'both' | 'face' | 'back' | 'auto';
   /** id pour data-testid (debug + tests). */
   readonly testId?: string;
+  /**
+   * Conv #17 — silhouette cliquable. Callback appelé avec le `muscle_id`
+   * Coach OS quand l'utilisateur tape sur une zone musculaire mappée.
+   * Si absent, la silhouette reste purement présentationnelle (aria-hidden).
+   */
+  readonly onMuscleClick?: (muscle: string) => void;
+  /** Muscle actuellement sélectionné (souligné d'un liseré). */
+  readonly selectedMuscle?: string | null;
 }
 
 const TONE_FILL: Record<SilhouetteStatus, string> = {
@@ -276,10 +284,13 @@ export function AnatomicalSilhouette({
   className,
   view = 'both',
   testId,
+  onMuscleClick,
+  selectedMuscle = null,
 }: AnatomicalSilhouetteProps) {
   const resolvedView: 'both' | 'face' | 'back' =
     view === 'auto' ? pickBestSide(highlights) : view;
   const viewBox = resolvedView === 'both' ? '0 0 210 196' : '0 0 100 196';
+  const interactive = onMuscleClick !== undefined;
 
   // Le dataset upstream (RBH) a une face qui s'étend de y=0 à 195.5 et un
   // dos de y=0 à 200 — différence de proportions entre les deux dessins
@@ -292,7 +303,9 @@ export function AnatomicalSilhouette({
     <svg
       viewBox={viewBox}
       preserveAspectRatio="xMidYMid meet"
-      aria-hidden="true"
+      aria-hidden={interactive ? undefined : 'true'}
+      role={interactive ? 'group' : undefined}
+      aria-label={interactive ? 'Silhouette anatomique (cliquable)' : undefined}
       data-testid={testId ?? 'anatomical-silhouette'}
       data-side={resolvedView}
       className={cn('block', STROKE, className)}
@@ -303,6 +316,8 @@ export function AnatomicalSilhouette({
           polys={CO_TO_FACE}
           neutrals={FACE_NEUTRALS}
           highlights={highlights}
+          onMuscleClick={onMuscleClick}
+          selectedMuscle={selectedMuscle}
         />
       )}
       {resolvedView === 'both' && (
@@ -311,6 +326,8 @@ export function AnatomicalSilhouette({
             polys={CO_TO_BACK}
             neutrals={BACK_NEUTRALS}
             highlights={highlights}
+            onMuscleClick={onMuscleClick}
+            selectedMuscle={selectedMuscle}
           />
         </g>
       )}
@@ -320,6 +337,8 @@ export function AnatomicalSilhouette({
             polys={CO_TO_BACK}
             neutrals={BACK_NEUTRALS}
             highlights={highlights}
+            onMuscleClick={onMuscleClick}
+            selectedMuscle={selectedMuscle}
           />
         </g>
       )}
@@ -331,9 +350,17 @@ interface SilhouetteSideProps {
   readonly polys: Record<string, readonly string[]>;
   readonly neutrals: readonly (readonly string[])[];
   readonly highlights: Readonly<Record<string, SilhouetteStatus>> | undefined;
+  readonly onMuscleClick?: (muscle: string) => void;
+  readonly selectedMuscle?: string | null;
 }
 
-function SilhouetteSide({ polys, neutrals, highlights }: SilhouetteSideProps) {
+function SilhouetteSide({
+  polys,
+  neutrals,
+  highlights,
+  onMuscleClick,
+  selectedMuscle,
+}: SilhouetteSideProps) {
   return (
     <g>
       {/* Zones neutres (tête, cou, genoux, avant-bras) — gris constant */}
@@ -346,14 +373,41 @@ function SilhouetteSide({ polys, neutrals, highlights }: SilhouetteSideProps) {
           />
         )),
       )}
-      {/* Muscles Coach OS — fill selon highlight */}
+      {/* Muscles Coach OS — fill selon highlight. Conv #17 : si onMuscleClick
+          fourni, chaque groupe devient cliquable (cursor + handler) et le
+          muscle sélectionné reçoit un liseré gold pour le repérage visuel
+          en parallèle d'un éventuel scrollIntoView côté parent. */}
       {Object.entries(polys).map(([muscle, points]) => {
         const status = highlights?.[muscle] ?? 'off';
         const fill = TONE_FILL[status];
+        const clickable = onMuscleClick !== undefined;
+        const isSelected = selectedMuscle === muscle;
         return (
-          <g key={muscle} data-muscle={muscle} data-status={status}>
+          <g
+            key={muscle}
+            data-muscle={muscle}
+            data-status={status}
+            data-selected={isSelected ? 'true' : undefined}
+            onClick={
+              clickable
+                ? (e) => {
+                    e.stopPropagation();
+                    onMuscleClick(muscle);
+                  }
+                : undefined
+            }
+            style={clickable ? { cursor: 'pointer' } : undefined}
+          >
             {points.map((p, i) => (
-              <polygon key={i} points={p} className={fill} />
+              <polygon
+                key={i}
+                points={p}
+                className={cn(
+                  fill,
+                  isSelected && 'stroke-amber-300',
+                )}
+                strokeWidth={isSelected ? 0.9 : undefined}
+              />
             ))}
           </g>
         );

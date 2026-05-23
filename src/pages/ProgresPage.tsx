@@ -10,17 +10,20 @@ import {
   computeVolumeHistory,
 } from '@/lib/progress';
 import { useCoachOsStore } from '@/store';
-import { CoverageView } from './progres/CoverageView';
 import { CyclesView } from './progres/CyclesView';
 import { ForceView } from './progres/ForceView';
 import { VolumeView } from './progres/VolumeView';
 
-type Tab = 'couverture' | 'force' | 'volume' | 'cycles';
+// Conv #17 — fusion des anciens onglets Couverture + Volume en un seul
+// onglet "Volume" : silhouette anatomique cliquable (statut hebdo en cours)
+// + liste des courbes d'évolution par muscle. Plus cohérent : un seul écran
+// répond aux questions "où en suis-je cette semaine ?" et "où en suis-je
+// dans le temps ?".
+type Tab = 'volume' | 'force' | 'cycles';
 
 const TABS: ReadonlyArray<{ readonly id: Tab; readonly label: string }> = [
-  { id: 'couverture', label: 'Couverture' },
-  { id: 'force', label: 'Force' },
   { id: 'volume', label: 'Volume' },
+  { id: 'force', label: 'Force' },
   { id: 'cycles', label: 'Cycles' },
 ];
 
@@ -40,7 +43,7 @@ export default function ProgresPage() {
   const userState = useCoachOsStore((s) => s.userState);
   const history = useCoachOsStore((s) => s.history);
   const catalog = useCoachOsStore((s) => s.catalog);
-  const [tab, setTab] = useState<Tab>('couverture');
+  const [tab, setTab] = useState<Tab>('volume');
 
   const data = useMemo(() => {
     if (userState === null || catalog === null) return null;
@@ -107,9 +110,14 @@ export default function ProgresPage() {
       </nav>
 
       <div role="tabpanel" data-testid={`panel-${tab}`}>
-        {tab === 'couverture' && <CoverageView coverage={data.coverage} />}
+        {tab === 'volume' && (
+          <VolumeView
+            coverage={data.coverage}
+            volume={data.volume}
+            muscleGoals={userState.muscle_goals}
+          />
+        )}
         {tab === 'force' && <ForceView series={data.force} />}
-        {tab === 'volume' && <VolumeView series={data.volume} />}
         {tab === 'cycles' && <CyclesView items={data.cycles} catalog={catalog} />}
       </div>
     </section>

@@ -180,9 +180,13 @@ function CyclePctWidget({ cycle }: { readonly cycle: CycleProgress }) {
             size={52}
             strokeWidth={5}
           />
-          <span className="absolute font-display text-[11px] font-semibold leading-none tabular-nums text-white">
-            {pctSafe}%
-          </span>
+          {/* Conv #17 — à 100 %, on masque le label "%" : le disque doré
+              accomplissement parle de lui-même et serait sinon écrasé. */}
+          {pctSafe < 100 && (
+            <span className="absolute font-display text-[11px] font-semibold leading-none tabular-nums text-white">
+              {pctSafe}%
+            </span>
+          )}
         </div>
         <div className="flex flex-col leading-none">
           <span className="font-display text-base font-semibold text-white tabular-nums">

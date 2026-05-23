@@ -31,11 +31,12 @@ const RPE_MAX = 10;
 const RPE_STEP = 0.5;
 
 function effortTone(rpe: number | null): string {
+  // Conv #17 — teinte rouge retirée à la demande Azur. Reste seule la teinte
+  // ambre pour signaler un effort élevé (≥ 8) ; au-delà on garde l'ambre sans
+  // monter en rouge (la valeur numérique parle d'elle-même).
   if (rpe === null) return 'border-anthracite-700 bg-anthracite-800 text-anthracite-100';
-  if (rpe <= 7) return 'border-anthracite-700 bg-anthracite-800 text-anthracite-100';
-  if (rpe <= 8) return 'border-amber-700/60 bg-amber-900/30 text-amber-100';
-  if (rpe <= 9) return 'border-sang-700/70 bg-sang-900/30 text-sang-100';
-  return 'border-sang-500/80 bg-sang-800/40 text-white';
+  if (rpe < 8) return 'border-anthracite-700 bg-anthracite-800 text-anthracite-100';
+  return 'border-amber-700/60 bg-amber-900/30 text-amber-100';
 }
 
 function isBodyweightOnly(charge: ChargeType | undefined): boolean {

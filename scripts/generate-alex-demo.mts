@@ -111,7 +111,12 @@ const ALEX_INITIAL_E1RM: Record<string, number> = {
 const ALEX_SWAP_E1RM: Record<string, number> = {
   front_squat: 95, // front squat = ~80 % du back squat
   pullup: 78, // tractions libres : bw 75 + ~3 kg de lest équivalent
-  ohp_db_seated: 50, // DM ~10 % en dessous de OHP barre debout
+  // Conv #17 — corrigé : la charge OHP haltères est saisie/stockée
+  // **par haltère** (cf. ManualE1rmSheet `loadLabel`). 50 kg/haltère = 100 kg
+  // total = irréaliste pour un intermédiaire 75 kg. Standards muscu : un
+  // intermédiaire OHP DM ~25 kg par main (50 kg total ≈ −10 % vs OHP barre
+  // 55 kg total, cohérent avec le commentaire d'origine qui pensait "total").
+  ohp_db_seated: 25,
 };
 
 /** k_user par défaut (cf. prescription.ts, k de Epley standard). */

@@ -48,32 +48,49 @@ export function ProgressRing({
       aria-valuemax={total}
     >
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
-        {/* Track */}
+        {/* Track — léger halo doré intérieur quand accompli, sinon transparent. */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={r}
-          fill="none"
-          stroke="rgba(38,42,48,0.9)"
+          fill={isComplete ? 'rgba(212,160,82,0.16)' : 'none'}
+          stroke={isComplete ? '#d4a052' : 'rgba(38,42,48,0.9)'}
           strokeWidth={strokeWidth}
         />
-        {/* Progress */}
-        {ratio > 0 && (
+        {/* Progress — masqué quand accompli (le ring doré du track sert de complet). */}
+        {ratio > 0 && !isComplete && (
           <circle
             cx={size / 2}
             cy={size / 2}
             r={r}
             fill="none"
-            stroke={isComplete ? '#cc4a59' : '#b62a3a'}
+            stroke="#b62a3a"
             strokeWidth={strokeWidth}
             strokeLinecap="round"
             strokeDasharray={`${dash} ${c - dash}`}
             style={{ transition: 'stroke-dasharray 360ms cubic-bezier(0.4, 0, 0.2, 1)' }}
           />
         )}
+        {/* Conv #17 — Symbole accomplissement : disque doré central qui remplace
+            la roue rouge complète. Sobre, non-figuratif, distinct du tick "✓"
+            (réservé aux séries cochées) et de l'étoile (réservée aux records).
+            Rayon proportionnel au strokeWidth → reste cohérent à toute taille. */}
+        {isComplete && (
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={Math.max(2, strokeWidth - 0.5)}
+            fill="#d4a052"
+          />
+        )}
       </svg>
       {showLabel && (
-        <span className="absolute font-display text-[10px] leading-none tabular-nums text-white">
+        <span
+          className={cn(
+            'absolute font-display text-[10px] leading-none tabular-nums',
+            isComplete ? 'text-amber-200' : 'text-white',
+          )}
+        >
           {value}/{total}
         </span>
       )}

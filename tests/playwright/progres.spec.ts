@@ -2,13 +2,10 @@ import { expect, test } from '@playwright/test';
 import { runOnboardingMinimal } from './_helpers';
 
 /**
- * E2E Onglet Progrès — Conv #6a (helper Séance 0 retiré post-#12a).
+ * E2E Onglet Progrès — Conv #6a (refondu Conv #17).
  *
- * Couvre :
- *  - onboarding minimal → /programme
- *  - bascule vers /progres via TabBar
- *  - 3 tabs Couverture / Volume / Cycles présents + bascule
- *  - vue Cycles : état vide tant qu'aucun bilan n'a été produit
+ * Conv #17 : fusion Couverture + Volume en un seul onglet "Volume" (silhouette
+ * cliquable + courbes d'évolution par muscle). 3 tabs au lieu de 4.
  */
 
 test.beforeEach(async ({ context }) => {
@@ -23,7 +20,7 @@ test.beforeEach(async ({ context }) => {
   });
 });
 
-test('progres : 3 tabs Couverture / Volume / Cycles et bascule entre eux', async ({ page }) => {
+test('progres : 3 tabs Volume / Force / Cycles et bascule entre eux', async ({ page }) => {
   await runOnboardingMinimal(page);
 
   // Navigation SPA via la TabBar pour préserver l'état du store hydraté à
@@ -35,26 +32,21 @@ test('progres : 3 tabs Couverture / Volume / Cycles et bascule entre eux', async
 
   // Tabs présents
   await expect(page.getByTestId('progres-tabs')).toBeVisible();
-  await expect(page.getByTestId('tab-couverture')).toBeVisible();
   await expect(page.getByTestId('tab-volume')).toBeVisible();
+  await expect(page.getByTestId('tab-force')).toBeVisible();
   await expect(page.getByTestId('tab-cycles')).toBeVisible();
 
-  // Vue par défaut = Couverture, grille chips visible
-  await expect(page.getByTestId('panel-couverture')).toBeVisible();
-  await expect(page.getByTestId('coverage-view')).toBeVisible();
-  await expect(page.getByTestId('coverage-grid')).toBeVisible();
-
-  // Bascule Volume
-  await page.getByTestId('tab-volume').click();
+  // Vue par défaut = Volume (silhouette + cards)
   await expect(page.getByTestId('panel-volume')).toBeVisible();
   await expect(page.getByTestId('volume-view')).toBeVisible();
+  await expect(page.getByTestId('volume-silhouette')).toBeVisible();
 
   // Bascule Cycles : aucun cycle terminé → état vide
   await page.getByTestId('tab-cycles').click();
   await expect(page.getByTestId('panel-cycles')).toBeVisible();
   await expect(page.getByTestId('cycles-empty')).toBeVisible();
 
-  // Retour Couverture
-  await page.getByTestId('tab-couverture').click();
-  await expect(page.getByTestId('coverage-view')).toBeVisible();
+  // Retour Volume
+  await page.getByTestId('tab-volume').click();
+  await expect(page.getByTestId('volume-view')).toBeVisible();
 });

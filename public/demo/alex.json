@@ -38,7 +38,7 @@
       "leg_press_45": 211.2,
       "front_squat": 98,
       "pullup": 82.8,
-      "ohp_db_seated": 52
+      "ohp_db_seated": 26.2
     },
     "k_user": {
       "squat_bb_high": 0.0333,
@@ -1435,19 +1435,19 @@
           {
             "exercise_id": "ohp_db_seated",
             "reps_done": 8,
-            "load_kg": 36.25,
+            "load_kg": 17.5,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "ohp_db_seated",
             "reps_done": 8,
-            "load_kg": 36.25,
+            "load_kg": 17.5,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "ohp_db_seated",
             "reps_done": 8,
-            "load_kg": 36.25,
+            "load_kg": 17.5,
             "rpe_perceived": 7.5
           },
           {
@@ -1693,19 +1693,19 @@
           {
             "exercise_id": "ohp_db_seated",
             "reps_done": 8,
-            "load_kg": 36.25,
+            "load_kg": 18.75,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "ohp_db_seated",
             "reps_done": 8,
-            "load_kg": 36.25,
+            "load_kg": 18.75,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "ohp_db_seated",
             "reps_done": 8,
-            "load_kg": 36.25,
+            "load_kg": 18.75,
             "rpe_perceived": 7.5
           },
           {
@@ -1969,19 +1969,19 @@
           {
             "exercise_id": "ohp_db_seated",
             "reps_done": 8,
-            "load_kg": 36.25,
+            "load_kg": 18.75,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "ohp_db_seated",
             "reps_done": 8,
-            "load_kg": 36.25,
+            "load_kg": 18.75,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "ohp_db_seated",
             "reps_done": 8,
-            "load_kg": 36.25,
+            "load_kg": 18.75,
             "rpe_perceived": 7.5
           },
           {
@@ -2164,19 +2164,19 @@
           {
             "exercise_id": "ohp_db_seated",
             "reps_done": 8,
-            "load_kg": 37.5,
+            "load_kg": 18.75,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "ohp_db_seated",
             "reps_done": 8,
-            "load_kg": 37.5,
+            "load_kg": 18.75,
             "rpe_perceived": 7.5
           },
           {
             "exercise_id": "ohp_db_seated",
             "reps_done": 8,
-            "load_kg": 37.5,
+            "load_kg": 18.75,
             "rpe_perceived": 7.5
           },
           {
@@ -4518,21 +4518,21 @@
                 {
                   "exercise_id": "ohp_db_seated",
                   "reps": 8,
-                  "load_kg": 36.25,
+                  "load_kg": 17.5,
                   "rpe_target": 7.5,
                   "rest_s": 150
                 },
                 {
                   "exercise_id": "ohp_db_seated",
                   "reps": 8,
-                  "load_kg": 36.25,
+                  "load_kg": 17.5,
                   "rpe_target": 7.5,
                   "rest_s": 150
                 },
                 {
                   "exercise_id": "ohp_db_seated",
                   "reps": 8,
-                  "load_kg": 36.25,
+                  "load_kg": 17.5,
                   "rpe_target": 7.5,
                   "rest_s": 150
                 }
@@ -4905,21 +4905,21 @@
                 {
                   "exercise_id": "ohp_db_seated",
                   "reps": 8,
-                  "load_kg": 36.25,
+                  "load_kg": 18.75,
                   "rpe_target": 7.5,
                   "rest_s": 150
                 },
                 {
                   "exercise_id": "ohp_db_seated",
                   "reps": 8,
-                  "load_kg": 36.25,
+                  "load_kg": 18.75,
                   "rpe_target": 7.5,
                   "rest_s": 150
                 },
                 {
                   "exercise_id": "ohp_db_seated",
                   "reps": 8,
-                  "load_kg": 36.25,
+                  "load_kg": 18.75,
                   "rpe_target": 7.5,
                   "rest_s": 150
                 }
@@ -5313,21 +5313,21 @@
                 {
                   "exercise_id": "ohp_db_seated",
                   "reps": 8,
-                  "load_kg": 36.25,
+                  "load_kg": 18.75,
                   "rpe_target": 7.5,
                   "rest_s": 150
                 },
                 {
                   "exercise_id": "ohp_db_seated",
                   "reps": 8,
-                  "load_kg": 36.25,
+                  "load_kg": 18.75,
                   "rpe_target": 7.5,
                   "rest_s": 150
                 },
                 {
                   "exercise_id": "ohp_db_seated",
                   "reps": 8,
-                  "load_kg": 36.25,
+                  "load_kg": 18.75,
                   "rpe_target": 7.5,
                   "rest_s": 150
                 }
@@ -5728,21 +5728,21 @@
                 {
                   "exercise_id": "ohp_db_seated",
                   "reps": 8,
-                  "load_kg": 37.5,
+                  "load_kg": 18.75,
                   "rpe_target": 7.5,
                   "rest_s": 150
                 },
                 {
                   "exercise_id": "ohp_db_seated",
                   "reps": 8,
-                  "load_kg": 37.5,
+                  "load_kg": 18.75,
                   "rpe_target": 7.5,
                   "rest_s": 150
                 },
                 {
                   "exercise_id": "ohp_db_seated",
                   "reps": 8,
-                  "load_kg": 37.5,
+                  "load_kg": 18.75,
                   "rpe_target": 7.5,
                   "rest_s": 150
                 }
@@ -7495,19 +7495,19 @@
             {
               "exercise_id": "ohp_db_seated",
               "reps_done": 8,
-              "load_kg": 36.25,
+              "load_kg": 17.5,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "ohp_db_seated",
               "reps_done": 8,
-              "load_kg": 36.25,
+              "load_kg": 17.5,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "ohp_db_seated",
               "reps_done": 8,
-              "load_kg": 36.25,
+              "load_kg": 17.5,
               "rpe_perceived": 7.5
             },
             {
@@ -7785,19 +7785,19 @@
             {
               "exercise_id": "ohp_db_seated",
               "reps_done": 8,
-              "load_kg": 36.25,
+              "load_kg": 18.75,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "ohp_db_seated",
               "reps_done": 8,
-              "load_kg": 36.25,
+              "load_kg": 18.75,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "ohp_db_seated",
               "reps_done": 8,
-              "load_kg": 36.25,
+              "load_kg": 18.75,
               "rpe_perceived": 7.5
             },
             {
@@ -8093,19 +8093,19 @@
             {
               "exercise_id": "ohp_db_seated",
               "reps_done": 8,
-              "load_kg": 36.25,
+              "load_kg": 18.75,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "ohp_db_seated",
               "reps_done": 8,
-              "load_kg": 36.25,
+              "load_kg": 18.75,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "ohp_db_seated",
               "reps_done": 8,
-              "load_kg": 36.25,
+              "load_kg": 18.75,
               "rpe_perceived": 7.5
             },
             {
@@ -8312,19 +8312,19 @@
             {
               "exercise_id": "ohp_db_seated",
               "reps_done": 8,
-              "load_kg": 37.5,
+              "load_kg": 18.75,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "ohp_db_seated",
               "reps_done": 8,
-              "load_kg": 37.5,
+              "load_kg": 18.75,
               "rpe_perceived": 7.5
             },
             {
               "exercise_id": "ohp_db_seated",
               "reps_done": 8,
-              "load_kg": 37.5,
+              "load_kg": 18.75,
               "rpe_perceived": 7.5
             },
             {
@@ -9884,7 +9884,7 @@
         "id": 192,
         "date": "2026-04-27",
         "exercise_id": "ohp_db_seated",
-        "e1rm": 50.5,
+        "e1rm": 25.3,
         "cycle_index": 2,
         "week_in_cycle": 1
       },
@@ -9980,7 +9980,7 @@
         "id": 204,
         "date": "2026-04-29",
         "exercise_id": "ohp_db_seated",
-        "e1rm": 50.5,
+        "e1rm": 25.3,
         "cycle_index": 2,
         "week_in_cycle": 1
       },
@@ -10076,7 +10076,7 @@
         "id": 216,
         "date": "2026-05-01",
         "exercise_id": "ohp_db_seated",
-        "e1rm": 50.5,
+        "e1rm": 25.3,
         "cycle_index": 2,
         "week_in_cycle": 1
       },
@@ -10172,7 +10172,7 @@
         "id": 228,
         "date": "2026-05-02",
         "exercise_id": "ohp_db_seated",
-        "e1rm": 50.5,
+        "e1rm": 25.3,
         "cycle_index": 2,
         "week_in_cycle": 1
       },
@@ -10268,7 +10268,7 @@
         "id": 240,
         "date": "2026-05-04",
         "exercise_id": "ohp_db_seated",
-        "e1rm": 51,
+        "e1rm": 25.6,
         "cycle_index": 2,
         "week_in_cycle": 2
       },
@@ -10364,7 +10364,7 @@
         "id": 252,
         "date": "2026-05-06",
         "exercise_id": "ohp_db_seated",
-        "e1rm": 51,
+        "e1rm": 25.6,
         "cycle_index": 2,
         "week_in_cycle": 2
       },
@@ -10460,7 +10460,7 @@
         "id": 264,
         "date": "2026-05-08",
         "exercise_id": "ohp_db_seated",
-        "e1rm": 51,
+        "e1rm": 25.6,
         "cycle_index": 2,
         "week_in_cycle": 2
       },
@@ -10556,7 +10556,7 @@
         "id": 276,
         "date": "2026-05-09",
         "exercise_id": "ohp_db_seated",
-        "e1rm": 51,
+        "e1rm": 25.6,
         "cycle_index": 2,
         "week_in_cycle": 2
       },
@@ -10652,7 +10652,7 @@
         "id": 288,
         "date": "2026-05-11",
         "exercise_id": "ohp_db_seated",
-        "e1rm": 51.5,
+        "e1rm": 25.9,
         "cycle_index": 2,
         "week_in_cycle": 3
       },
@@ -10748,7 +10748,7 @@
         "id": 300,
         "date": "2026-05-13",
         "exercise_id": "ohp_db_seated",
-        "e1rm": 51.5,
+        "e1rm": 25.9,
         "cycle_index": 2,
         "week_in_cycle": 3
       },
@@ -10844,7 +10844,7 @@
         "id": 312,
         "date": "2026-05-16",
         "exercise_id": "ohp_db_seated",
-        "e1rm": 51.5,
+        "e1rm": 25.9,
         "cycle_index": 2,
         "week_in_cycle": 3
       },
@@ -10940,7 +10940,7 @@
         "id": 324,
         "date": "2026-05-18",
         "exercise_id": "ohp_db_seated",
-        "e1rm": 52,
+        "e1rm": 26.2,
         "cycle_index": 2,
         "week_in_cycle": 4
       }

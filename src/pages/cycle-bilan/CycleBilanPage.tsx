@@ -100,6 +100,7 @@ function ReviewKeyMetrics({ review }: { review: CycleReview }) {
       />
       <Metric
         label="Volume"
+        helpTopic="volumeTotalCycle"
         value={`${Math.round(review.volume_total_kg).toLocaleString('fr-FR')} kg`}
         delay={80}
       />
@@ -121,8 +122,12 @@ function Metric({
   helpTopic?: import('@/lib/help-glossary').HelpTopic;
 }) {
   return (
+    // Conv #17 — items-center pour centrer label + valeur dans la cellule
+    // grid. Avant : alignement gauche par défaut, le Volume (grosse valeur kg)
+    // semblait flotter à gauche de sa colonne au lieu d'être centré entre
+    // Adhérence et Records.
     <div
-      className="flex animate-reveal-up flex-col gap-0.5"
+      className="flex animate-reveal-up flex-col items-center gap-0.5 text-center"
       style={{ animationDelay: `${delay}ms` }}
     >
       <span className="flex items-center gap-1 text-xs uppercase tracking-wide text-anthracite-300">

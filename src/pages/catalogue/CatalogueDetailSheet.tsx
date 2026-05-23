@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Sheet } from '@/components/Sheet';
+import { Button } from '@/components/Button';
 import { AnatomicalSilhouette, type SilhouetteStatus } from '@/components/AnatomicalSilhouette';
 import { exercisePrimaires, exerciseSynergistes } from '@/engine/models';
 import type { Exercise } from '@/engine/models';
@@ -13,6 +14,9 @@ import {
 } from '@/lib/catalog-filter';
 import { muscleLabel } from '@/lib/progress';
 import { formatRest } from '@/lib/session-runner';
+import { useCoachOsStore } from '@/store';
+import { useDemoMode } from '@/store/selectors';
+import { ManualE1rmSheet } from '@/pages/seance/ManualE1rmSheet';
 import { PatternIcon } from '@/pages/seance/PatternIcon';
 
 interface CatalogueDetailSheetProps {
@@ -36,6 +40,16 @@ export function CatalogueDetailSheet({
   e1rm = null,
   onClose,
 }: CatalogueDetailSheetProps) {
+  // Conv #17 — édition plafond hors séance : bouton qui ouvre `ManualE1rmSheet`
+  // par-dessus le détail. Verrouillé en démo (mutations DB interdites). On lit
+  // bodyweight + demoActive systématiquement (hooks ne peuvent pas être
+  // conditionnels) ; le `exercise === null` early-return est traité ensuite.
+  const [manualOpen, setManualOpen] = useState(false);
+  const bodyweightKg = useCoachOsStore(
+    (s) => s.userState?.profile.bodyweight_kg ?? 75,
+  );
+  const demoActive = useDemoMode();
+
   if (exercise === null) return null;
 
   const primaires = exercisePrimaires(exercise);
@@ -98,6 +112,28 @@ export function CatalogueDetailSheet({
             </span>
           </div>
         ) : null}
+
+        {/* Conv #17 — édition manuelle hors séance. Disponible que l'exo soit
+            déjà calibré ou non (label adapte le verbe). Désactivé en démo. */}
+        <Button
+          variant="secondary"
+          size="sm"
+          fullWidth
+          disabled={demoActive}
+          data-testid={`btn-edit-plafond-${exercise.id}`}
+          onClick={() => setManualOpen(true)}
+        >
+          {e1rm !== null && e1rm > 0
+            ? 'Modifier mon plafond'
+            : 'Je connais mon plafond'}
+        </Button>
+
+        <ManualE1rmSheet
+          open={manualOpen}
+          exercise={exercise}
+          bodyweightKg={bodyweightKg}
+          onClose={() => setManualOpen(false)}
+        />
 
         {primaires.length > 0 && (
           <Section label="Muscles principaux">

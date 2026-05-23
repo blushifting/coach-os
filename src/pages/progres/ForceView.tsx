@@ -44,8 +44,20 @@ export function ForceView({ series }: ForceViewProps) {
           data-exercise-id={s.exercise_id}
         >
           <header className="mb-2 flex items-baseline justify-between gap-2">
-            <div className="min-w-0 text-sm font-medium text-white truncate">
-              {s.nom_fr}
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <div className="text-sm font-medium text-white truncate">
+                {s.nom_fr}
+              </div>
+              {/* Conv #17 — Affiche le nombre de séances ayant alimenté la
+                  courbe. Évite la question "pourquoi cet exo a moins de
+                  points" : exos accessoires (1×/sem) ou substitués en
+                  cours de route ont mécaniquement moins de points. */}
+              <div
+                className="text-[10px] leading-none tabular-nums text-anthracite-400"
+                data-testid={`force-points-${s.exercise_id}`}
+              >
+                {s.points.length} séance{s.points.length > 1 ? 's' : ''}
+              </div>
             </div>
             <div className="flex shrink-0 flex-col items-end gap-0.5">
               <span

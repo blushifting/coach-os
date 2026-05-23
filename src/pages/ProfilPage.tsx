@@ -35,6 +35,7 @@ import {
   type GoalsDraft,
 } from '@/lib/profile-edit';
 import { useCoachOsStore } from '@/store';
+import { useDemoMode } from '@/store/selectors';
 import { AideSheet } from './profil/AideSheet';
 import { EditGoalsSheet } from './profil/EditGoalsSheet';
 import { EditProfileSheet } from './profil/EditProfileSheet';
@@ -58,6 +59,7 @@ const OBJECTIVE_LABEL_GLOBAL: Record<string, string> = {
 
 export default function ProfilPage() {
   const userState = useCoachOsStore((s) => s.userState);
+  const demoActive = useDemoMode();
   const navigate = useNavigate();
 
   const [profileOpen, setProfileOpen] = useState(false);
@@ -149,6 +151,20 @@ export default function ProfilPage() {
   return (
     <section className="flex flex-col gap-4 pb-6" data-testid="profil-page">
       {/* Conv #11i bis — h1 "Profil" retiré : doublon du titre Header. */}
+      {/* Conv #17 — Bannière démo : avertit que les éditions sont gelées pour
+          ne pas polluer le snapshot Alex. */}
+      {demoActive && (
+        <Card
+          className="border-amber-700/40 bg-amber-900/20"
+          data-testid="profil-demo-banner"
+        >
+          <p className="text-xs text-amber-100">
+            Mode démo actif — les modifications de profil et l'import sont
+            désactivés pour préserver les données d'Alex. Sors de la démo
+            depuis l'accueil pour reprendre la main sur ton propre compte.
+          </p>
+        </Card>
+      )}
       <Card>
         <div className="mb-3 flex items-center justify-between">
           <span className="text-sm font-semibold text-white">Identité</span>
@@ -156,6 +172,7 @@ export default function ProfilPage() {
             variant="ghost"
             size="sm"
             onClick={() => setProfileOpen(true)}
+            disabled={demoActive}
             data-testid="profil-edit-identity"
           >
             Modifier
@@ -207,6 +224,7 @@ export default function ProfilPage() {
             variant="ghost"
             size="sm"
             onClick={() => setGoalsOpen(true)}
+            disabled={demoActive}
             data-testid="profil-edit-goals"
           >
             Modifier
@@ -250,22 +268,26 @@ export default function ProfilPage() {
         )}
       </Card>
 
-      <Card>
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold text-white">Aide</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setAideOpen(true)}
-            data-testid="profil-open-aide"
-          >
-            Ouvrir
-          </Button>
-        </div>
-        <p className="mt-1 text-xs text-anthracite-300">
-          Tutos de prise en main + glossaire des 13 termes utilisés dans l'app.
+      {/* Conv #17 — Card "Aide / Ouvrir" peu ergonomique → gros bouton
+          secondary size=lg directement cliquable. La description courte reste
+          sous le bouton pour donner du contexte. Les HelpButton "?" répartis
+          dans l'app (ForceView, VolumeView, Widgets, Step2…) restent en place
+          comme entrée contextuelle ; ce bouton-ci est l'entrée principale. */}
+      <div className="flex flex-col gap-1.5">
+        <Button
+          variant="secondary"
+          size="lg"
+          fullWidth
+          onClick={() => setAideOpen(true)}
+          data-testid="profil-open-aide"
+        >
+          <span aria-hidden className="mr-2 text-xl leading-none">?</span>
+          Aide &amp; glossaire
+        </Button>
+        <p className="px-1 text-xs text-anthracite-300">
+          Tutos de prise en main + glossaire des termes utilisés dans l'app.
         </p>
-      </Card>
+      </div>
 
       <Card>
         <div className="mb-2 text-sm font-semibold text-white">
@@ -289,7 +311,7 @@ export default function ProfilPage() {
             variant="secondary"
             fullWidth
             onClick={handleImportClick}
-            disabled={busy !== null}
+            disabled={busy !== null || demoActive}
             data-testid="profil-import"
           >
             Importer un fichier JSON

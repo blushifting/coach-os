@@ -1,268 +1,508 @@
 /**
- * Volume hebdo par muscle (Conv #6a, refonte #14c-6).
+ * Onglet Progrès → vue "Volume" — Conv #17.
  *
- * Refonte #14c-6 :
- *  - Filtre par défaut sur les muscles `PRIORITAIRE`. Toggle "Tout afficher"
- *    pour repasser sur l'ensemble du profil.
- *  - Palette nettoyée : plus d'orange. Les barres "dans la cible" sont en
- *    anthracite sobre, les barres hors-cible (sous V_min ou au-dessus de
- *    V_max) sont accentuées en sang. L'œil n'attrape que les anomalies.
- *  - Lignes V_min / V_max conservées en pointillé (repère).
+ * Refonte qui fusionne l'ancienne Couverture (silhouette de la semaine en
+ * cours) et l'ancien Volume (barres hebdo) en une seule vue cohérente :
  *
- * Référence : 10_plan §3 Conv #6a, infobulle help "V_min / V_max".
+ *  1. Silhouette anatomique colorée selon le statut hebdo en cours
+ *     (sous_min / ok / depassement / non_travaille) — **cliquable**.
+ *  2. Légende couleur (3 états quanti : sous / cible / sur).
+ *  3. Liste de cartes muscle, triées :
+ *       - PRIORITAIRES (par rank user croissant)
+ *       - puis SUGGERE
+ *       - puis NON_COUVERT
+ *     Chaque carte affiche une mini-courbe de l'évolution semainière du
+ *     volume (séries/sem), V_min/V_max franches, dernier point (semaine en
+ *     cours) **en pointillé** car incomplet.
+ *  4. Click muscle silhouette → scrollIntoView vers sa carte + liseré gold
+ *     temporaire pour le repérer.
  */
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Card } from '@/components/Card';
 import { HelpButton } from '@/components/HelpButton';
+import {
+  AnatomicalSilhouette,
+  statusToSilhouette,
+  type SilhouetteStatus,
+} from '@/components/AnatomicalSilhouette';
 import { cn } from '@/lib/cn';
 import {
   formatWeekLabel,
   muscleLabel,
+  type CoverageStatus,
+  type MuscleCoverage,
   type MuscleVolumeSeries,
 } from '@/lib/progress';
+import type { MuscleGoal } from '@/engine/models';
 
 interface VolumeViewProps {
-  readonly series: ReadonlyArray<MuscleVolumeSeries>;
+  readonly coverage: ReadonlyArray<MuscleCoverage>;
+  readonly volume: ReadonlyArray<MuscleVolumeSeries>;
+  readonly muscleGoals: Readonly<Record<string, MuscleGoal>>;
 }
 
-type ScopeFilter = 'prio' | 'all';
+export function VolumeView({ coverage, volume, muscleGoals }: VolumeViewProps) {
+  const [selected, setSelected] = useState<string | null>(null);
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-export function VolumeView({ series }: VolumeViewProps) {
-  const [scope, setScope] = useState<ScopeFilter>('prio');
+  // Map coverage par muscle pour lookup O(1).
+  const coverageByMuscle = useMemo(() => {
+    const m = new Map<string, MuscleCoverage>();
+    for (const c of coverage) m.set(c.muscle, c);
+    return m;
+  }, [coverage]);
 
-  const prioritaires = useMemo(
-    () => series.filter((s) => s.status === 'PRIORITAIRE'),
-    [series],
-  );
-  // Si l'utilisateur n'a aucun PRIORITAIRE (cas profil minimal), on bascule
-  // automatiquement sur "Tout afficher" pour ne pas montrer un onglet vide.
-  const effectiveScope: ScopeFilter =
-    scope === 'prio' && prioritaires.length === 0 ? 'all' : scope;
-  const filtered = effectiveScope === 'prio' ? prioritaires : series;
+  // Highlights pour la silhouette : on s'appuie sur la couverture hebdo
+  // **en cours**. hors_scope → off (gris discret).
+  const highlights = useMemo(() => {
+    const h: Record<string, SilhouetteStatus> = {};
+    for (const c of coverage) {
+      h[c.muscle] = statusToSilhouette(c.status);
+    }
+    return h;
+  }, [coverage]);
 
-  if (series.length === 0) {
+  // Liste triée des muscles affichés : PRIORITAIRE (rank croissant) →
+  // SUGGERE → NON_COUVERT. On exclut hors_scope (= aucune cible posée) pour
+  // ne pas polluer la liste de cartes vides.
+  const sortedSeries = useMemo(() => {
+    const statusOrder: Record<string, number> = {
+      PRIORITAIRE: 0,
+      SUGGERE: 1,
+      NON_COUVERT: 2,
+    };
+    const rankOf = (m: string): number =>
+      muscleGoals[m]?.priority_rank ?? 99;
+    return [...volume]
+      .filter((s) => {
+        // Exclut les muscles sans cible (vMin === 0 && vMax === 0) qui
+        // n'ont rien à dire — sauf si l'utilisateur a effectivement
+        // travaillé ce muscle cette semaine (alors on l'affiche pour
+        // documenter le volume "hors cible").
+        const cov = coverageByMuscle.get(s.muscle);
+        if (cov === undefined) return false;
+        if (cov.status === 'hors_scope' && cov.sets === 0) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        const sA = statusOrder[a.status] ?? 3;
+        const sB = statusOrder[b.status] ?? 3;
+        if (sA !== sB) return sA - sB;
+        if (a.status === 'PRIORITAIRE') {
+          return rankOf(a.muscle) - rankOf(b.muscle);
+        }
+        return a.muscle.localeCompare(b.muscle);
+      });
+  }, [volume, coverageByMuscle, muscleGoals]);
+
+  function handleSilhouetteClick(muscle: string) {
+    const cov = coverageByMuscle.get(muscle);
+    // Pour un muscle absent de la liste (hors_scope, 0 séries) on bascule
+    // quand même la sélection pour donner un feedback visuel — mais on ne
+    // scrolle pas car il n'y a pas de carte.
+    if (cov === undefined || (cov.status === 'hors_scope' && cov.sets === 0)) {
+      setSelected(muscle);
+      return;
+    }
+    setSelected(muscle);
+    const node = cardRefs.current[muscle];
+    if (node !== null && node !== undefined) {
+      node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  if (coverage.length === 0) {
     return (
       <Card data-testid="volume-empty">
         <p className="text-sm text-anthracite-300">
-          Aucune donnée de volume — termine une séance pour voir tes barres.
+          Aucun muscle ciblé pour le moment. Définis tes objectifs depuis l'onglet
+          Profil.
         </p>
       </Card>
     );
   }
 
-  // Échelle X commune : max sur le sous-ensemble affiché.
-  let maxScale = 0;
-  for (const s of filtered) {
-    maxScale = Math.max(maxScale, s.vMax, ...s.points.map((p) => p.sets));
-  }
-  maxScale = Math.max(1, Math.ceil(maxScale * 1.1));
-
-  const weekLabels =
-    filtered[0]?.points.map((p) => formatWeekLabel(p.weekStart)) ?? [];
-
   return (
     <section className="flex flex-col gap-3" data-testid="volume-view">
-      <header className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-white">Volume hebdo par muscle</h2>
-        <HelpButton topic="vminmax" />
+      <header className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-white">Volume par muscle</h2>
+        <HelpButton topic="volumeHebdo" />
       </header>
 
-      <ScopeToggle
-        scope={effectiveScope}
-        onChange={setScope}
-        disabled={prioritaires.length === 0}
-        prioCount={prioritaires.length}
-        totalCount={series.length}
-      />
+      <Card className="flex justify-center" data-testid="volume-silhouette">
+        <AnatomicalSilhouette
+          highlights={highlights}
+          selectedMuscle={selected}
+          onMuscleClick={handleSilhouetteClick}
+          className="h-56 w-auto"
+          testId="volume-silhouette-svg"
+        />
+      </Card>
 
-      {filtered.length === 0 ? (
-        <Card data-testid="volume-empty-scope">
-          <p className="text-sm text-anthracite-300">
-            Aucun muscle prioritaire pour l'instant. Bascule sur "Tout afficher"
-            ou ajuste tes objectifs depuis le Profil.
-          </p>
-        </Card>
-      ) : (
-        <Card padded={false} className="overflow-hidden">
-          <div className="grid grid-cols-[110px_1fr] items-center gap-x-3 gap-y-2 p-3">
-            <div />
-            <div className="flex justify-between text-[9px] text-anthracite-300">
-              {weekLabels.map((lbl, i) => (
-                <span key={i}>{lbl}</span>
-              ))}
-            </div>
+      <Legend />
 
-            {filtered.map((s) => (
-              <MuscleRow key={s.muscle} series={s} maxScale={maxScale} />
-            ))}
-          </div>
-        </Card>
+      {selected !== null && (
+        <button
+          type="button"
+          onClick={() => setSelected(null)}
+          data-testid="volume-clear-selection"
+          className="self-start rounded-full bg-anthracite-800 px-3 py-1 text-[11px] text-anthracite-200 hover:text-white"
+        >
+          ← Tous les muscles ({muscleLabel(selected)} sélectionné)
+        </button>
       )}
 
-      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-anthracite-300">
-        <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden="true" className="inline-block h-0 w-4 border-t border-dashed border-anthracite-200/70" />
-          V_min
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden="true" className="inline-block h-0 w-4 border-t border-dashed border-sang-400/80" />
-          V_max
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span
-            aria-hidden="true"
-            className="inline-block h-2 w-3 rounded-sm bg-sang-500"
+      <div className="flex flex-col gap-2" data-testid="volume-cards">
+        {sortedSeries.map((s) => (
+          <MuscleVolumeCard
+            key={s.muscle}
+            series={s}
+            coverage={coverageByMuscle.get(s.muscle)!}
+            cardRef={(el) => {
+              cardRefs.current[s.muscle] = el;
+            }}
+            isSelected={selected === s.muscle}
+            onSelect={() =>
+              setSelected((prev) => (prev === s.muscle ? null : s.muscle))
+            }
           />
-          hors cible
-        </span>
-      </p>
+        ))}
+      </div>
     </section>
   );
 }
 
-function ScopeToggle({
-  scope,
-  onChange,
-  disabled,
-  prioCount,
-  totalCount,
-}: {
-  readonly scope: ScopeFilter;
-  readonly onChange: (s: ScopeFilter) => void;
-  readonly disabled: boolean;
-  readonly prioCount: number;
-  readonly totalCount: number;
-}) {
+// =============================================================================
+// Légende
+// =============================================================================
+
+function Legend() {
   return (
-    <div
-      role="tablist"
-      aria-label="Filtre du volume affiché"
-      className="inline-flex w-full rounded-lg border border-anthracite-700 bg-anthracite-900 p-0.5 text-xs"
-      data-testid="volume-scope-toggle"
-    >
-      <ScopeButton
-        active={scope === 'prio'}
-        onClick={() => onChange('prio')}
-        disabled={disabled}
-        testId="volume-scope-prio"
-      >
-        Prioritaires
-        <span className="ml-1 text-anthracite-400 tabular-nums">({prioCount})</span>
-      </ScopeButton>
-      <ScopeButton
-        active={scope === 'all'}
-        onClick={() => onChange('all')}
-        testId="volume-scope-all"
-      >
-        Tout afficher
-        <span className="ml-1 text-anthracite-400 tabular-nums">({totalCount})</span>
-      </ScopeButton>
+    <div className="flex flex-wrap gap-3 text-[10px] text-anthracite-300">
+      <LegendItem dotClass="bg-sang-700" label="sous le minimum" />
+      <LegendItem dotClass="bg-emerald-700" label="dans la cible" />
+      <LegendItem dotClass="bg-amber-700" label="au-dessus" />
+      <LegendItem dotClass="bg-anthracite-600" label="pas touché" />
     </div>
   );
 }
 
-function ScopeButton({
-  active,
-  onClick,
-  disabled = false,
-  testId,
-  children,
+function LegendItem({
+  dotClass,
+  label,
 }: {
-  readonly active: boolean;
-  readonly onClick: () => void;
-  readonly disabled?: boolean;
-  readonly testId: string;
-  readonly children: React.ReactNode;
+  readonly dotClass: string;
+  readonly label: string;
 }) {
   return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={active}
-      disabled={disabled}
-      onClick={onClick}
-      data-testid={testId}
+    <span className="flex items-center gap-1">
+      <span aria-hidden="true" className={cn('inline-block h-2 w-2 rounded-full', dotClass)} />
+      {label}
+    </span>
+  );
+}
+
+// =============================================================================
+// Carte par muscle : header (statut hebdo) + mini-courbe d'évolution
+// =============================================================================
+
+interface MuscleVolumeCardProps {
+  readonly series: MuscleVolumeSeries;
+  readonly coverage: MuscleCoverage;
+  readonly cardRef: (el: HTMLDivElement | null) => void;
+  readonly isSelected: boolean;
+  readonly onSelect: () => void;
+}
+
+function MuscleVolumeCard({
+  series,
+  coverage,
+  cardRef,
+  isSelected,
+  onSelect,
+}: MuscleVolumeCardProps) {
+  const tone = STATUS_TONE[coverage.status];
+  return (
+    <div
+      ref={cardRef}
+      data-testid={`volume-card-${series.muscle}`}
+      data-status={coverage.status}
+      data-selected={isSelected ? 'true' : undefined}
       className={cn(
-        'flex-1 rounded-md px-2 py-1.5 transition-colors',
-        active
-          ? 'bg-sang-700/30 text-white font-medium'
-          : 'text-anthracite-300 hover:text-white',
-        disabled && 'cursor-not-allowed opacity-40',
+        'flex flex-col gap-2 rounded-2xl border bg-anthracite-900 p-3 transition-all',
+        isSelected
+          ? 'border-amber-400/60 shadow-[0_0_0_2px_rgba(252,211,77,0.18)]'
+          : 'border-anthracite-700',
       )}
     >
-      {children}
-    </button>
-  );
-}
-
-interface MuscleRowProps {
-  readonly series: MuscleVolumeSeries;
-  readonly maxScale: number;
-}
-
-function MuscleRow({ series, maxScale }: MuscleRowProps) {
-  const { muscle, vMin, vMax, points } = series;
-  const hasTarget = vMax > 0;
-  const minPct = hasTarget ? (vMin / maxScale) * 100 : 0;
-  const maxPct = hasTarget ? (vMax / maxScale) * 100 : 0;
-  return (
-    <>
-      <span className="truncate text-xs font-medium text-white">
-        {muscleLabel(muscle)}
-      </span>
-      <div
-        data-testid={`volume-row-${muscle}`}
-        className="relative flex h-6 items-end gap-1"
-      >
-        {hasTarget && (
-          <>
-            <div
-              aria-hidden="true"
-              data-testid={`vmax-line-${muscle}`}
-              className="pointer-events-none absolute left-0 right-0 z-10 border-t border-dashed border-sang-400/80"
-              style={{ bottom: `${maxPct}%` }}
-            />
-            <div
-              aria-hidden="true"
-              data-testid={`vmin-line-${muscle}`}
-              className="pointer-events-none absolute left-0 right-0 z-10 border-t border-dashed border-anthracite-200/60"
-              style={{ bottom: `${minPct}%` }}
-            />
-          </>
+      <header className="flex items-baseline justify-between gap-2">
+        <button
+          type="button"
+          onClick={onSelect}
+          className="min-w-0 truncate text-left text-sm font-medium text-white hover:text-amber-200"
+        >
+          {muscleLabel(series.muscle)}
+        </button>
+        <div className="flex shrink-0 items-baseline gap-1.5">
+          <span className={cn('font-display text-lg leading-none tabular-nums', tone.text)}>
+            {coverage.sets.toFixed(1)}
+          </span>
+          <span className="text-[10px] text-anthracite-300 tabular-nums">
+            / {coverage.vMin.toFixed(0)}–{coverage.vMax.toFixed(0)} séries
+          </span>
+        </div>
+      </header>
+      <span className="text-[10px] uppercase tracking-wide text-anthracite-300">
+        {STATUS_LABEL[coverage.status]}
+        {series.status === 'PRIORITAIRE' && (
+          <span className="ml-2 rounded bg-sang-900/40 px-1 py-0.5 text-sang-300">
+            prioritaire
+          </span>
         )}
-        {points.map((p, i) => {
-          const pct = (p.sets / maxScale) * 100;
-          const tone = barTone(p.sets, vMin, vMax);
-          return (
-            <div
-              key={i}
-              className="relative h-full flex-1 rounded-sm bg-anthracite-900"
-              data-testid={`volume-cell-${muscle}-${i}`}
-              title={`${formatWeekLabel(p.weekStart)} · ${p.sets.toFixed(1)} séries`}
-            >
-              <div
-                aria-hidden="true"
-                className={cn('absolute bottom-0 left-0 right-0 rounded-sm', tone)}
-                style={{ height: `${Math.min(100, pct)}%` }}
-              />
-            </div>
-          );
-        })}
-      </div>
-    </>
+      </span>
+      {series.points.length > 0 && (
+        <MiniVolumeChart series={series} testId={`volume-chart-${series.muscle}`} />
+      )}
+    </div>
   );
 }
 
-/**
- * Tonalité d'une barre (Conv #14c-6) :
- *  - vide / pas de cible posée → anthracite mat.
- *  - dans la cible [vMin, vMax] → anthracite clair (neutre, n'attrape pas l'œil).
- *  - hors cible (sous V_min ou au-dessus V_max) → sang vif (signal).
- */
-function barTone(sets: number, vMin: number, vMax: number): string {
-  if (vMax === 0) return 'bg-anthracite-600';
-  if (sets === 0) return 'bg-anthracite-600';
-  if (sets < vMin || sets > vMax) return 'bg-sang-500';
-  return 'bg-anthracite-200';
+// =============================================================================
+// Mini-courbe d'évolution semainière (séries pondérées par semaine)
+// =============================================================================
+
+interface MiniVolumeChartProps {
+  readonly series: MuscleVolumeSeries;
+  readonly testId?: string;
 }
+
+function MiniVolumeChart({ series, testId }: MiniVolumeChartProps) {
+  const W = 320;
+  const H = 80;
+  const ML = 28;
+  const MT = 10;
+  const MB = 14; // marge basse pour labels semaines
+  const innerW = W - ML;
+  const innerH = H - MT - MB;
+
+  const { points, vMin, vMax } = series;
+  if (points.length === 0) return null;
+
+  // Échelle Y : max(point max, vMax) + 10 % de marge, min 0.
+  const dataMax = Math.max(...points.map((p) => p.sets), vMax);
+  const yMax = Math.max(1, Math.ceil(dataMax * 1.1));
+  const yOf = (v: number) => MT + innerH - (v / yMax) * innerH;
+  const xOf = (i: number) =>
+    points.length === 1 ? ML + innerW / 2 : ML + (i / (points.length - 1)) * innerW;
+
+  // La dernière semaine est considérée "en cours" (incomplète) → dernier
+  // point en pointillé. Le segment qui la rejoint est aussi en pointillé.
+  const lastIdx = points.length - 1;
+  const solidPath = points
+    .slice(0, lastIdx + 1)
+    .map((p, i) => `${xOf(i).toFixed(1)},${yOf(p.sets).toFixed(1)}`);
+  const fullPolyline = solidPath.join(' ');
+  const solidPart = points.length >= 2 ? solidPath.slice(0, lastIdx).join(' ') : '';
+  const dashedSegment =
+    points.length >= 2
+      ? `${xOf(lastIdx - 1).toFixed(1)},${yOf(points[lastIdx - 1]!.sets).toFixed(1)} ${xOf(
+          lastIdx,
+        ).toFixed(1)},${yOf(points[lastIdx]!.sets).toFixed(1)}`
+      : '';
+
+  return (
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      className="w-full"
+      style={{ height: H }}
+      role="img"
+      aria-label={`Évolution du volume hebdo (${points.length} semaines)`}
+      data-testid={testId}
+    >
+      {/* Zone cible légèrement teintée entre V_min et V_max */}
+      {vMax > 0 && vMin <= vMax && (
+        <rect
+          x={ML}
+          y={yOf(vMax)}
+          width={innerW}
+          height={Math.max(0, yOf(vMin) - yOf(vMax))}
+          fill="rgba(16,185,129,0.10)"
+          data-testid="volume-target-band"
+        />
+      )}
+
+      {/* Lignes V_min / V_max + labels */}
+      {vMax > 0 && (
+        <>
+          <line
+            x1={ML}
+            x2={W}
+            y1={yOf(vMax)}
+            y2={yOf(vMax)}
+            stroke="rgba(251,191,36,0.55)"
+            strokeWidth={1}
+            strokeDasharray="3 3"
+            data-testid="vmax-line"
+          />
+          <text
+            x={ML - 4}
+            y={yOf(vMax)}
+            textAnchor="end"
+            dominantBaseline="middle"
+            fontSize="9"
+            fill="#fbbf24"
+            className="tabular-nums"
+          >
+            {vMax.toFixed(0)}
+          </text>
+        </>
+      )}
+      {vMin > 0 && vMin !== vMax && (
+        <>
+          <line
+            x1={ML}
+            x2={W}
+            y1={yOf(vMin)}
+            y2={yOf(vMin)}
+            stroke="rgba(154,160,170,0.5)"
+            strokeWidth={1}
+            strokeDasharray="3 3"
+            data-testid="vmin-line"
+          />
+          <text
+            x={ML - 4}
+            y={yOf(vMin)}
+            textAnchor="end"
+            dominantBaseline="middle"
+            fontSize="9"
+            fill="#9aa0aa"
+            className="tabular-nums"
+          >
+            {vMin.toFixed(0)}
+          </text>
+        </>
+      )}
+
+      {/* Polyline historique : tronçon plein (sem complètes) + tronçon
+          pointillé (sem en cours). On dessine d'abord la polyline complète
+          en mode "plein" pour les segments antérieurs, puis on superpose
+          le dernier segment en pointillé pour le distinguer. */}
+      {points.length >= 2 && (
+        <>
+          {solidPart && (
+            <polyline
+              points={solidPart}
+              fill="none"
+              stroke="#cbd5e1"
+              strokeWidth="2"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+          )}
+          {dashedSegment && (
+            <polyline
+              points={dashedSegment}
+              fill="none"
+              stroke="#cbd5e1"
+              strokeWidth="2"
+              strokeDasharray="3 3"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+              opacity={0.7}
+            />
+          )}
+        </>
+      )}
+      {points.length === 1 && (
+        // Un seul point : pas de polyline, juste le marqueur ci-dessous.
+        <text
+          x={ML + innerW / 2}
+          y={H - 2}
+          textAnchor="middle"
+          fontSize="8"
+          fill="#9aa0aa"
+        >
+          {fullPolyline ? '' : ''}
+        </text>
+      )}
+
+      {/* Points : tous pleins sauf le dernier (semaine en cours) en contour. */}
+      {points.map((p, i) => {
+        const cx = xOf(i);
+        const cy = yOf(p.sets);
+        const isLast = i === lastIdx;
+        return (
+          <g key={i}>
+            <circle
+              cx={cx}
+              cy={cy}
+              r={isLast ? 3.5 : 2.8}
+              fill={isLast ? '#0c0e12' : '#cbd5e1'}
+              stroke="#cbd5e1"
+              strokeWidth={isLast ? 1.5 : 0}
+            />
+            {/* Valeur numérique au-dessus du point (sauf si trop tassé). */}
+            {(i === 0 || i === lastIdx || points.length <= 6) && (
+              <text
+                x={cx}
+                y={cy - 6}
+                textAnchor="middle"
+                fontSize="8"
+                fill="#e5e7eb"
+                className="tabular-nums"
+              >
+                {p.sets.toFixed(0)}
+              </text>
+            )}
+          </g>
+        );
+      })}
+
+      {/* Labels semaines : 1re, dernière, et milieu si ≥ 4 points. */}
+      {points.map((p, i) => {
+        const showLabel =
+          i === 0 ||
+          i === lastIdx ||
+          (points.length >= 4 && i === Math.floor(points.length / 2));
+        if (!showLabel) return null;
+        return (
+          <text
+            key={`lbl-${i}`}
+            x={xOf(i)}
+            y={H - 2}
+            textAnchor="middle"
+            fontSize="8"
+            fill="#9aa0aa"
+          >
+            {i === lastIdx ? 'en cours' : formatWeekLabel(p.weekStart)}
+          </text>
+        );
+      })}
+    </svg>
+  );
+}
+
+// =============================================================================
+// Tones & labels par statut
+// =============================================================================
+
+const STATUS_LABEL: Record<CoverageStatus, string> = {
+  non_travaille: 'pas touché cette semaine',
+  sous_min: 'sous le minimum',
+  ok: 'dans la cible',
+  depassement: 'au-dessus de la cible',
+  hors_scope: 'hors objectifs',
+};
+
+interface ToneClasses {
+  readonly text: string;
+}
+
+const STATUS_TONE: Record<CoverageStatus, ToneClasses> = {
+  non_travaille: { text: 'text-anthracite-300' },
+  sous_min: { text: 'text-sang-400' },
+  ok: { text: 'text-emerald-400' },
+  depassement: { text: 'text-amber-400' },
+  hors_scope: { text: 'text-anthracite-300' },
+};

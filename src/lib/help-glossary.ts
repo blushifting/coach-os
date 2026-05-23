@@ -7,6 +7,7 @@ export type HelpTopic =
   | 'iso'
   | 'etire'
   | 'volumeHebdo'
+  | 'volumeTotalCycle'
   | 'vminmax'
   | 'amplitude'
   | 'hypertrophie'
@@ -67,6 +68,14 @@ export const HELP_GLOSSARY: Readonly<Record<HelpTopic, HelpEntry>> = {
   volumeHebdo: {
     title: 'Volume hebdo',
     body: 'Nombre de séries par muscle par semaine. La variable la plus puissante pour grossir : Schoenfeld 2017 trouve un seuil critique vers 10 séries/sem/muscle.',
+  },
+  volumeTotalCycle: {
+    title: 'Volume total du cycle',
+    body:
+      "Somme du tonnage soulevé sur l'ensemble du cycle (5 semaines), tous exos et toutes séries confondus. " +
+      "Calculé comme charge × reps cumulées. Mesure brute de la « quantité » de travail produite sur le cycle. " +
+      "Sert surtout à comparer un cycle à l'autre — il monte mécaniquement quand tu progresses en charge ou en assiduité, " +
+      "et baisse les cycles avec semaine sautée. À ne pas confondre avec le « volume hebdo » (séries/sem/muscle).",
   },
   vminmax: {
     title: 'V_min / V_max',
