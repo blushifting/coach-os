@@ -348,6 +348,13 @@ export function buildCalendarMatrix(
         sessionId = sess.id;
         if (sess.status === 'completed' || hasFeedback) status = 'completed';
         else if (sess.status === 'skipped') status = 'skipped';
+        // Conv #17b — séance `planned` dont la date est révolue sans
+        // feedback enregistré = sautée de fait. Visuellement on l'affiche
+        // comme `skipped` (au lieu de l'ancien `rest-past` qui prétendait
+        // que ce jour était un jour de repos — faux, c'était une séance
+        // prévue non honorée). Le user peut toujours cliquer dessus pour
+        // l'ouvrir / la sauter formellement / la marquer faite.
+        else if (sess.status === 'planned' && isPast) status = 'skipped';
         else status = isPast ? 'rest-past' : 'planned';
       } else {
         status = isPast ? 'rest-past' : 'free-future';
@@ -357,12 +364,20 @@ export function buildCalendarMatrix(
       // Conv #15 vague 3 — une séance `skipped` (sautée) ne crée PAS de
       // fatigue à reposer le lendemain : on filtre explicitement. Même
       // chose pour les muscles "récents" du sheet d'avertissement.
+      // Conv #17b — une séance `planned` dont la date est révolue sans
+      // feedback ne compte pas non plus comme "active" pour le calcul
+      // restSuggested du lendemain (sinon le jour actuel s'affiche en
+      // "repos" alors que la séance d'hier n'a juste pas été faite).
       const prevDate = dateKey(addDays(date, -1));
       const prevSess = sessionByDate.get(prevDate);
       const prevHasFeedback = feedbackDates.has(prevDate);
+      const prevIsPast = prevDate < todayKey;
       const prevWasSkipped = prevSess?.status === 'skipped';
+      const prevIsPlannedOverdue =
+        prevSess?.status === 'planned' && prevIsPast && !prevHasFeedback;
       const prevIsActive =
         !prevWasSkipped &&
+        !prevIsPlannedOverdue &&
         prevSess !== undefined &&
         (prevSess.status === 'planned' ||
           prevSess.status === 'completed' ||
