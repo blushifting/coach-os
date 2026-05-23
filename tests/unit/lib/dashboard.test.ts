@@ -73,6 +73,7 @@ function makeState(overrides: Partial<UserState> = {}): UserState {
     recovery_weeks_remaining: 0,
     equipment_overrides: {},
     weekly_volume_debt: {},
+    fixed_routine: {},
     ...overrides,
   };
 }
@@ -170,10 +171,13 @@ describe('computeStreak', () => {
     expect(computeStreak([])).toBe(0);
   });
 
-  it('un feedback cette semaine → 1', () => {
+  // Conv #18 — la semaine en cours ne compte pas dans le streak (elle n'est
+  // pas encore terminée). Le compteur démarre quand la 1re semaine pleine
+  // est passée avec au moins une séance dedans.
+  it('un feedback cette semaine seulement → 0 (semaine pas terminée)', () => {
     const now = parseDateKey('2026-05-13'); // mer
     const fbs = [{ seance_date: '2026-05-12' }]; // mar, même sem
-    expect(computeStreak(fbs, now)).toBe(1);
+    expect(computeStreak(fbs, now)).toBe(0);
   });
 
   it('feedback semaine dernière mais pas cette sem → 1 (pas punitif)', () => {
@@ -188,34 +192,34 @@ describe('computeStreak', () => {
     expect(computeStreak(fbs, now)).toBe(0);
   });
 
-  it('3 semaines consécutives avec ≥1 feedback → 3', () => {
+  it('3 semaines consécutives avec ≥1 feedback → 2 (sem en cours exclue)', () => {
     const now = parseDateKey('2026-05-13');
     const fbs = [
-      { seance_date: '2026-05-12' }, // sem 0
+      { seance_date: '2026-05-12' }, // sem 0 (en cours, exclue)
       { seance_date: '2026-05-05' }, // sem -1
       { seance_date: '2026-04-29' }, // sem -2
     ];
-    expect(computeStreak(fbs, now)).toBe(3);
+    expect(computeStreak(fbs, now)).toBe(2);
   });
 
-  it('trou au milieu casse le streak (revient à la sous-série du présent)', () => {
+  it('trou en sem -1 casse le streak immédiatement → 0', () => {
     const now = parseDateKey('2026-05-13');
     const fbs = [
-      { seance_date: '2026-05-12' }, // sem 0
+      { seance_date: '2026-05-12' }, // sem 0 (exclue)
       // pas de sem -1
       { seance_date: '2026-04-28' }, // sem -2
     ];
-    expect(computeStreak(fbs, now)).toBe(1);
+    expect(computeStreak(fbs, now)).toBe(0);
   });
 
-  it('plusieurs feedbacks dans la même semaine comptent comme 1', () => {
+  it('plusieurs feedbacks même semaine + sem -1 → 1 (sem -1 seule comptée)', () => {
     const now = parseDateKey('2026-05-13');
     const fbs = [
-      { seance_date: '2026-05-11' },
-      { seance_date: '2026-05-13' },
-      { seance_date: '2026-05-05' },
+      { seance_date: '2026-05-11' }, // sem 0
+      { seance_date: '2026-05-13' }, // sem 0
+      { seance_date: '2026-05-05' }, // sem -1
     ];
-    expect(computeStreak(fbs, now)).toBe(2);
+    expect(computeStreak(fbs, now)).toBe(1);
   });
 });
 

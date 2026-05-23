@@ -18,6 +18,7 @@ import { useCoachOsStore } from '@/store';
 import { useDemoMode } from '@/store/selectors';
 import { ManualE1rmSheet } from '@/pages/seance/ManualE1rmSheet';
 import { PatternIcon } from '@/pages/seance/PatternIcon';
+import { EquipmentOverrideSheet } from './EquipmentOverrideSheet';
 
 interface CatalogueDetailSheetProps {
   readonly open: boolean;
@@ -45,8 +46,12 @@ export function CatalogueDetailSheet({
   // bodyweight + demoActive systématiquement (hooks ne peuvent pas être
   // conditionnels) ; le `exercise === null` early-return est traité ensuite.
   const [manualOpen, setManualOpen] = useState(false);
+  const [overrideOpen, setOverrideOpen] = useState(false);
   const bodyweightKg = useCoachOsStore(
     (s) => s.userState?.profile.bodyweight_kg ?? 75,
+  );
+  const hasOverride = useCoachOsStore(
+    (s) => exercise !== null && s.userState?.equipment_overrides[exercise.id] !== undefined,
   );
   const demoActive = useDemoMode();
 
@@ -133,6 +138,27 @@ export function CatalogueDetailSheet({
           exercise={exercise}
           bodyweightKg={bodyweightKg}
           onClose={() => setManualOpen(false)}
+        />
+
+        {/* Conv #18 — Personnalisation des bornes d'équipement (inc/min/max
+            par exo). Bouton secondaire car secondaire vis-à-vis du plafond. */}
+        <Button
+          variant="ghost"
+          size="sm"
+          fullWidth
+          disabled={demoActive}
+          data-testid={`btn-edit-equip-${exercise.id}`}
+          onClick={() => setOverrideOpen(true)}
+        >
+          {hasOverride
+            ? 'Bornes d\'équipement personnalisées ✓'
+            : 'Personnaliser les bornes d\'équipement'}
+        </Button>
+
+        <EquipmentOverrideSheet
+          open={overrideOpen}
+          exercise={exercise}
+          onClose={() => setOverrideOpen(false)}
         />
 
         {primaires.length > 0 && (

@@ -2,8 +2,10 @@
  * Onglet Profil (Conv #6c).
  *
  * Quatre sections empilées :
- *   1. **Identité** — sexe/âge/poids/niveau/objectif/sessions/équipement (sheet).
- *   2. **Objectifs musculaires** — priorités + ranking + objectifs (sheet).
+ *   1. **Identité** — sexe/âge/poids/niveau/objectif/équipement (sheet, cosmétique).
+ *   2. **Priorités & programme** — ouvre l'onboarding partiel (Step2→5)
+ *      qui refait priorités + équilibre + programme + aperçu, puis termine
+ *      prématurément le cycle en cours et démarre un nouveau cycle (Conv #18).
  *   3. **Aide** — tutos prise en main + glossaire 13 termes (sheet).
  *   4. **Données** — boutons Exporter / Importer / Réinitialiser.
  *
@@ -20,24 +22,20 @@ import { KotshLogo } from '@/components/KotshLogo';
 import {
   importDataFromJson,
   resetApp,
-  updateMuscleGoals,
   updateProfile,
 } from '@/hooks/useEngine';
 import { ImportValidationError } from '@/io/import';
 import { exportToJsonString } from '@/io/export';
-import { Level, Sex } from '@/engine/models';
+import { ALL_GUIDED_PROGRAMS } from '@/engine/guided_programs';
+import { Level, Sex, type Profile } from '@/engine/models';
 import { muscleLabel, objectiveLabel } from '@/lib/balance-reasons';
 import {
-  buildGoalsFromDraft,
-  explicitNonCoveredFromState,
   goalsDraftFromState,
   profileDraftFromState,
-  type GoalsDraft,
 } from '@/lib/profile-edit';
 import { useCoachOsStore } from '@/store';
 import { useDemoMode } from '@/store/selectors';
 import { AideSheet } from './profil/AideSheet';
-import { EditGoalsSheet } from './profil/EditGoalsSheet';
 import { EditProfileSheet } from './profil/EditProfileSheet';
 
 const LEVEL_LABEL: Record<Level, string> = {
@@ -63,7 +61,6 @@ export default function ProfilPage() {
   const navigate = useNavigate();
 
   const [profileOpen, setProfileOpen] = useState(false);
-  const [goalsOpen, setGoalsOpen] = useState(false);
   const [aideOpen, setAideOpen] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
@@ -82,16 +79,23 @@ export default function ProfilPage() {
 
   const profileDraft = profileDraftFromState(userState);
   const goalsDraft = goalsDraftFromState(userState);
-  const explicitNonCovered = explicitNonCoveredFromState(userState);
 
-  async function onSaveProfile(p: Parameters<typeof updateProfile>[0]) {
+  // Conv #18 — édition Identité = save direct, jamais de reset cycle. Les
+  // champs vraiment impactants (sessions/sem, programme guidé, priorités
+  // musculaires) ne vivent plus dans cette sheet : ils se modifient via
+  // "Modifier priorités & programme" qui lance l'onboarding partiel.
+  async function onSaveProfile(p: Profile) {
     await updateProfile(p);
   }
 
-  async function onSaveGoals(draft: GoalsDraft) {
-    const goals = buildGoalsFromDraft(draft, explicitNonCovered);
-    await updateMuscleGoals(goals);
+  function openPrioritesProgramme() {
+    navigate('/onboarding?restart=1');
   }
+
+  const activeProgramme =
+    userState.active_guided_program_id !== null
+      ? ALL_GUIDED_PROGRAMS.find((p) => p.id === userState.active_guided_program_id) ?? null
+      : null;
 
   async function handleExport() {
     setBusy('export');
@@ -218,17 +222,33 @@ export default function ProfilPage() {
       <Card>
         <div className="mb-3 flex items-center justify-between">
           <span className="text-sm font-semibold text-white">
-            Objectifs musculaires
+            Priorités &amp; programme
           </span>
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setGoalsOpen(true)}
+            onClick={openPrioritesProgramme}
             disabled={demoActive}
-            data-testid="profil-edit-goals"
+            data-testid="profil-edit-priorities-programme"
           >
             Modifier
           </Button>
+        </div>
+        {/* Conv #18 — Card combinée : priorités musculaires + programme actif
+            + séances/sem. "Modifier" relance l'onboarding partiel (Step2→5)
+            qui à la fin termine le cycle en cours et démarre un nouveau cycle
+            avec les nouveaux paramètres. */}
+        <div
+          className="mb-3 flex items-baseline justify-between rounded-lg bg-anthracite-900 px-3 py-2 text-sm"
+          data-testid="profil-programme-summary"
+        >
+          <span className="text-anthracite-300">Programme</span>
+          <span className="text-right font-medium text-white">
+            {activeProgramme !== null ? activeProgramme.name : 'Custom'} ·{' '}
+            <span className="tabular-nums text-anthracite-300">
+              {userState.profile.sessions_per_week} séances/sem
+            </span>
+          </span>
         </div>
         {goalsDraft.priorities.length === 0 ? (
           <p className="text-sm text-anthracite-300">
@@ -354,12 +374,6 @@ export default function ProfilPage() {
         onClose={() => setProfileOpen(false)}
         onSave={onSaveProfile}
       />
-      <EditGoalsSheet
-        open={goalsOpen}
-        initial={goalsDraft}
-        onClose={() => setGoalsOpen(false)}
-        onSave={onSaveGoals}
-      />
       <AideSheet open={aideOpen} onClose={() => setAideOpen(false)} />
 
       <Dialog
@@ -379,11 +393,12 @@ export default function ProfilPage() {
         onCancel={() => setConfirmReset(false)}
       />
 
+
       <footer
         className="mt-4 flex items-center justify-center gap-3 pt-6 text-anthracite-400"
         data-testid="profil-footer"
       >
-        <KotshLogo className="text-2xl" ringClassName="text-sang-600" />
+        <KotshLogo className="text-2xl" />
         <span className="text-sm tabular-nums">v{__APP_VERSION__}</span>
       </footer>
     </section>

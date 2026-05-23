@@ -21,6 +21,7 @@ import {
   makeProfile,
   type MuscleGoal,
   type Profile,
+  type UserState,
 } from '@/engine/models';
 import { applyBalanceRules } from '@/engine/balance';
 
@@ -84,6 +85,40 @@ export function makeInitialDraft(): OnboardingDraft {
     priorities: [],
     acceptedSuggestions: new Set<string>(),
     programmeId: null,
+  };
+}
+
+/**
+ * Conv #18 — initialise un draft depuis `UserState` pour le mode "partial
+ * restart" : l'utilisateur revient sur l'onboarding (Step2→5) pour modifier
+ * ses priorités / programme. On préserve les choix existants comme point
+ * de départ.
+ */
+export function draftFromUserState(state: UserState): OnboardingDraft {
+  const priorities: RankedPriority[] = [];
+  const accepted = new Set<string>();
+  for (const g of Object.values(state.muscle_goals)) {
+    if (g.status === MuscleStatus.PRIORITAIRE) {
+      priorities.push({ muscle: g.muscle, objective: g.objective });
+    } else if (g.status === MuscleStatus.SUGGERE) {
+      accepted.add(g.muscle);
+    }
+  }
+  priorities.sort((a, b) => {
+    const ra = state.muscle_goals[a.muscle]?.priority_rank ?? 99;
+    const rb = state.muscle_goals[b.muscle]?.priority_rank ?? 99;
+    return ra - rb;
+  });
+  return {
+    sex: state.profile.sex,
+    age: state.profile.age,
+    bodyweightKg: state.profile.bodyweight_kg,
+    level: state.profile.level,
+    sessionsPerWeek: state.profile.sessions_per_week,
+    equipment: new Set(state.profile.available_equip),
+    priorities,
+    acceptedSuggestions: accepted,
+    programmeId: state.active_guided_program_id,
   };
 }
 

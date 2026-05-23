@@ -52,8 +52,11 @@ export function Widgets({
 
 function StreakWidget({ streak }: { readonly streak: number }) {
   const active = streak > 0;
+  // Conv #18 — "Série" renommé "Régularité" pour éviter la confusion avec
+  // une série d'exercice (set). Le sublabel "semaine(s) d'affilée" rend
+  // explicite l'unité du compteur.
   return (
-    <WidgetShell testId="widget-streak" label="Série">
+    <WidgetShell testId="widget-streak" label="Régularité">
       <div className="flex flex-1 items-center gap-3">
         <Flame active={active} />
         <div className="flex flex-col leading-none">
@@ -63,9 +66,9 @@ function StreakWidget({ streak }: { readonly streak: number }) {
           <span className="mt-1 text-[11px] text-anthracite-300">
             {active
               ? streak === 1
-                ? 'semaine'
-                : 'semaines'
-              : 'cette semaine'}
+                ? "semaine d'affilée"
+                : "semaines d'affilée"
+              : 'à démarrer'}
           </span>
         </div>
       </div>

@@ -14,6 +14,7 @@
 import { ALL_GUIDED_PROGRAMS } from '@/engine/guided_programs';
 import { Level, type GuidedProgram, type MuscleObjective } from '@/engine/models';
 import { Card } from '@/components/Card';
+import { Stepper } from '@/components/Stepper';
 import { cn } from '@/lib/cn';
 import { objectiveLabel } from '@/lib/balance-reasons';
 import type { OnboardingDraft } from '@/lib/onboarding-state';
@@ -52,6 +53,25 @@ export function Step4Program({ draft, onChange }: Step4Props) {
         Pars sur un programme guidé éprouvé ou laisse l'app générer un programme
         custom adapté à tes muscles cibles.
       </p>
+
+      {/* Conv #18 — `sessions_per_week` déplacé ici depuis Step1 (seul
+          paramètre profil qui impacte vraiment la structure du programme).
+          Les programmes guidés ont chacun leur fréquence imposée et
+          poseront un warning si l'user a une autre valeur. */}
+      <Card>
+        <div className="mb-3 text-sm font-medium text-white">Séances par semaine</div>
+        <Stepper
+          value={draft.sessionsPerWeek}
+          onChange={(v) => onChange({ sessionsPerWeek: v })}
+          min={2}
+          max={6}
+          suffix=" / sem"
+        />
+        <p className="mt-2 text-[11px] text-anthracite-300">
+          Sert au mode custom. Les programmes guidés imposent leur propre
+          fréquence (un avertissement s'affiche si ça diffère).
+        </p>
+      </Card>
 
       <ProgramRow
         id={null}

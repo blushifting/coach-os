@@ -6,7 +6,7 @@ import { HelpButton } from '@/components/HelpButton';
 import { useEngine } from '@/hooks/useEngine';
 import { useCoachOsStore } from '@/store';
 import { selectCycles, useDemoMode } from '@/store/selectors';
-import type { CycleReview } from '@/engine/models';
+import { SuggestedAction, type CycleReview } from '@/engine/models';
 import { exerciseLabel, muscleLabel } from '@/lib/progress';
 import { pickReviewToDisplay, suggestedActionLabel } from './selectors';
 
@@ -130,7 +130,10 @@ function Metric({
       className="flex animate-reveal-up flex-col items-center gap-0.5 text-center"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <span className="flex items-center gap-1 text-xs uppercase tracking-wide text-anthracite-300">
+      {/* Conv #18 — min-h-5 réserve la hauteur du HelpButton (h-5) sur tous
+          les labels, pour aligner les baselines de "Records" (sans HelpButton)
+          avec "Adhérence" et "Volume" (avec HelpButton). */}
+      <span className="flex min-h-5 items-center gap-1 text-xs uppercase tracking-wide text-anthracite-300">
         {label}
         {helpTopic && <HelpButton topic={helpTopic} label={`Aide : ${label}`} />}
       </span>
@@ -257,16 +260,29 @@ function ReviewActions({ review }: { review: CycleReview }) {
   const navigate = useNavigate();
   const demoActive = useDemoMode();
   const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const suggested = suggestedActionLabel(review.suggested_action);
 
   async function continueAsIs() {
     setPending(true);
+    setError(null);
     try {
-      await engine.endOfCycle({});
+      await engine.endOfCycle({ action: SuggestedAction.CONTINUER_PAREIL });
       navigate('/programme');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setPending(false);
     }
+  }
+
+  function startPartialRestart() {
+    // Conv #18 — "Ajuster les objectifs" et "Changer de programme" passent
+    // tous deux par le même onboarding partiel (Step2→5) que celui lancé
+    // depuis Profil. À la finalisation, l'onboarding appelle endOfCycle
+    // avec l'action déduite (AJUSTER_OBJECTIFS si seul les goals changent,
+    // CHANGER_PROGRAMME si le programmeId change).
+    navigate('/onboarding?restart=1');
   }
 
   return (
@@ -274,9 +290,9 @@ function ReviewActions({ review }: { review: CycleReview }) {
       <h2 className="text-sm font-semibold text-white">Et maintenant ?</h2>
       <p className="text-xs text-anthracite-300">Suggestion du moteur : {suggested}.</p>
       <div className="mt-2 flex flex-col gap-2">
-        {/* Conv #15 vague 3 — en mode démo, "Continuer" est verrouillé :
-            sinon l'utilisateur peut accidentellement valider le bilan
-            d'Alex (= passer au cycle suivant dans le snapshot démo). */}
+        {/* Conv #15 vague 3 — en mode démo, les 3 boutons sont verrouillés :
+            sinon l'utilisateur peut accidentellement valider le bilan d'Alex
+            (= passer au cycle suivant dans le snapshot démo). */}
         <Button
           variant="primary"
           fullWidth
@@ -286,15 +302,34 @@ function ReviewActions({ review }: { review: CycleReview }) {
         >
           {pending ? 'Création du cycle suivant…' : 'Continuer pareil'}
         </Button>
-        <Button variant="secondary" fullWidth disabled data-testid="action-ajuster">
+        <Button
+          variant="secondary"
+          fullWidth
+          disabled={pending || demoActive}
+          onClick={startPartialRestart}
+          data-testid="action-ajuster"
+        >
           Ajuster les objectifs
-          <span className="ml-2 text-xs opacity-70">bientôt</span>
         </Button>
-        <Button variant="secondary" fullWidth disabled data-testid="action-changer">
+        <Button
+          variant="secondary"
+          fullWidth
+          disabled={pending || demoActive}
+          onClick={startPartialRestart}
+          data-testid="action-changer"
+        >
           Changer de programme
-          <span className="ml-2 text-xs opacity-70">bientôt</span>
         </Button>
       </div>
+      {error !== null && (
+        <div
+          role="alert"
+          data-testid="bilan-action-error"
+          className="mt-2 rounded-lg border border-sang-700 bg-sang-900/30 px-3 py-2 text-xs text-sang-300"
+        >
+          {error}
+        </div>
+      )}
     </Card>
   );
 }

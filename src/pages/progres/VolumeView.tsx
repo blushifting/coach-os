@@ -121,8 +121,14 @@ export function VolumeView({ coverage, volume, muscleGoals }: VolumeViewProps) {
 
   return (
     <section className="flex flex-col gap-3" data-testid="volume-view">
-      <header className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-white">Volume par muscle</h2>
+      <header className="flex items-center justify-between gap-2">
+        {/* Conv #18 — titre explicité : "Volume par muscle" était ambigu
+            (par muscle vs par jour vs par exo ?). On précise "séries
+            travaillées par muscle cette semaine" qui dit explicitement
+            l'unité (séries pondérées) et la fenêtre (semaine en cours). */}
+        <h2 className="text-sm font-semibold text-white">
+          Séries par muscle cette semaine
+        </h2>
         <HelpButton topic="volumeHebdo" />
       </header>
 

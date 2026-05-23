@@ -124,6 +124,7 @@ function makeState(overrides: Partial<UserState> = {}): UserState {
     recovery_weeks_remaining: 0,
     equipment_overrides: {},
     weekly_volume_debt: {},
+    fixed_routine: {},
     ...overrides,
   };
 }

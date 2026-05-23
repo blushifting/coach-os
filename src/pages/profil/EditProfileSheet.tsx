@@ -166,18 +166,11 @@ export function EditProfileSheet({
             </div>
           </Card>
 
-          <Card>
-            <div className="mb-3 text-sm font-medium text-white">
-              Séances par semaine
-            </div>
-            <Stepper
-              value={draft.sessionsPerWeek}
-              onChange={(v) => patch({ sessionsPerWeek: v })}
-              min={2}
-              max={6}
-              suffix=" / sem"
-            />
-          </Card>
+          {/* Conv #18 — Séances/sem retiré : déplacé dans le flux "Modifier
+              priorités & programme" (Step4), parce qu'il impacte directement
+              la structure du plan. La sheet Identité ne contient plus que des
+              champs cosmétiques (volume_min/max recalculés mais cycle plan
+              intact). */}
 
           <Card>
             <div className="mb-3 text-sm font-medium text-white">

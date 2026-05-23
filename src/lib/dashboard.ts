@@ -105,16 +105,16 @@ export function computeStreak(
   for (const f of feedbacks) {
     weeks.add(weekKeyFor(parseDateKey(f.seance_date), cycleStart));
   }
+  // Conv #18 — la semaine en cours ne compte pas dans le streak (elle n'est
+  // pas encore terminée). Le compteur démarre quand la 1re semaine pleine
+  // est passée avec au moins une séance dedans. Évite d'afficher "1 semaine"
+  // dès la 1re séance et que ça redescende à 0 si la semaine suivante n'a
+  // rien.
   const thisWeek = weekKeyFor(now, cycleStart);
-  let cursor: string;
-  if (weeks.has(thisWeek)) {
-    cursor = thisWeek;
-  } else {
-    cursor = weekKeyFor(addDays(parseDateKey(thisWeek), -7), cycleStart);
-    if (!weeks.has(cursor)) return 0;
-  }
+  const lastWeek = weekKeyFor(addDays(parseDateKey(thisWeek), -7), cycleStart);
+  if (!weeks.has(lastWeek)) return 0;
   let count = 0;
-  let probe = cursor;
+  let probe = lastWeek;
   while (weeks.has(probe)) {
     count++;
     probe = weekKeyFor(addDays(parseDateKey(probe), -7), cycleStart);

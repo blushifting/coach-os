@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Dialog } from '@/components/Dialog';
-import { HelpButton } from '@/components/HelpButton';
 import { ProgressRing } from '@/components/ProgressRing';
 import { cn } from '@/lib/cn';
 import { triggerHaptic } from '@/lib/haptics';
@@ -189,19 +188,17 @@ export function SessionRunner({
             {plan.label}
           </span>
           <span className="flex items-center gap-1.5 text-xs text-anthracite-300">
-            Cycle {plan.cycle_index} · S{plan.week_in_cycle} · Effort cible{' '}
-            <span className="tabular-nums text-anthracite-100">
-              {(Math.round(plan.rpe_target * 2) / 2).toFixed(1)}/10
-            </span>
-            <HelpButton topic="rpe" label="Aide : effort cible" />
+            Cycle {plan.cycle_index} · S{plan.week_in_cycle}
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
+          {/* Conv #18 — `whitespace-nowrap` + shrink-0 sur le wrapper pour que
+              "Séries 12/12" reste sur une ligne quand X a 2 chiffres. */}
           <div className="flex flex-col items-end gap-0.5">
             <span className="text-[10px] uppercase tracking-[0.18em] text-anthracite-300">
               Séries
             </span>
-            <span className="font-display text-3xl leading-none tabular-nums text-white">
+            <span className="whitespace-nowrap font-display text-3xl leading-none tabular-nums text-white">
               <span className="text-sang-400">{done}</span>
               <span className="text-anthracite-400"> / {total}</span>
             </span>

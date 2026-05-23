@@ -250,7 +250,7 @@ export async function txEndOfCycle(args: EndOfCycleArgs): Promise<void> {
   const { state, review, closedCycleIndex, nextProgrammeId } = args;
   const db = getDb();
   const today = nowIso().slice(0, 10);
-  await db.transaction('rw', [db.userState, db.cycles], async () => {
+  await db.transaction('rw', [db.userState, db.cycles, db.sessions], async () => {
     await putUserStateInTx(state);
     const closed = await db.cycles.get(closedCycleIndex);
     await db.cycles.put({
@@ -272,5 +272,16 @@ export async function txEndOfCycle(args: EndOfCycleArgs): Promise<void> {
         });
       }
     }
+    // Conv #18 — nettoie les séances `planned` du cycle qui se ferme : leur
+    // plan est figé sur l'ancien WeeklyTemplate et ne correspond plus à
+    // rien après régénération. On les supprime (vs `cancelled` : la séance
+    // n'a jamais été jouée, pas de bilan à garder, et le calendrier reste
+    // propre). Les séances `completed` / `skipped` du cycle clos sont
+    // préservées (historique).
+    await db.sessions
+      .where('cycle_index')
+      .equals(closedCycleIndex)
+      .and((s) => s.status === 'planned')
+      .delete();
   });
 }

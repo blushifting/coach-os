@@ -165,21 +165,34 @@ test('profil : sheet Aide affiche les 14 entrées du glossaire', async ({
   }
 });
 
-test('profil : édition objectifs (retrait + réorganisation) persistée', async ({
+test('profil : édition priorités via onboarding partiel persistée', async ({
   page,
 }) => {
   await runOnboardingMinimal(page);
   await goToProfil(page);
 
-  await page.getByTestId('profil-edit-goals').click();
-  await expect(page.getByTestId('profil-goals-list')).toBeVisible();
+  // Conv #18 — "Modifier" sur la Card Priorités & programme lance
+  // l'onboarding partiel (Step2→5) qui à la fin termine le cycle en cours
+  // et démarre un nouveau cycle avec les nouvelles priorités.
+  await page.getByTestId('profil-edit-priorities-programme').click();
+  await expect(page).toHaveURL(/onboarding\?restart=1/);
+  await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-restart', '1');
 
-  // Retirer "fessiers" du préset par défaut
-  await page.getByTestId('profil-goal-remove-fessiers').click();
-  // Changer l'objectif de "pectoraux" en Force
-  await page.getByTestId('profil-goal-obj-pectoraux-force').click();
-  await page.getByTestId('profil-goals-save').click();
+  // On entre directement sur Step2 (Muscles).
+  await expect(page.getByTestId('priorities-list')).toBeVisible();
+  await page.getByTestId('remove-fessiers').click();
+  await page.getByTestId('obj-pectoraux-force').click();
 
+  // Step 2 → 3 (Équilibre) → 4 (Programme) → 5 (Aperçu)
+  await page.getByTestId('btn-next').click();
+  await page.getByTestId('btn-next').click();
+  await page.getByTestId('btn-next').click();
+  await page.getByTestId('btn-finish').click();
+
+  // On atterrit sur /programme avec le nouveau cycle. Retour à Profil pour
+  // vérifier que les priorités sont mises à jour.
+  await expect(page).toHaveURL(/\/programme/);
+  await goToProfil(page);
   await expect(
     page.getByTestId('profil-goal-summary-fessiers'),
   ).not.toBeVisible();

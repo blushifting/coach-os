@@ -8,11 +8,13 @@ import { getDb } from '@/db';
 import type { SessionRow } from '@/db/schema';
 import { dateKey, type CalendarDay } from '@/lib/dashboard';
 import { muscleLabel } from '@/lib/progress';
+import { cn } from '@/lib/cn';
 import { useCoachOsStore } from '@/store';
 import {
   detectPeriodicity,
   dayOfWeekLabel,
   suggestionForDay,
+  type DayOfWeek,
   type PeriodicitySuggestion,
 } from '@/lib/periodicity';
 import type { Catalog } from '@/engine/catalog';
@@ -50,6 +52,7 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
   const navigate = useNavigate();
   const catalog = useCoachOsStore((s) => s.catalog);
   const feedbacks = useCoachOsStore((s) => s.history.feedbacks);
+  const sessions = useCoachOsStore((s) => s.history.sessions);
   const userState = useCoachOsStore((s) => s.userState);
   const [pending, setPending] = useState<number | null>(null);
   const [cancelling, setCancelling] = useState(false);
@@ -72,31 +75,47 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
 
   // Conv #15 vague 2 — suggestion de variation de séance : si Alex a fait
   // "Full A" hier, on suggère "Full B" puis "Full C" plutôt qu'un nouveau
-  // "Full A". Logic : prend le label de la dernière séance complétée dans
-  // les 7 derniers jours, trouve son index dans `current_cycle_plan.days`,
-  // suggère le day suivant (cyclique).
+  // "Full A". Logic : prend le label de la dernière séance dans les 7j,
+  // trouve son index dans `current_cycle_plan.days`, suggère le day suivant
+  // (cyclique).
+  //
+  // Conv #18 — on inclut aussi les sessions `planned` (séance prévue mais
+  // pas encore faite) : si tu planifies Full B mardi puis tu vas regarder
+  // jeudi, on doit te suggérer Full C, pas Full B encore une fois.
   const variationSuggestion = useMemo(() => {
     const cyclePlan = userState?.current_cycle_plan ?? null;
     if (cyclePlan === null || day === null) return null;
     const dayDate = new Date(day.date + 'T00:00:00');
-    // Cherche la dernière séance faite avant `day.date`, dans les 7j.
     let latest: { date: string; label: string } | null = null;
+    function consider(date: string, label: string) {
+      if (date >= day!.date) return;
+      const diffDays =
+        (dayDate.getTime() - new Date(date + 'T00:00:00').getTime()) /
+        (1000 * 60 * 60 * 24);
+      if (diffDays > 7) return;
+      if (latest === null || date > latest.date) {
+        latest = { date, label };
+      }
+    }
     for (const fb of feedbacks) {
-      const fbDate = fb.feedback.seance_date;
-      if (fbDate >= day.date) continue;
-      const diffMs = dayDate.getTime() - new Date(fbDate + 'T00:00:00').getTime();
-      const diffDays = diffMs / (1000 * 60 * 60 * 24);
-      if (diffDays > 7) continue;
-      if (latest === null || fbDate > latest.date) {
-        latest = { date: fbDate, label: fb.feedback.label };
+      consider(fb.feedback.seance_date, fb.feedback.label);
+    }
+    for (const s of sessions) {
+      if (s.status === 'planned') {
+        consider(s.seance_date, s.plan.label);
       }
     }
     if (latest === null) return null;
-    const idx = cyclePlan.days.findIndex((d) => d.label === latest!.label);
+    const idx = cyclePlan.days.findIndex(
+      (d) => d.label === (latest as { label: string }).label,
+    );
     if (idx < 0) return null;
     const nextIdx = (idx + 1) % cyclePlan.days.length;
-    return { suggestedDayIndex: nextIdx, previousLabel: latest.label };
-  }, [day, feedbacks, userState]);
+    return {
+      suggestedDayIndex: nextIdx,
+      previousLabel: (latest as { label: string }).label,
+    };
+  }, [day, feedbacks, sessions, userState]);
 
   // Charge la session planifiée correspondant à ce jour (si statut planned).
   useEffect(() => {
@@ -193,6 +212,7 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
         {day.status === 'planned' && plannedSession !== null && (
           <PlannedSessionBlock
             session={plannedSession}
+            catalog={catalog}
             isToday={isToday}
             isFuture={isFuture}
             isPast={isPast}
@@ -211,6 +231,7 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
             {periodicitySuggestion !== null && (
               <PeriodicityNudge suggestion={periodicitySuggestion} />
             )}
+            <FixedRoutineBlock dayOfWeek={day.dayOfWeek as DayOfWeek} cyclePlan={cyclePlan} />
             <FreeFutureBlock
               cyclePlan={cyclePlan}
               catalog={catalog}
@@ -218,6 +239,7 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
               isDeload={day.isDeload}
               pending={pending}
               suggestion={variationSuggestion}
+              dayOfWeek={day.dayOfWeek as DayOfWeek}
               onPick={(dayIndex) => planSession(dayIndex, isToday)}
             />
           </>
@@ -249,6 +271,7 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
 
 function PlannedSessionBlock({
   session,
+  catalog,
   isToday,
   isFuture,
   isPast,
@@ -258,6 +281,7 @@ function PlannedSessionBlock({
   onCancel,
 }: {
   readonly session: SessionRow;
+  readonly catalog: Catalog | null;
   readonly isToday: boolean;
   readonly isFuture: boolean;
   readonly isPast: boolean;
@@ -284,14 +308,25 @@ function PlannedSessionBlock({
           className="flex flex-col gap-1 text-sm text-anthracite-100"
           data-testid="planned-session-items"
         >
-          {plan.items.map((item, i) => (
-            <li key={`${item.exercise_id}-${i}`} className="flex justify-between">
-              <span>{item.exercise_id}</span>
-              <span className="tabular-nums text-anthracite-300">
-                {item.sets.length}×{item.sets[0]?.reps ?? 0}
-              </span>
-            </li>
-          ))}
+          {plan.items.map((item, i) => {
+            // Conv #18 — nom FR depuis le catalog (fallback exercise_id si
+            // absent). Cohérent avec l'affichage "séance faite" en dessous.
+            const name =
+              catalog !== null && catalog.has(item.exercise_id)
+                ? catalog.get(item.exercise_id).nom_fr
+                : item.exercise_id;
+            return (
+              <li
+                key={`${item.exercise_id}-${i}`}
+                className="flex items-baseline justify-between gap-3"
+              >
+                <span className="min-w-0 truncate">{name}</span>
+                <span className="shrink-0 tabular-nums text-anthracite-300">
+                  {item.sets.length}×{item.sets[0]?.reps ?? 0}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       </Card>
 
@@ -335,6 +370,7 @@ function FreeFutureBlock({
   isDeload,
   pending,
   suggestion,
+  dayOfWeek,
   onPick,
 }: {
   readonly cyclePlan: WeeklyTemplate | null;
@@ -343,8 +379,28 @@ function FreeFutureBlock({
   readonly isDeload: boolean;
   readonly pending: number | null;
   readonly suggestion: { suggestedDayIndex: number; previousLabel: string } | null;
+  readonly dayOfWeek: DayOfWeek;
   readonly onPick: (dayIndex: number) => void;
 }) {
+  // Conv #18 — bouton "📌 Fixer ce jour" sur chaque slot pour persister la
+  // routine. La routine actuelle pour ce dayOfWeek est lue depuis le store
+  // (pour styler le slot fixé).
+  const engine = useEngine();
+  const fixedRoutine = useCoachOsStore((s) => s.userState?.fixed_routine ?? {});
+  const fixedDayIndex = fixedRoutine[String(dayOfWeek)];
+  const [pinning, setPinning] = useState<number | null>(null);
+
+  async function pinSlot(dayIndex: number) {
+    setPinning(dayIndex);
+    try {
+      // Toggle : si déjà fixé sur ce slot → retire ; sinon pose.
+      const target = fixedDayIndex === dayIndex ? null : dayIndex;
+      await engine.setFixedRoutine(dayOfWeek, target);
+    } finally {
+      setPinning(null);
+    }
+  }
+
   if (cyclePlan === null || cyclePlan.days.length === 0) {
     return (
       <p className="text-sm text-anthracite-300" data-testid="day-status-text">
@@ -376,35 +432,110 @@ function FreeFutureBlock({
       <ul className="flex flex-col gap-2">
         {cyclePlan.days.map((d, i) => {
           const isSuggested = suggestion?.suggestedDayIndex === i;
+          const isPinned = fixedDayIndex === i;
           const nExos = d.exercises.length;
           const nSets = d.exercises.reduce((acc, e) => acc + e.base_sets, 0);
           const durationMin =
             catalog !== null ? Math.round(estimateDayDurationMinutes(d, catalog)) : 0;
           return (
-            <li key={i}>
+            <li key={i} className="flex items-stretch gap-2">
               <Button
-                variant={isSuggested ? 'primary' : 'secondary'}
+                variant={isPinned ? 'primary' : isSuggested ? 'primary' : 'secondary'}
                 size="md"
                 fullWidth
-                disabled={pending !== null}
+                disabled={pending !== null || pinning !== null}
                 onClick={() => onPick(i)}
                 data-testid={`plan-slot-${i}`}
                 className="!h-auto !min-h-[2.75rem] flex-col gap-0.5 py-2"
               >
                 <span className="font-medium">
                   {pending === i ? '…' : d.label}
-                  {isSuggested ? ' ★' : ''}
+                  {isPinned ? ' 📌' : isSuggested ? ' ★' : ''}
                 </span>
                 <span className="text-[11px] font-normal opacity-75 tabular-nums">
                   {nExos} exos · {nSets} séries
                   {durationMin > 0 ? ` · ~${durationMin} min` : ''}
                 </span>
               </Button>
+              <button
+                type="button"
+                aria-label={
+                  isPinned
+                    ? `Retirer la routine fixe du ${dayOfWeekLabel(dayOfWeek)}`
+                    : `Fixer ${d.label} le ${dayOfWeekLabel(dayOfWeek)}`
+                }
+                disabled={pending !== null || pinning !== null}
+                onClick={() => pinSlot(i)}
+                data-testid={`pin-slot-${i}`}
+                className={cn(
+                  'flex w-10 shrink-0 items-center justify-center rounded-xl border text-base transition',
+                  isPinned
+                    ? 'border-sang-600 bg-sang-900/40 text-sang-300 hover:text-white'
+                    : 'border-anthracite-700 bg-anthracite-900 text-anthracite-400 hover:border-anthracite-500 hover:text-white',
+                  (pending !== null || pinning !== null) && 'opacity-60',
+                )}
+              >
+                {pinning === i ? '…' : '📌'}
+              </button>
             </li>
           );
         })}
       </ul>
     </div>
+  );
+}
+
+/**
+ * Bandeau "Routine fixée pour ce jour-of-week" — Conv #18.
+ *
+ * Affiché en haut du free-future si une routine est posée. Le slot
+ * correspondant porte aussi le badge 📌 (cf. FreeFutureBlock). Si l'index
+ * pointe sur un day inexistant (cycle plan régénéré), on n'affiche rien.
+ */
+function FixedRoutineBlock({
+  dayOfWeek,
+  cyclePlan,
+}: {
+  readonly dayOfWeek: DayOfWeek;
+  readonly cyclePlan: WeeklyTemplate | null;
+}) {
+  const engine = useEngine();
+  const fixedRoutine = useCoachOsStore((s) => s.userState?.fixed_routine ?? {});
+  const idx = fixedRoutine[String(dayOfWeek)];
+  const [busy, setBusy] = useState(false);
+  if (cyclePlan === null || idx === undefined) return null;
+  const day = cyclePlan.days[idx];
+  if (day === undefined) return null;
+
+  async function unpin() {
+    setBusy(true);
+    try {
+      await engine.setFixedRoutine(dayOfWeek, null);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card
+      className="flex items-center justify-between gap-2 border-sang-700/40 bg-sang-900/15"
+      data-testid="fixed-routine-banner"
+    >
+      <p className="text-sm text-anthracite-100">
+        <span aria-hidden className="mr-1">📌</span>
+        Routine fixée le {dayOfWeekLabel(dayOfWeek)} :{' '}
+        <strong className="text-white">{day.label}</strong>
+      </p>
+      <button
+        type="button"
+        onClick={unpin}
+        disabled={busy}
+        data-testid="unpin-routine"
+        className="text-xs text-anthracite-300 underline hover:text-white disabled:opacity-50"
+      >
+        {busy ? '…' : 'Retirer'}
+      </button>
+    </Card>
   );
 }
 
@@ -571,9 +702,13 @@ function RestWarning({ recentMuscles }: { readonly recentMuscles: readonly strin
 function formatHumanDate(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
   const date = new Date(y!, (m ?? 1) - 1, d ?? 1);
-  return date.toLocaleDateString('fr-FR', {
+  const formatted = date.toLocaleDateString('fr-FR', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
   });
+  // Conv #18 — majuscule sur le jour de la semaine ("lundi 23 mai" →
+  // "Lundi 23 mai") en titre de sheet. fr-FR renvoie en minuscules par
+  // défaut, ce qui paraît bâclé en titre.
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }

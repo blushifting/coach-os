@@ -10,16 +10,19 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { ChevronLeft, ChevronRight } from '@/components/icons';
 import { StepIndicator } from '@/components/StepIndicator';
 import { ALL_GUIDED_PROGRAMS } from '@/engine/guided_programs';
+import { SuggestedAction } from '@/engine/models';
 import {
   applyVariantReplacements,
   bootstrap,
+  endOfCycle,
   generateInitialCyclePlan,
   startUser,
+  updateProfile,
 } from '@/hooks/useEngine';
 import { enterDemoMode } from '@/lib/demo';
 import { resetDemoDismissals } from '@/components/DemoMode';
@@ -28,6 +31,7 @@ import {
   buildProfile,
   computeBalanceSuggestions,
   deriveGlobalObjective,
+  draftFromUserState,
   isEmptySelection,
   makeInitialDraft,
   type OnboardingDraft,
@@ -43,16 +47,34 @@ import { Step3Balance } from './Step3Balance';
 import { Step4Program } from './Step4Program';
 import { Step5Preview } from './Step5Preview';
 
-const STEP_LABELS = ['Profil', 'Muscles', 'Équilibre', 'Programme', 'Aperçu'] as const;
-const TOTAL_STEPS = STEP_LABELS.length;
+const STEP_LABELS_FULL = ['Profil', 'Muscles', 'Équilibre', 'Programme', 'Aperçu'] as const;
+/**
+ * Conv #18 — en mode `restart`, on saute Step1 (Profil = cosmétique). Les
+ * 4 étapes restantes sont renumérotées 1..4 pour l'affichage utilisateur.
+ */
+const STEP_LABELS_RESTART = ['Muscles', 'Équilibre', 'Programme', 'Aperçu'] as const;
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
   const catalog = useCoachOsStore((s) => s.catalog);
-  const [draft, setDraft] = useState<OnboardingDraft>(makeInitialDraft);
-  const [step, setStep] = useState<number>(1);
+  const userState = useCoachOsStore((s) => s.userState);
+  const [search] = useSearchParams();
+  // Conv #18 — mode "partial restart" : l'user vient de Profil pour modifier
+  // priorités / programme. On skip Step1, on initialise le draft depuis
+  // userState, et au finalize on appelle endOfCycle au lieu de startUser.
+  const isRestart = search.get('restart') === '1' && userState !== null;
+  const initialStep = isRestart ? 2 : 1;
+  const stepLabels = isRestart ? STEP_LABELS_RESTART : STEP_LABELS_FULL;
+  const totalSteps = stepLabels.length;
+  const stepOffset = isRestart ? 1 : 0; // step actuel - offset = numéro UI
+
+  const [draft, setDraft] = useState<OnboardingDraft>(() =>
+    isRestart && userState !== null ? draftFromUserState(userState) : makeInitialDraft(),
+  );
+  const [step, setStep] = useState<number>(initialStep);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmCancel, setConfirmCancel] = useState(false);
   // Conv #11b — variantes choisies dans le Step5 (en mémoire jusqu'au finalize).
   const [variantReplacements, setVariantReplacements] = useState<
     ReadonlyArray<VariantReplacement>
@@ -106,7 +128,7 @@ export default function OnboardingPage() {
 
   function goPrev() {
     setError(null);
-    if (step > 1) setStep((s) => s - 1);
+    if (step > initialStep) setStep((s) => s - 1);
   }
 
   function goNext() {
@@ -117,18 +139,36 @@ export default function OnboardingPage() {
     }
     if (step === 2) {
       // Au passage 2 → 3 : pré-cocher toutes les suggestions R1-R4 par défaut.
-      const suggestions = computeBalanceSuggestions(draft.priorities);
-      setDraft((d) => ({
-        ...d,
-        acceptedSuggestions: new Set(suggestions.map((s) => s.muscle)),
-      }));
+      // En mode restart, on garde les acceptedSuggestions existantes du draft
+      // (l'user a déjà ses choix d'équilibre, pas besoin de tout re-cocher).
+      if (!isRestart) {
+        const suggestions = computeBalanceSuggestions(draft.priorities);
+        setDraft((d) => ({
+          ...d,
+          acceptedSuggestions: new Set(suggestions.map((s) => s.muscle)),
+        }));
+      }
     }
     if (step === 4) {
       // Au passage 4 → 5 : on remet à zéro les variantes (changement de programme
       // ⇒ les slots ne correspondent plus aux indices précédents).
       setVariantReplacements([]);
     }
-    if (step < TOTAL_STEPS) setStep((s) => s + 1);
+    if (step < 5) setStep((s) => s + 1);
+  }
+
+  /**
+   * Conv #18 — Annulation du restart : ramène l'user sur /profil sans
+   * toucher à la DB. Confirmation si le draft a divergé du userState
+   * (l'user a fait des modifs qu'il s'apprête à perdre).
+   */
+  function handleCancelRestart() {
+    if (!isRestart) return;
+    setConfirmCancel(true);
+  }
+  function confirmCancelRestart() {
+    setConfirmCancel(false);
+    navigate('/profil', { replace: true });
   }
 
   async function finalize() {
@@ -150,6 +190,32 @@ export default function OnboardingPage() {
       const suggestions = computeBalanceSuggestions(draft.priorities);
       const muscleGoals = buildMuscleGoals(draft, suggestions);
 
+      if (isRestart && userState !== null) {
+        // Conv #18 — partial restart : on a déjà un userState. On
+        // 1) met à jour le profile (sessions/sem peut avoir changé en Step4 +
+        //    objective global a pu basculer si le programme guidé l'impose),
+        // 2) appelle endOfCycle qui archive le cycle en cours, pose les
+        //    nouveaux goals, le nouveau programmeId, et régénère le plan.
+        await updateProfile(profile);
+        const action =
+          draft.programmeId !== userState.active_guided_program_id
+            ? SuggestedAction.CHANGER_PROGRAMME
+            : SuggestedAction.AJUSTER_OBJECTIFS;
+        await endOfCycle({
+          action,
+          nextProgrammeId: draft.programmeId,
+          newMuscleGoals: muscleGoals,
+        });
+        if (variantReplacements.length > 0) {
+          await applyVariantReplacements(variantReplacements);
+        }
+        // Pas de relance de démo, pas de WelcomeOverlay : on retourne juste
+        // au programme avec le nouveau cycle posé.
+        navigate('/programme', { replace: true });
+        return;
+      }
+
+      // Onboarding initial (premier passage)
       await startUser({
         profile,
         muscleGoals,
@@ -216,19 +282,32 @@ export default function OnboardingPage() {
     }
   }, [step, draft, preview, catalog, variantReplacements]);
 
-  const isLastStep = step === TOTAL_STEPS;
+  const isLastStep = step === 5;
+  const stepUiIndex = step - stepOffset;
 
   return (
     <div
       className="flex h-full flex-1 flex-col bg-anthracite-950"
       data-testid="onboarding-page"
       data-step={step}
+      data-restart={isRestart ? '1' : '0'}
     >
       <header
-        className="border-b border-anthracite-800 pl-12"
+        className="flex items-center justify-between border-b border-anthracite-800 pl-12 pr-3"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <StepIndicator current={step} total={TOTAL_STEPS} labels={STEP_LABELS} />
+        <StepIndicator current={stepUiIndex} total={totalSteps} labels={stepLabels} />
+        {isRestart && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleCancelRestart}
+            disabled={submitting}
+            data-testid="btn-cancel-restart"
+          >
+            Annuler
+          </Button>
+        )}
       </header>
 
       <main ref={mainRef} className="flex-1 overflow-y-auto pb-32">
@@ -253,7 +332,7 @@ export default function OnboardingPage() {
           <Button
             variant="secondary"
             onClick={goPrev}
-            disabled={step === 1 || submitting}
+            disabled={step === initialStep || submitting}
             data-testid="btn-prev"
           >
             <ChevronLeft />
@@ -267,7 +346,13 @@ export default function OnboardingPage() {
               fullWidth
               data-testid="btn-finish"
             >
-              {submitting ? 'Création…' : 'Valider et continuer'}
+              {submitting
+                ? isRestart
+                  ? 'Redémarrage…'
+                  : 'Création…'
+                : isRestart
+                  ? 'Démarrer le nouveau cycle'
+                  : 'Valider et continuer'}
             </Button>
           ) : (
             <Button
@@ -283,6 +368,58 @@ export default function OnboardingPage() {
           )}
         </div>
       </footer>
+
+      {confirmCancel && (
+        <CancelRestartDialog
+          onConfirm={confirmCancelRestart}
+          onCancel={() => setConfirmCancel(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function CancelRestartDialog({
+  onConfirm,
+  onCancel,
+}: {
+  readonly onConfirm: () => void;
+  readonly onCancel: () => void;
+}) {
+  // Petit confirm inline pour ne pas dépendre du Dialog global qui charge des
+  // styles destructeurs ; on garde le visuel cohérent avec le wizard.
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Annuler la modification ?"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
+      onClick={onCancel}
+      data-testid="cancel-restart-dialog"
+    >
+      <div
+        className="w-full max-w-sm rounded-2xl border border-anthracite-700 bg-anthracite-900 p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-lg font-semibold text-white">Abandonner la modification ?</h3>
+        <p className="mt-2 text-sm leading-relaxed text-anthracite-300">
+          Tes choix ne seront pas enregistrés. Ton cycle en cours reste actif
+          tel quel.
+        </p>
+        <div className="mt-5 flex gap-2">
+          <Button variant="secondary" fullWidth onClick={onCancel} data-testid="cancel-restart-no">
+            Continuer la modification
+          </Button>
+          <Button
+            variant="danger"
+            fullWidth
+            onClick={onConfirm}
+            data-testid="cancel-restart-yes"
+          >
+            Abandonner
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

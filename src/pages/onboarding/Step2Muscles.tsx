@@ -223,10 +223,6 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
         <div className="mb-3 text-sm font-medium text-white">
           Ajouter manuellement
         </div>
-        <p className="mb-2 text-[11px] text-anthracite-300">
-          Pour les muscles non visibles sur la silhouette (deltoïdes antérieurs,
-          lombaires, etc.).
-        </p>
         {available.length === 0 ? (
           <div className="text-xs text-anthracite-300">
             Tous les muscles canoniques sont sélectionnés.

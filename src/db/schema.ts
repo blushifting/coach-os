@@ -66,6 +66,8 @@ export interface SerializedUserState {
   equipment_overrides: Record<string, EquipmentOverride>;
   /** Dette de volume non réalisée cette semaine (Conv #11a). Absent sur les anciens blobs. */
   weekly_volume_debt?: Record<string, number>;
+  /** Routine fixée par jour de la semaine (Conv #18). Absent sur les anciens blobs. */
+  fixed_routine?: Record<string, number>;
 }
 
 // =============================================================================

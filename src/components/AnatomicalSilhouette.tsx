@@ -55,8 +55,13 @@ export interface AnatomicalSilhouetteProps {
   readonly selectedMuscle?: string | null;
 }
 
+// Conv #18 — bumpé d'un cran pour mieux ressortir du fond Card
+// (anthracite-900 = #14161a). Les muscles non coloriés étaient à -700
+// (#262a30) → quasi-invisibles. Passés à -500 (#454a52) : la silhouette
+// reste lisible même quand aucun statut n'est posé. Le neutral (zones
+// tête/cou/genoux) reste un cran en dessous pour la hiérarchie.
 const TONE_FILL: Record<SilhouetteStatus, string> = {
-  off: 'fill-anthracite-700',
+  off: 'fill-anthracite-500',
   low: 'fill-sang-800',
   ok: 'fill-emerald-700',
   high: 'fill-amber-700',
@@ -64,8 +69,8 @@ const TONE_FILL: Record<SilhouetteStatus, string> = {
   synergist: 'fill-sang-900',
 };
 
-const NEUTRAL_FILL = 'fill-anthracite-800';
-const STROKE = 'stroke-anthracite-600';
+const NEUTRAL_FILL = 'fill-anthracite-600';
+const STROKE = 'stroke-anthracite-400';
 
 // =============================================================================
 // Polygones FACE (extraits de react-body-highlighter — anteriorData)

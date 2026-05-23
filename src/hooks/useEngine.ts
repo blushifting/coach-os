@@ -15,16 +15,22 @@ import { useMemo } from 'react';
 import { Catalog } from '@/engine/catalog';
 import * as engine from '@/engine/engine';
 import { applyBalanceRules } from '@/engine/balance';
-import { generateCyclePlan } from '@/engine/cycle_planner';
+import { generateCyclePlan, rotateEmphasis } from '@/engine/cycle_planner';
 import { fitGuidedProgram, getGuidedProgram } from '@/engine/guided_programs';
 import { initialVolumeBounds } from '@/engine/volume';
+import { SuggestedAction } from '@/engine/models';
 import type {
+  EquipmentOverride,
   MuscleGoal,
   Profile,
   SessionFeedback,
   SessionPlan,
   UserState,
 } from '@/engine/models';
+import {
+  deleteOverride as dbDeleteOverride,
+  upsertOverride as dbUpsertOverride,
+} from '@/db/repositories/equipmentOverrides.repo';
 import { getDb, resetDbInstance } from '@/db';
 import { loadUserState } from '@/db/repositories/userState.repo';
 import {
@@ -483,7 +489,21 @@ export async function endOfWeek(): Promise<engine.EndOfWeekResult> {
 }
 
 export interface EndOfCycleArgs {
+  /**
+   * Action choisie par l'utilisateur sur le bilan (ou imposée par un flux
+   * "fin prématurée"). Défaut : `CONTINUER_PAREIL` (rétro-compat Conv #5a).
+   */
+  action?: SuggestedAction;
+  /**
+   * Pour `CHANGER_PROGRAMME` : id du nouveau programme guidé (ou `null` pour
+   * basculer en custom). Sinon ignoré (le mode reste celui en cours).
+   */
   nextProgrammeId?: string | null;
+  /**
+   * Pour `AJUSTER_OBJECTIFS` : nouveaux `muscle_goals` (les SUGGERE seront
+   * recomposés via R1-R4). Si omis, on garde les goals actuels.
+   */
+  newMuscleGoals?: Record<string, MuscleGoal> | null;
 }
 
 // =============================================================================
@@ -529,6 +549,68 @@ export async function updateMuscleGoals(
     }
   }
   next.muscle_goals = goals;
+  await txSaveUserStateOnly(next);
+  useCoachOsStore.setState({ userState: next });
+  return next;
+}
+
+// =============================================================================
+// Override d'équipement par exo (Conv #18)
+// =============================================================================
+
+/**
+ * Pose ou met à jour un `EquipmentOverride` pour un exercice (inc_kg /
+ * min_load_kg / max_load_kg). Utilisé quand le matériel local diffère du
+ * catalogue (haltères qui s'incrémentent par 2 kg au lieu de 2.5,
+ * cable stack capé à 80 kg…). Mis en cache dans `state.equipment_overrides`
+ * ET persisté dans la table dédiée (idempotent).
+ */
+export async function setEquipmentOverride(
+  exerciseId: string,
+  override: EquipmentOverride,
+): Promise<UserState> {
+  const next = requireUserState();
+  next.equipment_overrides[exerciseId] = override;
+  await txSaveUserStateOnly(next);
+  await dbUpsertOverride(exerciseId, override);
+  useCoachOsStore.setState({ userState: next });
+  return next;
+}
+
+/** Supprime l'override pour un exo (retour au catalogue par défaut). */
+export async function clearEquipmentOverride(exerciseId: string): Promise<UserState> {
+  const next = requireUserState();
+  delete next.equipment_overrides[exerciseId];
+  await txSaveUserStateOnly(next);
+  await dbDeleteOverride(exerciseId);
+  useCoachOsStore.setState({ userState: next });
+  return next;
+}
+
+// =============================================================================
+// Routine fixée par jour de la semaine (Conv #18)
+// =============================================================================
+
+/**
+ * Pose ou retire une routine fixée pour un jour-of-week donné (lundi=0,
+ * dimanche=6). `dayIndex` est l'index du day_template dans
+ * `current_cycle_plan.days` ; `null` retire la routine pour ce jour.
+ *
+ * La routine persiste à travers les cycles : si un nouveau cycle plan est
+ * généré, l'index peut pointer sur un jour qui n'existe plus — l'UI
+ * ignore proprement (cf. `fixed_routine` dans `models.ts`).
+ */
+export async function setFixedRoutine(
+  dayOfWeek: number,
+  dayIndex: number | null,
+): Promise<UserState> {
+  const next = requireUserState();
+  const key = String(dayOfWeek);
+  if (dayIndex === null) {
+    delete next.fixed_routine[key];
+  } else {
+    next.fixed_routine[key] = dayIndex;
+  }
   await txSaveUserStateOnly(next);
   useCoachOsStore.setState({ userState: next });
   return next;
@@ -600,18 +682,98 @@ export async function importDataFromJson(json: string): Promise<void> {
   });
 }
 
+/**
+ * Termine le cycle en cours et démarre le suivant.
+ *
+ * Étapes :
+ *   1. Génère le `CycleReview` du cycle clos + ajuste V_min/V_max
+ *      (`engine.endOfCycle`).
+ *   2. Applique les changements liés à `args.action` :
+ *      - `AJUSTER_OBJECTIFS` : remplace `muscle_goals` (R1-R4 par-dessus).
+ *      - `CHANGER_PROGRAMME` : pose `active_guided_program_id`.
+ *      - `TOURNER_EMPHASIS` : permute les emphasis sur les priorités.
+ *      - `CONTINUER_PAREIL` (défaut) : rien à modifier.
+ *   3. Bump `cycle_index += 1`, reset `current_week_in_cycle = 1`,
+ *      vide `plateau_counter`.
+ *   4. Régénère `current_cycle_plan` :
+ *      - guidé : `fitGuidedProgram` (throw si équipement insuffisant).
+ *      - custom : `generateCyclePlan`.
+ *   5. Persiste (cycle clos archivé avec end_date=today, nouveau cycle créé).
+ *
+ * Utilisable aussi pour une **fin prématurée** (item Conv #18) : on archive
+ * le cycle en cours même s'il n'a pas toutes ses séances faites, et on
+ * démarre un nouveau cycle avec les paramètres modifiés.
+ */
 export async function endOfCycle(args: EndOfCycleArgs = {}) {
   const catalog = requireCatalog();
   const before = useCoachOsStore.getState().userState;
   if (before === null) throw new Error('userState non initialisé');
   const closedCycleIndex = before.cycle_index;
   const next = cloneState(before);
+  const action = args.action ?? SuggestedAction.CONTINUER_PAREIL;
+
+  // 1. Bilan + ajustement V_min/V_max sur le cycle qui se ferme.
   const review = engine.endOfCycle(next, catalog);
+
+  // 2. Applique les changements demandés AVANT régénération du plan.
+  // Conv #18 — `newMuscleGoals` est appliqué dès qu'il est fourni, quelle
+  // que soit l'action. Cas typique : l'onboarding partiel peut changer
+  // les priorités musculaires ET le programme guidé en un seul flux ;
+  // on déduit l'action principale côté UI mais les deux modifs doivent
+  // tomber dans l'état.
+  if (args.newMuscleGoals) {
+    const goals: Record<string, MuscleGoal> = { ...args.newMuscleGoals };
+    for (const sg of applyBalanceRules(goals)) {
+      if (goals[sg.muscle] === undefined) goals[sg.muscle] = sg;
+    }
+    next.muscle_goals = goals;
+  }
+  if (action === SuggestedAction.CHANGER_PROGRAMME) {
+    next.active_guided_program_id = args.nextProgrammeId ?? null;
+  }
+  if (action === SuggestedAction.TOURNER_EMPHASIS) {
+    rotateEmphasis(next.muscle_goals);
+  }
+
+  // 3. Bump cycle_index + reset state hebdo. On bump explicitement à
+  //    `closedCycleIndex+1` plutôt que `+= 1` pour rester robuste si un
+  //    bump avait déjà eu lieu côté `advanceWeek` (cas semaine 5 finie).
+  next.cycle_index = closedCycleIndex + 1;
+  next.current_week_in_cycle = 1;
+  next.plateau_counter = {};
+  next.weekly_volume_debt = {};
+
+  // 4. Régénère le plan du nouveau cycle.
+  const programmeId = next.active_guided_program_id;
+  if (programmeId !== null) {
+    const program = getGuidedProgram(programmeId);
+    if (program === null) {
+      throw new Error(`Programme guidé inconnu : ${programmeId}`);
+    }
+    const { weekly, blocking } = fitGuidedProgram(
+      program,
+      next.profile,
+      new Set(next.profile.available_equip),
+      next.e1rm,
+      catalog,
+      next.cycle_index,
+    );
+    if (weekly === null) {
+      throw new Error(
+        `Équipement insuffisant pour ${program.name} : ${blocking.join(', ')}`,
+      );
+    }
+    next.current_cycle_plan = weekly;
+  } else {
+    next.current_cycle_plan = generateCyclePlan(next, catalog);
+  }
+
+  // 5. Persiste (cycle clos + nouveau cycle).
   await txEndOfCycle({
     state: next,
     review,
     closedCycleIndex,
-    nextProgrammeId: args.nextProgrammeId ?? null,
+    nextProgrammeId: next.active_guided_program_id,
   });
   await refreshHistory();
   useCoachOsStore.setState({
@@ -643,6 +805,9 @@ export interface EngineApi {
   endOfCycle: typeof endOfCycle;
   updateProfile: typeof updateProfile;
   updateMuscleGoals: typeof updateMuscleGoals;
+  setEquipmentOverride: typeof setEquipmentOverride;
+  clearEquipmentOverride: typeof clearEquipmentOverride;
+  setFixedRoutine: typeof setFixedRoutine;
   resetApp: typeof resetApp;
   importDataFromJson: typeof importDataFromJson;
 }
@@ -667,6 +832,9 @@ export function useEngine(): EngineApi {
       endOfCycle,
       updateProfile,
       updateMuscleGoals,
+      setEquipmentOverride,
+      clearEquipmentOverride,
+      setFixedRoutine,
       resetApp,
       importDataFromJson,
     }),

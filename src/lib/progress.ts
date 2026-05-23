@@ -138,9 +138,12 @@ export function computeCoverageThisWeek(
       status = 'hors_scope';
     } else if (sets === 0) {
       status = 'non_travaille';
-    } else if (sets < vMin) {
+    } else if (sets < vMin - 0.05) {
+      // Conv #18 — tolérance epsilon : sets pondéré (coefs muscles) peut
+      // tomber pile à vMin avec un arrondi flottant (ex : 9.999…). Le user
+      // qui programme "12 séries pec" pour vMin=12 voyait encore sous_min.
       status = 'sous_min';
-    } else if (sets > vMax) {
+    } else if (sets > vMax + 0.05) {
       status = 'depassement';
     } else {
       status = 'ok';

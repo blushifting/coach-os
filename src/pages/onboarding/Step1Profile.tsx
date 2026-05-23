@@ -1,7 +1,12 @@
 /**
  * Étape 1 de l'onboarding : profil utilisateur.
  *
- * Collecte : sexe, âge, poids, niveau, séances/sem, équipement (chips).
+ * Collecte : sexe, âge, poids, niveau, équipement (chips).
+ *
+ * Conv #18 — `sessions_per_week` déplacé en Step4 (seul paramètre vraiment
+ * impactant côté programme : avant, il était ici par convention mais ça
+ * rendait l'onboarding partiel ambigu — l'user veut paramétrer ses séances
+ * au même endroit que le choix du programme).
  */
 
 import { Level, Sex } from '@/engine/models';
@@ -112,18 +117,6 @@ export function Step1Profile({ draft, onChange }: Step1Props) {
             </button>
           ))}
         </div>
-      </Card>
-
-      {/* --- Séances/sem --- */}
-      <Card>
-        <div className="mb-3 text-sm font-medium text-white">Séances par semaine</div>
-        <Stepper
-          value={draft.sessionsPerWeek}
-          onChange={(v) => onChange({ sessionsPerWeek: v })}
-          min={2}
-          max={6}
-          suffix=" / sem"
-        />
       </Card>
 
       {/* --- Équipement --- */}
