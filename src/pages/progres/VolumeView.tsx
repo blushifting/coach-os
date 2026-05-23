@@ -34,7 +34,14 @@ import {
   type MuscleCoverage,
   type MuscleVolumeSeries,
 } from '@/lib/progress';
-import type { MuscleGoal } from '@/engine/models';
+import { MUSCLES, MuscleStatus, type MuscleGoal } from '@/engine/models';
+
+/** Conv #17b — alias clic silhouette : certains muscles partagent une zone
+ *  visuelle (cas deltos_anterieurs / lateraux : front_deltoids). Si l'user
+ *  tape sur la zone, on redirige vers le muscle effectivement suivi. */
+const CLICK_ALIAS: Readonly<Record<string, string>> = {
+  deltos_anterieurs: 'deltos_lateraux',
+};
 
 interface VolumeViewProps {
   readonly coverage: ReadonlyArray<MuscleCoverage>;
@@ -63,64 +70,53 @@ export function VolumeView({ coverage, volume, muscleGoals }: VolumeViewProps) {
     return h;
   }, [coverage]);
 
-  // Liste triée des muscles affichés : PRIORITAIRE (rank croissant) →
-  // SUGGERE → NON_COUVERT. On exclut hors_scope (= aucune cible posée) pour
-  // ne pas polluer la liste de cartes vides.
-  const sortedSeries = useMemo(() => {
-    const statusOrder: Record<string, number> = {
-      PRIORITAIRE: 0,
-      SUGGERE: 1,
-      NON_COUVERT: 2,
-    };
-    const rankOf = (m: string): number =>
-      muscleGoals[m]?.priority_rank ?? 99;
-    return [...volume]
-      .filter((s) => {
-        // Exclut les muscles sans cible (vMin === 0 && vMax === 0) qui
-        // n'ont rien à dire — sauf si l'utilisateur a effectivement
-        // travaillé ce muscle cette semaine (alors on l'affiche pour
-        // documenter le volume "hors cible").
-        const cov = coverageByMuscle.get(s.muscle);
-        if (cov === undefined) return false;
-        if (cov.status === 'hors_scope' && cov.sets === 0) return false;
-        return true;
-      })
-      .sort((a, b) => {
-        const sA = statusOrder[a.status] ?? 3;
-        const sB = statusOrder[b.status] ?? 3;
-        if (sA !== sB) return sA - sB;
-        if (a.status === 'PRIORITAIRE') {
-          return rankOf(a.muscle) - rankOf(b.muscle);
-        }
-        return a.muscle.localeCompare(b.muscle);
-      });
-  }, [volume, coverageByMuscle, muscleGoals]);
+  // Map series par muscle pour lookup O(1).
+  const seriesByMuscle = useMemo(() => {
+    const m = new Map<string, MuscleVolumeSeries>();
+    for (const s of volume) m.set(s.muscle, s);
+    return m;
+  }, [volume]);
 
-  function handleSilhouetteClick(muscle: string) {
-    const cov = coverageByMuscle.get(muscle);
-    // Pour un muscle absent de la liste (hors_scope, 0 séries) on bascule
-    // quand même la sélection pour donner un feedback visuel — mais on ne
-    // scrolle pas car il n'y a pas de carte.
-    if (cov === undefined || (cov.status === 'hors_scope' && cov.sets === 0)) {
-      setSelected(muscle);
-      return;
-    }
+  // Conv #17b — on affiche une carte par muscle canonique (`MUSCLES`),
+  // même quand il n'est pas dans `muscle_goals` (pas suivi → carte
+  // "pas dans tes objectifs"). Ça assure la cohérence : un tap sur la
+  // silhouette mène toujours à une carte, l'utilisateur comprend
+  // pourquoi son muscle n'est pas suivi et où le rajouter.
+  //
+  // Ordre : PRIORITAIRE (rank croissant) → SUGGERE → NON_COUVERT.
+  // Les muscles sans `muscle_goals[m]` → traités comme NON_COUVERT.
+  const displayMuscles = useMemo(() => {
+    const statusOrder: Record<string, number> = {
+      [MuscleStatus.PRIORITAIRE]: 0,
+      [MuscleStatus.SUGGERE]: 1,
+      [MuscleStatus.NON_COUVERT]: 2,
+    };
+    const items = MUSCLES.map((m) => {
+      const cov = coverageByMuscle.get(m);
+      const ser = seriesByMuscle.get(m);
+      const goal = muscleGoals[m];
+      const goalStatus: MuscleStatus = goal?.status ?? MuscleStatus.NON_COUVERT;
+      const rank = goal?.priority_rank ?? 99;
+      return { muscle: m, coverage: cov, series: ser, goalStatus, rank };
+    });
+    items.sort((a, b) => {
+      const sA = statusOrder[a.goalStatus] ?? 3;
+      const sB = statusOrder[b.goalStatus] ?? 3;
+      if (sA !== sB) return sA - sB;
+      if (a.goalStatus === MuscleStatus.PRIORITAIRE) return a.rank - b.rank;
+      return a.muscle.localeCompare(b.muscle);
+    });
+    return items;
+  }, [coverageByMuscle, seriesByMuscle, muscleGoals]);
+
+  function handleSilhouetteClick(rawMuscle: string) {
+    // Alias éventuel (deltos_anterieurs → deltos_lateraux).
+    const muscle = CLICK_ALIAS[rawMuscle] ?? rawMuscle;
     setSelected(muscle);
     const node = cardRefs.current[muscle];
     if (node !== null && node !== undefined) {
       node.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }
-
-  if (coverage.length === 0) {
-    return (
-      <Card data-testid="volume-empty">
-        <p className="text-sm text-anthracite-300">
-          Aucun muscle ciblé pour le moment. Définis tes objectifs depuis l'onglet
-          Profil.
-        </p>
-      </Card>
-    );
   }
 
   return (
@@ -154,17 +150,19 @@ export function VolumeView({ coverage, volume, muscleGoals }: VolumeViewProps) {
       )}
 
       <div className="flex flex-col gap-2" data-testid="volume-cards">
-        {sortedSeries.map((s) => (
+        {displayMuscles.map((m) => (
           <MuscleVolumeCard
-            key={s.muscle}
-            series={s}
-            coverage={coverageByMuscle.get(s.muscle)!}
+            key={m.muscle}
+            muscle={m.muscle}
+            series={m.series ?? null}
+            coverage={m.coverage ?? null}
+            goalStatus={m.goalStatus}
             cardRef={(el) => {
-              cardRefs.current[s.muscle] = el;
+              cardRefs.current[m.muscle] = el;
             }}
-            isSelected={selected === s.muscle}
+            isSelected={selected === m.muscle}
             onSelect={() =>
-              setSelected((prev) => (prev === s.muscle ? null : s.muscle))
+              setSelected((prev) => (prev === m.muscle ? null : m.muscle))
             }
           />
         ))}
@@ -208,32 +206,44 @@ function LegendItem({
 // =============================================================================
 
 interface MuscleVolumeCardProps {
-  readonly series: MuscleVolumeSeries;
-  readonly coverage: MuscleCoverage;
+  readonly muscle: string;
+  readonly series: MuscleVolumeSeries | null;
+  readonly coverage: MuscleCoverage | null;
+  readonly goalStatus: MuscleStatus;
   readonly cardRef: (el: HTMLDivElement | null) => void;
   readonly isSelected: boolean;
   readonly onSelect: () => void;
 }
 
 function MuscleVolumeCard({
+  muscle,
   series,
   coverage,
+  goalStatus,
   cardRef,
   isSelected,
   onSelect,
 }: MuscleVolumeCardProps) {
-  const tone = STATUS_TONE[coverage.status];
+  // Conv #17b — 3 niveaux d'affichage selon les données disponibles :
+  //  1. coverage présent + non hors_scope → carte pleine (séries vs cible).
+  //  2. coverage hors_scope OU absent → carte "pas suivi" (muscle pas dans
+  //     muscle_goals). On invite l'user à l'ajouter via Profil > Objectifs.
+  //  3. série vide → on n'affiche pas la mini-courbe.
+  const isTracked = coverage !== null && coverage.status !== 'hors_scope';
+  const tone = isTracked ? STATUS_TONE[coverage.status] : STATUS_TONE.hors_scope;
   return (
     <div
       ref={cardRef}
-      data-testid={`volume-card-${series.muscle}`}
-      data-status={coverage.status}
+      data-testid={`volume-card-${muscle}`}
+      data-status={coverage?.status ?? 'hors_scope'}
+      data-tracked={isTracked ? 'true' : 'false'}
       data-selected={isSelected ? 'true' : undefined}
       className={cn(
         'flex flex-col gap-2 rounded-2xl border bg-anthracite-900 p-3 transition-all',
         isSelected
           ? 'border-amber-400/60 shadow-[0_0_0_2px_rgba(252,211,77,0.18)]'
           : 'border-anthracite-700',
+        !isTracked && 'opacity-70',
       )}
     >
       <header className="flex items-baseline justify-between gap-2">
@@ -242,27 +252,40 @@ function MuscleVolumeCard({
           onClick={onSelect}
           className="min-w-0 truncate text-left text-sm font-medium text-white hover:text-amber-200"
         >
-          {muscleLabel(series.muscle)}
+          {muscleLabel(muscle)}
         </button>
-        <div className="flex shrink-0 items-baseline gap-1.5">
-          <span className={cn('font-display text-lg leading-none tabular-nums', tone.text)}>
-            {coverage.sets.toFixed(1)}
-          </span>
-          <span className="text-[10px] text-anthracite-300 tabular-nums">
-            / {coverage.vMin.toFixed(0)}–{coverage.vMax.toFixed(0)} séries
-          </span>
-        </div>
-      </header>
-      <span className="text-[10px] uppercase tracking-wide text-anthracite-300">
-        {STATUS_LABEL[coverage.status]}
-        {series.status === 'PRIORITAIRE' && (
-          <span className="ml-2 rounded bg-sang-900/40 px-1 py-0.5 text-sang-300">
-            prioritaire
+        {isTracked && coverage !== null ? (
+          <div className="flex shrink-0 items-baseline gap-1.5">
+            <span className={cn('font-display text-lg leading-none tabular-nums', tone.text)}>
+              {coverage.sets.toFixed(1)}
+            </span>
+            <span className="text-[10px] text-anthracite-300 tabular-nums">
+              / {coverage.vMin.toFixed(0)}–{coverage.vMax.toFixed(0)} séries
+            </span>
+          </div>
+        ) : (
+          <span className="text-[10px] uppercase tracking-wide text-anthracite-400">
+            non suivi
           </span>
         )}
-      </span>
-      {series.points.length > 0 && (
-        <MiniVolumeChart series={series} testId={`volume-chart-${series.muscle}`} />
+      </header>
+      {isTracked && coverage !== null ? (
+        <span className="text-[10px] uppercase tracking-wide text-anthracite-300">
+          {STATUS_LABEL[coverage.status]}
+          {goalStatus === MuscleStatus.PRIORITAIRE && (
+            <span className="ml-2 rounded bg-sang-900/40 px-1 py-0.5 text-sang-300">
+              prioritaire
+            </span>
+          )}
+        </span>
+      ) : (
+        <p className="text-[11px] leading-snug text-anthracite-300">
+          Pas dans tes objectifs. Pour suivre ce muscle, ajoute-le depuis{' '}
+          <span className="text-anthracite-100">Profil → Objectifs musculaires</span>.
+        </p>
+      )}
+      {series !== null && series.points.length > 0 && (
+        <MiniVolumeChart series={series} testId={`volume-chart-${muscle}`} />
       )}
     </div>
   );

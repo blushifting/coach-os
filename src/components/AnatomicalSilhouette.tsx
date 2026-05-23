@@ -215,10 +215,17 @@ const CO_TO_FACE: Record<string, readonly string[]> = {
   pectoraux: FACE_POLYS.chest,
   trapezes_hauts: FACE_POLYS.neck,
   // FRONT_DELTOIDS représente l'épaule de face — couvre les deltos antérieurs
-  // ET latéraux (ils se chevauchent visuellement de face). On l'allume sur
-  // l'un ou l'autre.
-  deltos_lateraux: FACE_POLYS.front_deltoids,
+  // ET latéraux (ils se chevauchent visuellement de face).
+  // Conv #17b — ordre : deltos_anterieurs **puis** deltos_lateraux pour que
+  // le `<g>` cliquable de deltos_lateraux soit rendu en dernier (donc gagne
+  // le click). Important parce que deltos_anterieurs n'est pas un muscle
+  // suivi (`SYNERGISTES_SANS_QUOTA`) → cliquer doit cibler le muscle suivi
+  // (lateraux). La coloration est sans dommage : si l'un des deux a un
+  // status ≠ off et l'autre off, le `<g>` rendu en dernier gagne ; donc
+  // un exo qui n'active que deltos_anterieurs apparaîtra atténué à juste
+  // titre (mais le helpTopic `deltoides` explique cette logique).
   deltos_anterieurs: FACE_POLYS.front_deltoids,
+  deltos_lateraux: FACE_POLYS.front_deltoids,
   biceps: FACE_POLYS.biceps,
   triceps: FACE_POLYS.triceps,
   abdos: FACE_POLYS.abs,

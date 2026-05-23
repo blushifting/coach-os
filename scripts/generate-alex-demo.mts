@@ -87,18 +87,21 @@ const ALEX_PROFILE = {
   ]),
 };
 
-/** e1rm initiaux (intermédiaire, calibration plausible avant cycle 1). */
+/** e1rm initiaux (intermédiaire **début 2e année**, plafond plus accessible
+ *  que les standards strengthlevel.com inter "moyen" 2-3 ans).
+ *  Conv #17b — baisse ~20 % vs initiaux Conv #16 pour rendre Alex plus
+ *  réaliste pour un user qui découvre Coach OS (et éviter l'effet
+ *  "200 kg leg press" qui paraît extra-ordinaire). */
 const ALEX_INITIAL_E1RM: Record<string, number> = {
-  squat_bb_high: 120,
-  deadlift_conv: 140,
-  bench_bb: 85,
-  ohp_bb_standing: 55,
-  bb_row: 80,
-  pullup_assisted: -20, // load négatif = assistance
-  bb_curl: 35,
-  triceps_pushdown_rope: 25,
-  // Conv #15 — accessoire jambes ajouté à Lower B (cf. buildCyclePlan).
-  leg_press_45: 200,
+  squat_bb_high: 95,
+  deadlift_conv: 110,
+  bench_bb: 70,
+  ohp_bb_standing: 45,
+  bb_row: 65,
+  pullup_assisted: -25, // assistance plus marquée (Alex peine encore aux tractions)
+  bb_curl: 27.5,
+  triceps_pushdown_rope: 20,
+  leg_press_45: 160,
 };
 
 /**
@@ -109,14 +112,15 @@ const ALEX_INITIAL_E1RM: Record<string, number> = {
  * confirmé depuis 8+ semaines"). Conv #16.
  */
 const ALEX_SWAP_E1RM: Record<string, number> = {
-  front_squat: 95, // front squat = ~80 % du back squat
-  pullup: 78, // tractions libres : bw 75 + ~3 kg de lest équivalent
-  // Conv #17 — corrigé : la charge OHP haltères est saisie/stockée
-  // **par haltère** (cf. ManualE1rmSheet `loadLabel`). 50 kg/haltère = 100 kg
-  // total = irréaliste pour un intermédiaire 75 kg. Standards muscu : un
-  // intermédiaire OHP DM ~25 kg par main (50 kg total ≈ −10 % vs OHP barre
-  // 55 kg total, cohérent avec le commentaire d'origine qui pensait "total").
-  ohp_db_seated: 25,
+  // Conv #17b — alignés sur les nouveaux plafonds initiaux (Alex inter
+  // début 2e année, baisse ~20 %). Logique conservée :
+  //  - front squat ≈ 80 % du back squat
+  //  - pullup libres ≈ bw seul (75 kg) sans lest (Alex commence tout juste
+  //    à tenir les tractions strictes après son cycle assisted)
+  //  - ohp DM ≈ −10 % vs OHP barre, **par haltère** (loadLabel DUMBBELL)
+  front_squat: 75,
+  pullup: 75,
+  ohp_db_seated: 20,
 };
 
 /** k_user par défaut (cf. prescription.ts, k de Epley standard). */

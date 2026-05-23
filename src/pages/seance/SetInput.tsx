@@ -30,13 +30,11 @@ const RPE_MIN = 6;
 const RPE_MAX = 10;
 const RPE_STEP = 0.5;
 
-function effortTone(rpe: number | null): string {
-  // Conv #17 — teinte rouge retirée à la demande Azur. Reste seule la teinte
-  // ambre pour signaler un effort élevé (≥ 8) ; au-delà on garde l'ambre sans
-  // monter en rouge (la valeur numérique parle d'elle-même).
-  if (rpe === null) return 'border-anthracite-700 bg-anthracite-800 text-anthracite-100';
-  if (rpe < 8) return 'border-anthracite-700 bg-anthracite-800 text-anthracite-100';
-  return 'border-amber-700/60 bg-amber-900/30 text-amber-100';
+function effortTone(_rpe: number | null): string {
+  // Conv #17 — toutes les teintes (rouge puis ambre) retirées à la demande
+  // Azur. La case effort reste neutre quel que soit le RPE, comme les autres
+  // cases (reps / charge). La valeur numérique parle d'elle-même.
+  return 'border-anthracite-700 bg-anthracite-800 text-anthracite-100';
 }
 
 function isBodyweightOnly(charge: ChargeType | undefined): boolean {

@@ -9,7 +9,7 @@
  *   sont bootstrap heuristiquement à la 1re séance et raffinés via RPE.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { ChevronLeft, ChevronRight } from '@/components/icons';
@@ -63,6 +63,16 @@ export default function OnboardingPage() {
   useEffect(() => {
     void bootstrap();
   }, []);
+
+  // Conv #17b — scroll en haut du conteneur scrollable à chaque changement
+  // d'étape. Sans ça, on hérite du scroll précédent (ex : si on a scrollé
+  // bas en Step2, Step3 démarre à mi-page).
+  const mainRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (mainRef.current !== null) {
+      mainRef.current.scrollTop = 0;
+    }
+  }, [step]);
 
   // Conv #11b — preview calculée à la volée quand on entre dans Step5. Sans
   // toucher au store (tout reste en mémoire jusqu'au finalize).
@@ -221,7 +231,9 @@ export default function OnboardingPage() {
         <StepIndicator current={step} total={TOTAL_STEPS} labels={STEP_LABELS} />
       </header>
 
-      <main className="flex-1 overflow-y-auto pb-32">{stepContent}</main>
+      <main ref={mainRef} className="flex-1 overflow-y-auto pb-32">
+        {stepContent}
+      </main>
 
       {error ? (
         <div
