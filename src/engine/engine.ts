@@ -310,10 +310,14 @@ export function generateSession(
         : planned.base_sets;
     nSets = Math.max(1, nSets);
 
+    // Conv #20 — bootstrap purement transitoire. Avant : on persistait le
+    // résultat dans state.e1rm[ex.id], ce qui faisait apparaître un "plafond
+    // enregistré" dans le Catalogue pour des exos jamais réellement faits.
+    // Décision : state.e1rm ne contient QUE des valeurs mesurées
+    // (issues de `updateE1rmForExercise` après feedback réel). Le bootstrap
+    // n'est utilisé que pour la prescription en cours et recalculé à chaque
+    // génération.
     const e1rmTotal = bootstrapE1rmIfMissing(state, ex);
-    if (!(ex.id in state.e1rm)) {
-      state.e1rm[ex.id] = e1rmTotal;
-    }
 
     const prescription: SetPrescription = buildPrescription(
       ex, e1rmTotal, state.profile, state.current_week_in_cycle,
@@ -382,10 +386,8 @@ export function replaceSessionItem(
   const oldItem = plan.items[itemIndex]!;
   const nSets = Math.max(1, oldItem.sets.length);
 
+  // Conv #20 — bootstrap transitoire, pas de persistance (cf. generateSession).
   const e1rmTotal = bootstrapE1rmIfMissing(state, newEx);
-  if (!(newEx.id in state.e1rm)) {
-    state.e1rm[newEx.id] = e1rmTotal;
-  }
   const prescription: SetPrescription = buildPrescription(
     newEx, e1rmTotal, state.profile, state.current_week_in_cycle,
     {
@@ -488,10 +490,8 @@ export function generateSessionLegacy(
     const perSession = splitVolumeIntoSessions(weeklyTarget, nSessionsForMuscle)[0]!;
     const nSets = Math.max(1, Math.min(5, perSession));
 
+    // Conv #20 — bootstrap transitoire, pas de persistance (cf. generateSession).
     const e1rmTotal = bootstrapE1rmIfMissing(state, ex);
-    if (!(ex.id in state.e1rm)) {
-      state.e1rm[ex.id] = e1rmTotal;
-    }
 
     const prescription = buildPrescription(
       ex, e1rmTotal, state.profile, state.current_week_in_cycle,

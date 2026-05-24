@@ -104,24 +104,12 @@ const config: Config = {
           '0%': { strokeDashoffset: '1' },
           '100%': { strokeDashoffset: '0' },
         },
-        // Conv #20 — renflement doré sur la roue accomplie : un court arc
-        // de stroke plus épais qui parcourt tout le pourtour (1 tour) puis
-        // fade. Visuellement, la trace dorée semble "gonfler" localement et
-        // ce renflement file autour de l'anneau. Démarre depuis le top SVG.
-        // Requiert pathLength=1 + strokeDasharray="0.14 0.86" sur le <circle>.
-        'gold-bulge': {
-          '0%': { strokeDashoffset: '0', opacity: '0' },
-          '10%': { opacity: '1' },
-          '85%': { strokeDashoffset: '-1', opacity: '1' },
-          '100%': { strokeDashoffset: '-1', opacity: '0' },
-        },
       },
       animation: {
         'tick-pop': 'tick-pop 380ms cubic-bezier(0.34, 1.56, 0.64, 1)',
         'row-flash': 'row-flash 600ms ease-out',
         'reveal-up': 'reveal-up 420ms cubic-bezier(0.16, 1, 0.3, 1) both',
         'draw-line': 'draw-line 900ms cubic-bezier(0.4, 0, 0.2, 1) forwards',
-        'gold-bulge': 'gold-bulge 1400ms cubic-bezier(0.4, 0, 0.2, 1) 1 forwards',
       },
       boxShadow: {
         // Conv #11c — halo rouge diffus pour les éléments primaires hover/focus.

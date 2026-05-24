@@ -215,10 +215,10 @@ export function CatalogueDetailSheet({
               <span className="text-anthracite-300">Repos</span>
               <span className="tabular-nums">{formatRest(exercise.repos_s)}</span>
             </li>
-            <li className="flex justify-between">
-              <span className="text-anthracite-300">Difficulté</span>
-              <span>{exercise.dif || '—'}</span>
-            </li>
+            {/* Conv #20 — "Difficulté" retirée : étiquette subjective qui
+                n'aide pas l'user à choisir. Le champ data `dif` reste pour
+                le tie-break interne de `selection.ts` (préférence aux exos
+                faciles à équivalence de couverture). */}
           </ul>
         </Section>
 
