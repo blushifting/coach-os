@@ -14,7 +14,7 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Sheet } from '@/components/Sheet';
 import { Stepper } from '@/components/Stepper';
-import { Level, Objective, Sex, type Profile } from '@/engine/models';
+import { Level, Sex, type Profile } from '@/engine/models';
 import { cn } from '@/lib/cn';
 import {
   EQUIPMENT_CHIPS,
@@ -147,30 +147,12 @@ export function EditProfileSheet({
             </div>
           </Card>
 
-          <Card>
-            <div className="mb-3 text-sm font-medium text-white">Objectif global</div>
-            <div className="flex gap-2" role="radiogroup" aria-label="Objectif">
-              {[
-                { v: Objective.HYPERTROPHIE, lbl: 'Hypertrophie' },
-                { v: Objective.FORCE, lbl: 'Force' },
-                { v: Objective.ENDURANCE, lbl: 'Endurance' },
-              ].map(({ v, lbl }) => (
-                <ChipRadio
-                  key={v}
-                  label={lbl}
-                  selected={draft.objective === v}
-                  onClick={() => patch({ objective: v })}
-                  testId={`profil-objective-${v}`}
-                />
-              ))}
-            </div>
-          </Card>
-
-          {/* Conv #18 — Séances/sem retiré : déplacé dans le flux "Modifier
-              priorités & programme" (Step4), parce qu'il impacte directement
-              la structure du plan. La sheet Identité ne contient plus que des
-              champs cosmétiques (volume_min/max recalculés mais cycle plan
-              intact). */}
+          {/* Conv #20.4 — Objectif global retiré : redondant avec l'objectif
+              par muscle géré dans "Priorités & programme" (où chaque muscle
+              prioritaire a son objectif force/hypertrophie/endurance). Conv #18
+              avait déjà retiré Séances/sem pour la même raison (déplacé en
+              Step4 du flux restart). La sheet Identité ne contient plus que
+              des champs cosmétiques. */}
 
           <Card>
             <div className="mb-3 text-sm font-medium text-white">
