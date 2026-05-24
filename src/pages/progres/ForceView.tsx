@@ -223,19 +223,29 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
         style={{ strokeDasharray: 1 }}
       />
 
-      {xy.map(([x, y], i) => (
-        <circle
-          key={i}
-          cx={x}
-          cy={y}
-          r={prFlags[i] ? 3.5 : 2.5}
-          fill="#dc2626"
-          stroke={prFlags[i] ? '#fff' : 'none'}
-          strokeWidth={prFlags[i] ? 1 : 0}
-          className="animate-reveal-up"
-          style={{ animationDelay: `${500 + i * 60}ms`, animationFillMode: 'both' }}
-        />
-      ))}
+      {/* Conv #20.5 — Points de la courbe : fade-in opacité pure, synchronisé
+          sur le tracé de la polyline (900 ms total). Chaque point apparaît en
+          place quand la ligne le traverse — fini le "saut d'en bas" via
+          reveal-up qui donnait l'impression que les points venaient d'un autre
+          plan. Les étoiles records (plus bas) gardent reveal-up : leur slide
+          marque visuellement le "PR célébré". */}
+      {xy.map(([x, y], i) => {
+        const tracePct = points.length > 1 ? i / (points.length - 1) : 0;
+        const delayMs = tracePct * 900;
+        return (
+          <circle
+            key={i}
+            cx={x}
+            cy={y}
+            r={prFlags[i] ? 3.5 : 2.5}
+            fill="#dc2626"
+            stroke={prFlags[i] ? '#fff' : 'none'}
+            strokeWidth={prFlags[i] ? 1 : 0}
+            className="animate-point-fade-in"
+            style={{ animationDelay: `${delayMs}ms` }}
+          />
+        );
+      })}
 
       {/* Étoiles "record" — au-dessus de chaque point qui bat le précédent
           record d'au moins +2 kg. Étoile jaune-doré pleine avec liseré pour

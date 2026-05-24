@@ -71,7 +71,7 @@ const TOUR_STEPS: readonly TourStep[] = [
     route: '/programme',
     title: "Le programme d'Alex",
     body:
-      "Alex est mardi de la semaine 4 de son 2ᵉ cycle (les cycles font 5 semaines : 4 d'entraînement + 1 de déload). Hier il a fait Upper A, aujourd'hui c'est Lower A. Le calendrier ci-dessous montre les semaines du cycle en cours, avec les séances faites en vert, prévues en bleu et le repos en grisé.",
+      "Alex est mardi de la semaine 4 de son 2ᵉ cycle (les cycles font 5 semaines : 4 d'entraînement + 1 de déload). Hier il a fait une séance Upper A, aujourd'hui c'est Lower A. Le calendrier ci-dessous montre les semaines du cycle en cours, avec les séances faites en vert, prévues en bleu et le repos en grisé.",
     pointTo: '[data-testid="condensed-calendar"]',
     bannerSide: 'top',
   },
@@ -80,7 +80,7 @@ const TOUR_STEPS: readonly TourStep[] = [
     route: '/seance/runner',
     title: 'Sa séance du jour',
     body:
-      "Voici l'interface séance. Les valeurs pré-remplies (reps, charge, effort) sont des objectifs à viser — si en réalité tu fais plus ou moins, modifie les chiffres avant de cocher. Kotsh apprend ton plafond à chaque série, pas besoin de calibration préalable.",
+      "Voici l'interface séance. Les valeurs pré-remplies (reps, charge) sont des objectifs à viser — si en réalité tu fais plus ou moins, modifie les chiffres avant de cocher. Kotsh ajuste ensuite tes objectifs en fonction de tes retours.",
     pointTo: '[data-testid="set-row-0"]',
     highlight: {
       selector: '[data-testid="set-row-0"]',
@@ -103,7 +103,7 @@ const TOUR_STEPS: readonly TourStep[] = [
     route: '/progres',
     title: 'Ses plafonds qui montent',
     body:
-      "Voici la progression d'Alex sur ses gros exercices. Les étoiles ★ marquent les records personnels (plafond battu d'au moins 2 kg). Les plateaux ou petits creux ponctuels correspondent à une semaine plus dure (fatigue, effort perçu élevé) ; les semaines de déload réduisent volontairement les charges pour récupérer, sans qu'elles n'apparaissent comme du recul. Kotsh s'adapte automatiquement.",
+      "Voici la progression d'Alex sur ses gros exercices. Les étoiles ★ marquent les records personnels (plafond battu d'au moins 2 kg). Les plateaux ou petits creux ponctuels correspondent à une semaine plus dure (fatigue, effort perçu élevé) ; les semaines de déload réduisent volontairement les charges pour récupérer, sans qu'elles n'apparaissent comme du recul.",
     pointTo: '[data-testid="force-view"]',
     clickOnEnter: '[data-testid="tab-force"]',
   },
@@ -112,7 +112,7 @@ const TOUR_STEPS: readonly TourStep[] = [
     route: '/cycle-bilan',
     title: 'Le bilan de cycle',
     body:
-      "À la fin du cycle, Kotsh résume tes progrès muscle par muscle et te suggère la suite : continuer pareil, ajuster les objectifs, ou déloader. Ici : continuer.",
+      "À la fin du cycle, Kotsh résume tes progrès muscle par muscle et te suggère comment programmer ton cycle suivant : continuer pareil, ajuster les objectifs, ou déloader.",
     pointTo: '[data-testid="cycle-bilan-page"]',
   },
   // Conv #15-3 — étape 'profil' retirée : le profil est déjà fixé par
@@ -123,7 +123,7 @@ const TOUR_STEPS: readonly TourStep[] = [
     route: '/programme',
     title: 'À toi de jouer',
     body:
-      "Tu as vu la boucle complète. Quitte la démo pour revenir à ton profil et démarrer ta vraie 1re séance — l'app apprend en marchant, pas besoin de tout connaître pour commencer.",
+      "Tu as vu la boucle complète. Quitte la démo pour revenir à ton profil et démarrer ta première séance — le reste des fonctionnalités viendra naturellement.",
   },
 ];
 
@@ -387,7 +387,7 @@ function GuidedTourBanner({
                 onClick={onFinish}
                 data-testid="btn-tour-finish"
               >
-                Démarrer ma vraie 1re séance
+                Démarrer ma 1re séance
               </Button>
             ) : (
               <Button

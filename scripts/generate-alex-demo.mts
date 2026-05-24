@@ -746,7 +746,7 @@ function main(): void {
       id: 'alex',
       label: "Découvre Kotsh via le profil d'Alex",
       summary:
-        "Pour te montrer comment l'app marche en pratique, on va parcourir ensemble le profil d'Alex — un utilisateur fictif qui a effectué 8 semaines d'entraînement (les 5 du cycle 1 + 3 sur les 5 du cycle 2 en cours). Tu verras un programme actif, des séances passées, des plafonds qui progressent, et un bilan de cycle — tout ce que tu auras toi-même dans quelques semaines. Tes vraies données restent intactes pendant la visite.",
+        "Pour te montrer comment l'app marche en pratique, on va parcourir ensemble le profil d'Alex — un utilisateur fictif. Tu verras un programme actif, des séances passées, des plafonds qui progressent, et un bilan de cycle — tout ce que tu auras toi-même dans quelques semaines.",
     },
     generated_at: DEMO_TODAY,
     user_state: serializeUserState(state),

@@ -104,12 +104,20 @@ const config: Config = {
           '0%': { strokeDashoffset: '1' },
           '100%': { strokeDashoffset: '0' },
         },
+        // Conv #20.5 — fade-in opacité pure pour les points de la courbe Force.
+        // Pas de translation (le point doit apparaître en place au moment où la
+        // ligne le traverse, pas surgir d'en bas comme reveal-up le faisait).
+        'point-fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
       },
       animation: {
         'tick-pop': 'tick-pop 380ms cubic-bezier(0.34, 1.56, 0.64, 1)',
         'row-flash': 'row-flash 600ms ease-out',
         'reveal-up': 'reveal-up 420ms cubic-bezier(0.16, 1, 0.3, 1) both',
         'draw-line': 'draw-line 900ms cubic-bezier(0.4, 0, 0.2, 1) forwards',
+        'point-fade-in': 'point-fade-in 160ms ease-out both',
       },
       boxShadow: {
         // Conv #11c — halo rouge diffus pour les éléments primaires hover/focus.
