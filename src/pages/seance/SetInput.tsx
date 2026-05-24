@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { cn } from '@/lib/cn';
 import { ChargeType } from '@/engine/models';
+import { kgUnitLabelShort } from '@/lib/catalog-filter';
 import { triggerHaptic } from '@/lib/haptics';
 import type { SetEntry } from '@/lib/session-runner';
 
@@ -156,6 +157,7 @@ export function SetInput({
           load={effectiveLoad}
           bodyweightOnly={bodyweightOnly}
           bwToggle={bwToggle}
+          chargeType={chargeType}
           disabled={disableInputs}
           onChange={(v) => onChange({ load_kg: v })}
         />
@@ -305,6 +307,7 @@ interface LoadFieldProps {
   readonly load: number | null;
   readonly bodyweightOnly: boolean;
   readonly bwToggle: boolean;
+  readonly chargeType?: ChargeType;
   readonly disabled: boolean;
   readonly onChange: (v: number | null) => void;
 }
@@ -314,6 +317,7 @@ function LoadField({
   load,
   bodyweightOnly,
   bwToggle,
+  chargeType,
   disabled,
   onChange,
 }: LoadFieldProps) {
@@ -334,11 +338,15 @@ function LoadField({
   }
 
   const bwActive = load === 0;
+  // Conv #20 — pour les exos DUMBBELL, on affiche "kg/halt" pour rappeler
+  // que la saisie est par haltère (pas le total bilatéral). Voir
+  // `kgUnitLabelShort` + convention dans `bootstrapE1rmIfMissing`.
+  const kgLabel = kgUnitLabelShort(chargeType);
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
       <span className="flex items-baseline justify-between gap-1 text-[10px] uppercase tracking-wide text-anthracite-300">
-        kg
+        {kgLabel}
         {bwToggle ? (
           <button
             type="button"

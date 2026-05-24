@@ -17,6 +17,7 @@
 import type { Catalog } from '@/engine/catalog';
 import type { CycleRow, FeedbackRow } from '@/db/schema';
 import type {
+  ChargeType,
   CycleReview,
   GuidedProgram,
   SessionFeedback,
@@ -492,6 +493,11 @@ export interface ExerciseE1rmSeries {
   readonly initial: number;
   /** Pourcentage d'évolution (current/initial − 1) × 100. */
   readonly deltaPct: number;
+  /**
+   * Conv #20 — ChargeType de l'exo. Permet à `ForceView` d'afficher le suffixe
+   * "kg / haltère" pour les exos DUMBBELL au lieu du "kg" générique.
+   */
+  readonly charge: ChargeType;
 }
 
 /**
@@ -550,6 +556,7 @@ export function computeE1rmHistory(
       current,
       initial,
       deltaPct,
+      charge: catalog.get(exId).charge,
     });
   }
 

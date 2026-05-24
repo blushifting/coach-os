@@ -9,6 +9,7 @@ import {
   chargeLabel,
   equipLabel,
   extypeLabel,
+  kgUnitLabel,
   patternLabel,
   tagLabel,
 } from '@/lib/catalog-filter';
@@ -113,7 +114,7 @@ export function CatalogueDetailSheet({
               Ton plafond
             </span>
             <span className="font-display text-xl tabular-nums text-white">
-              {e1rm.toFixed(1)} kg
+              {e1rm.toFixed(1)} {kgUnitLabel(exercise.charge)}
             </span>
           </div>
         ) : null}

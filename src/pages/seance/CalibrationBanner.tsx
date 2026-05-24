@@ -19,6 +19,7 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/Button';
 import type { Exercise } from '@/engine/models';
+import { kgUnitLabel } from '@/lib/catalog-filter';
 import {
   computeLiveE1rmFromEntries,
   lastCheckedSetIsUnreliable,
@@ -65,6 +66,8 @@ export function CalibrationBanner({
   if (confidence === 'measured') return null;
 
   const isStale = confidence === 'stale';
+  // Conv #20 — pour DB, l'e1rm appris et la suggestion sont per-haltère.
+  const unit = kgUnitLabel(exercise.charge);
 
   return (
     <>
@@ -76,7 +79,7 @@ export function CalibrationBanner({
         {liveE1rm !== null ? (
           <p className="text-sang-200">
             <span className="font-semibold text-white">
-              Plafond appris : {liveE1rm.toFixed(1)} kg
+              Plafond appris : {liveE1rm.toFixed(1)} {unit}
             </span>{' '}
             — les séries suivantes sont ajustées automatiquement.
           </p>
@@ -91,7 +94,7 @@ export function CalibrationBanner({
                 {' '}
                 À la série suivante, essaie autour de{' '}
                 <span className="font-semibold text-white">
-                  {suggestedLoad} kg
+                  {suggestedLoad} {unit}
                 </span>
                 .
               </>

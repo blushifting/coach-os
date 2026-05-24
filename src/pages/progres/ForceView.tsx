@@ -12,6 +12,7 @@
 
 import { Card } from '@/components/Card';
 import { HelpButton } from '@/components/HelpButton';
+import { kgUnitLabel } from '@/lib/catalog-filter';
 import { cn } from '@/lib/cn';
 import type { ExerciseE1rmSeries } from '@/lib/progress';
 
@@ -64,7 +65,7 @@ export function ForceView({ series }: ForceViewProps) {
                 className="font-display text-base leading-none tabular-nums text-white"
                 data-testid={`force-current-${s.exercise_id}`}
               >
-                {s.current.toFixed(1)} kg
+                {s.current.toFixed(1)} {kgUnitLabel(s.charge)}
               </span>
               <span
                 className={cn(

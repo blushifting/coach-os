@@ -83,6 +83,24 @@ export function patternLabel(p: Pattern): string {
 export function chargeLabel(c: ChargeType): string {
   return CHARGE_LABEL_FR[c] ?? c;
 }
+
+/**
+ * Conv #20 — Unité de charge à afficher pour les inputs et plafonds.
+ * Pour DUMBBELL, on précise "par haltère" : la valeur affichée/saisie
+ * correspond au poids d'UN haltère, pas au total bilatéral. Cohérent avec
+ * la convention catalogue (cf. `effectiveLoadForE1rm` qui ne transforme
+ * pas DUMBBELL : load_kg saisi = e1rm stocké, en per-haltère).
+ *
+ * Variante `kgUnitLabelShort` : suffixe minimal pour les labels compacts
+ * (SetInput kg / haltère, badge).
+ */
+export function kgUnitLabel(c: ChargeType | undefined): string {
+  return c === ChargeType.DUMBBELL ? 'kg / haltère' : 'kg';
+}
+
+export function kgUnitLabelShort(c: ChargeType | undefined): string {
+  return c === ChargeType.DUMBBELL ? 'kg/halt' : 'kg';
+}
 export function tagLabel(tag: string): string | null {
   return TAG_LABEL_FR[tag] ?? null;
 }

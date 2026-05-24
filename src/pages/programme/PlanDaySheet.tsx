@@ -24,6 +24,7 @@ import type {
   SetFeedback,
   WeeklyTemplate,
 } from '@/engine/models';
+import { kgUnitLabelShort } from '@/lib/catalog-filter';
 import { estimateDayDurationMinutes } from '@/lib/onboarding-preview';
 
 interface PlanDaySheetProps {
@@ -624,11 +625,14 @@ function CompletedSessionBlock({
           </span>
           <ul className="flex flex-col gap-1 text-sm text-anthracite-100">
             {rollups.map((r) => {
-              const name =
-                catalog !== null && catalog.has(r.exerciseId)
-                  ? catalog.get(r.exerciseId).nom_fr
-                  : r.exerciseId;
+              const ex = catalog !== null && catalog.has(r.exerciseId)
+                ? catalog.get(r.exerciseId)
+                : null;
+              const name = ex !== null ? ex.nom_fr : r.exerciseId;
               const repsPerSet = Math.round(r.repsTotal / r.setsDone);
+              // Conv #20 — kg/halt pour les exos DUMBBELL (load_kg stocké
+              // est en per-haltère par convention catalogue).
+              const unit = kgUnitLabelShort(ex?.charge);
               return (
                 <li
                   key={r.exerciseId}
@@ -637,7 +641,7 @@ function CompletedSessionBlock({
                 >
                   <span className="min-w-0 truncate">{name}</span>
                   <span className="shrink-0 tabular-nums text-anthracite-300">
-                    {r.setsDone}×{repsPerSet} @ {r.avgLoadKg.toFixed(1)} kg ·
+                    {r.setsDone}×{repsPerSet} @ {r.avgLoadKg.toFixed(1)} {unit} ·
                     effort {r.avgRpe.toFixed(1)}
                   </span>
                 </li>

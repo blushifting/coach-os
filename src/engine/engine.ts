@@ -25,6 +25,7 @@ import type {
   UserState,
 } from './models';
 import {
+  ChargeType,
   E1RMApp,
   ExType,
   MUSCLES,
@@ -144,6 +145,22 @@ const BOOTSTRAP_PCT: Record<string, number> = {
   obliques: 0.2, lombaires: 0.5, mollets: 1.0,
 };
 
+/**
+ * Conv #20 — Facteur d'ajustement bootstrap pour DUMBBELL.
+ *
+ * Convention catalogue Coach OS : pour les exos haltères, le `load_kg` saisi
+ * (et donc l'e1RM stocké) est exprimé **par haltère**. Pour un bilateral
+ * comme bench_db, ce per-haltère vaut ≈ moitié du barbell-équivalent total
+ * (chaque DB ne porte que la moitié du travail). Le `BOOTSTRAP_PCT` ci-dessus
+ * est calibré sur les ratios barbell totaux → on divise par 2 pour les
+ * DUMBBELL. Pour les unilatéraux (concentration_curl, bulgarian_split…),
+ * l'approximation reste correcte au premier ordre — la calibration
+ * intra-séance corrige en 1-2 séries fiables. Cf. Conv #17b
+ * (`ALEX_SWAP_E1RM.ohp_db_seated = 20 kg/haltère` posé manuellement parce
+ * que le bootstrap retournait ~34 kg).
+ */
+const BOOTSTRAP_DUMBBELL_FACTOR = 0.5;
+
 export function bootstrapE1rmIfMissing(state: UserState, exercise: Exercise): number {
   if (exercise.id in state.e1rm) return state.e1rm[exercise.id]!;
   const bw = state.profile.bodyweight_kg;
@@ -154,7 +171,10 @@ export function bootstrapE1rmIfMissing(state: UserState, exercise: Exercise): nu
   } else {
     pct = 0.5;
   }
-  return Math.max(20, bw * pct);
+  const raw = Math.max(20, bw * pct);
+  const factor =
+    exercise.charge === ChargeType.DUMBBELL ? BOOTSTRAP_DUMBBELL_FACTOR : 1;
+  return raw * factor;
 }
 
 // =============================================================================
