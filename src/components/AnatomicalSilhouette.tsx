@@ -30,6 +30,20 @@ export type SilhouetteStatus =
   | 'highlight'
   | 'synergist';
 
+/**
+ * Conv #20 — palette de coloration selon le contexte d'usage :
+ *  - `legacy` (défaut) — coloration "anatomique" multi-teinte historique,
+ *     utilisée par le Catalogue (mini silhouette + détail exo). Distingue
+ *     primaire / synergiste avec deux teintes de sang. Inchangée.
+ *  - `volume` — mono-teinte sang pour la vue Progrès → Volume. La couleur
+ *     graduée signale uniquement la position relative au volume cible
+ *     (sang-900 sous V_min → sang-600 cible → sang-400 au-dessus).
+ *  - `priority` — palette amber/or pour la sélection des muscles
+ *     prioritaires en onboarding. Top 3 "brille" en amber-400, autres en
+ *     amber-700.
+ */
+export type SilhouettePalette = 'legacy' | 'volume' | 'priority';
+
 export interface AnatomicalSilhouetteProps {
   /** Mapping `muscle_id` Coach OS → statut. Muscle absent = `off`. */
   readonly highlights?: Readonly<Record<string, SilhouetteStatus>>;
@@ -53,6 +67,8 @@ export interface AnatomicalSilhouetteProps {
   readonly onMuscleClick?: (muscle: string) => void;
   /** Muscle actuellement sélectionné (souligné d'un liseré). */
   readonly selectedMuscle?: string | null;
+  /** Conv #20 — palette de coloration (défaut `legacy`). */
+  readonly palette?: SilhouettePalette;
 }
 
 // Conv #18 — bumpé d'un cran pour mieux ressortir du fond Card
@@ -60,13 +76,45 @@ export interface AnatomicalSilhouetteProps {
 // (#262a30) → quasi-invisibles. Passés à -500 (#454a52) : la silhouette
 // reste lisible même quand aucun statut n'est posé. Le neutral (zones
 // tête/cou/genoux) reste un cran en dessous pour la hiérarchie.
-const TONE_FILL: Record<SilhouetteStatus, string> = {
+const TONE_FILL_LEGACY: Record<SilhouetteStatus, string> = {
   off: 'fill-anthracite-500',
   low: 'fill-sang-800',
   ok: 'fill-emerald-700',
   high: 'fill-amber-700',
   highlight: 'fill-sang-700',
   synergist: 'fill-sang-900',
+};
+
+// Conv #20 — Vue Volume (Progrès) : mono-teinte sang qui exprime la position
+// relative au cible V_min/V_max. Le contraste fait tout le travail (pas de
+// stroke effect ni d'animation).
+//   sous V_min  → sang-900 (sombre, peu présent)
+//   dans cible  → sang-600 (couleur marque pleine — "santé")
+//   au-dessus   → sang-400 (clair vif, ressort visuellement = junk volume)
+const TONE_FILL_VOLUME: Record<SilhouetteStatus, string> = {
+  off: 'fill-anthracite-500',
+  low: 'fill-sang-900',
+  ok: 'fill-sang-600',
+  high: 'fill-sang-400',
+  highlight: 'fill-sang-600',
+  synergist: 'fill-sang-900',
+};
+
+// Conv #20 — Onboarding Step2 (sélection muscles prioritaires) : famille amber.
+// Top 3 = highlight (amber-400, brille), rank 4+ = ok (amber-700, plus discret).
+const TONE_FILL_PRIORITY: Record<SilhouetteStatus, string> = {
+  off: 'fill-anthracite-500',
+  low: 'fill-amber-700',
+  ok: 'fill-amber-700',
+  high: 'fill-amber-400',
+  highlight: 'fill-amber-400',
+  synergist: 'fill-amber-700',
+};
+
+const PALETTES: Record<SilhouettePalette, Record<SilhouetteStatus, string>> = {
+  legacy: TONE_FILL_LEGACY,
+  volume: TONE_FILL_VOLUME,
+  priority: TONE_FILL_PRIORITY,
 };
 
 const NEUTRAL_FILL = 'fill-anthracite-600';
@@ -306,11 +354,13 @@ export function AnatomicalSilhouette({
   testId,
   onMuscleClick,
   selectedMuscle = null,
+  palette = 'legacy',
 }: AnatomicalSilhouetteProps) {
   const resolvedView: 'both' | 'face' | 'back' =
     view === 'auto' ? pickBestSide(highlights) : view;
   const viewBox = resolvedView === 'both' ? '0 0 210 196' : '0 0 100 196';
   const interactive = onMuscleClick !== undefined;
+  const toneFill = PALETTES[palette];
 
   // Le dataset upstream (RBH) a une face qui s'étend de y=0 à 195.5 et un
   // dos de y=0 à 200 — différence de proportions entre les deux dessins
@@ -338,6 +388,7 @@ export function AnatomicalSilhouette({
           highlights={highlights}
           onMuscleClick={onMuscleClick}
           selectedMuscle={selectedMuscle}
+          toneFill={toneFill}
         />
       )}
       {resolvedView === 'both' && (
@@ -348,6 +399,7 @@ export function AnatomicalSilhouette({
             highlights={highlights}
             onMuscleClick={onMuscleClick}
             selectedMuscle={selectedMuscle}
+            toneFill={toneFill}
           />
         </g>
       )}
@@ -359,6 +411,7 @@ export function AnatomicalSilhouette({
             highlights={highlights}
             onMuscleClick={onMuscleClick}
             selectedMuscle={selectedMuscle}
+            toneFill={toneFill}
           />
         </g>
       )}
@@ -372,6 +425,7 @@ interface SilhouetteSideProps {
   readonly highlights: Readonly<Record<string, SilhouetteStatus>> | undefined;
   readonly onMuscleClick?: (muscle: string) => void;
   readonly selectedMuscle?: string | null;
+  readonly toneFill: Record<SilhouetteStatus, string>;
 }
 
 function SilhouetteSide({
@@ -380,6 +434,7 @@ function SilhouetteSide({
   highlights,
   onMuscleClick,
   selectedMuscle,
+  toneFill,
 }: SilhouetteSideProps) {
   return (
     <g>
@@ -399,7 +454,7 @@ function SilhouetteSide({
           en parallèle d'un éventuel scrollIntoView côté parent. */}
       {Object.entries(polys).map(([muscle, points]) => {
         const status = highlights?.[muscle] ?? 'off';
-        const fill = TONE_FILL[status];
+        const fill = toneFill[status];
         const clickable = onMuscleClick !== undefined;
         const isSelected = selectedMuscle === muscle;
         return (

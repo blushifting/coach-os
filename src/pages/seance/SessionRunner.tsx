@@ -7,7 +7,7 @@ import { ProgressRing } from '@/components/ProgressRing';
 import { cn } from '@/lib/cn';
 import { triggerHaptic } from '@/lib/haptics';
 import type { Catalog } from '@/engine/catalog';
-import type { SessionPlan } from '@/engine/models';
+import { ChargeType, type SessionPlan } from '@/engine/models';
 import { useEngine } from '@/hooks/useEngine';
 import { useCoachOsStore } from '@/store';
 import { useDemoMode } from '@/store/selectors';
@@ -248,6 +248,16 @@ export function SessionRunner({
           const entrySets = entries[i] ?? [];
           const doneCount = entrySets.filter((s) => s.done).length;
           const chargeType = ex?.charge;
+          // Conv #20 — l'exo est en mode "Poids du corps seulement" si l'user
+          // a posé `pdc_only: true` dans son EquipmentOverride. SetInput
+          // adapte alors le rendu de la charge (badge "Poids du corps"
+          // figé) et la prescription elle-même arrive avec load_kg=0.
+          const pdcOnly =
+            ex !== null &&
+            userState !== null &&
+            userState.equipment_overrides[ex.id]?.pdc_only === true &&
+            (ex.charge === ChargeType.BODYWEIGHT_LOADED ||
+              ex.charge === ChargeType.BODYWEIGHT_ASSISTED);
           return (
             <li key={`${item.exercise_id}-${i}`}>
               <Card
@@ -307,6 +317,7 @@ export function SessionRunner({
                       index={j}
                       entry={entry}
                       chargeType={chargeType}
+                      pdcOnly={pdcOnly}
                       rpeTarget={item.sets[j]?.rpe_target}
                       checkLocked={j > 0 && !entrySets[j - 1]!.done}
                       onChange={(patch) =>

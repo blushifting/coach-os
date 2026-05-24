@@ -14,7 +14,7 @@ interface StepIndicatorProps {
 export function StepIndicator({ current, total, labels }: StepIndicatorProps) {
   const indices = Array.from({ length: total }, (_, i) => i + 1);
   return (
-    <div className="px-4 pt-3 pb-2" aria-label={`Étape ${current} sur ${total}`}>
+    <div className="px-1 pt-3 pb-2" aria-label={`Étape ${current} sur ${total}`}>
       <div className="flex items-center gap-1.5">
         {indices.map((i) => {
           const done = i < current;

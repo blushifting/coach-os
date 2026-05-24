@@ -27,16 +27,17 @@ import {
 interface Step1Props {
   readonly draft: OnboardingDraft;
   readonly onChange: (patch: Partial<OnboardingDraft>) => void;
+  readonly stepLabel?: string;
 }
 
-export function Step1Profile({ draft, onChange }: Step1Props) {
+export function Step1Profile({ draft, onChange, stepLabel }: Step1Props) {
   const active = activeChipIds(draft.equipment);
 
   return (
     <div className="flex flex-col gap-5 p-4">
       <header className="flex flex-col gap-1">
         <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
-          Étape 1 · Profil
+          {stepLabel ?? 'Étape 1 · Profil'}
         </span>
         <h1 className="font-display text-3xl leading-tight tracking-wide text-white">
           Profil

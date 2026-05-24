@@ -135,6 +135,7 @@ export function VolumeView({ coverage, volume, muscleGoals }: VolumeViewProps) {
       <Card className="flex justify-center" data-testid="volume-silhouette">
         <AnatomicalSilhouette
           highlights={highlights}
+          palette="volume"
           selectedMuscle={selected}
           onMuscleClick={handleSilhouetteClick}
           className="h-56 w-auto"
@@ -182,12 +183,15 @@ export function VolumeView({ coverage, volume, muscleGoals }: VolumeViewProps) {
 // =============================================================================
 
 function Legend() {
+  // Conv #20 — palette mono-teinte sang : la couleur seule indique la
+  // position relative à la zone cible V_min/V_max. Cohérence visuelle avec
+  // la silhouette `palette="volume"`.
   return (
     <div className="flex flex-wrap gap-3 text-[10px] text-anthracite-300">
-      <LegendItem dotClass="bg-sang-700" label="sous le minimum" />
-      <LegendItem dotClass="bg-emerald-700" label="dans la cible" />
-      <LegendItem dotClass="bg-amber-700" label="au-dessus" />
-      <LegendItem dotClass="bg-anthracite-600" label="pas touché" />
+      <LegendItem dotClass="bg-sang-900" label="sous le minimum" />
+      <LegendItem dotClass="bg-sang-600" label="dans la cible" />
+      <LegendItem dotClass="bg-sang-400" label="au-dessus" />
+      <LegendItem dotClass="bg-anthracite-500" label="pas touché" />
     </div>
   );
 }

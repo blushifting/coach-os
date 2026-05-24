@@ -22,7 +22,7 @@ import { useEngine } from '@/hooks/useEngine';
 import { cn } from '@/lib/cn';
 import { useCoachOsStore } from '@/store';
 import { useDemoMode } from '@/store/selectors';
-import type { Exercise } from '@/engine/models';
+import { ChargeType, type Exercise } from '@/engine/models';
 
 interface EquipmentOverrideSheetProps {
   readonly open: boolean;
@@ -65,6 +65,11 @@ export function EquipmentOverrideSheet({
     enabled: existing?.max_load_kg != null,
     raw: existing?.max_load_kg != null ? String(existing.max_load_kg) : '200',
   }));
+  // Conv #20 — toggle PDC sticky, uniquement pour exos BW_LOADED / BW_ASSISTED.
+  const [pdcOnly, setPdcOnly] = useState<boolean>(existing?.pdc_only === true);
+  const allowsPdc =
+    exercise.charge === ChargeType.BODYWEIGHT_LOADED ||
+    exercise.charge === ChargeType.BODYWEIGHT_ASSISTED;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,7 +82,8 @@ export function EquipmentOverrideSheet({
       const inc = parseField(incField);
       const min = parseField(minField);
       const max = parseField(maxField);
-      if (inc === null && min === null && max === null) {
+      const effectivePdc = allowsPdc && pdcOnly;
+      if (inc === null && min === null && max === null && !effectivePdc) {
         // Tout vidé → équivaut à reset.
         if (hasOverride) await engine.clearEquipmentOverride(exercise.id);
         onClose();
@@ -91,6 +97,7 @@ export function EquipmentOverrideSheet({
         inc_kg: inc,
         min_load_kg: min,
         max_load_kg: max,
+        pdc_only: effectivePdc ? true : null,
       });
       onClose();
     } catch (e) {
@@ -150,6 +157,30 @@ export function EquipmentOverrideSheet({
           testId="override-max"
           disabled={demoActive || submitting}
         />
+
+        {allowsPdc && (
+          <Card className="flex flex-col gap-2">
+            <label className="flex items-center justify-between gap-2 text-sm">
+              <span className="font-medium text-white">
+                Poids du corps seulement
+              </span>
+              <input
+                type="checkbox"
+                checked={pdcOnly}
+                disabled={demoActive || submitting}
+                onChange={(e) => setPdcOnly(e.target.checked)}
+                data-testid="override-pdc-only"
+                className="h-4 w-4 accent-sang-600"
+                aria-label="Forcer le poids du corps seulement"
+              />
+            </label>
+            <p className="text-[11px] leading-relaxed text-anthracite-300">
+              Coche si tu fais cet exo uniquement au poids du corps (sans
+              ajouter ou retirer de charge). L'app gardera la charge à 0 et
+              adaptera le nombre de répétitions cibles à ton niveau.
+            </p>
+          </Card>
+        )}
 
         {error !== null && (
           <div

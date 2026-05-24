@@ -48,6 +48,7 @@ interface Step5Props {
   readonly equipment: ReadonlySet<string>;
   readonly replacements: ReadonlyArray<VariantReplacement>;
   readonly onChangeReplacements: (next: ReadonlyArray<VariantReplacement>) => void;
+  readonly stepLabel?: string;
 }
 
 interface SlotPickerState {
@@ -63,6 +64,7 @@ export function Step5Preview({
   equipment,
   replacements,
   onChangeReplacements,
+  stepLabel,
 }: Step5Props) {
   const [picker, setPicker] = useState<SlotPickerState | null>(null);
   const [expanded, setExpanded] = useState(true);
@@ -153,7 +155,7 @@ export function Step5Preview({
     <div className="flex flex-col gap-4 p-4" data-testid="step5-preview">
       <header className="flex flex-col gap-1">
         <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
-          Étape 5 · Aperçu
+          {stepLabel ?? 'Étape 5 · Aperçu'}
         </span>
         <h1 className="font-display text-3xl leading-tight tracking-wide text-white">
           Ton programme

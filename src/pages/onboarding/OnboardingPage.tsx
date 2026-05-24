@@ -256,16 +256,23 @@ export default function OnboardingPage() {
     }
   }
 
+  const isLastStep = step === 5;
+  const stepUiIndex = step - stepOffset;
+  // Conv #20 — label "Étape N · X" calculé à partir de l'index UI (1..4 en
+  // restart, 1..5 en initial) plutôt que hardcodé dans chaque Step (qui
+  // affichait toujours "Étape 2..5" en restart).
+  const stepLabelUi = `Étape ${stepUiIndex} · ${stepLabels[stepUiIndex - 1]}`;
+
   const stepContent = useMemo(() => {
     switch (step) {
       case 1:
-        return <Step1Profile draft={draft} onChange={patchDraft} />;
+        return <Step1Profile draft={draft} onChange={patchDraft} stepLabel={stepLabelUi} />;
       case 2:
-        return <Step2Muscles draft={draft} onChange={patchDraft} />;
+        return <Step2Muscles draft={draft} onChange={patchDraft} stepLabel={stepLabelUi} />;
       case 3:
-        return <Step3Balance draft={draft} onChange={patchDraft} />;
+        return <Step3Balance draft={draft} onChange={patchDraft} stepLabel={stepLabelUi} />;
       case 4:
-        return <Step4Program draft={draft} onChange={patchDraft} />;
+        return <Step4Program draft={draft} onChange={patchDraft} stepLabel={stepLabelUi} />;
       case 5:
         return (
           <Step5Preview
@@ -275,15 +282,13 @@ export default function OnboardingPage() {
             equipment={draft.equipment}
             replacements={variantReplacements}
             onChangeReplacements={setVariantReplacements}
+            stepLabel={stepLabelUi}
           />
         );
       default:
         return null;
     }
-  }, [step, draft, preview, catalog, variantReplacements]);
-
-  const isLastStep = step === 5;
-  const stepUiIndex = step - stepOffset;
+  }, [step, draft, preview, catalog, variantReplacements, stepLabelUi]);
 
   return (
     <div
@@ -293,10 +298,15 @@ export default function OnboardingPage() {
       data-restart={isRestart ? '1' : '0'}
     >
       <header
-        className="flex items-center justify-between border-b border-anthracite-800 pl-12 pr-3"
+        className="flex items-center gap-1 border-b border-anthracite-800 pl-12 pr-2"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <StepIndicator current={stepUiIndex} total={totalSteps} labels={stepLabels} />
+        {/* Conv #20 — wrapper flex-1 + min-w-0 pour que le StepIndicator
+            occupe toute la largeur restante (auparavant content-sized = bars
+            tassées sur ~120 px). Le pl-12 reste pour libérer le watermark K. */}
+        <div className="min-w-0 flex-1">
+          <StepIndicator current={stepUiIndex} total={totalSteps} labels={stepLabels} />
+        </div>
         {isRestart && (
           <Button
             variant="ghost"

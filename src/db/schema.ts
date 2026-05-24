@@ -125,6 +125,8 @@ export interface EquipmentOverrideRow {
   inc_kg: number | null;
   min_load_kg: number | null;
   max_load_kg: number | null;
+  /** Conv #20 — mode "poids du corps seulement" pour exos BW_LOADED/ASSISTED. */
+  pdc_only: boolean | null;
 }
 
 export interface UserAddedExerciseRow {

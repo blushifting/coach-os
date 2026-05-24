@@ -395,4 +395,33 @@ describe('buildPrescription', () => {
     const pres = buildPrescription(bench, 100, p, 1, { state });
     expect(pres.load_kg % 5).toBe(0);
   });
+
+  it('pdc_only=true sur pullup (BW_LOADED) → load=0, reps adaptées', () => {
+    // Conv #20 — un pullup avec e1rm total = bw + 30kg et bw=70kg : on
+    // attend ~13 reps à RPE 7 (formule Epley étendu).
+    const pullup = catalog.get('pullup');
+    const p = profile({ bodyweight_kg: 70 });
+    const state = makeUserState(p);
+    state.equipment_overrides['pullup'] = makeEquipmentOverride({
+      pdc_only: true,
+    });
+    const e1rmTotal = 100; // bw + 30 kg équivaut à e1RM total = 100
+    const pres = buildPrescription(pullup, e1rmTotal, p, 1, { state });
+    expect(pres.load_kg).toBe(0);
+    expect(pres.reps).toBeGreaterThanOrEqual(8);
+    expect(pres.reps).toBeLessThanOrEqual(20);
+  });
+
+  it('pdc_only=true sur exo non-BW (bench) → ignoré', () => {
+    const bench = catalog.get('bench_bb');
+    const p = profile();
+    const state = makeUserState(p);
+    state.equipment_overrides['bench_bb'] = makeEquipmentOverride({
+      pdc_only: true,
+    });
+    const pres = buildPrescription(bench, 100, p, 1, { state });
+    // Le flag est ignoré (bench n'est pas BW) → on a une charge calculée
+    // par la voie standard.
+    expect(pres.load_kg).toBeGreaterThan(0);
+  });
 });

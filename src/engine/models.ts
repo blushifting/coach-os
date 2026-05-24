@@ -569,6 +569,15 @@ export interface EquipmentOverride {
   inc_kg: number | null;
   min_load_kg: number | null;
   max_load_kg: number | null;
+  /**
+   * Conv #20 — Mode "Poids du corps seulement" (sticky).
+   *  - `true`  : la prescription force load_kg = 0 et adapte les reps cibles
+   *              pour atteindre le RPE cible (Epley étendu, cf.
+   *              `buildPrescription`). N'a de sens que sur les exos
+   *              `BODYWEIGHT_LOADED` / `BODYWEIGHT_ASSISTED`.
+   *  - `false` / `null` : comportement par défaut (charge ajustée).
+   */
+  pdc_only: boolean | null;
 }
 
 export function makeEquipmentOverride(
@@ -578,6 +587,7 @@ export function makeEquipmentOverride(
     inc_kg: input.inc_kg ?? null,
     min_load_kg: input.min_load_kg ?? null,
     max_load_kg: input.max_load_kg ?? null,
+    pdc_only: input.pdc_only ?? null,
   };
 }
 

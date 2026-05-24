@@ -93,7 +93,16 @@ export function deserializeUserState(s: SerializedUserState): UserState {
     recovery_mode: s.recovery_mode,
     recovery_weeks_remaining: s.recovery_weeks_remaining,
     equipment_overrides: Object.fromEntries(
-      Object.entries(s.equipment_overrides).map(([k, v]) => [k, { ...v }]),
+      Object.entries(s.equipment_overrides).map(([k, v]) => [
+        k,
+        {
+          inc_kg: v.inc_kg,
+          min_load_kg: v.min_load_kg,
+          max_load_kg: v.max_load_kg,
+          // Conv #20 — rétrocompat exports antérieurs.
+          pdc_only: ((v as { pdc_only?: boolean | null }).pdc_only) ?? null,
+        },
+      ]),
     ),
     // Rétrocompat : blobs antérieurs à Conv #11a n'ont pas ce champ.
     weekly_volume_debt: { ...(s.weekly_volume_debt ?? {}) },

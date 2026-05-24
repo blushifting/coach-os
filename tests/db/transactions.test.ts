@@ -27,6 +27,7 @@ describe('transactions.ts — atomicité blob ↔ tables dérivées', () => {
       inc_kg: 1,
       min_load_kg: 20,
       max_load_kg: 200,
+      pdc_only: null,
     };
     await txInitUser(state, 'starting_strength');
 

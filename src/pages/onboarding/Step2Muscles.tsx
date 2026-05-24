@@ -46,6 +46,7 @@ import {
 interface Step2Props {
   readonly draft: OnboardingDraft;
   readonly onChange: (patch: Partial<OnboardingDraft>) => void;
+  readonly stepLabel?: string;
 }
 
 const OBJECTIVES: readonly MuscleObjective[] = [
@@ -55,7 +56,7 @@ const OBJECTIVES: readonly MuscleObjective[] = [
   MuscleObjective.MAINTIEN,
 ];
 
-export function Step2Muscles({ draft, onChange }: Step2Props) {
+export function Step2Muscles({ draft, onChange, stepLabel }: Step2Props) {
   const selectedSet = useMemo(
     () => new Set(draft.priorities.map((p) => p.muscle)),
     [draft.priorities],
@@ -119,7 +120,7 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
     <div className="flex flex-col gap-3 p-3">
       <header className="flex flex-col gap-0.5">
         <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
-          Étape 2 · Muscles
+          {stepLabel ?? 'Étape 2 · Muscles'}
         </span>
         <h1 className="flex items-center gap-2 font-display text-2xl leading-tight tracking-wide text-white">
           Muscles cibles
@@ -164,6 +165,7 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
         <AnatomicalSilhouette
           view="both"
           highlights={silhouetteHighlights}
+          palette="priority"
           onMuscleClick={(m) =>
             selectedSet.has(m) ? removeMuscle(m) : addMuscle(m as Muscle)
           }
@@ -174,8 +176,8 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
           Touche un muscle pour l'ajouter ou le retirer.{' '}
           {draft.priorities.length > 0 && (
             <>
-              <span className="text-sang-400">●</span> top 3{' '}
-              <span className="text-emerald-400">●</span> autres
+              <span className="text-amber-400">●</span> top 3{' '}
+              <span className="text-amber-700">●</span> autres
             </>
           )}
         </p>

@@ -22,6 +22,7 @@ import type { OnboardingDraft } from '@/lib/onboarding-state';
 interface Step4Props {
   readonly draft: OnboardingDraft;
   readonly onChange: (patch: Partial<OnboardingDraft>) => void;
+  readonly stepLabel?: string;
 }
 
 const LEVEL_LABEL_FR: Record<Level, string> = {
@@ -38,12 +39,12 @@ function objectivesToFr(objs: readonly MuscleObjective[]): string {
   return objs.map(objectiveLabel).join(' + ');
 }
 
-export function Step4Program({ draft, onChange }: Step4Props) {
+export function Step4Program({ draft, onChange, stepLabel }: Step4Props) {
   return (
     <div className="flex flex-col gap-4 p-4">
       <header className="flex flex-col gap-1">
         <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
-          Étape 4 · Programme
+          {stepLabel ?? 'Étape 4 · Programme'}
         </span>
         <h1 className="font-display text-3xl leading-tight tracking-wide text-white">
           Choix du programme

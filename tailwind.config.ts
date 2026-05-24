@@ -104,15 +104,16 @@ const config: Config = {
           '0%': { strokeDashoffset: '1' },
           '100%': { strokeDashoffset: '0' },
         },
-        // Conv #19 — wave circulaire dorée sur la roue accomplie : un trait
-        // doré qui se trace tout autour du pourtour (1 tour complet), puis
-        // fade en fin. Démarre depuis le top SVG (= dernier bout de la wheel
-        // rouge à completion), sens horaire. Requiert pathLength=1 +
-        // strokeDasharray=1 sur le <circle>.
-        'gold-trace': {
-          '0%': { strokeDashoffset: '1', opacity: '0.95' },
-          '75%': { strokeDashoffset: '0', opacity: '0.95' },
-          '100%': { strokeDashoffset: '0', opacity: '0' },
+        // Conv #20 — renflement doré sur la roue accomplie : un court arc
+        // de stroke plus épais qui parcourt tout le pourtour (1 tour) puis
+        // fade. Visuellement, la trace dorée semble "gonfler" localement et
+        // ce renflement file autour de l'anneau. Démarre depuis le top SVG.
+        // Requiert pathLength=1 + strokeDasharray="0.14 0.86" sur le <circle>.
+        'gold-bulge': {
+          '0%': { strokeDashoffset: '0', opacity: '0' },
+          '10%': { opacity: '1' },
+          '85%': { strokeDashoffset: '-1', opacity: '1' },
+          '100%': { strokeDashoffset: '-1', opacity: '0' },
         },
       },
       animation: {
@@ -120,7 +121,7 @@ const config: Config = {
         'row-flash': 'row-flash 600ms ease-out',
         'reveal-up': 'reveal-up 420ms cubic-bezier(0.16, 1, 0.3, 1) both',
         'draw-line': 'draw-line 900ms cubic-bezier(0.4, 0, 0.2, 1) forwards',
-        'gold-trace': 'gold-trace 1400ms cubic-bezier(0.4, 0, 0.2, 1) 1 forwards',
+        'gold-bulge': 'gold-bulge 1400ms cubic-bezier(0.4, 0, 0.2, 1) 1 forwards',
       },
       boxShadow: {
         // Conv #11c — halo rouge diffus pour les éléments primaires hover/focus.

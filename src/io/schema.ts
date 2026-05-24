@@ -73,6 +73,8 @@ const userStateSchema = z
           inc_kg: z.number().nullable(),
           min_load_kg: z.number().nullable(),
           max_load_kg: z.number().nullable(),
+          // Conv #20 — optionnel pour rétrocompat exports antérieurs.
+          pdc_only: z.boolean().nullable().optional(),
         })
         .strict(),
     ),
@@ -127,6 +129,7 @@ const equipmentOverrideRowSchema = z.object({
   inc_kg: z.number().nullable(),
   min_load_kg: z.number().nullable(),
   max_load_kg: z.number().nullable(),
+  pdc_only: z.boolean().nullable().optional(),
 });
 
 const userAddedExerciseRowSchema = z.object({

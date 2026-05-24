@@ -31,6 +31,7 @@ function syncEquipmentOverridesInTx(state: UserState): Promise<unknown> {
     inc_kg: ov.inc_kg,
     min_load_kg: ov.min_load_kg,
     max_load_kg: ov.max_load_kg,
+    pdc_only: ov.pdc_only,
   }));
   return Promise.all([
     getDb().equipmentOverrides.clear(),

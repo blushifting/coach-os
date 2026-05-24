@@ -203,10 +203,9 @@ export default function ProfilPage() {
               userState.profile.objective
             }
           />
-          <SummaryRow
-            label="Séances/sem"
-            value={String(userState.profile.sessions_per_week)}
-          />
+          {/* Conv #20 — Séances/sem retiré du résumé Identité : géré dans la
+              Card "Priorités & programme" ci-dessous (édité via le flux
+              restart d'onboarding, pas via la sheet Identité cosmétique). */}
           <SummaryRow
             label="Équipements"
             value={

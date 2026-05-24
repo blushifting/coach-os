@@ -176,6 +176,7 @@ describe('equipmentOverrides.repo', () => {
       inc_kg: 1,
       min_load_kg: 20,
       max_load_kg: 200,
+      pdc_only: null,
     });
     const rec = await loadOverridesAsRecord();
     expect(rec['bench_barbell']?.inc_kg).toBe(1);

@@ -71,11 +71,12 @@ export function ProgressRing({
             style={{ transition: 'stroke-dasharray 360ms cubic-bezier(0.4, 0, 0.2, 1)' }}
           />
         )}
-        {/* Conv #19 — Symbole accomplissement : un trait doré qui se trace
-            sur 1 tour complet le long du pourtour, démarrant depuis le top du
-            SVG (= dernier bout de la wheel rouge en completion), puis fade
-            en fin. Pas de disque central, pas de wave radiale (qui faisaient
-            doublon avec le track doré + visuellement chargés). */}
+        {/* Conv #20 — Symbole accomplissement : un renflement doré (court arc
+            de stroke plus épais que l'anneau) qui parcourt le pourtour sur 1
+            tour, depuis le top SVG, puis fade. L'arc fait ~14 % de la
+            circonférence, son stroke est 2 px plus large que celui du track —
+            visuellement c'est l'anneau lui-même qui semble se gonfler localement
+            et propager ce renflement autour. */}
         {isComplete && (
           <circle
             cx={size / 2}
@@ -83,11 +84,11 @@ export function ProgressRing({
             r={r}
             fill="none"
             stroke="#d4a052"
-            strokeWidth={strokeWidth}
+            strokeWidth={strokeWidth + 2}
             strokeLinecap="round"
             pathLength={1}
-            className="animate-gold-trace"
-            style={{ strokeDasharray: 1, pointerEvents: 'none' }}
+            className="animate-gold-bulge"
+            style={{ strokeDasharray: '0.14 0.86', pointerEvents: 'none' }}
           />
         )}
       </svg>

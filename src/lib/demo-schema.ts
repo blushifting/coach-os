@@ -117,6 +117,8 @@ const equipmentOverrideSchema = z.object({
   inc_kg: z.number().nullable(),
   min_load_kg: z.number().nullable(),
   max_load_kg: z.number().nullable(),
+  // Conv #20 — optionnel pour rétrocompat snapshots Alex pré-Conv-#20.
+  pdc_only: z.boolean().nullable().optional(),
 });
 
 // =============================================================================

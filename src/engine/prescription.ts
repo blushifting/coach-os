@@ -138,6 +138,54 @@ export function effectiveIncrement(state: UserState, exercise: Exercise): number
   return exercise.inc_kg;
 }
 
+/**
+ * Conv #20 — l'exo doit-il être prescrit en mode "poids du corps seulement" ?
+ *
+ * `true` si l'user a explicitement activé `pdc_only` sur cet exo via
+ * EquipmentOverrideSheet ET que la charge de l'exo est de type bodyweight
+ * (loaded ou assisted). Pour les autres types (DUMBBELL, BARBELL, MACHINE…),
+ * le flag est ignoré : la notion de PDC n'a pas de sens.
+ */
+export function effectivePdcOnly(state: UserState, exercise: Exercise): boolean {
+  if (
+    exercise.charge !== ChargeType.BODYWEIGHT_LOADED &&
+    exercise.charge !== ChargeType.BODYWEIGHT_ASSISTED
+  ) {
+    return false;
+  }
+  const override = state.equipment_overrides[exercise.id];
+  return override !== undefined && override.pdc_only === true;
+}
+
+/**
+ * Conv #20 — Reps nécessaires pour atteindre `e1rmTotal` à `rpeTarget` quand
+ * la charge externe est forcée à 0 (mode PDC). On résout Epley inverse :
+ *
+ *   e1rmTotal = effectiveLoad × (1 + k × (reps + 10 − rpe))
+ *
+ * avec `effectiveLoad` constant = bodyweight pour BODYWEIGHT_LOADED (load=0)
+ * et BODYWEIGHT_ASSISTED (load=0 = pas d'assistance = bw plein). Le
+ * "plafond fictif" Epley est étendu — on accepte des reps > 15 même si la
+ * formule sort de sa zone fiable. Floor à 1 rep.
+ */
+export function targetRepsForPdc(
+  e1rmTotal: number,
+  bodyweight: number,
+  rpeTarget: number,
+  k: number = EPLEY_K,
+): number {
+  if (bodyweight <= 0) {
+    return 1;
+  }
+  const ratio = e1rmTotal / bodyweight;
+  if (ratio <= 1) {
+    return 1;
+  }
+  const nEq = (ratio - 1) / k;
+  const reps = nEq - (10 - rpeTarget);
+  return Math.max(1, Math.round(reps));
+}
+
 // =============================================================================
 // 4. Reps cibles, repos, RPE par phase — voie legacy (Profile.objective)
 // =============================================================================
@@ -421,10 +469,21 @@ export function buildPrescription(
     }
   }
 
-  const totalLoad = targetLoad(e1rmTotal, reps, rpe, k);
-  let extLoad = externalLoadFromE1rm(totalLoad, exercise, profile.bodyweight_kg);
-  const inc = state !== null ? effectiveIncrement(state, exercise) : exercise.inc_kg;
-  extLoad = roundToIncrement(extLoad, inc);
+  // Conv #20 — mode PDC sticky : charge externe forcée à 0, reps recalculés
+  // pour hit le RPE cible avec le seul poids du corps. Epley étendu (n_eq
+  // peut sortir de la zone fiable [≤15], on accepte la prescription quand
+  // même — le but est de proposer un volume cohérent même sans charge).
+  const pdcOnly = state !== null && effectivePdcOnly(state, exercise);
+  let extLoad: number;
+  if (pdcOnly) {
+    reps = targetRepsForPdc(e1rmTotal, profile.bodyweight_kg, rpe, k);
+    extLoad = 0;
+  } else {
+    const totalLoad = targetLoad(e1rmTotal, reps, rpe, k);
+    extLoad = externalLoadFromE1rm(totalLoad, exercise, profile.bodyweight_kg);
+    const inc = state !== null ? effectiveIncrement(state, exercise) : exercise.inc_kg;
+    extLoad = roundToIncrement(extLoad, inc);
+  }
   const rest = targetRest(exercise, profile.objective);
 
   // E1RMApp.NON / PARTIAL : on calcule quand même mais le caller peut l'ignorer.

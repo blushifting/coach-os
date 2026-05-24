@@ -44,7 +44,9 @@ test('seance : depuis programme → runner → terminer → bilan → retour', a
   // mode calibration → reps + effort sont vides à l'init. On doit les
   // renseigner avant de pouvoir cocher la série.
   await page.getByTestId('input-reps-0').first().fill('8');
-  await page.getByTestId('input-rpe-0').first().fill('7');
+  // Conv #20 — RPE est devenu un slider (input type=range). Playwright fill
+  // supporte les range inputs et place la valeur directement.
+  await page.getByTestId('rpe-slider-0').first().fill('7');
 
   // Valider la 1re série du 1er exo
   await page.getByTestId('toggle-done-0').first().click();
