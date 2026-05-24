@@ -49,12 +49,6 @@ const SEX_LABEL: Record<Sex, string> = {
   [Sex.FEMME]: 'Femme',
 };
 
-const OBJECTIVE_LABEL_GLOBAL: Record<string, string> = {
-  hypertrophie: 'Hypertrophie',
-  force: 'Force',
-  endurance: 'Endurance',
-};
-
 export default function ProfilPage() {
   const userState = useCoachOsStore((s) => s.userState);
   const demoActive = useDemoMode();
@@ -196,16 +190,10 @@ export default function ProfilPage() {
             label="Niveau"
             value={LEVEL_LABEL[userState.profile.level]}
           />
-          <SummaryRow
-            label="Objectif"
-            value={
-              OBJECTIVE_LABEL_GLOBAL[userState.profile.objective] ??
-              userState.profile.objective
-            }
-          />
-          {/* Conv #20 — Séances/sem retiré du résumé Identité : géré dans la
-              Card "Priorités & programme" ci-dessous (édité via le flux
-              restart d'onboarding, pas via la sheet Identité cosmétique). */}
+          {/* Conv #20 — Séances/sem + Objectif retirés du résumé Identité :
+              gérés dans la Card "Priorités & programme" ci-dessous (édités
+              via le flux restart d'onboarding, pas via la sheet Identité
+              cosmétique). Objectif est plus précis par muscle dans la prio. */}
           <SummaryRow
             label="Équipements"
             value={
