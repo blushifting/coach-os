@@ -90,6 +90,12 @@ async function loadHistorySnapshot(): Promise<HistorySnapshot> {
 /**
  * À appeler au mount de l'app : charge le catalog, lit l'état persisté
  * (userState + history) et hydrate le store. Idempotent.
+ *
+ * Conv #21 — appelle aussi `tickWeekIfNeeded` après l'hydratation pour
+ * rattraper les transitions de semaine quand l'app n'a pas été ouverte
+ * pendant ≥ 7 jours. Sans ça, `current_week_in_cycle` reste figé sur la
+ * semaine de la dernière session active, et tous les compteurs hebdo
+ * (séances, volume, dette) ne se réinitialisent jamais.
  */
 export async function bootstrap(): Promise<void> {
   const store = useCoachOsStore.getState();
@@ -102,6 +108,51 @@ export async function bootstrap(): Promise<void> {
     history,
     bootstrapped: true,
   });
+  await tickWeekIfNeeded();
+}
+
+/**
+ * Conv #21 — Rattrape les transitions hebdo manquées depuis la dernière
+ * session active. Si `now` correspond à la semaine N du cycle alors que
+ * `current_week_in_cycle` est resté à K < N, on déclenche `endOfWeek()`
+ * autant de fois que nécessaire pour arriver à `min(N, 5)`.
+ *
+ * Plafonne à la semaine 5 : la transition S5 → cycle suivant reste manuelle
+ * via le flux Bilan de cycle (sinon on régénérerait un cycle plan sans le
+ * consentement explicite du user).
+ *
+ * Idempotent : ne fait rien si `state.current_week_in_cycle` est déjà à
+ * la bonne valeur ou plus avancé. Skip aussi en mode démo (la démo a son
+ * propre snapshot temporel figé).
+ */
+export async function tickWeekIfNeeded(now: Date = new Date()): Promise<void> {
+  const store = useCoachOsStore.getState();
+  if (store.demoMode) return;
+  const state = store.userState;
+  if (state === null) return;
+  const cycle = store.history.cycles.find(
+    (c) => c.cycle_index === state.cycle_index,
+  );
+  if (cycle === undefined) return;
+  const start = new Date(cycle.start_date + 'T00:00:00');
+  const today = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  );
+  const diffDays = Math.round(
+    (today.getTime() - start.getTime()) / 86_400_000,
+  );
+  if (diffDays < 0) return;
+  const expectedWeek = Math.min(5, Math.floor(diffDays / 7) + 1);
+  let safety = 0;
+  while (safety < 5) {
+    const cur = useCoachOsStore.getState().userState;
+    if (cur === null) return;
+    if (cur.current_week_in_cycle >= expectedWeek) return;
+    await endOfWeek();
+    safety += 1;
+  }
 }
 
 export async function refreshHistory(): Promise<void> {

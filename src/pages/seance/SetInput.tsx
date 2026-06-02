@@ -385,10 +385,12 @@ interface KgStepperProps {
 }
 
 function KgStepper({ index, value, disabled, onChange }: KgStepperProps) {
-  // Conv #20 — +/- sur kg aussi (pas seulement reps). Step 2.5 par défaut :
-  // c'est l'incrément de charge le plus courant (haltères, disques 1.25 kg
-  // par côté). Si l'user a besoin plus fin, il édite le champ directement.
-  const STEP = 2.5;
+  // Conv #21 — +/- sur kg toujours en pas de 1 kg, indépendamment de l'inc_kg
+  // de l'exo. Si l'user appuie sur "+", il s'attend à voir la charge augmenter
+  // de 1 — pas de 1,25 ni de 2,5. Un "+" qui ne fait pas +1 est déroutant.
+  // L'incrément spécifique à l'équipement reste utilisé par le moteur pour
+  // l'arrondi des prescriptions (cf. effectiveIncrement).
+  const STEP = 1;
 
   function bump(delta: number) {
     const base = value ?? 0;
@@ -471,7 +473,12 @@ function RpeSlider({ index, value, target, disabled, onChange }: RpeSliderProps)
     <div className="mt-3 px-1">
       <div className="mb-1 flex items-baseline justify-between gap-2">
         <span className="text-[10px] uppercase tracking-wide text-anthracite-300">
-          effort {target !== undefined ? `· cible ${target}` : ''}
+          effort
+          {target !== undefined ? (
+            <span className="ml-1 normal-case tracking-normal text-anthracite-500">
+              vise ~{target}
+            </span>
+          ) : null}
         </span>
         <span
           data-testid={`rpe-value-${index}`}

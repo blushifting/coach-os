@@ -2,7 +2,9 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import type { Catalog } from '@/engine/catalog';
-import type { SessionSummaryData } from '@/lib/session-runner';
+import { kgUnitLabel } from '@/lib/catalog-filter';
+import { cn } from '@/lib/cn';
+import type { PlafondChange, SessionSummaryData } from '@/lib/session-runner';
 
 interface SessionSummaryProps {
   readonly label: string;
@@ -51,29 +53,24 @@ export function SessionSummary({ label, data, catalog, onClose }: SessionSummary
         />
       </Card>
 
-      <Card data-testid="summary-prs" className="flex flex-col gap-2">
-        <h3 className="text-sm font-semibold text-white">Records du jour</h3>
-        {data.prs.length === 0 ? (
+      <Card data-testid="summary-plafonds" className="flex flex-col gap-2">
+        <h3 className="text-sm font-semibold text-white">
+          Évolution des plafonds
+        </h3>
+        {data.plafondChanges.length === 0 ? (
           <p className="text-xs text-anthracite-300">
-            Pas de plafond cassé aujourd'hui — c'est normal, ça vient.
+            Pas de série fiable cette séance — aucun plafond mis à jour.
           </p>
         ) : (
           <ul className="flex flex-col gap-1">
-            {data.prs.map((pr) => {
-              const name = nameOf(catalog, pr.exerciseId);
-              return (
-                <li
-                  key={pr.exerciseId}
-                  data-testid={`pr-${pr.exerciseId}`}
-                  className="flex items-center justify-between text-sm"
-                >
-                  <span className="text-white">{name}</span>
-                  <span className="tabular-nums text-sang-500">
-                    +{pr.deltaKg.toFixed(1)} kg
-                  </span>
-                </li>
-              );
-            })}
+            {data.plafondChanges.map((c) => (
+              <PlafondRow
+                key={c.exerciseId}
+                change={c}
+                name={nameOf(catalog, c.exerciseId)}
+                chargeLabel={chargeLabelOf(catalog, c.exerciseId)}
+              />
+            ))}
           </ul>
         )}
       </Card>
@@ -123,4 +120,70 @@ function nameOf(catalog: Catalog | null, exerciseId: string): string {
   } catch {
     return exerciseId;
   }
+}
+
+function chargeLabelOf(catalog: Catalog | null, exerciseId: string): string {
+  if (catalog === null) return 'kg';
+  try {
+    return kgUnitLabel(catalog.get(exerciseId).charge);
+  } catch {
+    return 'kg';
+  }
+}
+
+/**
+ * Conv #21 — Ligne d'évolution plafond pour un exo. Trois rendus :
+ *   - première calibration : "Plafond mesuré : X kg" (vert atténué — c'est
+ *     une bonne nouvelle, on a un repère utilisable maintenant)
+ *   - hausse : "X → Y kg (+Δ)" (sang vif)
+ *   - baisse / plat : "X → Y kg (±Δ)" (anthracite atténué — on signale
+ *     mais sans alarmer, l'EMA digère parfois une mauvaise journée)
+ */
+function PlafondRow({
+  change,
+  name,
+  chargeLabel,
+}: {
+  change: PlafondChange;
+  name: string;
+  chargeLabel: string;
+}) {
+  const { exerciseId, oldE, newE, deltaKg } = change;
+  const isFirst = oldE === null;
+  const isUp = deltaKg !== null && deltaKg > 0.05;
+  const isDown = deltaKg !== null && deltaKg < -0.05;
+
+  return (
+    <li
+      data-testid={`plafond-${exerciseId}`}
+      data-direction={isFirst ? 'first' : isUp ? 'up' : isDown ? 'down' : 'flat'}
+      className="flex items-baseline justify-between gap-2 text-sm"
+    >
+      <span className="min-w-0 flex-1 truncate text-white">{name}</span>
+      {isFirst ? (
+        <span className="tabular-nums text-emerald-400">
+          {newE.toFixed(1)} {chargeLabel} · 1re mesure
+        </span>
+      ) : (
+        <span
+          className={cn(
+            'tabular-nums',
+            isUp
+              ? 'text-sang-400'
+              : isDown
+                ? 'text-anthracite-300'
+                : 'text-anthracite-300',
+          )}
+        >
+          {oldE!.toFixed(1)} → {newE.toFixed(1)} {chargeLabel}
+          {deltaKg !== null && Math.abs(deltaKg) >= 0.05 ? (
+            <span className="ml-1 text-xs">
+              ({deltaKg > 0 ? '+' : ''}
+              {deltaKg.toFixed(1)})
+            </span>
+          ) : null}
+        </span>
+      )}
+    </li>
+  );
 }

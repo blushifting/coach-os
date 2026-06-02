@@ -241,8 +241,20 @@ export default function SeancePage() {
             setFinishing(true);
             try {
               const previousFeedbacks = feedbacks;
+              // Conv #21 — snapshot des exos déjà calibrés AVANT le commit
+              // (= au moins un snapshot e1RM en BDD). Permet à
+              // `computeSessionSummary` de distinguer première calibration
+              // (pas d'ancien plafond à comparer) vs évolution (delta).
+              const previouslyCalibrated = new Set(
+                snapshots.map((s) => s.exercise_id),
+              );
               const result = await engine.recordFeedbackAndCommit(fb);
-              const data = computeSessionSummary(fb, result, previousFeedbacks);
+              const data = computeSessionSummary(
+                fb,
+                result,
+                previousFeedbacks,
+                previouslyCalibrated,
+              );
               setSummary({ label: fb.label, data });
             } finally {
               setFinishing(false);

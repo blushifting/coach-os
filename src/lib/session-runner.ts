@@ -336,6 +336,23 @@ export interface SessionSummaryData {
   readonly volumeDeltaPct: number | null;
   /** Liste des exos avec une augmentation d'e1RM (sur ce feedback). */
   readonly prs: ReadonlyArray<{ exerciseId: string; deltaKg: number }>;
+  /**
+   * Conv #21 — Évolution complète des plafonds touchés par la séance (tous
+   * les exos avec une mesure fiable, pas seulement les PR). Pour chaque exo
+   * on a l'ancien plafond (`null` = première calibration), le nouveau, et
+   * le delta. Affiché en bilan séance pour rendre visible le résultat brut
+   * du recalibrage : avant on ne voyait que les hausses ≥ +0.05 kg.
+   */
+  readonly plafondChanges: ReadonlyArray<PlafondChange>;
+}
+
+export interface PlafondChange {
+  readonly exerciseId: string;
+  /** `null` si c'était la première calibration de l'exo (rien avant). */
+  readonly oldE: number | null;
+  readonly newE: number;
+  /** `null` si première calibration ; sinon `newE - oldE` (peut être négatif). */
+  readonly deltaKg: number | null;
 }
 
 /**
@@ -364,6 +381,7 @@ export function computeSessionSummary(
   feedback: SessionFeedback,
   summary: RecordFeedbackResult,
   previousFeedbacks: ReadonlyArray<FeedbackRow>,
+  previouslyCalibratedExoIds: ReadonlySet<string> = new Set(),
 ): SessionSummaryData {
   const volumeKgToday = computeSessionVolume(feedback);
 
@@ -390,16 +408,38 @@ export function computeSessionSummary(
       : ((volumeKgToday - volumeKgLastSameLabel) / volumeKgLastSameLabel) * 100;
 
   const prs: Array<{ exerciseId: string; deltaKg: number }> = [];
+  const plafondChanges: PlafondChange[] = [];
   for (const [exId, tuple] of Object.entries(summary)) {
     if (tuple === null) continue;
     const [oldE, newE] = tuple;
-    if (newE - oldE > 0.05) {
+    const wasCalibrated = previouslyCalibratedExoIds.has(exId);
+    plafondChanges.push({
+      exerciseId: exId,
+      oldE: wasCalibrated ? oldE : null,
+      newE,
+      deltaKg: wasCalibrated ? newE - oldE : null,
+    });
+    if (wasCalibrated && newE - oldE > 0.05) {
       prs.push({ exerciseId: exId, deltaKg: newE - oldE });
     }
   }
   prs.sort((a, b) => b.deltaKg - a.deltaKg);
+  // Tri du nouveau bloc : premières calibrations en tête (event saillant),
+  // puis évolutions par |delta| décroissant.
+  plafondChanges.sort((a, b) => {
+    const aFirst = a.oldE === null ? 1 : 0;
+    const bFirst = b.oldE === null ? 1 : 0;
+    if (aFirst !== bFirst) return bFirst - aFirst;
+    return Math.abs(b.deltaKg ?? 0) - Math.abs(a.deltaKg ?? 0);
+  });
 
-  return { volumeKgToday, volumeKgLastSameLabel, volumeDeltaPct, prs };
+  return {
+    volumeKgToday,
+    volumeKgLastSameLabel,
+    volumeDeltaPct,
+    prs,
+    plafondChanges,
+  };
 }
 
 // =============================================================================

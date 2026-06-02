@@ -266,10 +266,36 @@ describe('computeSessionSummary', () => {
       shoulder_press: [40, 40] as const, // pas de PR
       curl: [15, 14.5] as const, // régression
     };
-    const r = computeSessionSummary(fb, summary, []);
+    // Conv #21 — Les 3 exos sont déjà calibrés (avaient un plafond avant).
+    // Sans ce set, ils seraient classés en "première calibration" et n'iraient
+    // pas dans `prs`.
+    const calibrated = new Set(['bench_press', 'shoulder_press', 'curl']);
+    const r = computeSessionSummary(fb, summary, [], calibrated);
     expect(r.prs).toHaveLength(1);
     expect(r.prs[0]!.exerciseId).toBe('bench_press');
     expect(r.prs[0]!.deltaKg).toBeCloseTo(1.5, 2);
+  });
+
+  it('plafondChanges : distingue 1re calibration, hausse, baisse, plat', () => {
+    const summary: RecordFeedbackResult = {
+      bench_press: [80, 82] as const, // hausse
+      shoulder_press: [40, 39] as const, // baisse
+      squat: [100, 100] as const, // plat
+      pullup: [60, 70] as const, // 1re calibration (oldE n'a pas d'historique)
+    };
+    const calibrated = new Set(['bench_press', 'shoulder_press', 'squat']);
+    const r = computeSessionSummary(fb, summary, [], calibrated);
+    expect(r.plafondChanges).toHaveLength(4);
+    const byId = new Map(r.plafondChanges.map((c) => [c.exerciseId, c]));
+    expect(byId.get('pullup')!.oldE).toBeNull();
+    expect(byId.get('pullup')!.newE).toBe(70);
+    expect(byId.get('pullup')!.deltaKg).toBeNull();
+    expect(byId.get('bench_press')!.oldE).toBe(80);
+    expect(byId.get('bench_press')!.deltaKg).toBeCloseTo(2, 2);
+    expect(byId.get('shoulder_press')!.deltaKg).toBeCloseTo(-1, 2);
+    expect(byId.get('squat')!.deltaKg).toBe(0);
+    // Tri : 1re calibration en tête.
+    expect(r.plafondChanges[0]!.exerciseId).toBe('pullup');
   });
 });
 
