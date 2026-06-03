@@ -12,7 +12,13 @@
  */
 
 import { useMemo } from 'react';
-import { Catalog } from '@/engine/catalog';
+import { Catalog, loadExercises } from '@/engine/catalog';
+import { exerciseFromDict, type ExerciseDict, type Exercise } from '@/engine/models';
+import {
+  addUserExercise as dbAddUserExercise,
+  deleteUserExercise as dbDeleteUserExercise,
+  listUserExercises,
+} from '@/db/repositories/userAddedExercises.repo';
 import * as engine from '@/engine/engine';
 import { applyBalanceRules } from '@/engine/balance';
 import {
@@ -50,7 +56,6 @@ import {
   txUpdateSessionPlan,
 } from '@/db/transactions';
 import { buildPrescription, effectiveLoadForE1rm } from '@/engine/prescription';
-import type { Exercise } from '@/engine/models';
 import { importFromJsonString } from '@/io/import';
 import { useCoachOsStore, type HistorySnapshot } from '@/store';
 
@@ -88,6 +93,30 @@ async function loadHistorySnapshot(): Promise<HistorySnapshot> {
 }
 
 /**
+ * Conv #21b — Construit un `Catalog` qui fusionne le catalogue par défaut
+ * (JSON embarqué) et les exos custom ajoutés par l'utilisateur (table
+ * `userAddedExercises`). Sans cette fusion, les exos custom n'existeraient
+ * que dans la DB et seraient invisibles pour `selection`, `buildPrescription`,
+ * `computeCoverageThisWeek`, etc.
+ *
+ * Idempotent côté Catalog (le constructeur reconstruit les index) — on
+ * peut appeler ce helper à chaque ajout/suppression d'un exo custom.
+ */
+async function buildFullCatalog(): Promise<Catalog> {
+  const defaults = loadExercises();
+  const customRows = await listUserExercises();
+  const customs: Exercise[] = customRows.map((r) =>
+    exerciseFromDict(r.exercise_dict),
+  );
+  // On filtre les éventuels customs dont l'id collisionne avec le catalogue
+  // par défaut (cas d'import JSON migré, ou exo défaut renommé) — priorité
+  // au défaut, l'user devra renommer son custom pour le récupérer.
+  const defaultIds = new Set(defaults.map((e) => e.id));
+  const filteredCustoms = customs.filter((e) => !defaultIds.has(e.id));
+  return new Catalog([...defaults, ...filteredCustoms]);
+}
+
+/**
  * À appeler au mount de l'app : charge le catalog, lit l'état persisté
  * (userState + history) et hydrate le store. Idempotent.
  *
@@ -96,12 +125,18 @@ async function loadHistorySnapshot(): Promise<HistorySnapshot> {
  * pendant ≥ 7 jours. Sans ça, `current_week_in_cycle` reste figé sur la
  * semaine de la dernière session active, et tous les compteurs hebdo
  * (séances, volume, dette) ne se réinitialisent jamais.
+ *
+ * Conv #21b — charge aussi les exos custom (userAddedExercises) et les
+ * fusionne dans le Catalog en mémoire.
  */
 export async function bootstrap(): Promise<void> {
   const store = useCoachOsStore.getState();
   if (store.bootstrapped) return;
-  const catalog = new Catalog();
-  const [userState, history] = await Promise.all([loadUserState(), loadHistorySnapshot()]);
+  const [catalog, userState, history] = await Promise.all([
+    buildFullCatalog(),
+    loadUserState(),
+    loadHistorySnapshot(),
+  ]);
   useCoachOsStore.setState({
     catalog,
     userState,
@@ -109,6 +144,29 @@ export async function bootstrap(): Promise<void> {
     bootstrapped: true,
   });
   await tickWeekIfNeeded();
+}
+
+/**
+ * Conv #21b — Ajoute un exo custom (créé via le formulaire UI) à la table
+ * `userAddedExercises` et reconstruit le Catalog en store pour qu'il soit
+ * immédiatement disponible partout (Catalogue, sélecteur séance, etc.).
+ */
+export async function addCustomExercise(dict: ExerciseDict): Promise<void> {
+  await dbAddUserExercise(dict);
+  const catalog = await buildFullCatalog();
+  useCoachOsStore.setState({ catalog });
+}
+
+/**
+ * Conv #21b — Supprime un exo custom et reconstruit le Catalog. Note : si
+ * des feedbacks référencent cet exo, les `nom_fr` afficheront l'id brut
+ * (catalog.get jette). C'est acceptable : on ne va pas supprimer
+ * rétroactivement les feedbacks historiques.
+ */
+export async function removeCustomExercise(exerciseId: string): Promise<void> {
+  await dbDeleteUserExercise(exerciseId);
+  const catalog = await buildFullCatalog();
+  useCoachOsStore.setState({ catalog });
 }
 
 /**
@@ -445,6 +503,135 @@ export async function skipCurrentSession(): Promise<void> {
     currentSessionEntries: null,
   });
   await refreshHistory();
+}
+
+// =============================================================================
+// Conv #21b — Ajout/retrait d'un exo en cours de séance + séance libre
+// =============================================================================
+
+/**
+ * Ajoute un exo à la séance en cours. `nSets` par défaut = 3 séries, valeurs
+ * pré-remplies par `buildPrescription` à partir du plafond connu (ou bootstrap
+ * heuristique si pas encore mesuré).
+ *
+ * Effets : étend `currentSessionPlan.items` ET `currentSessionEntries` de la
+ * même longueur (sinon les indices se désynchronisent dans le runner).
+ *
+ * Cas d'usage : envie d'un exo bonus, machine prise donc on bascule sur un
+ * substitut, ou complétion d'une séance libre.
+ */
+export async function addExerciseToCurrentSession(
+  exerciseId: string,
+  nSets: number = 3,
+): Promise<void> {
+  const catalog = requireCatalog();
+  const store = useCoachOsStore.getState();
+  const plan = store.currentSessionPlan;
+  const sessionId = store.currentSessionId;
+  const entries = store.currentSessionEntries;
+  if (plan === null || sessionId === null) {
+    throw new Error('Pas de séance en cours.');
+  }
+  const next = requireUserState();
+  const exercise = catalog.get(exerciseId);
+  // bootstrap transitoire (cf. Conv #20.2 — pas de persistance), juste pour
+  // poser une prescription cohérente sur le nouvel exo.
+  const e1rmTotal = engine.bootstrapE1rmIfMissing(next, exercise);
+  const prescription = buildPrescription(
+    exercise,
+    e1rmTotal,
+    next.profile,
+    next.current_week_in_cycle,
+    {
+      muscleGoals:
+        Object.keys(next.muscle_goals).length > 0 ? next.muscle_goals : null,
+      recoveryMode: next.recovery_mode,
+      state: next,
+    },
+  );
+  const safeSets = Math.max(1, Math.min(10, nSets));
+  const newItem = {
+    exercise_id: exerciseId,
+    sets: Array.from({ length: safeSets }, () => ({ ...prescription })),
+  };
+  const newPlan: SessionPlan = { ...plan, items: [...plan.items, newItem] };
+  const newRow = Array.from({ length: safeSets }, () => ({
+    reps: prescription.reps,
+    load_kg: prescription.load_kg,
+    rpe: null,
+    done: false,
+  }));
+  const newEntries =
+    entries === null ? null : [...entries, newRow];
+  await txUpdateSessionPlan(sessionId, newPlan, next);
+  useCoachOsStore.setState({
+    userState: next,
+    currentSessionPlan: newPlan,
+    currentSessionEntries: newEntries,
+  });
+}
+
+/**
+ * Retire un exo de la séance en cours (par son `itemIndex` dans
+ * `plan.items`). Met à jour `currentSessionEntries` du même indice. Si
+ * aucun item ne reste, le plan devient vide mais la session reste — l'user
+ * peut soit ajouter un nouvel exo, soit annuler/terminer.
+ */
+export async function removeExerciseFromCurrentSession(
+  itemIndex: number,
+): Promise<void> {
+  const store = useCoachOsStore.getState();
+  const plan = store.currentSessionPlan;
+  const sessionId = store.currentSessionId;
+  const entries = store.currentSessionEntries;
+  if (plan === null || sessionId === null) {
+    throw new Error('Pas de séance en cours.');
+  }
+  if (itemIndex < 0 || itemIndex >= plan.items.length) {
+    throw new Error(`Index ${itemIndex} hors plan (${plan.items.length} items).`);
+  }
+  const next = requireUserState();
+  const newItems = plan.items.filter((_, i) => i !== itemIndex);
+  const newPlan: SessionPlan = { ...plan, items: newItems };
+  const newEntries =
+    entries === null ? null : entries.filter((_, i) => i !== itemIndex);
+  await txUpdateSessionPlan(sessionId, newPlan, next);
+  useCoachOsStore.setState({
+    currentSessionPlan: newPlan,
+    currentSessionEntries: newEntries,
+  });
+}
+
+/**
+ * Démarre une "séance libre" hors programme à la date donnée. Crée un
+ * `SessionPlan` vide avec `label='Séance libre'`, persiste en DB, et la
+ * monte directement dans le runner. L'user peuple ensuite la séance via
+ * `addExerciseToCurrentSession`.
+ *
+ * Distinct de `planSessionForDay` (qui génère un plan à partir du cycle).
+ * Pas de `dayIndex` (la séance n'appartient à aucun jour-type du cycle).
+ */
+export async function startFreeSession(
+  seanceDate: string,
+): Promise<{ plan: SessionPlan; sessionId: number }> {
+  const next = requireUserState();
+  const plan: SessionPlan = {
+    seance_date: seanceDate,
+    week_in_cycle: next.current_week_in_cycle,
+    cycle_index: next.cycle_index,
+    rpe_target: 8,
+    items: [],
+    label: 'Séance libre',
+  };
+  const sessionId = await txSaveSessionPlan(plan, next);
+  useCoachOsStore.setState({
+    userState: next,
+    currentSessionPlan: plan,
+    currentSessionId: sessionId,
+    currentSessionEntries: [],
+  });
+  await refreshHistory();
+  return { plan, sessionId };
 }
 
 // =============================================================================
@@ -924,6 +1111,13 @@ export interface EngineApi {
   setFixedRoutine: typeof setFixedRoutine;
   resetApp: typeof resetApp;
   importDataFromJson: typeof importDataFromJson;
+  /** Conv #21b — gestion des exos custom (table userAddedExercises). */
+  addCustomExercise: typeof addCustomExercise;
+  removeCustomExercise: typeof removeCustomExercise;
+  /** Conv #21b — flexibilité runtime (ajout/retrait exos en séance, séance libre). */
+  addExerciseToCurrentSession: typeof addExerciseToCurrentSession;
+  removeExerciseFromCurrentSession: typeof removeExerciseFromCurrentSession;
+  startFreeSession: typeof startFreeSession;
 }
 
 export function useEngine(): EngineApi {
@@ -951,6 +1145,11 @@ export function useEngine(): EngineApi {
       setFixedRoutine,
       resetApp,
       importDataFromJson,
+      addCustomExercise,
+      removeCustomExercise,
+      addExerciseToCurrentSession,
+      removeExerciseFromCurrentSession,
+      startFreeSession,
     }),
     [],
   );

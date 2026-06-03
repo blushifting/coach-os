@@ -715,5 +715,55 @@ export function generateCyclePlan(
   // Sera aussi rappelée après `applyVariantReplacements`.
   mergeEquivalentExercisesInPlan(rebalanced, catalog);
 
+  // Conv #21b (J) — Tri des jours par coût neuro décroissant. Logique :
+  // si une séance saute, autant que ce soit la moins "chargée" → on place
+  // les plus coûteuses en début de cycle/semaine pour les sécuriser.
+  // Le tri est intra-cycle : il modifie l'ordre des `days[]` mais ne touche
+  // pas leur contenu. `day_index` est conservé tel quel (id stable, sert
+  // au lookup historique des feedbacks). L'UI lit toujours
+  // `cyclePlan.days[i]` donc l'index passé à `generateSession` reste valide.
+  orderDaysByNeuralCost(rebalanced, catalog);
+
   return rebalanced;
+}
+
+/**
+ * Conv #21b — Coût neuro d'un jour-type = somme des séries pondérées par
+ * un bonus "polyarticulaire". Compound × 1.5 reflète le coût neuro-musculaire
+ * supérieur d'un squat / soulevé / développé vs. une élévation latérale.
+ *
+ * Hors-cible : on ne tient PAS compte du RPE (qui dépend de la phase du
+ * cycle, pas du day-type). Pour un Push/Pull/Legs où chaque day a un
+ * volume similaire, le tri sera principalement guidé par le compoundBonus.
+ */
+function dayNeuralCost(day: DayTemplate, catalog: Catalog): number {
+  let score = 0;
+  for (const ex of day.exercises) {
+    let compoundBonus = 1.0;
+    try {
+      const meta = catalog.get(ex.exercise_id);
+      if (meta.type === 'compound') compoundBonus = 1.5;
+    } catch {
+      // Exo inconnu (custom retiré entre temps ?) — on garde le score brut.
+    }
+    score += ex.base_sets * compoundBonus;
+  }
+  return score;
+}
+
+/**
+ * Trie `template.days[]` IN PLACE par coût neuro décroissant. Départage
+ * stable par `day_index` ascendant (pour garder un ordre déterministe
+ * quand deux jours ont le même coût — ex. Upper A vs Upper B).
+ */
+export function orderDaysByNeuralCost(
+  template: WeeklyTemplate,
+  catalog: Catalog,
+): void {
+  template.days.sort((a, b) => {
+    const ca = dayNeuralCost(a, catalog);
+    const cb = dayNeuralCost(b, catalog);
+    if (cb !== ca) return cb - ca; // décroissant
+    return a.day_index - b.day_index; // tie-break stable
+  });
 }

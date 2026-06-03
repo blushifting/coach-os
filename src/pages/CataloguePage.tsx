@@ -9,6 +9,7 @@ import {
 } from '@/lib/catalog-filter';
 import { useCoachOsStore } from '@/store';
 import { CatalogueDetailSheet } from './catalogue/CatalogueDetailSheet';
+import { CustomExerciseSheet } from './catalogue/CustomExerciseSheet';
 import { ExerciseCard } from './catalogue/ExerciseCard';
 import { FiltersSheet } from './catalogue/FiltersSheet';
 
@@ -24,6 +25,7 @@ export default function CataloguePage() {
   const userState = useCoachOsStore((s) => s.userState);
   const [filters, setFilters] = useState<CatalogFilters>(EMPTY_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [customOpen, setCustomOpen] = useState(false);
   const [selected, setSelected] = useState<Exercise | null>(null);
 
   // Conv #21bis — Plafond affiché = `state.e1rm[id]`, la dernière valeur
@@ -83,23 +85,36 @@ export default function CataloguePage() {
           className="w-full rounded-xl border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-sm text-white placeholder:text-anthracite-300 focus:border-sang-700 focus:outline-none"
         />
 
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => setFiltersOpen(true)}
-            data-testid="catalogue-filters-toggle"
-            className="flex items-center gap-2 rounded-lg border border-anthracite-700 bg-anthracite-900 px-3 py-1.5 text-sm text-white"
-          >
-            Filtres
-            {active && (
-              <span
-                data-testid="catalogue-filters-badge"
-                className="rounded-full bg-sang-900 px-1.5 text-[10px] text-white"
-              >
-                {activeChipsCount(filters)}
-              </span>
-            )}
-          </button>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setFiltersOpen(true)}
+              data-testid="catalogue-filters-toggle"
+              className="flex items-center gap-2 rounded-lg border border-anthracite-700 bg-anthracite-900 px-3 py-1.5 text-sm text-white"
+            >
+              Filtres
+              {active && (
+                <span
+                  data-testid="catalogue-filters-badge"
+                  className="rounded-full bg-sang-900 px-1.5 text-[10px] text-white"
+                >
+                  {activeChipsCount(filters)}
+                </span>
+              )}
+            </button>
+            {/* Conv #21b — Création d'un exo custom. Bouton secondaire à côté
+                des filtres pour rester discret (action peu fréquente, mais
+                accessible). */}
+            <button
+              type="button"
+              onClick={() => setCustomOpen(true)}
+              data-testid="catalogue-custom-open"
+              className="rounded-lg border border-anthracite-700 bg-anthracite-900 px-3 py-1.5 text-sm text-white"
+            >
+              + Créer
+            </button>
+          </div>
           <div className="flex items-center gap-2 text-xs text-anthracite-300">
             <span data-testid="catalogue-count">{countLabel}</span>
             {active && (
@@ -148,6 +163,10 @@ export default function CataloguePage() {
         exercise={selected}
         e1rm={selected === null ? null : (e1rmMap[selected.id] ?? null)}
         onClose={() => setSelected(null)}
+      />
+      <CustomExerciseSheet
+        open={customOpen}
+        onClose={() => setCustomOpen(false)}
       />
     </section>
   );

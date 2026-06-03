@@ -23,6 +23,7 @@ import {
 import { e1rmConfidenceFor } from '@/lib/calibration-status';
 import { bootstrapE1rmIfMissing } from '@/engine/engine';
 import { measurementIsReliable } from '@/engine/prescription';
+import { AddExerciseSheet } from './AddExerciseSheet';
 import { CalibrationBanner } from './CalibrationBanner';
 import { ExerciseDetailSheet } from './ExerciseDetailSheet';
 import { PatternIcon } from './PatternIcon';
@@ -74,6 +75,9 @@ export function SessionRunner({
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [skipping, setSkipping] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  // Conv #21b — ajout/retrait d'exo en cours de séance.
+  const [addOpen, setAddOpen] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState<number | null>(null);
   const sessionId = useCoachOsStore.getState().currentSessionId;
   const done = countDoneSets(entries);
   const total = countPlannedSets(entries);
@@ -299,6 +303,25 @@ export function SessionRunner({
                   >
                     i
                   </button>
+                  {/* Conv #21b — bouton "retirer cet exo de la séance". On
+                      passe par un dialog si des sets sont cochés (le user
+                      ne doit pas perdre ses saisies par accident). */}
+                  <button
+                    type="button"
+                    aria-label={`Retirer ${ex?.nom_fr ?? item.exercise_id} de la séance`}
+                    data-testid={`btn-remove-${i}`}
+                    disabled={demoActive || finishing}
+                    onClick={() => {
+                      if (doneCount > 0) {
+                        setConfirmRemove(i);
+                      } else {
+                        void engine.removeExerciseFromCurrentSession(i);
+                      }
+                    }}
+                    className="h-7 w-7 rounded-full bg-anthracite-700 text-xs text-anthracite-300 transition hover:bg-sang-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    ×
+                  </button>
                 </header>
 
                 {ex !== null ? (
@@ -331,6 +354,21 @@ export function SessionRunner({
           );
         })}
       </ul>
+
+      {/* Conv #21b — ajout d'un exo bonus / substitut en cours de séance.
+          Placé entre la liste et le bouton "Terminer" pour rester visible
+          mais ne pas concurrencer le tap principal. Désactivé en démo et
+          pendant qu'une finalisation est en vol. */}
+      <Button
+        variant="ghost"
+        size="md"
+        fullWidth
+        onClick={() => setAddOpen(true)}
+        disabled={demoActive || finishing}
+        data-testid="btn-add-exercise"
+      >
+        + Ajouter un exercice
+      </Button>
 
       <Button
         variant="primary"
@@ -449,6 +487,39 @@ export function SessionRunner({
                 });
               }
         }
+      />
+
+      {/* Conv #21b — Sheet de sélection d'un exo à ajouter à la séance. */}
+      <AddExerciseSheet
+        open={addOpen}
+        catalog={catalog}
+        existingExerciseIds={
+          new Set(plan.items.map((it) => it.exercise_id))
+        }
+        onClose={() => setAddOpen(false)}
+      />
+
+      {/* Conv #21b — Confirmation avant retrait d'un exo qui a des sets cochés. */}
+      <Dialog
+        open={confirmRemove !== null}
+        title="Retirer cet exo ?"
+        description={
+          <>
+            Tu as déjà coché des séries sur cet exercice. Le retirer effacera
+            ces saisies — elles ne seront pas enregistrées.
+          </>
+        }
+        confirmLabel="Retirer"
+        cancelLabel="Annuler"
+        destructive
+        onConfirm={() => {
+          const idx = confirmRemove;
+          setConfirmRemove(null);
+          if (idx !== null) {
+            void engine.removeExerciseFromCurrentSession(idx);
+          }
+        }}
+        onCancel={() => setConfirmRemove(null)}
       />
     </div>
   );

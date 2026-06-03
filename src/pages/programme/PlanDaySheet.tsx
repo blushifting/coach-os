@@ -83,10 +83,45 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
   // Conv #18 — on inclut aussi les sessions `planned` (séance prévue mais
   // pas encore faite) : si tu planifies Full B mardi puis tu vas regarder
   // jeudi, on doit te suggérer Full C, pas Full B encore une fois.
+  //
+  // Conv #21b (G) — Priorité aux séances sautées : si une séance
+  // `status='skipped'` existe dans la fenêtre 7 jours, on suggère SON label
+  // plutôt que le label "suivant" du cycle. Logique : une séance sautée
+  // est une perte de stimulation pour le muscle concerné — la rattraper
+  // dès que possible (même slot) prime sur la rotation.
   const variationSuggestion = useMemo(() => {
     const cyclePlan = userState?.current_cycle_plan ?? null;
     if (cyclePlan === null || day === null) return null;
     const dayDate = new Date(day.date + 'T00:00:00');
+
+    // Étape 1 : chercher une séance sautée récente. Si trouvée, on suggère
+    // directement son label (pas le suivant).
+    let skipped: { date: string; label: string } | null = null;
+    for (const s of sessions) {
+      if (s.status !== 'skipped') continue;
+      if (s.seance_date >= day.date) continue;
+      const diffDays =
+        (dayDate.getTime() - new Date(s.seance_date + 'T00:00:00').getTime()) /
+        (1000 * 60 * 60 * 24);
+      if (diffDays > 7) continue;
+      if (skipped === null || s.seance_date > skipped.date) {
+        skipped = { date: s.seance_date, label: s.plan.label };
+      }
+    }
+    if (skipped !== null) {
+      const skippedTyped = skipped as { date: string; label: string };
+      const idx = cyclePlan.days.findIndex((d) => d.label === skippedTyped.label);
+      if (idx >= 0) {
+        return {
+          suggestedDayIndex: idx,
+          previousLabel: skippedTyped.label,
+          reason: 'skipped' as const,
+        };
+      }
+    }
+
+    // Étape 2 (existant) : sinon, on regarde la dernière séance complétée
+    // ou planifiée pour suggérer le label suivant.
     let latest: { date: string; label: string } | null = null;
     function consider(date: string, label: string) {
       if (date >= day!.date) return;
@@ -115,6 +150,7 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
     return {
       suggestedDayIndex: nextIdx,
       previousLabel: (latest as { label: string }).label,
+      reason: 'rotation' as const,
     };
   }, [day, feedbacks, sessions, userState]);
 
@@ -379,7 +415,11 @@ function FreeFutureBlock({
   readonly isToday: boolean;
   readonly isDeload: boolean;
   readonly pending: number | null;
-  readonly suggestion: { suggestedDayIndex: number; previousLabel: string } | null;
+  readonly suggestion: {
+    suggestedDayIndex: number;
+    previousLabel: string;
+    reason: 'skipped' | 'rotation';
+  } | null;
   readonly dayOfWeek: DayOfWeek;
   readonly onPick: (dayIndex: number) => void;
 }) {
@@ -421,13 +461,29 @@ function FreeFutureBlock({
         <p
           className="rounded-lg border border-sang-800/50 bg-sang-900/15 px-3 py-2 text-xs leading-relaxed text-anthracite-100"
           data-testid="variation-suggestion"
+          data-reason={suggestion.reason}
         >
-          💡 Tu as fait <strong className="text-white">{suggestion.previousLabel}</strong>{' '}
-          récemment — pour varier, suggérée :{' '}
-          <strong className="text-sang-300">
-            {cyclePlan.days[suggestion.suggestedDayIndex]?.label}
-          </strong>
-          .
+          {suggestion.reason === 'skipped' ? (
+            <>
+              ↩️ Tu as sauté{' '}
+              <strong className="text-white">{suggestion.previousLabel}</strong>{' '}
+              récemment — rattrape-la :{' '}
+              <strong className="text-sang-300">
+                {cyclePlan.days[suggestion.suggestedDayIndex]?.label}
+              </strong>
+              .
+            </>
+          ) : (
+            <>
+              💡 Tu as fait{' '}
+              <strong className="text-white">{suggestion.previousLabel}</strong>{' '}
+              récemment — pour varier, suggérée :{' '}
+              <strong className="text-sang-300">
+                {cyclePlan.days[suggestion.suggestedDayIndex]?.label}
+              </strong>
+              .
+            </>
+          )}
         </p>
       )}
       <ul className="flex flex-col gap-2">
@@ -482,7 +538,67 @@ function FreeFutureBlock({
           );
         })}
       </ul>
+      <FreeSessionButton isToday={isToday} onStart={onPick === undefined ? undefined : undefined} />
     </div>
+  );
+}
+
+/**
+ * Conv #21b — Bouton "Séance libre" (= hors programme, exos choisis à la
+ * volée). Crée un `SessionPlan` vide via `engine.startFreeSession` puis,
+ * si on est sur `isToday`, navigue directement vers le runner pour
+ * commencer à peupler.
+ *
+ * Distinct des slots `plan-slot-N` ci-dessus qui partent d'un day-template
+ * du cycle. Ici on a un blanc-seing : aucune contrainte de label, l'user
+ * décide quoi faire.
+ */
+function FreeSessionButton({
+  isToday,
+}: {
+  readonly isToday: boolean;
+  readonly onStart?: () => void;
+}) {
+  const engine = useEngine();
+  const navigate = useNavigate();
+  const [starting, setStarting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function start() {
+    if (!isToday) return; // Pour V1, séance libre = aujourd'hui seulement.
+    setStarting(true);
+    setError(null);
+    try {
+      const date = dateKey(new Date());
+      await engine.startFreeSession(date);
+      navigate('/seance/runner');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setStarting(false);
+    }
+  }
+
+  if (!isToday) return null;
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="md"
+        fullWidth
+        data-testid="btn-free-session"
+        onClick={() => void start()}
+        disabled={starting}
+        className="mt-1"
+      >
+        {starting ? '…' : '+ Séance libre (hors programme)'}
+      </Button>
+      {error !== null ? (
+        <p className="text-xs text-sang-400" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </>
   );
 }
 
