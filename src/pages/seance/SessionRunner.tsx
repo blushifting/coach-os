@@ -303,21 +303,15 @@ export function SessionRunner({
                   >
                     i
                   </button>
-                  {/* Conv #21b — bouton "retirer cet exo de la séance". On
-                      passe par un dialog si des sets sont cochés (le user
-                      ne doit pas perdre ses saisies par accident). */}
+                  {/* Conv #21b — bouton "retirer cet exo de la séance".
+                      Confirmation systématique (Conv #21b-fix) : tap rapide
+                      facile, on protège l'user d'un retrait accidentel. */}
                   <button
                     type="button"
                     aria-label={`Retirer ${ex?.nom_fr ?? item.exercise_id} de la séance`}
                     data-testid={`btn-remove-${i}`}
                     disabled={demoActive || finishing}
-                    onClick={() => {
-                      if (doneCount > 0) {
-                        setConfirmRemove(i);
-                      } else {
-                        void engine.removeExerciseFromCurrentSession(i);
-                      }
-                    }}
+                    onClick={() => setConfirmRemove(i)}
                     className="h-7 w-7 rounded-full bg-anthracite-700 text-xs text-anthracite-300 transition hover:bg-sang-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     ×
@@ -499,16 +493,29 @@ export function SessionRunner({
         onClose={() => setAddOpen(false)}
       />
 
-      {/* Conv #21b — Confirmation avant retrait d'un exo qui a des sets cochés. */}
+      {/* Conv #21b — Confirmation systématique avant retrait d'un exo. Texte
+          adapté selon qu'il y a des sets cochés ou non. */}
       <Dialog
         open={confirmRemove !== null}
         title="Retirer cet exo ?"
-        description={
-          <>
-            Tu as déjà coché des séries sur cet exercice. Le retirer effacera
-            ces saisies — elles ne seront pas enregistrées.
-          </>
-        }
+        description={(() => {
+          if (confirmRemove === null) return null;
+          const rowDone =
+            (entries[confirmRemove] ?? []).filter((s) => s.done).length;
+          if (rowDone > 0) {
+            return (
+              <>
+                Tu as déjà coché <strong>{rowDone}</strong> série(s) sur cet
+                exercice. Le retirer effacera ces saisies — elles ne seront
+                pas enregistrées.
+              </>
+            );
+          }
+          return (
+            <>L'exercice sera retiré de la séance en cours. Tu peux le
+            rajouter via "+ Ajouter un exercice" si tu changes d'avis.</>
+          );
+        })()}
         confirmLabel="Retirer"
         cancelLabel="Annuler"
         destructive

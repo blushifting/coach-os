@@ -1,9 +1,11 @@
 import { useState, type ReactNode } from 'react';
 import { Sheet } from '@/components/Sheet';
 import { Button } from '@/components/Button';
+import { Dialog } from '@/components/Dialog';
 import { AnatomicalSilhouette, type SilhouetteStatus } from '@/components/AnatomicalSilhouette';
 import { exercisePrimaires, exerciseSynergistes } from '@/engine/models';
 import type { Exercise } from '@/engine/models';
+import { useEngine } from '@/hooks/useEngine';
 import {
   buildDescription,
   chargeLabel,
@@ -48,12 +50,21 @@ export function CatalogueDetailSheet({
   // conditionnels) ; le `exercise === null` early-return est traité ensuite.
   const [manualOpen, setManualOpen] = useState(false);
   const [overrideOpen, setOverrideOpen] = useState(false);
+  // Conv #21b-fix — Suppression d'un exo custom. Le bouton n'apparaît que
+  // si l'exo est dans `customExerciseIds` (= ajouté par l'user, pas
+  // catalogue par défaut). Dialog de confirmation parce que c'est destructif.
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const bodyweightKg = useCoachOsStore(
     (s) => s.userState?.profile.bodyweight_kg ?? 75,
   );
   const hasOverride = useCoachOsStore(
     (s) => exercise !== null && s.userState?.equipment_overrides[exercise.id] !== undefined,
   );
+  const isCustom = useCoachOsStore(
+    (s) => exercise !== null && s.customExerciseIds.has(exercise.id),
+  );
+  const engine = useEngine();
   const demoActive = useDemoMode();
 
   if (exercise === null) return null;
@@ -251,7 +262,60 @@ export function CatalogueDetailSheet({
             </div>
           </Section>
         )}
+
+        {/* Conv #21b-fix — Bouton "Supprimer cet exo" pour les customs
+            uniquement. Les exos du catalogue par défaut ne sont jamais
+            supprimables (ils font partie du socle, on n'a pas envie de les
+            perdre). Désactivé en mode démo. */}
+        {isCustom && (
+          <div
+            className="mt-2 border-t border-anthracite-700 pt-3"
+            data-testid="catalogue-detail-custom-actions"
+          >
+            <p className="mb-2 text-[11px] leading-snug text-anthracite-400">
+              Cet exercice a été ajouté par toi. Tu peux le retirer du
+              catalogue — les feedbacks historiques resteront mais le nom
+              brut sera affiché.
+            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              fullWidth
+              disabled={demoActive || deleting}
+              data-testid={`btn-delete-custom-${exercise.id}`}
+              onClick={() => setConfirmDelete(true)}
+            >
+              {deleting ? 'Suppression…' : 'Supprimer cet exercice'}
+            </Button>
+          </div>
+        )}
       </div>
+
+      <Dialog
+        open={confirmDelete}
+        title="Supprimer cet exercice ?"
+        description={
+          <>
+            L'exercice <strong>{exercise.nom_fr}</strong> sera retiré du
+            catalogue. Les séances passées qui le référencent garderont
+            leurs données, mais le nom de l'exo n'apparaîtra plus.
+          </>
+        }
+        confirmLabel="Supprimer"
+        cancelLabel="Annuler"
+        destructive
+        onConfirm={async () => {
+          setConfirmDelete(false);
+          setDeleting(true);
+          try {
+            await engine.removeCustomExercise(exercise.id);
+            onClose();
+          } finally {
+            setDeleting(false);
+          }
+        }}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </Sheet>
   );
 }

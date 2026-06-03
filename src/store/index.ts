@@ -63,6 +63,14 @@ export interface CoachOsState {
 
   // --- catalog : référence statique chargée une fois ---
   catalog: Catalog | null;
+  /**
+   * Conv #21b-fix — Ids des exos custom ajoutés par l'utilisateur (table
+   * `userAddedExercises`). Sert à l'UI pour distinguer ces exos des exos
+   * par défaut (ex. proposer un bouton "Supprimer cet exo" sur un custom,
+   * pas sur un exo de la base). Synchronisé avec `catalog` à chaque
+   * `addCustomExercise` / `removeCustomExercise`.
+   */
+  customExerciseIds: ReadonlySet<string>;
 
   // --- méta ---
   bootstrapped: boolean;
@@ -109,6 +117,7 @@ const initialState: CoachOsState = {
   currentSessionEntries: null,
   history: initialHistory,
   catalog: null,
+  customExerciseIds: new Set<string>(),
   bootstrapped: false,
   lastEndOfWeekReview: null,
   lastCycleReview: null,

@@ -102,7 +102,10 @@ async function loadHistorySnapshot(): Promise<HistorySnapshot> {
  * Idempotent côté Catalog (le constructeur reconstruit les index) — on
  * peut appeler ce helper à chaque ajout/suppression d'un exo custom.
  */
-async function buildFullCatalog(): Promise<Catalog> {
+async function buildFullCatalog(): Promise<{
+  catalog: Catalog;
+  customIds: ReadonlySet<string>;
+}> {
   const defaults = loadExercises();
   const customRows = await listUserExercises();
   const customs: Exercise[] = customRows.map((r) =>
@@ -113,7 +116,11 @@ async function buildFullCatalog(): Promise<Catalog> {
   // au défaut, l'user devra renommer son custom pour le récupérer.
   const defaultIds = new Set(defaults.map((e) => e.id));
   const filteredCustoms = customs.filter((e) => !defaultIds.has(e.id));
-  return new Catalog([...defaults, ...filteredCustoms]);
+  const customIds = new Set(filteredCustoms.map((e) => e.id));
+  return {
+    catalog: new Catalog([...defaults, ...filteredCustoms]),
+    customIds,
+  };
 }
 
 /**
@@ -132,13 +139,14 @@ async function buildFullCatalog(): Promise<Catalog> {
 export async function bootstrap(): Promise<void> {
   const store = useCoachOsStore.getState();
   if (store.bootstrapped) return;
-  const [catalog, userState, history] = await Promise.all([
+  const [{ catalog, customIds }, userState, history] = await Promise.all([
     buildFullCatalog(),
     loadUserState(),
     loadHistorySnapshot(),
   ]);
   useCoachOsStore.setState({
     catalog,
+    customExerciseIds: customIds,
     userState,
     history,
     bootstrapped: true,
@@ -153,8 +161,8 @@ export async function bootstrap(): Promise<void> {
  */
 export async function addCustomExercise(dict: ExerciseDict): Promise<void> {
   await dbAddUserExercise(dict);
-  const catalog = await buildFullCatalog();
-  useCoachOsStore.setState({ catalog });
+  const { catalog, customIds } = await buildFullCatalog();
+  useCoachOsStore.setState({ catalog, customExerciseIds: customIds });
 }
 
 /**
@@ -165,8 +173,8 @@ export async function addCustomExercise(dict: ExerciseDict): Promise<void> {
  */
 export async function removeCustomExercise(exerciseId: string): Promise<void> {
   await dbDeleteUserExercise(exerciseId);
-  const catalog = await buildFullCatalog();
-  useCoachOsStore.setState({ catalog });
+  const { catalog, customIds } = await buildFullCatalog();
+  useCoachOsStore.setState({ catalog, customExerciseIds: customIds });
 }
 
 /**
