@@ -7,7 +7,6 @@ import {
   hasActiveFilters,
   type CatalogFilters,
 } from '@/lib/catalog-filter';
-import { peakE1rmFromSnapshots } from '@/lib/progress';
 import { useCoachOsStore } from '@/store';
 import { CatalogueDetailSheet } from './catalogue/CatalogueDetailSheet';
 import { ExerciseCard } from './catalogue/ExerciseCard';
@@ -23,31 +22,18 @@ import { FiltersSheet } from './catalogue/FiltersSheet';
 export default function CataloguePage() {
   const catalog = useCoachOsStore((s) => s.catalog);
   const userState = useCoachOsStore((s) => s.userState);
-  const snapshots = useCoachOsStore((s) => s.history.e1rmSnapshots);
   const [filters, setFilters] = useState<CatalogFilters>(EMPTY_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selected, setSelected] = useState<Exercise | null>(null);
 
-  // Conv #21 — Plafond affiché = pic des snapshots e1RM mesurés (hors
-  // déload). Aligné sur la valeur "current" de la courbe Force, qui est
-  // également un running max. Avant : on lisait `userState.e1rm`, voie EMA
-  // utilisée par le moteur pour la prescription — elle pouvait baisser
-  // ponctuellement (set perçu dur sur une charge déjà acquise) et créer
-  // un écart visible avec la courbe Force, source de confusion.
-  const e1rmMap = useMemo<Readonly<Record<string, number>>>(() => {
-    const peak = peakE1rmFromSnapshots(snapshots);
-    if (userState === null) return peak;
-    // Fallback : si un exo a une mesure dans `state.e1rm` mais pas encore
-    // de snapshot (cas saisie manuelle Catalogue, premier set en cours…),
-    // on conserve la valeur courante. Sinon l'user verrait "—" partout
-    // après une saisie manuelle qui n'a pas encore généré de snapshot.
-    const merged: Record<string, number> = { ...peak };
-    for (const [id, v] of Object.entries(userState.e1rm)) {
-      if (!Number.isFinite(v) || v <= 0) continue;
-      if (merged[id] === undefined) merged[id] = v;
-    }
-    return merged;
-  }, [snapshots, userState]);
+  // Conv #21bis — Plafond affiché = `state.e1rm[id]`, la dernière valeur
+  // calculée par le moteur (EMA des mesures fiables). Aligné avec le
+  // dernier point de la courbe Force, qui correspond au snapshot inséré
+  // au moment de la dernière séance non-déload (= state.e1rm de l'époque).
+  // Les semaines de déload (S5) n'updatent plus state.e1rm côté engine —
+  // cf. `recordFeedback`. Donc une séance de déload ne crée plus d'écart
+  // visible entre les deux vues.
+  const e1rmMap: Readonly<Record<string, number>> = userState?.e1rm ?? {};
 
   // Conv #11h — contexte pour les filtres "habituels" / "avec plafond mesuré".
   // habitualIds = exos présents dans le programme courant.

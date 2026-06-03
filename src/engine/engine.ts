@@ -45,6 +45,7 @@ import { maybeProgressReps, updateE1rmForExercise } from './feedback';
 import {
   advanceWeek,
   aggregateForceIndex,
+  DELOAD_WEEK_IN_CYCLE,
   initialVolumeBounds,
   targetVolume,
 } from './volume';
@@ -548,10 +549,27 @@ export function recordFeedback(
     (byEx[f.exercise_id] ??= []).push(f);
   }
 
+  // Conv #21bis — Une semaine de déload (S5) ne mesure pas un plafond :
+  // l'utilisateur travaille volontairement à charge réduite et RPE ~6 pour
+  // décharger la fatigue (Israetel). Mécaniquement, Epley donnerait un e1RM
+  // plus bas (charge basse × peu de reps × RPE peu informatif) ; passer
+  // cette valeur dans l'EMA tire `state.e1rm` vers le bas → la prescription
+  // post-déload partirait d'un plafond artificiellement réduit, et le
+  // Catalogue afficherait une "régression" qui n'en est pas une. On skip
+  // donc l'update e1RM pour la semaine 5. La courbe Force exclut aussi ces
+  // points (cf. `computeE1rmHistory`).
+  const skipE1rmEntirely = sessionFeedback.week_in_cycle === DELOAD_WEEK_IN_CYCLE;
+
   const calibrated = options.calibratedExoIds ?? null;
   const summary: RecordFeedbackResult = {};
   for (const [exId, fbs] of Object.entries(byEx)) {
     const ex = catalog.get(exId);
+    if (skipE1rmEntirely) {
+      // On retourne null : pas de "tuple [old, new]" car aucune update.
+      // Le bilan séance (`computeSessionSummary`) skip ces entrées.
+      summary[exId] = null;
+      continue;
+    }
     const skipEma = calibrated !== null && !calibrated.has(exId);
     summary[exId] = updateE1rmForExercise(state, ex, fbs, undefined, { skipEma });
     if (ex.e1RM_app === E1RMApp.PARTIAL || ex.e1RM_app === E1RMApp.NON) {

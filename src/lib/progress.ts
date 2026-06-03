@@ -477,34 +477,6 @@ export function exerciseMusclesLabel(
 // Historique des plafonds (Conv #11g — onglet Progrès / Force)
 // =============================================================================
 
-/**
- * Conv #21 — Plafond "pic" par exo : max des snapshots e1RM, hors semaines
- * de déload. Sert aux vues d'affichage (Catalogue, fiche exo, Catalogue
- * Detail Sheet) pour lire le même "plafond" que la courbe Force, alignée
- * sur le running max.
- *
- * Distinct de `state.e1rm` qui est la voie EMA utilisée par le moteur
- * (prescription, recalibrage intra-séance). `state.e1rm` peut baisser
- * temporairement (sets perçus durs sur charge déjà connue), ce qui est
- * voulu pour la prescription mais source de confusion à l'affichage.
- */
-export function peakE1rmFromSnapshots(
-  snapshots: ReadonlyArray<{
-    exercise_id: string;
-    e1rm: number;
-    week_in_cycle: number;
-  }>,
-): Record<string, number> {
-  const peaks: Record<string, number> = {};
-  for (const s of snapshots) {
-    if (s.week_in_cycle === DELOAD_WEEK_INDEX) continue;
-    if (!Number.isFinite(s.e1rm) || s.e1rm <= 0) continue;
-    const cur = peaks[s.exercise_id] ?? 0;
-    if (s.e1rm > cur) peaks[s.exercise_id] = s.e1rm;
-  }
-  return peaks;
-}
-
 export interface E1rmPoint {
   /** seance_date au format YYYY-MM-DD (clé d'agrégation). */
   readonly date: string;
@@ -578,22 +550,15 @@ export function computeE1rmHistory(
   for (const [exId, dateMap] of byExo) {
     if (dateMap.size < 2) continue;
     if (!catalog.has(exId)) continue;
-    // Conv #21 — la courbe "Plafond" est non-décroissante par construction :
-    // un plafond ne peut pas physiquement baisser dans la session courante
-    // (au pire on n'apporte pas de nouvelle preuve = on garde l'ancien).
-    // Running max sur les points triés chronologiquement. Le résultat est
-    // toujours en escalier montant, et le `current` affiché est aligné avec
-    // le `peakE1rmFromSnapshots` lu côté Catalogue → plus d'écart entre les
-    // deux vues.
-    const sortedDates = [...dateMap.entries()].sort(([a], [b]) =>
-      a.localeCompare(b),
-    );
-    const points: E1rmPoint[] = [];
-    let runningMax = 0;
-    for (const [date, raw] of sortedDates) {
-      runningMax = Math.max(runningMax, raw);
-      points.push({ date, e1rm: runningMax });
-    }
+    // Conv #21bis — on garde la trajectoire BRUTE des points (pas de
+    // running max). Une séance simplement moins performante doit rester
+    // visible en creux : c'est une info légitime de l'évolution. Seul le
+    // **vrai déload programmé** (semaine 5 du cycle) est exclu, en amont
+    // de cette boucle, parce que sémantiquement il ne mesure pas un
+    // plafond (charges réduites volontairement, pas un effort calibrage).
+    const points: E1rmPoint[] = [...dateMap.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, e1rm]) => ({ date, e1rm }));
     const initial = points[0]!.e1rm;
     const current = points[points.length - 1]!.e1rm;
     const deltaPct = initial > 0 ? (current / initial - 1) * 100 : 0;
