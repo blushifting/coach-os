@@ -761,11 +761,72 @@ export function generateCyclePlanV2(
     days: alloc.days,
     warnings: [...filledSkeleton.warnings, ...alloc.warnings],
   });
-  // Post-pass : merge équivalents, enforce lengthened bias, order neuro.
+  // Post-pass : merge équivalents, enforce lengthened bias, rééquilibrage
+  // durée (Conv #16-2, branché Conv #22 dans le path V2 pour atténuer
+  // l'écart entre séances en FB 5×), order neuro.
   enforceLengthenedBias(weekly, state, catalog);
   mergeEquivalentExercisesInPlan(weekly, catalog);
+  // Rééquilibrage durée par groupes slot_kind. En path V2, tous les jours
+  // d'un FB sont kind FULL, donc rééquilibrés entre eux.
+  try {
+    const slotKinds = inferSlotKindsFromSplitName(
+      filledSkeleton.split_name,
+      filledSkeleton.days.length,
+    );
+    if (slotKinds.length === weekly.days.length) {
+      const { template: rebalanced } = rebalanceCycleDurations(
+        weekly,
+        slotKinds,
+        state,
+        catalog,
+      );
+      weekly.days = rebalanced.days;
+      weekly.warnings = rebalanced.warnings;
+    }
+  } catch {
+    // best-effort : si le rééquilibrage échoue, on garde la version brute.
+  }
   orderDaysByNeuralCost(weekly, catalog);
   return weekly;
+}
+
+/**
+ * Conv #22 — Heuristique pour inférer les `SlotKind` à partir du nom du
+ * split du squelette. Sert au rééquilibrage durée qui rebalance intra-
+ * groupe slot_kind (cf. `rebalanceCycleDurations`).
+ */
+function inferSlotKindsFromSplitName(
+  splitName: string,
+  nDays: number,
+): import('./split').SlotKind[] {
+  const name = splitName.toLowerCase();
+  const result: import('./split').SlotKind[] = [];
+  if (/full body/i.test(name)) {
+    for (let i = 0; i < nDays; i += 1) {
+      result.push('full' as import('./split').SlotKind);
+    }
+    return result;
+  }
+  if (/upper\/lower|u\/l/i.test(name)) {
+    for (let i = 0; i < nDays; i += 1) {
+      result.push(
+        (i % 2 === 0 ? 'upper' : 'lower') as import('./split').SlotKind,
+      );
+    }
+    return result;
+  }
+  if (/ppl/i.test(name)) {
+    const kinds = ['push', 'pull', 'legs'] as const;
+    for (let i = 0; i < nDays; i += 1) {
+      result.push(kinds[i % 3]! as import('./split').SlotKind);
+    }
+    return result;
+  }
+  // Inconnu : on traite tout comme full → rebalance global.
+  for (let i = 0; i < nDays; i += 1) {
+    result.push('full' as import('./split').SlotKind);
+  }
+  return result;
 }
 
 /**

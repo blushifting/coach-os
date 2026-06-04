@@ -185,19 +185,31 @@ interface BumpContext {
   targetMaxSeconds: number;
   /** Muscles prio avec V_cible : ce qu'on essaie d'atteindre. */
   priorityTargets: Map<string, number>;
+  /** Plafond V_max par muscle (sert à éviter le junk volume incident). */
+  vmaxByMuscle: Map<string, number>;
+  /** Muscles "couverts" par une priorité user (PRIORITAIRE ou SUGGERE).
+   *  Les autres sont des incidents purs et plafonnés à V_min. */
+  coveredMuscles: Set<string>;
 }
 
 function buildBumpContext(state: UserState, skeleton: SkeletonTemplate): BumpContext {
   const priorityTargets = new Map<string, number>();
-  for (const muscle of Object.keys(state.muscle_goals)) {
+  const vmaxByMuscle = new Map<string, number>();
+  const coveredMuscles = new Set<string>();
+  for (const [muscle, goal] of Object.entries(state.muscle_goals)) {
     const v = effectiveCycleTargetVolume(state, muscle);
     if (v > 0) priorityTargets.set(muscle, v);
+    const [, vMax] = effectiveVolumeBounds(state, muscle);
+    if (vMax > 0) vmaxByMuscle.set(muscle, vMax);
+    if (goal.status !== undefined) coveredMuscles.add(muscle);
   }
   const targetMin = TARGET_MINUTES_BY_CATEGORY[skeleton.duration_category] ?? 90;
   return {
     state,
     targetMaxSeconds: targetMin * 60 * DURATION_OVERSHOOT_TOLERANCE,
     priorityTargets,
+    vmaxByMuscle,
+    coveredMuscles,
   };
 }
 
@@ -235,6 +247,24 @@ function pickBestBump(
         i === ei ? { ...e, n_sets: e.n_sets + 1 } : e,
       ));
       if (newDuration > ctx.targetMaxSeconds) return;
+
+      // Conv #22 (junk volume) — Refuser le bump s'il pousse un muscle
+      // **non-prio** au-delà de son V_max. Pour les muscles non couverts
+      // par muscle_goals, on plafonne à V_max_legacy (déjà calibré par
+      // initialVolumeBounds). Évite le cas fessiers à 18 séries quand
+      // l'user a pris pec/dos/quads/ischios mais pas fessiers.
+      let pushesNonPrioOverMax = false;
+      for (const [muscle, coef] of Object.entries(exo.exercise.muscles)) {
+        if (ctx.priorityTargets.has(muscle)) continue; // muscle prio OK
+        const vMax = ctx.vmaxByMuscle.get(muscle) ?? ctx.state.volume_max[muscle];
+        if (vMax === undefined) continue;
+        const next = (realized[muscle] ?? 0) + coef;
+        if (next > vMax) {
+          pushesNonPrioOverMax = true;
+          break;
+        }
+      }
+      if (pushesNonPrioOverMax) return;
 
       // Calcul du score = avancement vers V_cible des muscles touchés.
       let score = 0;
@@ -321,6 +351,11 @@ export function allocateSets(
     days[pick.dayIdx]!.exos[pick.exoIdx]!.n_sets += 1;
   }
 
+  // Conv #22 (junk volume) — Post-pass : réduire le volume des exos qui
+  // sursaturent un muscle non-prio. Évite le cas fessiers à 18 séries
+  // incidentes en FB 4× quand l'user n'a pas pris fessiers en prio.
+  reduceJunkVolume(days, ctx);
+
   // Diagnostic : muscles sous V_cible après convergence.
   const realized = weeklyVolumeByMuscle(days);
   const undershoot: string[] = [];
@@ -359,4 +394,66 @@ function buildLabelForSkeletonDay(
   sd: SkeletonTemplate['days'][number],
 ): string {
   return buildSessionLabel(sd);
+}
+
+/**
+ * Conv #22 — Post-pass anti-junk-volume.
+ *
+ * Identifie les muscles non-prio dont le volume incident hebdo dépasse
+ * leur V_max effectif (zone "junk" sans bénéfice supplémentaire et avec
+ * un coût en fatigue). Pour chaque, on réduit la série la plus "incidente"
+ * sur ce muscle, sans descendre sous :
+ *  - le plancher 3 séries / exo,
+ *  - V_min des muscles prio (le primaire de l'exo reste couvert).
+ *
+ * Convention : on ne touche jamais à un exo dont le muscle primaire est
+ * prioritaire — c'est l'esprit §3.4 du doc ("on ne rabote jamais un
+ * compound prio pour un muscle Maintien"). On agit uniquement sur les
+ * exos accessoires (isolation ou compound non-prio).
+ */
+function reduceJunkVolume(
+  days: readonly AllocatedDay[],
+  ctx: BumpContext,
+): void {
+  const MAX_PASSES = 30;
+  for (let pass = 0; pass < MAX_PASSES; pass += 1) {
+    const realized = weeklyVolumeByMuscle(days);
+    // Cherche le muscle non-prio le plus en surcharge.
+    let worstMuscle: string | null = null;
+    let worstExcess = 0;
+    for (const [muscle, vMax] of ctx.vmaxByMuscle.entries()) {
+      if (ctx.priorityTargets.has(muscle)) continue; // muscle prio = OK
+      const got = realized[muscle] ?? 0;
+      const excess = got - vMax;
+      if (excess > worstExcess) {
+        worstExcess = excess;
+        worstMuscle = muscle;
+      }
+    }
+    if (worstMuscle === null) return;
+
+    // Cherche l'exo qui sur-sollicite le plus ce muscle et qui peut être
+    // réduit (n_sets > plancher + primaire pas prioritaire).
+    interface BestEntry { dayIdx: number; exoIdx: number; coef: number }
+    let best: BestEntry | null = null;
+    days.forEach((day, di) => {
+      day.exos.forEach((exo, ei) => {
+        if (exo.n_sets <= MIN_SETS_PER_EXERCISE) return;
+        const primaries = exercisePrimaires(exo.exercise);
+        const touchesPrioPrimary = primaries.some((m) =>
+          ctx.priorityTargets.has(m),
+        );
+        if (touchesPrioPrimary) return;
+        const coef = exo.exercise.muscles[worstMuscle!] ?? 0;
+        if (coef <= 0) return;
+        const current = best as BestEntry | null;
+        if (current === null || coef > current.coef) {
+          best = { dayIdx: di, exoIdx: ei, coef };
+        }
+      });
+    });
+    const picked = best as BestEntry | null;
+    if (picked === null) return;
+    days[picked.dayIdx]!.exos[picked.exoIdx]!.n_sets -= 1;
+  }
 }

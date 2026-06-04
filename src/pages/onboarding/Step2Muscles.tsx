@@ -127,6 +127,7 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
           <p>
             Choisis les muscles que tu veux développer en priorité, puis
             glisse-les pour les classer du plus prioritaire au moins.
+            3 à 5 prios suffisent.
           </p>
           <p className="text-anthracite-300">
             <strong className="text-anthracite-100">Prioritaire</strong> = un
@@ -134,9 +135,46 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
             progresse. <strong className="text-anthracite-100">Maintien</strong>{' '}
             (les autres muscles) = volume minimum pour ne pas perdre, sans
             chercher la croissance — utile pour rester équilibré sans
-            disperser ton énergie. 3 à 5 prios suffisent.
+            disperser ton énergie.
           </p>
         </div>
+        <details className="rounded-xl border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-[12px] leading-relaxed text-anthracite-200">
+          <summary className="cursor-pointer text-white">
+            Quel objectif choisir pour chaque muscle ?
+          </summary>
+          <div className="mt-3 space-y-2 text-anthracite-300">
+            <p>
+              Quand tu ajoutes un muscle, tu peux préciser ce que tu cherches.
+              Si tu ne sais pas : <strong className="text-anthracite-100">Hypertrophie</strong>{' '}
+              est le défaut le plus courant.
+            </p>
+            <ul className="space-y-1.5 pl-1">
+              <li>
+                <strong className="text-white">Hypertrophie</strong> — faire
+                grossir le muscle (volume visible). Reps moyennes (6-12),
+                charges modérées, séries proches de l'échec. Le but de la
+                majorité des gens qui vont à la salle.
+              </li>
+              <li>
+                <strong className="text-white">Force</strong> — soulever lourd.
+                Reps basses (3-6), charges lourdes, repos longs entre séries.
+                Le muscle grossit aussi, mais moins que sur l'hypertrophie. Pour
+                ceux qui veulent battre des records de charge.
+              </li>
+              <li>
+                <strong className="text-white">Endurance</strong> — tenir long
+                sans fatigue. Reps hautes (12-25), charges légères, repos courts.
+                Utile en complément cardio / sport d'endurance.
+              </li>
+              <li>
+                <strong className="text-white">Maintien</strong> — entretenir
+                un muscle sans le développer. Très peu de volume, juste de quoi
+                ne pas perdre. À choisir si tu as un muscle déjà bien développé
+                et que tu veux libérer du temps pour d'autres.
+              </li>
+            </ul>
+          </div>
+        </details>
       </header>
 
       <div className="flex flex-wrap gap-2">

@@ -337,24 +337,26 @@ export function buildSkeleton(
 
   const warnings: string[] = [...best.warnings];
 
-  // Alerte sous-utilisation : si demande effective << capacité plafond.
-  // Seuil 50 % : si l'user a réservé 2h × 5 séances pour ne faire que 25 %
-  // de la capacité, on suggère prio++ ou durée--.
+  // Alerte sous-utilisation (Conv #22 — message orienté action user).
   const fillRatio = totalDemand / Math.max(1, totalCapacity);
   if (fillRatio < 0.5) {
     warnings.push(
-      `Sous-utilisation : ton programme couvre environ ${Math.round(fillRatio * 100)} % ` +
-        `de la capacité réservée. Tu peux ajouter des priorités musculaires, ` +
-        `ou réduire la durée/le nombre de séances.`,
+      `Ton programme tient en ${Math.round(fillRatio * 100)} % du temps que tu as ` +
+        `réservé. Tu peux : ajouter des muscles prioritaires pour étoffer ton ` +
+        `programme, ou réduire le nombre / la durée de tes séances pour gagner ` +
+        `du temps.`,
     );
   }
 
   // Alerte sur-engagement : si demande > capacité totale.
+  // (Conv #22 retour Azur : message qui propose les 3 actions concretes.)
   if (totalDemand > totalCapacity) {
     warnings.push(
-      `Tes priorités demandent ${totalDemand} cases pour ${totalCapacity} disponibles. ` +
-        `Certaines fréquences cibles ne pourront pas être atteintes — envisage ` +
-        `d'ajouter une séance ou de monter la durée max.`,
+      `Tes priorités demandent plus de temps que ta limite ne le permet. ` +
+        `Pour respecter ton programme tu peux :\n` +
+        `• Ajouter une séance par semaine,\n` +
+        `• Réduire le nombre de muscles prioritaires,\n` +
+        `• Ou accepter des séances plus longues et continuer comme prévu.`,
     );
   }
 
@@ -382,114 +384,95 @@ export function buildSkeleton(
 // =============================================================================
 
 /**
- * Construit le label final d'une séance pour affichage UI.
+ * Construit le label final d'une séance pour affichage UI (Conv #22.3).
  *
- * Stratégie (Conv #22, retour Azur sur Full Body 3× monotone) : on dérive
- * la "zone dominante" et le focus du **1er pattern compound** de la séance
- * (= celui qui ouvre la séance par convention §6.5). Ça produit des labels
- * variés même quand le split label est répétitif :
+ * Stratégie : extraire les **muscles primaires** des compounds de la
+ * séance et les afficher comme groupe descripteur (1-3 muscles max).
  *
- *   - PPL : on garde le label split tel quel ("Push", "Pull", "Legs").
- *   - U/L : "Upper · <focus>" / "Lower · <focus>" selon le pattern d'ouverture.
- *   - Full Body : la séance prend le nom de sa dominante ("Push dominant",
- *     "Pull dominant", "Jambes dominant") plutôt qu'un "Full A · Focus X/Y"
- *     répétitif.
+ *  - PPL : label split déjà explicite ("Push", "Pull", "Legs").
+ *  - U/L : "Upper · Pec + Dos" / "Lower · Quads + Ischios".
+ *  - Full Body : "Full Body · Pec + Quads" (synthèse haut/bas) plutôt
+ *    qu'un nom de pattern d'ouverture qui ne décrit qu'1 exo sur 4.
+ *
+ * Si une séance contient plusieurs muscles primaires (cas normal en FB),
+ * on prend les **2 plus représentés en séries** (proxy du focus réel).
  */
 export function buildSessionLabel(day: SkeletonDay): string {
   const split = day.split_label;
   const split_lower = split.toLowerCase();
-  // PPL : le label est déjà très explicite.
   if (/push|pull|legs/i.test(split_lower)) return split;
-  // Spec / autres splits exotiques : on laisse tel quel.
   if (/spec/i.test(split_lower)) return split;
 
-  const firstCompound = day.cells.find((c) => c.role_hint === 'compound');
-  const anchor = firstCompound ?? day.cells[0];
-  const dominance = anchor !== undefined ? patternDominance(anchor.pattern) : null;
+  const dominants = dominantMusclesFromCells(day);
 
   if (/full/i.test(split_lower)) {
-    if (dominance === null) {
-      // Fallback : focus muscles plutôt que "Full A/B/C" brut, qui crée
-      // une incohérence visuelle dans un cycle Full Body 3× (Conv #22
-      // retour Azur : "un Full C qui fait tout seul face à des Full Body").
-      if (day.focus_muscles.length > 0) {
-        const focus = day.focus_muscles
-          .slice(0, 2)
-          .map(prettyMuscle)
-          .join('/');
-        return `Full Body · ${focus}`;
-      }
-      return 'Full Body · Polyvalent';
+    if (dominants.length === 0) {
+      const focus = day.focus_muscles
+        .slice(0, 2)
+        .map(prettyMuscle)
+        .join(' + ');
+      return focus.length > 0 ? `Full Body · ${focus}` : 'Full Body · Polyvalent';
     }
-    return `Full Body · ${dominance.full}`;
+    return `Full Body · ${dominants.map(prettyMuscle).join(' + ')}`;
   }
-  if (/upper/i.test(split_lower)) {
-    if (dominance === null || dominance.zone !== 'upper') {
-      // Fallback focus muscles.
-      const focus = day.focus_muscles.slice(0, 2).map(prettyMuscle).join('/');
+  if (/upper/i.test(split_lower) || /lower/i.test(split_lower)) {
+    if (dominants.length === 0) {
+      const focus = day.focus_muscles.slice(0, 2).map(prettyMuscle).join(' + ');
       return focus.length > 0 ? `${split} · ${focus}` : split;
     }
-    return `${split} · ${dominance.short}`;
-  }
-  if (/lower/i.test(split_lower)) {
-    if (dominance === null || dominance.zone !== 'lower') {
-      const focus = day.focus_muscles.slice(0, 2).map(prettyMuscle).join('/');
-      return focus.length > 0 ? `${split} · ${focus}` : split;
-    }
-    return `${split} · ${dominance.short}`;
+    return `${split} · ${dominants.map(prettyMuscle).join(' + ')}`;
   }
   // Défaut : focus muscles.
   if (day.focus_muscles.length === 0) return split;
-  const focus = day.focus_muscles.slice(0, 2).map(prettyMuscle).join('/');
+  const focus = day.focus_muscles.slice(0, 2).map(prettyMuscle).join(' + ');
   return `${split} · ${focus}`;
 }
 
 /**
- * Conv #22 — Mapping pattern d'ouverture → dominance lisible. Utilisé pour
- * varier les labels de Full Body et préciser les U/L.
+ * Extrait les 2 muscles primaires dominants des cells d'une séance.
+ * "Dominant" = présent en primaire dans le plus grand nombre de cells,
+ * tie-break par première apparition (ordre des cells).
  */
-function patternDominance(
-  pattern: string,
-): { zone: 'upper' | 'lower' | 'core'; full: string; short: string } | null {
-  switch (pattern) {
-    case 'squat':
-      return { zone: 'lower', full: 'Squat / Quads', short: 'Quads' };
-    case 'hinge':
-      return { zone: 'lower', full: 'Hinge / Ischios', short: 'Hinge' };
-    case 'lunge':
-      return { zone: 'lower', full: 'Fente / Jambes', short: 'Jambes' };
-    case 'push_h':
-      return { zone: 'upper', full: 'Push horizontal', short: 'Pec' };
-    case 'push_v':
-      return { zone: 'upper', full: 'Push vertical', short: 'Épaules' };
-    case 'pull_h':
-      return { zone: 'upper', full: 'Pull horizontal', short: 'Dos' };
-    case 'pull_v':
-      return { zone: 'upper', full: 'Pull vertical', short: 'Lats' };
-    case 'core':
-      return { zone: 'core', full: 'Gainage', short: 'Core' };
-    default:
-      return null;
-  }
+function dominantMusclesFromCells(day: SkeletonDay): string[] {
+  if (day.cells.length === 0) return [];
+  const counts = new Map<string, { count: number; firstSeen: number }>();
+  day.cells.forEach((cell, idx) => {
+    const m = cell.primary_muscle;
+    const prev = counts.get(m);
+    if (prev === undefined) counts.set(m, { count: 1, firstSeen: idx });
+    else prev.count += 1;
+  });
+  const sorted = [...counts.entries()].sort((a, b) => {
+    if (b[1].count !== a[1].count) return b[1].count - a[1].count;
+    return a[1].firstSeen - b[1].firstSeen;
+  });
+  return sorted.slice(0, 2).map(([m]) => m);
 }
 
+/**
+ * Conv #22.3 — Noms courts pour labels de séances (compacts, propres en
+ * tête de carte). "Grand dorsal" pour dos_largeur, "Trapèzes/Rhomboïdes"
+ * pour dos_epaisseur, "Deltoïdes …" pour les deltoïdes.
+ */
+const MUSCLE_PRETTY_SHORT: Record<string, string> = {
+  pectoraux: 'Pectoraux',
+  dos_largeur: 'Grand dorsal',
+  dos_epaisseur: 'Trapèzes/Rhomboïdes',
+  trapezes_hauts: 'Trapèzes hauts',
+  quadriceps: 'Quadriceps',
+  ischios: 'Ischio-jambiers',
+  fessiers: 'Fessiers',
+  mollets: 'Mollets',
+  deltos_anterieurs: 'Deltoïdes antérieurs',
+  deltos_lateraux: 'Deltoïdes latéraux',
+  deltos_posterieurs: 'Deltoïdes postérieurs',
+  biceps: 'Biceps',
+  triceps: 'Triceps',
+  abdos: 'Abdominaux',
+  obliques: 'Obliques',
+  lombaires: 'Lombaires',
+};
+
 function prettyMuscle(m: string): string {
-  const map: Record<string, string> = {
-    pectoraux: 'Pec',
-    dos_largeur: 'Lats',
-    dos_epaisseur: 'Dos',
-    trapezes_hauts: 'Trapèzes',
-    quadriceps: 'Quads',
-    ischios: 'Ischios',
-    fessiers: 'Fessiers',
-    mollets: 'Mollets',
-    deltos_lateraux: 'Épaules',
-    deltos_posterieurs: 'Delto post',
-    biceps: 'Biceps',
-    triceps: 'Triceps',
-    abdos: 'Abdos',
-    obliques: 'Obliques',
-    lombaires: 'Lombaires',
-  };
-  return map[m] ?? m;
+  return MUSCLE_PRETTY_SHORT[m] ?? m;
 }

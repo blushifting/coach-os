@@ -64,7 +64,6 @@ export function Step5Preview({
   equipment,
   replacements,
   onChangeReplacements,
-  stepLabel,
 }: Step5Props) {
   const [picker, setPicker] = useState<SlotPickerState | null>(null);
   const [expanded, setExpanded] = useState(true);
@@ -153,19 +152,16 @@ export function Step5Preview({
 
   return (
     <div className="flex flex-col gap-4 p-4" data-testid="step5-preview">
-      <header className="flex flex-col gap-1">
-        <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
-          {stepLabel ?? 'Étape 5 · Aperçu'}
-        </span>
+      <header className="flex flex-col gap-2">
         <h1 className="font-display text-3xl leading-tight tracking-wide text-white">
           Ton programme
         </h1>
+        <p className="text-sm leading-relaxed text-anthracite-300">
+          Voici les séances générées d'après tes choix. Touche un exo pour
+          le remplacer par une variante. Tu pourras toujours modifier
+          ponctuellement pendant une séance.
+        </p>
       </header>
-      <p className="text-sm text-anthracite-300">
-        Voici les séances générées. Tu peux changer chaque exo par une variante
-        adaptée à tes préférences ou à ton équipement. Tu pourras toujours
-        modifier ponctuellement pendant une séance.
-      </p>
 
       <VolumeRecap volumeByMuscle={volumeByMuscle} />
 

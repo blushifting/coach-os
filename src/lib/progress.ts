@@ -430,13 +430,18 @@ export function formatWeekLabel(weekStart: string): string {
  */
 const MUSCLE_LABEL_FR: Readonly<Record<string, string>> = {
   pectoraux: 'Pectoraux',
-  dos_largeur: 'Dos en largeur',
-  dos_epaisseur: 'Dos en épaisseur',
-  trapezes_hauts: 'Trapèzes',
+  // Conv #22.3 — terminologie anatomique : "Grand dorsal" plutôt que
+  // "Dos en largeur", "Trapèzes / rhomboïdes" plutôt que "Dos en épaisseur".
+  dos_largeur: 'Grand dorsal',
+  dos_epaisseur: 'Trapèzes / rhomboïdes',
+  trapezes_hauts: 'Trapèzes hauts',
   quadriceps: 'Quadriceps',
   ischios: 'Ischio-jambiers',
   fessiers: 'Fessiers',
   mollets: 'Mollets',
+  // deltos_anterieurs n'est pas choisissable mais peut apparaître en
+  // synergie : on prévoit le libellé pour cohérence visuelle.
+  deltos_anterieurs: 'Deltoïdes antérieurs',
   deltos_lateraux: 'Deltoïdes latéraux',
   deltos_posterieurs: 'Deltoïdes postérieurs',
   biceps: 'Biceps',

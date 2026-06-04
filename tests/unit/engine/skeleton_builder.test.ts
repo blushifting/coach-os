@@ -241,7 +241,12 @@ describe('Conv #22 — Under-fill : warn si capacité >> demande', () => {
       suggested: ['deltos_posterieurs', 'abdos', 'lombaires'],
     });
     const skeleton = buildSkeleton(state, DurationCategory.LONG);
-    expect(skeleton.warnings.some((w) => /sous-utilisation/i.test(w))).toBe(true);
+    // Conv #22.3 — message d'alerte refondu : "ton programme tient en …%".
+    expect(
+      skeleton.warnings.some((w) =>
+        /tient en \d+\s*% du temps que tu as/i.test(w),
+      ),
+    ).toBe(true);
   });
 });
 
@@ -435,58 +440,39 @@ describe('Conv #22 — buildSessionLabel (item L)', () => {
       }),
     ).toBe('Push');
   });
-  it('U/L : label split + focus muscle(s)', () => {
+  it('U/L : label split + focus muscle(s) (fallback sans cells)', () => {
     const out = buildSessionLabel({
       day_index: 0,
       split_label: 'Upper A',
       focus_muscles: ['pectoraux', 'dos_largeur'],
       cells: [],
     });
-    expect(out).toMatch(/Upper A · Pec\/Lats/);
+    expect(out).toMatch(/Upper A · Pectoraux \+ Grand dorsal/);
   });
-  it('Full Body : nom dérivé du 1er pattern compound (varie selon dominante)', () => {
-    const pushH = buildSessionLabel({
+  it('Full Body : label dérivé des muscles dominants des cells', () => {
+    // 2 cells primary=pec, 1 cell primary=quadriceps → "Full Body · Pectoraux + Quadriceps"
+    const out = buildSessionLabel({
       day_index: 0,
       split_label: 'Full A',
       focus_muscles: ['pectoraux'],
       cells: [
-        {
-          pattern: 'push_h' as never,
-          primary_muscle: 'pectoraux',
-          role_hint: 'compound',
-          chosen_exercise_id: null,
-        },
+        { pattern: 'push_h' as never, primary_muscle: 'pectoraux', role_hint: 'compound', chosen_exercise_id: null },
+        { pattern: 'squat' as never, primary_muscle: 'quadriceps', role_hint: 'compound', chosen_exercise_id: null },
+        { pattern: 'isolation' as never, primary_muscle: 'pectoraux', role_hint: 'isolation', chosen_exercise_id: null },
       ],
     });
-    expect(pushH).toMatch(/Full Body · Push horizontal/);
+    expect(out).toMatch(/Full Body · Pectoraux \+ Quadriceps/);
 
-    const squat = buildSessionLabel({
-      day_index: 1,
-      split_label: 'Full B',
-      focus_muscles: ['quadriceps'],
-      cells: [
-        {
-          pattern: 'squat' as never,
-          primary_muscle: 'quadriceps',
-          role_hint: 'compound',
-          chosen_exercise_id: null,
-        },
-      ],
-    });
-    expect(squat).toMatch(/Full Body · Squat \/ Quads/);
-
-    // Sans cells : fallback via focus_muscles → "Full Body · <focus>".
-    // Conv #22.2 : jamais "Full A/B/C" brut (incohérent visuellement
-    // face aux séances qui ont une dominance dérivée).
+    // Sans cells : fallback focus_muscles → "Full Body · Pectoraux".
     const noCells = buildSessionLabel({
       day_index: 0,
       split_label: 'Full A',
       focus_muscles: ['pectoraux'],
       cells: [],
     });
-    expect(noCells).toMatch(/Full Body · Pec/);
+    expect(noCells).toMatch(/Full Body · Pectoraux/);
 
-    // Sans cells ni focus → "Full Body · Polyvalent" (cas dégénéré).
+    // Sans cells ni focus → "Full Body · Polyvalent".
     const empty = buildSessionLabel({
       day_index: 0,
       split_label: 'Full B',
@@ -495,21 +481,17 @@ describe('Conv #22 — buildSessionLabel (item L)', () => {
     });
     expect(empty).toBe('Full Body · Polyvalent');
   });
-  it('Upper avec cell compound : focus dérivé du pattern', () => {
+  it('Upper avec cells compound : label = muscles primaires dominants', () => {
     const out = buildSessionLabel({
       day_index: 0,
       split_label: 'Upper A',
       focus_muscles: ['dos_largeur'],
       cells: [
-        {
-          pattern: 'pull_v' as never,
-          primary_muscle: 'dos_largeur',
-          role_hint: 'compound',
-          chosen_exercise_id: null,
-        },
+        { pattern: 'pull_v' as never, primary_muscle: 'dos_largeur', role_hint: 'compound', chosen_exercise_id: null },
+        { pattern: 'push_h' as never, primary_muscle: 'pectoraux', role_hint: 'compound', chosen_exercise_id: null },
       ],
     });
-    expect(out).toMatch(/Upper A · Lats/);
+    expect(out).toMatch(/Upper A · Grand dorsal \+ Pectoraux/);
   });
 });
 
