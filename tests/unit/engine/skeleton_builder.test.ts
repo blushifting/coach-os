@@ -429,79 +429,62 @@ describe('Conv #22 — computeCycleAdherence', () => {
 // Labels descriptifs L
 // =============================================================================
 
-describe('Conv #22 — buildSessionLabel (item L)', () => {
-  it('PPL : label split sans focus', () => {
+describe('Conv #22.5 — buildSessionLabel simplifié', () => {
+  it('PPL : label split tel quel', () => {
     expect(
       buildSessionLabel({
         day_index: 0,
-        split_label: 'Push',
-        focus_muscles: ['pectoraux'],
+        split_label: 'Push A',
+        focus_muscles: [],
         cells: [],
       }),
-    ).toBe('Push');
+    ).toBe('Push A');
   });
-  it('U/L : label split + focus muscle(s) (fallback sans cells)', () => {
-    const out = buildSessionLabel({
-      day_index: 0,
-      split_label: 'Upper A',
-      focus_muscles: ['pectoraux', 'dos_largeur'],
-      cells: [],
-    });
-    expect(out).toMatch(/Upper A · Pectoraux \+ Grand dorsal/);
+  it('U/L : label split tel quel (déjà distinctif via A/B)', () => {
+    expect(
+      buildSessionLabel({
+        day_index: 0,
+        split_label: 'Upper A',
+        focus_muscles: [],
+        cells: [],
+      }),
+    ).toBe('Upper A');
+    expect(
+      buildSessionLabel({
+        day_index: 1,
+        split_label: 'Lower B',
+        focus_muscles: [],
+        cells: [],
+      }),
+    ).toBe('Lower B');
   });
-  it('Full Body : label avec suffixe lettre + muscles dominants', () => {
-    const out = buildSessionLabel({
-      day_index: 0,
-      split_label: 'Full A',
-      focus_muscles: ['pectoraux'],
-      cells: [
-        { pattern: 'push_h' as never, primary_muscle: 'pectoraux', role_hint: 'compound', chosen_exercise_id: null },
-        { pattern: 'squat' as never, primary_muscle: 'quadriceps', role_hint: 'compound', chosen_exercise_id: null },
-        { pattern: 'isolation' as never, primary_muscle: 'pectoraux', role_hint: 'isolation', chosen_exercise_id: null },
-      ],
-    });
-    expect(out).toMatch(/Full Body A · Pectoraux \+ Quadriceps/);
-
-    // Conv #22.4 : day_index 2 → "Full Body C ·" (suffixe lettre).
-    const dayC = buildSessionLabel({
-      day_index: 2,
-      split_label: 'Full C',
-      focus_muscles: ['pectoraux'],
-      cells: [
-        { pattern: 'push_h' as never, primary_muscle: 'pectoraux', role_hint: 'compound', chosen_exercise_id: null },
-      ],
-    });
-    expect(dayC).toMatch(/Full Body C · Pectoraux/);
-
-    // Sans cells : fallback focus_muscles.
-    const noCells = buildSessionLabel({
-      day_index: 1,
-      split_label: 'Full B',
-      focus_muscles: ['pectoraux'],
-      cells: [],
-    });
-    expect(noCells).toMatch(/Full Body B · Pectoraux/);
-
-    // Sans cells ni focus → "Full Body X · Polyvalent".
-    const empty = buildSessionLabel({
-      day_index: 0,
-      split_label: 'Full A',
-      focus_muscles: [],
-      cells: [],
-    });
-    expect(empty).toBe('Full Body A · Polyvalent');
+  it('Full Body : "Full Body" + lettre par day_index', () => {
+    expect(
+      buildSessionLabel({
+        day_index: 0,
+        split_label: 'Full A',
+        focus_muscles: [],
+        cells: [],
+      }),
+    ).toBe('Full Body A');
+    expect(
+      buildSessionLabel({
+        day_index: 2,
+        split_label: 'Full C',
+        focus_muscles: [],
+        cells: [],
+      }),
+    ).toBe('Full Body C');
   });
-  it('Upper avec cells compound : label = muscles primaires dominants', () => {
-    const out = buildSessionLabel({
-      day_index: 0,
-      split_label: 'Upper A',
-      focus_muscles: ['dos_largeur'],
-      cells: [
-        { pattern: 'pull_v' as never, primary_muscle: 'dos_largeur', role_hint: 'compound', chosen_exercise_id: null },
-        { pattern: 'push_h' as never, primary_muscle: 'pectoraux', role_hint: 'compound', chosen_exercise_id: null },
-      ],
-    });
-    expect(out).toMatch(/Upper A · Grand dorsal \+ Pectoraux/);
+  it('"Spec" renommé "Bonus"', () => {
+    expect(
+      buildSessionLabel({
+        day_index: 4,
+        split_label: 'Bonus',
+        focus_muscles: [],
+        cells: [],
+      }),
+    ).toBe('Bonus');
   });
 });
 

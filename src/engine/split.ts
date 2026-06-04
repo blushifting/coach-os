@@ -103,14 +103,15 @@ export const SPLIT_UL_4X: SplitTemplate = {
 
 export const SPLIT_UL_5X_SPEC: SplitTemplate = {
   id: 'ul_5x_spec',
-  name: 'U/L 5× + spec',
+  name: 'U/L 5× + bonus',
   sessions_per_week: 5,
   slots: [
     makeSlot('Upper A', SlotKind.UPPER),
     makeSlot('Lower A', SlotKind.LOWER),
     makeSlot('Upper B', SlotKind.UPPER),
     makeSlot('Lower B', SlotKind.LOWER),
-    makeSlot('Spec', SlotKind.FULL),
+    // Conv #22.5 — "Spec" renommé "Bonus" (terminologie user-friendly).
+    makeSlot('Bonus', SlotKind.FULL),
   ],
 };
 

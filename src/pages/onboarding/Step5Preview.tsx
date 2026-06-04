@@ -326,25 +326,20 @@ function TensionPanel({ tension }: { readonly tension: ProgramTension }) {
         <>
           <p className="text-xs leading-relaxed text-sang-200">
             Au moins une séance dépasse {SESSION_DURATION_WARN_MIN} min
-            (max ~{max} min). Tu peux la garder telle quelle, mais voici les
-            leviers si tu veux raccourcir :
+            (max ~{max} min). Pour respecter ton programme tu peux :
           </p>
           <ul className="ml-4 flex list-disc flex-col gap-1 text-xs leading-relaxed text-anthracite-100">
             <li>
-              <span className="font-medium text-white">Plus de séances</span> par
-              semaine (étale le volume — retour à l'étape 1).
+              <span className="font-medium text-white">Plus de séances par
+              semaine</span>.
             </li>
             <li>
-              <span className="font-medium text-white">Moins de muscles cibles</span>{' '}
-              (focus sur l'essentiel — retour à l'étape 2).
+              <span className="font-medium text-white">Moins de muscles
+              cibles</span>.
             </li>
             <li>
-              <span className="font-medium text-white">Programme custom</span> au
-              lieu d'un guidé full body (retour à l'étape 4).
-            </li>
-            <li>
-              Accepter des <span className="font-medium text-white">séances plus
-              longues</span> et continuer comme prévu.
+              <span className="font-medium text-white">Accepter des séances
+              plus longues</span> et continuer comme prévu.
             </li>
           </ul>
         </>

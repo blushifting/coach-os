@@ -384,99 +384,35 @@ export function buildSkeleton(
 // =============================================================================
 
 /**
- * Construit le label final d'une séance pour affichage UI (Conv #22.3).
+ * Construit le label final d'une séance pour affichage UI (Conv #22.5).
  *
- * Stratégie : extraire les **muscles primaires** des compounds de la
- * séance et les afficher comme groupe descripteur (1-3 muscles max).
+ * Stratégie simplifiée (retour Azur "on tourne en rond, on enlève les
+ * muscles du nom, retour au format initial") : on normalise simplement
+ * le `split_label` issu de `split.ts` pour un rendu cohérent.
  *
- *  - PPL : label split déjà explicite ("Push", "Pull", "Legs").
- *  - U/L : "Upper · Pec + Dos" / "Lower · Quads + Ischios".
- *  - Full Body : "Full Body · Pec + Quads" (synthèse haut/bas) plutôt
- *    qu'un nom de pattern d'ouverture qui ne décrit qu'1 exo sur 4.
- *
- * Si une séance contient plusieurs muscles primaires (cas normal en FB),
- * on prend les **2 plus représentés en séries** (proxy du focus réel).
+ *  - PPL : "Push A" / "Pull B" / "Legs A"…  (label split déjà OK).
+ *  - U/L : "Upper A" / "Lower B"…           (label split déjà OK).
+ *  - Full Body : "Full Body A" / "Full Body B" / "Full Body C"…
+ *    (on rajoute "Body" + lettre par day_index pour homogénéité).
+ *  - "Spec" (U/L 5x spec) → renommé "Bonus" (terme plus parlant pour
+ *    un user qui n'a jamais été à la salle).
  */
 export function buildSessionLabel(day: SkeletonDay): string {
   const split = day.split_label;
   const split_lower = split.toLowerCase();
-  if (/push|pull|legs/i.test(split_lower)) return split;
-  if (/spec/i.test(split_lower)) return split;
 
-  const dominants = dominantMusclesFromCells(day);
+  // "Spec" → "Bonus" (terminologie user-friendly).
+  if (/^spec$/i.test(split.trim()) || /\bspec\b/i.test(split_lower)) {
+    return split.replace(/\bspec\b/gi, 'Bonus');
+  }
 
   if (/full/i.test(split_lower)) {
-    // Conv #22.4 — Suffixe lettre (A/B/C…) pour distinguer les séances
-    // dans un FB répété où les muscles dominants sont identiques sur
-    // toutes les séances (retour Azur : "on perd l'identification").
-    const tag = letterTag(day.day_index);
-    const body = dominants.length > 0
-      ? dominants.map(prettyMuscle).join(' + ')
-      : day.focus_muscles.length > 0
-        ? day.focus_muscles.slice(0, 2).map(prettyMuscle).join(' + ')
-        : 'Polyvalent';
-    return `Full Body ${tag} · ${body}`;
+    return `Full Body ${letterTag(day.day_index)}`;
   }
-  if (/upper/i.test(split_lower) || /lower/i.test(split_lower)) {
-    if (dominants.length === 0) {
-      const focus = day.focus_muscles.slice(0, 2).map(prettyMuscle).join(' + ');
-      return focus.length > 0 ? `${split} · ${focus}` : split;
-    }
-    return `${split} · ${dominants.map(prettyMuscle).join(' + ')}`;
-  }
-  // Défaut : focus muscles.
-  if (day.focus_muscles.length === 0) return split;
-  const focus = day.focus_muscles.slice(0, 2).map(prettyMuscle).join(' + ');
-  return `${split} · ${focus}`;
-}
 
-/**
- * Extrait les 2 muscles primaires dominants des cells d'une séance.
- * "Dominant" = présent en primaire dans le plus grand nombre de cells,
- * tie-break par première apparition (ordre des cells).
- */
-function dominantMusclesFromCells(day: SkeletonDay): string[] {
-  if (day.cells.length === 0) return [];
-  const counts = new Map<string, { count: number; firstSeen: number }>();
-  day.cells.forEach((cell, idx) => {
-    const m = cell.primary_muscle;
-    const prev = counts.get(m);
-    if (prev === undefined) counts.set(m, { count: 1, firstSeen: idx });
-    else prev.count += 1;
-  });
-  const sorted = [...counts.entries()].sort((a, b) => {
-    if (b[1].count !== a[1].count) return b[1].count - a[1].count;
-    return a[1].firstSeen - b[1].firstSeen;
-  });
-  return sorted.slice(0, 2).map(([m]) => m);
-}
-
-/**
- * Conv #22.3 — Noms courts pour labels de séances (compacts, propres en
- * tête de carte). "Grand dorsal" pour dos_largeur, "Trapèzes/Rhomboïdes"
- * pour dos_epaisseur, "Deltoïdes …" pour les deltoïdes.
- */
-const MUSCLE_PRETTY_SHORT: Record<string, string> = {
-  pectoraux: 'Pectoraux',
-  dos_largeur: 'Grand dorsal',
-  dos_epaisseur: 'Trapèzes/Rhomboïdes',
-  trapezes_hauts: 'Trapèzes hauts',
-  quadriceps: 'Quadriceps',
-  ischios: 'Ischio-jambiers',
-  fessiers: 'Fessiers',
-  mollets: 'Mollets',
-  deltos_anterieurs: 'Deltoïdes antérieurs',
-  deltos_lateraux: 'Deltoïdes latéraux',
-  deltos_posterieurs: 'Deltoïdes postérieurs',
-  biceps: 'Biceps',
-  triceps: 'Triceps',
-  abdos: 'Abdominaux',
-  obliques: 'Obliques',
-  lombaires: 'Lombaires',
-};
-
-function prettyMuscle(m: string): string {
-  return MUSCLE_PRETTY_SHORT[m] ?? m;
+  // Upper / Lower / Push / Pull / Legs : label split déjà distinctif
+  // (A/B générés par split.ts).
+  return split;
 }
 
 /** Conv #22.4 — A/B/C/D/E/F (jusqu'à 6 séances). */
