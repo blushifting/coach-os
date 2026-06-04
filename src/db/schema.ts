@@ -41,6 +41,8 @@ export interface SerializedProfile {
   sessions_per_week: number;
   bodyweight_kg: number;
   available_equip: string[];
+  /** Conv #22 — durée MAX par séance (path co-construit). Absent sur anciens blobs. */
+  duration_category?: string;
 }
 
 export interface SerializedUserState {
@@ -68,6 +70,12 @@ export interface SerializedUserState {
   weekly_volume_debt?: Record<string, number>;
   /** Routine fixée par jour de la semaine (Conv #18). Absent sur les anciens blobs. */
   fixed_routine?: Record<string, number>;
+  /** Conv #22 — squelette du cycle courant (path co-construit). Absent sur anciens blobs. */
+  current_skeleton?: import('@/engine/models').SkeletonTemplate | null;
+  /** Conv #22 — exos préférés par pattern. Absent sur anciens blobs. */
+  favorite_exercise_per_pattern?: Record<string, string>;
+  /** Conv #22 (H) — stratégie de déload pour la sem 5. Absent sur anciens blobs. */
+  deload_strategy?: string | null;
 }
 
 // =============================================================================

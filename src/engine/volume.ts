@@ -122,11 +122,31 @@ export function targetVolume(state: UserState, muscle: string): number {
   const vMin = state.volume_min[muscle]!;
   const vMax = state.volume_max[muscle]!;
   if (w === 5) {
+    // Conv #22 (H) — déload conditionnel selon adhérence du cycle. Le
+    // champ `deload_strategy` est posé par `advanceWeek` à l'entrée en
+    // sem 5. NORMAL = comportement legacy. SHORTENED = allègement
+    // intermédiaire (facteur 0.7). NONE = pas de déload, sem 5 ≈ sem 4+1
+    // progressive (cycle prolongé d'1 sem).
+    const strategy = state.deload_strategy ?? DeloadStrategy.NORMAL;
+    if (strategy === DeloadStrategy.NONE) {
+      const target = vMin + 4 * DELTA_V_PER_WEEK;
+      return Math.min(target, vMax);
+    }
+    if (strategy === DeloadStrategy.SHORTENED) {
+      return vMin * SHORTENED_DELOAD_FACTOR;
+    }
     return vMin * DELOAD_FACTOR;
   }
   const target = vMin + (w - 1) * DELTA_V_PER_WEEK;
   return Math.min(target, vMax);
 }
+
+/**
+ * Conv #22 (H) — Facteur d'allègement intermédiaire (déload raccourci).
+ * Cible : ~70 % du V_min sur sem 5 en cas d'adhérence partielle (50-75 %).
+ * Plus généreux que NORMAL (50 %), moins que sem 4 (100 %).
+ */
+export const SHORTENED_DELOAD_FACTOR = 0.7;
 
 // =============================================================================
 // 5. Voie muscle_goals : effectiveVolumeBounds + targetFrequency (cf. 09 §4.5)
@@ -375,6 +395,7 @@ export function advanceWeek(
   if (w === 5) {
     state.cycle_index += 1;
     state.current_week_in_cycle = 1;
+    state.deload_strategy = null;
     if (hitVMaxWithoutPlateau) {
       for (const [muscle, ok] of Object.entries(hitVMaxWithoutPlateau)) {
         if (ok) {
@@ -399,11 +420,39 @@ export function advanceWeek(
       event = 'deload_fin_de_cycle';
     }
     state.current_week_in_cycle = 5;
+    // Conv #22 (H) — déload conditionnel : calcule l'adhérence du cycle
+    // (sem 1-4) et stocke la stratégie pour `targetVolume`.
+    state.deload_strategy = computeDeloadStrategy(
+      computeCycleAdherence(state),
+    );
   } else {
     state.current_week_in_cycle = w + 1;
     event = `semaine_suivante_${state.current_week_in_cycle}`;
   }
   return event;
+}
+
+/**
+ * Conv #22 (H) — calcule l'adhérence du cycle courant : ratio des séances
+ * effectivement enregistrées dans l'historique sur les 4 semaines de
+ * progression vs le nb prévu par le plan.
+ *
+ *   adherence = sessions_done(cycle, w<=4) / (days.length × 4)
+ *
+ * Sans plan ou plan vide → 0 (sécurité, traité comme NONE).
+ */
+export function computeCycleAdherence(state: UserState): number {
+  const plan = state.current_cycle_plan;
+  if (plan === null || plan.days.length === 0) return 0;
+  const planned = plan.days.length * 4;
+  if (planned === 0) return 0;
+  let done = 0;
+  for (const s of state.history) {
+    if (s.cycle_index !== state.cycle_index) continue;
+    if (s.week_in_cycle > 4) continue;
+    done += 1;
+  }
+  return done / planned;
 }
 
 // Re-export pour parité d'API avec le module Python (Muscle est dans models).

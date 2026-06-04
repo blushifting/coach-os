@@ -7,11 +7,11 @@
  */
 
 import type { Profile, UserState } from '@/engine/models';
-import { Level, Objective, Sex } from '@/engine/models';
+import { DurationCategory, Level, Objective, Sex } from '@/engine/models';
 import type { SerializedProfile, SerializedUserState } from './schema';
 
 export function serializeProfile(p: Profile): SerializedProfile {
-  return {
+  const out: SerializedProfile = {
     sex: p.sex,
     age: p.age,
     level: p.level,
@@ -20,10 +20,14 @@ export function serializeProfile(p: Profile): SerializedProfile {
     bodyweight_kg: p.bodyweight_kg,
     available_equip: [...p.available_equip].sort(),
   };
+  if (p.duration_category !== undefined) {
+    out.duration_category = p.duration_category;
+  }
+  return out;
 }
 
 export function deserializeProfile(s: SerializedProfile): Profile {
-  return {
+  const out: Profile = {
     sex: s.sex as Sex,
     age: s.age,
     level: s.level as Level,
@@ -32,6 +36,10 @@ export function deserializeProfile(s: SerializedProfile): Profile {
     bodyweight_kg: s.bodyweight_kg,
     available_equip: new Set(s.available_equip),
   };
+  if (s.duration_category !== undefined) {
+    out.duration_category = s.duration_category as DurationCategory;
+  }
+  return out;
 }
 
 export function serializeUserState(state: UserState): SerializedUserState {
@@ -60,6 +68,12 @@ export function serializeUserState(state: UserState): SerializedUserState {
     ),
     weekly_volume_debt: { ...state.weekly_volume_debt },
     fixed_routine: { ...state.fixed_routine },
+    current_skeleton:
+      state.current_skeleton === null || state.current_skeleton === undefined
+        ? null
+        : structuredClone(state.current_skeleton),
+    favorite_exercise_per_pattern: { ...(state.favorite_exercise_per_pattern ?? {}) },
+    deload_strategy: state.deload_strategy ?? null,
   };
 }
 
@@ -108,5 +122,9 @@ export function deserializeUserState(s: SerializedUserState): UserState {
     weekly_volume_debt: { ...(s.weekly_volume_debt ?? {}) },
     // Rétrocompat : blobs antérieurs à Conv #18 n'ont pas ce champ.
     fixed_routine: { ...(s.fixed_routine ?? {}) },
+    // Conv #22 — Rétrocompat : blobs antérieurs n'ont pas ces champs.
+    current_skeleton: s.current_skeleton ?? null,
+    favorite_exercise_per_pattern: { ...(s.favorite_exercise_per_pattern ?? {}) },
+    deload_strategy: s.deload_strategy ?? null,
   };
 }

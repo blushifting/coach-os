@@ -57,6 +57,12 @@ export interface OnboardingDraft {
    * Default : MEDIUM (≤ 1h30).
    */
   readonly durationCategory: DurationCategory;
+  /**
+   * Conv #22 — exos choisis par l'user à l'étape E (remplissage variantes
+   * du squelette). Clé = `${dayIdx}:${cellIdx}`, valeur = `exercise_id`.
+   * Seul utilisé en mode custom co-construit. Vide en mode guidé.
+   */
+  readonly chosenVariantsPerCell: Readonly<Record<string, string>>;
 }
 
 // =============================================================================
@@ -86,13 +92,19 @@ export function makeInitialDraft(): OnboardingDraft {
     sex: Sex.HOMME,
     age: 30,
     bodyweightKg: 75,
-    level: Level.DEBUTANT,
+    // Conv #22 — niveau retiré de l'UI (auto-calibration cycle après cycle).
+    // Default INTERMEDIAIRE = milieu juste pour les V_min/V_max init.
+    level: Level.INTERMEDIAIRE,
     sessionsPerWeek: 3,
-    equipment: new Set<string>(),
+    // Conv #22 — équipement retiré de l'UI. Default = salle complète pour
+    // que `fitGuidedProgram` (mode guidé) trouve tous les exos canoniques.
+    // Le mode custom co-construit n'utilise plus ce filtre.
+    equipment: new Set<string>(EQUIPMENT_PRESET_FULL_GYM),
     priorities: [],
     acceptedSuggestions: new Set<string>(),
     programmeId: null,
     durationCategory: DurationCategory.MEDIUM,
+    chosenVariantsPerCell: {},
   };
 }
 
@@ -129,6 +141,7 @@ export function draftFromUserState(state: UserState): OnboardingDraft {
     programmeId: state.active_guided_program_id,
     durationCategory:
       state.profile.duration_category ?? DurationCategory.MEDIUM,
+    chosenVariantsPerCell: {},
   };
 }
 

@@ -24,6 +24,7 @@ import { applyBalanceRules } from '@/engine/balance';
 import {
   autoGenerateCyclePlanV2,
   generateCyclePlan,
+  generateCyclePlanV2,
   mergeEquivalentExercisesInPlan,
   rotateEmphasis,
 } from '@/engine/cycle_planner';
@@ -36,6 +37,7 @@ import type {
   Profile,
   SessionFeedback,
   SessionPlan,
+  SkeletonTemplate,
   UserState,
 } from '@/engine/models';
 import {
@@ -320,6 +322,49 @@ export async function generateInitialCyclePlan(): Promise<InitialCyclePlanResult
   await txSaveUserStateOnly(next);
   useCoachOsStore.setState({ userState: next });
   return { state: next, blocking: [] };
+}
+
+/**
+ * Conv #22 — Génère le plan à partir d'un `SkeletonTemplate` déjà rempli
+ * (étape E du wizard onboarding). Court-circuite l'auto-fill par défaut de
+ * `autoGenerateCyclePlanV2` et utilise directement les choix de l'user.
+ *
+ * Persiste aussi le squelette dans `state.current_skeleton` pour permettre
+ * "Modifier la grille" ultérieurement.
+ */
+export async function generateInitialCyclePlanFromSkeleton(
+  skeleton: SkeletonTemplate,
+): Promise<InitialCyclePlanResult> {
+  const catalog = requireCatalog();
+  const next = requireUserState();
+  if (next.current_cycle_plan !== null) {
+    useCoachOsStore.setState({ userState: next });
+    return { state: next, blocking: [] };
+  }
+  next.current_cycle_plan = generateCyclePlanV2(skeleton, next, catalog);
+  next.current_skeleton = skeleton;
+  await txSaveUserStateOnly(next);
+  useCoachOsStore.setState({ userState: next });
+  return { state: next, blocking: [] };
+}
+
+/**
+ * Conv #22 — Mémorise l'exo préféré de l'user pour un pattern donné. Sert
+ * à pré-cocher ses choix dans les onboardings/restarts suivants
+ * (cf. `candidatesForCell` favoriteId).
+ */
+export async function addFavoriteForPattern(
+  pattern: string,
+  exerciseId: string,
+): Promise<UserState> {
+  const next = requireUserState();
+  next.favorite_exercise_per_pattern = {
+    ...(next.favorite_exercise_per_pattern ?? {}),
+    [pattern]: exerciseId,
+  };
+  await txSaveUserStateOnly(next);
+  useCoachOsStore.setState({ userState: next });
+  return next;
 }
 
 export interface VariantReplacementInput {
@@ -1113,6 +1158,10 @@ export interface EngineApi {
   refreshHistory: typeof refreshHistory;
   startUser: typeof startUser;
   generateInitialCyclePlan: typeof generateInitialCyclePlan;
+  /** Conv #22 — alt de generateInitialCyclePlan avec squelette pré-rempli. */
+  generateInitialCyclePlanFromSkeleton: typeof generateInitialCyclePlanFromSkeleton;
+  /** Conv #22 — mémorise l'exo préféré user pour un pattern. */
+  addFavoriteForPattern: typeof addFavoriteForPattern;
   applyVariantReplacements: typeof applyVariantReplacements;
   setManualE1rm: typeof setManualE1rm;
   generateAndStoreSession: typeof generateAndStoreSession;
@@ -1147,6 +1196,8 @@ export function useEngine(): EngineApi {
       refreshHistory,
       startUser,
       generateInitialCyclePlan,
+      generateInitialCyclePlanFromSkeleton,
+      addFavoriteForPattern,
       applyVariantReplacements,
       setManualE1rm,
       generateAndStoreSession,

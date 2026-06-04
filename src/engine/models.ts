@@ -766,6 +766,14 @@ export interface UserState {
    * onboardings/restarts suivants. Clé = `Pattern` value (string).
    */
   favorite_exercise_per_pattern?: Record<string, string>;
+  /**
+   * Conv #22 — Stratégie de déload pour la semaine 5 du cycle courant
+   * (item H, calculée à l'entrée en sem 5 selon l'adhérence sem 1-4).
+   * Valeur typée `string` ici pour découpler `models.ts` de `volume.ts`
+   * (qui définit l'enum DeloadStrategy = 'none'|'shortened'|'normal').
+   * null/undefined hors sem 5.
+   */
+  deload_strategy?: string | null;
 }
 
 export function makeUserState(profile: Profile): UserState {
@@ -791,5 +799,6 @@ export function makeUserState(profile: Profile): UserState {
     fixed_routine: {},
     current_skeleton: null,
     favorite_exercise_per_pattern: {},
+    deload_strategy: null,
   };
 }
