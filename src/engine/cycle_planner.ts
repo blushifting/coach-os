@@ -727,6 +727,78 @@ export function generateCyclePlan(
   return rebalanced;
 }
 
+// =============================================================================
+// 9. Conv #22 — Nouveau path co-construit (skeleton + sets_allocator)
+// =============================================================================
+
+import { buildSkeleton } from './skeleton_builder';
+import { allocateSets } from './sets_allocator';
+import { DurationCategory } from './models';
+
+/**
+ * Conv #22 — Génère un cycle via le nouveau path en 2 temps :
+ *  1. `buildSkeleton(state, durationCategory)` → grille (pattern × séance)
+ *     vide, présentée à l'user à l'étape D.
+ *  2. L'user remplit la grille à l'étape E (chosen_exercise_id par cell).
+ *  3. `allocateSets(skeleton, state, catalog)` → DayTemplate[] avec n_sets.
+ *
+ * Cette fonction est l'orchestration finale **une fois la grille remplie**.
+ * Si tu veux juste générer le squelette pour présentation, appelle
+ * `buildSkeleton` directement.
+ *
+ * @param filledSkeleton skeleton avec `chosen_exercise_id` posé sur toutes
+ *   les cases (sinon les cases vides sont signalées en warnings).
+ */
+export function generateCyclePlanV2(
+  filledSkeleton: import('./models').SkeletonTemplate,
+  state: UserState,
+  catalog: Catalog,
+): WeeklyTemplate {
+  const alloc = allocateSets(filledSkeleton, state, catalog);
+  const weekly = makeWeeklyTemplate({
+    cycle_index: state.cycle_index,
+    rationale: `Custom co-construit · ${filledSkeleton.split_name}`,
+    days: alloc.days,
+    warnings: [...filledSkeleton.warnings, ...alloc.warnings],
+  });
+  // Post-pass : merge équivalents, enforce lengthened bias, order neuro.
+  enforceLengthenedBias(weekly, state, catalog);
+  mergeEquivalentExercisesInPlan(weekly, catalog);
+  orderDaysByNeuralCost(weekly, catalog);
+  return weekly;
+}
+
+/**
+ * Conv #22 — Helper : génère squelette + alloue séries d'une traite,
+ * pour les cas où on veut un cycle "tout fait" sans étape E manuelle
+ * (ex. tests, migration, mode démo). L'auto-fill des variantes utilise
+ * le 1er candidat de chaque case (= compound canonique).
+ */
+export function autoGenerateCyclePlanV2(
+  state: UserState,
+  catalog: Catalog,
+  durationCategory: DurationCategory = DurationCategory.MEDIUM,
+): WeeklyTemplate {
+  const skeleton = buildSkeleton(state, durationCategory);
+  // Auto-fill : 1er candidat de chaque case.
+  for (const day of skeleton.days) {
+    for (const cell of day.cells) {
+      const cands = catalog.filter({ muscle_primary: cell.primary_muscle });
+      const sameSeen = new Set<string>();
+      for (const day2 of skeleton.days) {
+        for (const c2 of day2.cells) {
+          if (c2.chosen_exercise_id) sameSeen.add(c2.chosen_exercise_id);
+        }
+      }
+      const fit = cands.find(
+        (c) => c.pattern === cell.pattern && !sameSeen.has(c.id),
+      );
+      cell.chosen_exercise_id = fit?.id ?? cands[0]?.id ?? null;
+    }
+  }
+  return generateCyclePlanV2(skeleton, state, catalog);
+}
+
 /**
  * Conv #21b — Coût neuro d'un jour-type = somme des séries pondérées par
  * un bonus "polyarticulaire". Compound × 1.5 reflète le coût neuro-musculaire

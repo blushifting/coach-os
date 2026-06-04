@@ -167,6 +167,11 @@ export function effectiveVolumeBounds(
 /**
  * Fréquence hebdo cible pour ce muscle (cf. 09 §5.1).
  * freq = ceil(V_cible / SETS_PER_SESSION_OPTIMAL), capée à sessions_per_week.
+ *
+ * @deprecated Conv #22 — utilise `targetFrequencyV2` qui se base sur
+ * `effectiveCycleTargetVolume` (V cible évolutif sur cycle) plutôt que
+ * V_min seul. Conservée pour compat des modules legacy (cycle_planner
+ * actuel, parameterizeSplit, composeSession).
  */
 export function targetFrequency(muscle: string, state: UserState): number {
   const [vMin] = effectiveVolumeBounds(state, muscle);
@@ -176,6 +181,87 @@ export function targetFrequency(muscle: string, state: UserState): number {
   const freq = Math.max(1, Math.ceil(vMin / SETS_PER_SESSION_OPTIMAL));
   return Math.min(freq, state.profile.sessions_per_week);
 }
+
+/**
+ * Conv #22 — Volume cible pour le cycle (sert au calcul de fréquence et au
+ * solveur F). On vise un point intermédiaire entre V_min et V_max — par
+ * défaut au "centre de gravité" du cycle (sem 2-3 de progression), ce qui
+ * reflète mieux la charge réelle d'entraînement vs un V_min seul.
+ *
+ * Formule : V_min + (V_max - V_min) × 0.4 ≈ niveau sem 2-3 d'un cycle
+ * Israetel (+2 séries/sem depuis V_min, donc ~ V_min+4 en sem 3 si V_max
+ * permet). Le solveur sets_allocator restera libre de bumper jusqu'à V_max
+ * sur les prios top-rank.
+ *
+ *   - NON_COUVERT/absent → 0
+ *   - SUGGERE (maintien) → V_maintien fixe
+ *   - PRIORITAIRE → V_min + 0.4 × (V_max - V_min)
+ */
+export const CYCLE_TARGET_VOLUME_RATIO = 0.4;
+
+export function effectiveCycleTargetVolume(
+  state: UserState,
+  muscle: string,
+): number {
+  const [vMin, vMax] = effectiveVolumeBounds(state, muscle);
+  if (vMin <= 0) return 0;
+  if (vMax <= vMin) return vMin;
+  // PRIORITAIRE → ratio fixe au-dessus de V_min.
+  return vMin + CYCLE_TARGET_VOLUME_RATIO * (vMax - vMin);
+}
+
+/**
+ * Conv #22 — Fréquence hebdo cible v2, basée sur V cible effectif (cycle).
+ * Règle E.1 corrigée : un muscle prio bas-volume reste à freq 1-2× ;
+ * un muscle prio haut-volume monte naturellement à 3-4× selon capacité.
+ */
+export function targetFrequencyV2(muscle: string, state: UserState): number {
+  const vTarget = effectiveCycleTargetVolume(state, muscle);
+  if (vTarget <= 0) return 0;
+  const freq = Math.max(1, Math.ceil(vTarget / SETS_PER_SESSION_OPTIMAL));
+  return Math.min(freq, state.profile.sessions_per_week);
+}
+
+// =============================================================================
+// Conv #22 — Déload conditionnel selon adhérence (item H du backlog)
+// =============================================================================
+
+/**
+ * Stratégie de déload pour la semaine 5 du cycle, selon le pourcentage de
+ * séances effectuées sur les 4 semaines de progression :
+ *  - ≥ 75 % → NORMAL (semaine 5 entière allégée, volume × 0.5, RPE ≤ 6)
+ *  - 50-75 % → SHORTENED (1re séance de sem 5 allégée, suivantes en
+ *     progression continue, cycle bouclé sur 5 sem)
+ *  - < 50 % → NONE (pas de déload, on prolonge d'une 5e sem de progression
+ *     normale et on lance le bilan dès cette semaine bouclée — adhérence
+ *     faible signalée dans le bilan, action probable AJUSTER_OBJECTIFS)
+ */
+export enum DeloadStrategy {
+  NONE = 'none',
+  SHORTENED = 'shortened',
+  NORMAL = 'normal',
+}
+
+export const DELOAD_ADHERENCE_FULL = 0.75;
+export const DELOAD_ADHERENCE_PARTIAL = 0.5;
+
+export function computeDeloadStrategy(adherence: number): DeloadStrategy {
+  if (adherence >= DELOAD_ADHERENCE_FULL) return DeloadStrategy.NORMAL;
+  if (adherence >= DELOAD_ADHERENCE_PARTIAL) return DeloadStrategy.SHORTENED;
+  return DeloadStrategy.NONE;
+}
+
+// =============================================================================
+// Conv #22 — Plafond unique séries/séance (remplace table par niveau)
+// =============================================================================
+
+/**
+ * Plafond total séries/séance unique pour le nouveau path.
+ * Remplace `MAX_TOTAL_SETS_PER_SESSION[level]` du legacy. L'auto-calibration
+ * (cycle 1 → cycle 2) ajuste les volumes par muscle si overshoot, donc un
+ * plafond unique haut (30) suffit, secondé par la contrainte durée séance.
+ */
+export const MAX_TOTAL_SETS_PER_SESSION_V2 = 30;
 
 // =============================================================================
 // 6. Décompte des séries effectivement réalisées

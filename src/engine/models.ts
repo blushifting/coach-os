@@ -21,11 +21,44 @@ export enum Sex {
   FEMME = 'femme',
 }
 
+/**
+ * @deprecated Conv #22 — Le niveau (Débutant/Inter/Avancé) est retiré du
+ * nouveau modèle de programmation. L'enum est conservé pour rétrocompat
+ * des UserStates persistés et tests legacy. Le nouveau path
+ * (skeleton_builder + sets_allocator) ne lit jamais `profile.level` ;
+ * il utilise des valeurs standards uniques et laisse l'auto-calibration
+ * (`adjust_volume_bounds_at_cycle_end`) ajuster cycle après cycle.
+ */
 export enum Level {
   DEBUTANT = 'debutant',
   INTERMEDIAIRE = 'intermediaire',
   AVANCE = 'avance',
 }
+
+/**
+ * Conv #22 — Catégorie de durée MAX par séance (input user, étape C de
+ * l'onboarding). La valeur sert de **plafond** au choix du split et au
+ * solveur de séries : on dimensionne sur la demande effective (Σ patterns
+ * nécessaires aux prios + R1-R4), et on alerte si le programme tient
+ * largement en dessous (sous-utilisation) pour proposer prio++ ou durée--.
+ *
+ * Mapping nb max patterns/séance (cf. estimation ~12 min/pattern, Conv #19) :
+ *   SHORT  → 4 patterns (~50 min)
+ *   MEDIUM → 6 patterns (~75 min)
+ *   LONG   → 8 patterns (~100 min)
+ */
+export enum DurationCategory {
+  SHORT = 'short',   // ≤ 1h
+  MEDIUM = 'medium', // ≤ 1h30
+  LONG = 'long',     // ≤ 2h
+}
+
+/** Plafond max patterns / séance par catégorie de durée. */
+export const MAX_PATTERNS_PER_SESSION: Record<DurationCategory, number> = {
+  [DurationCategory.SHORT]: 4,
+  [DurationCategory.MEDIUM]: 6,
+  [DurationCategory.LONG]: 8,
+};
 
 /**
  * Objectif global du profil utilisateur (path "rapide" de l'onboarding).
@@ -246,12 +279,23 @@ export function exerciseSynergistes(ex: Exercise): string[] {
 export interface Profile {
   sex: Sex;
   age: number;
+  /** @deprecated Conv #22 — non lu par le nouveau path, conservé pour rétrocompat. */
   level: Level;
   objective: Objective;
   /** 2..6 */
   sessions_per_week: number;
   bodyweight_kg: number;
+  /**
+   * @deprecated Conv #22 — l'équipement est retiré du nouveau path
+   * (co-construction implicite via choix d'exos). Conservé pour rétrocompat
+   * tant que l'UI legacy / programmes guidés legacy s'en servent.
+   */
   available_equip: Set<string>;
+  /**
+   * Conv #22 — durée MAX par séance, input user étape C onboarding.
+   * Optionnel pour rétrocompat (UserStates pre-Conv#22 n'en ont pas).
+   */
+  duration_category?: DurationCategory;
 }
 
 export interface ProfileInput {
@@ -262,6 +306,7 @@ export interface ProfileInput {
   sessions_per_week: number;
   bodyweight_kg: number;
   available_equip?: Set<string> | Iterable<string>;
+  duration_category?: DurationCategory;
 }
 
 /** Construit un Profile en validant les invariants (port de `Profile.__post_init__`). */
@@ -275,7 +320,7 @@ export function makeProfile(input: ProfileInput): Profile {
   if (input.bodyweight_kg <= 0) {
     throw new Error('Poids du corps doit être > 0');
   }
-  return {
+  const profile: Profile = {
     sex: input.sex,
     age: input.age,
     level: input.level,
@@ -284,6 +329,10 @@ export function makeProfile(input: ProfileInput): Profile {
     bodyweight_kg: input.bodyweight_kg,
     available_equip: new Set(input.available_equip ?? []),
   };
+  if (input.duration_category !== undefined) {
+    profile.duration_category = input.duration_category;
+  }
+  return profile;
 }
 
 // =============================================================================
@@ -439,6 +488,75 @@ export function makeWeeklyTemplate(input: WeeklyTemplateInput): WeeklyTemplate {
 /** Nb séances prévues sur les 5 semaines du cycle. */
 export function weeklyTemplateSessionsPlanned(wt: WeeklyTemplate): number {
   return wt.days.length * 5;
+}
+
+// =============================================================================
+// Skeleton (Conv #22) — grille pattern × séance issue de l'étape D, remplie
+// par l'user à l'étape E. Persiste à côté du WeeklyTemplate final pour
+// permettre "Modifier la grille" et la régénération des séries (étape F).
+// =============================================================================
+
+/**
+ * Hint sur le rôle attendu de l'exo qui remplira la case.
+ * `compound` : 1er exo du pattern pour ce muscle prio (charge lourde, polyart).
+ * `isolation` : exo accessoire d'angle complémentaire (souvent lengthened_bias).
+ */
+export type RoleHint = 'compound' | 'isolation';
+
+/**
+ * Une case de la grille : un pattern à réaliser pour un muscle prio donné
+ * dans une séance donnée. À l'étape E, l'user choisit son exo préféré parmi
+ * 3-4 variantes proposées. `chosen_exercise_id` reste null tant qu'elle
+ * n'est pas remplie.
+ */
+export interface PatternCell {
+  pattern: Pattern;
+  /** Muscle prio que cette case vise en primaire. */
+  primary_muscle: string;
+  role_hint: RoleHint;
+  chosen_exercise_id: string | null;
+}
+
+/** Un jour de la grille : N cases à remplir, plus métadonnées du jour. */
+export interface SkeletonDay {
+  day_index: number;
+  /** Label du split pour ce jour : "Upper", "Push", "Full Body", "Lower", etc. */
+  split_label: string;
+  /** Muscles "focus" du jour (sert au nommage L et à l'ordre intra-séance). */
+  focus_muscles: string[];
+  cells: PatternCell[];
+}
+
+/**
+ * Structure intermédiaire issue de skeleton_builder (étape D),
+ * remplie par l'user (étape E), consommée par sets_allocator (étape F).
+ */
+export interface SkeletonTemplate {
+  cycle_index: number;
+  /** Nom lisible du split choisi : "Upper/Lower 4×", "Full Body 3× focus rotatif", etc. */
+  split_name: string;
+  duration_category: DurationCategory;
+  days: SkeletonDay[];
+  /** Warnings produits par l'algo (under-fill, sur-utilisation, etc.). */
+  warnings: string[];
+}
+
+export interface SkeletonTemplateInput {
+  cycle_index: number;
+  split_name: string;
+  duration_category: DurationCategory;
+  days?: SkeletonDay[];
+  warnings?: string[];
+}
+
+export function makeSkeletonTemplate(input: SkeletonTemplateInput): SkeletonTemplate {
+  return {
+    cycle_index: input.cycle_index,
+    split_name: input.split_name,
+    duration_category: input.duration_category,
+    days: input.days ?? [],
+    warnings: input.warnings ?? [],
+  };
 }
 
 // =============================================================================
@@ -634,6 +752,20 @@ export interface UserState {
    * `endOfWeek` reset à `{}` — la dette ne traverse pas la frontière hebdo.
    */
   weekly_volume_debt: Record<string, number>;
+  /**
+   * Conv #22 — squelette du cycle courant (grille pattern × séance) si on
+   * est en mode custom co-construit. Persisté à côté de `current_cycle_plan`
+   * pour permettre "Modifier la grille" et la re-distribution des séries
+   * sans repartir de zéro. null pour les programmes guidés ou avant la
+   * 1re génération.
+   */
+  current_skeleton?: SkeletonTemplate | null;
+  /**
+   * Conv #22 — exos préférés de l'user par pattern (mémorisés lors des
+   * choix à l'étape E). Sert à proposer ces exos en tête de liste lors des
+   * onboardings/restarts suivants. Clé = `Pattern` value (string).
+   */
+  favorite_exercise_per_pattern?: Record<string, string>;
 }
 
 export function makeUserState(profile: Profile): UserState {
@@ -657,5 +789,7 @@ export function makeUserState(profile: Profile): UserState {
     equipment_overrides: {},
     weekly_volume_debt: {},
     fixed_routine: {},
+    current_skeleton: null,
+    favorite_exercise_per_pattern: {},
   };
 }
