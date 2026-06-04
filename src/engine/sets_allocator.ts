@@ -203,6 +203,19 @@ function buildBumpContext(state: UserState, skeleton: SkeletonTemplate): BumpCon
     if (vMax > 0) vmaxByMuscle.set(muscle, vMax);
     if (goal.status !== undefined) coveredMuscles.add(muscle);
   }
+  // Conv #22.4 (junk volume) — pour les muscles **non couverts** par
+  // muscle_goals (= ni PRIORITAIRE ni SUGGERE), on plafonne le volume
+  // incident à V_min (= seuil bénéfique sans junk volume). Sans ça,
+  // les compounds quad/fessiers (back_squat, leg_press, walking_lunge,
+  // tous quad:1 + fessiers:1 en primaire) gonflaient fessiers à 17
+  // séries quand fessiers était non-prio.
+  for (const muscle of Object.keys(state.volume_min)) {
+    if (vmaxByMuscle.has(muscle)) continue;
+    const vMinBase = state.volume_min[muscle];
+    if (vMinBase !== undefined && vMinBase > 0) {
+      vmaxByMuscle.set(muscle, vMinBase);
+    }
+  }
   const targetMin = TARGET_MINUTES_BY_CATEGORY[skeleton.duration_category] ?? 90;
   return {
     state,

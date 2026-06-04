@@ -203,31 +203,27 @@ export function targetFrequency(muscle: string, state: UserState): number {
 }
 
 /**
- * Conv #22 — Volume cible pour le cycle (sert au calcul de fréquence et au
- * solveur F). On vise un point intermédiaire entre V_min et V_max — par
- * défaut au "centre de gravité" du cycle (sem 2-3 de progression), ce qui
- * reflète mieux la charge réelle d'entraînement vs un V_min seul.
+ * Conv #22.4 — Volume cible pour le cycle = V_min strict (cible 10-12
+ * séries/sem pour un muscle prio hypertrophie standard).
  *
- * Formule : V_min + (V_max - V_min) × 0.4 ≈ niveau sem 2-3 d'un cycle
- * Israetel (+2 séries/sem depuis V_min, donc ~ V_min+4 en sem 3 si V_max
- * permet). Le solveur sets_allocator restera libre de bumper jusqu'à V_max
- * sur les prios top-rank.
+ * Retour Azur (Conv #22.4) : "il faut viser 10-12 séries par semaine pour
+ * un muscle prio, c'est primordial". Visée V_min en semaine 1 du cycle ; la
+ * progression hebdo Israetel (`israetelProgression`) se charge de bumper
+ * vers V_max sur les 4 semaines suivantes (+1 série/sem/exo). Pas besoin
+ * de viser un point intermédiaire dès la sem 1, ça créait des explosions
+ * de volume incident (fessiers à 17 séries via leg_press / walking_lunge
+ * qui ont fessiers:1 en primaire).
  *
  *   - NON_COUVERT/absent → 0
- *   - SUGGERE (maintien) → V_maintien fixe
- *   - PRIORITAIRE → V_min + 0.4 × (V_max - V_min)
+ *   - SUGGERE (maintien) → V_maintien fixe (~4 séries)
+ *   - PRIORITAIRE → V_min
  */
-export const CYCLE_TARGET_VOLUME_RATIO = 0.4;
-
 export function effectiveCycleTargetVolume(
   state: UserState,
   muscle: string,
 ): number {
-  const [vMin, vMax] = effectiveVolumeBounds(state, muscle);
-  if (vMin <= 0) return 0;
-  if (vMax <= vMin) return vMin;
-  // PRIORITAIRE → ratio fixe au-dessus de V_min.
-  return vMin + CYCLE_TARGET_VOLUME_RATIO * (vMax - vMin);
+  const [vMin] = effectiveVolumeBounds(state, muscle);
+  return vMin;
 }
 
 /**

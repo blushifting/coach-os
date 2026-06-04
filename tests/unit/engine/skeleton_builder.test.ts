@@ -86,24 +86,24 @@ const catalog = new Catalog();
 // Compute demands + V_cible / freq
 // =============================================================================
 
-describe('Conv #22 — V_cible et fréquence', () => {
-  it('V_cible = V_min + 0.4*(V_max-V_min) pour PRIORITAIRE', () => {
+describe('Conv #22.4 — V_cible et fréquence', () => {
+  it('V_cible = V_min strict pour PRIORITAIRE (cible 10-12 séries/sem)', () => {
     const state = makeStateForGoals({
       sessions_per_week: 4,
       prios: [['pectoraux', MuscleObjective.HYPERTROPHIE]],
     });
     const v = effectiveCycleTargetVolume(state, 'pectoraux');
-    // pec : vMin=10, vMax=18 → 10 + 0.4*8 = 13.2
-    expect(v).toBeCloseTo(13.2, 1);
+    // pec intermédiaire homme : vMin=10. Conv #22.4 retour à V_min strict.
+    expect(v).toBe(10);
   });
 
-  it('targetFrequencyV2 = ceil(V_cible / 5), capée à sessions/sem', () => {
+  it('targetFrequencyV2 = ceil(V_min / 5), capée à sessions/sem', () => {
     const state = makeStateForGoals({
       sessions_per_week: 4,
       prios: [['pectoraux', MuscleObjective.HYPERTROPHIE]],
     });
-    // V_cible 13.2 / 5 = 2.64 → ceil = 3
-    expect(targetFrequencyV2('pectoraux', state)).toBe(3);
+    // V_min 10 / 5 = 2 → ceil = 2.
+    expect(targetFrequencyV2('pectoraux', state)).toBe(2);
   });
 
   it('SUGGERE → freq 1, V_target = V_maintien fixe', () => {
@@ -449,8 +449,7 @@ describe('Conv #22 — buildSessionLabel (item L)', () => {
     });
     expect(out).toMatch(/Upper A · Pectoraux \+ Grand dorsal/);
   });
-  it('Full Body : label dérivé des muscles dominants des cells', () => {
-    // 2 cells primary=pec, 1 cell primary=quadriceps → "Full Body · Pectoraux + Quadriceps"
+  it('Full Body : label avec suffixe lettre + muscles dominants', () => {
     const out = buildSessionLabel({
       day_index: 0,
       split_label: 'Full A',
@@ -461,25 +460,36 @@ describe('Conv #22 — buildSessionLabel (item L)', () => {
         { pattern: 'isolation' as never, primary_muscle: 'pectoraux', role_hint: 'isolation', chosen_exercise_id: null },
       ],
     });
-    expect(out).toMatch(/Full Body · Pectoraux \+ Quadriceps/);
+    expect(out).toMatch(/Full Body A · Pectoraux \+ Quadriceps/);
 
-    // Sans cells : fallback focus_muscles → "Full Body · Pectoraux".
+    // Conv #22.4 : day_index 2 → "Full Body C ·" (suffixe lettre).
+    const dayC = buildSessionLabel({
+      day_index: 2,
+      split_label: 'Full C',
+      focus_muscles: ['pectoraux'],
+      cells: [
+        { pattern: 'push_h' as never, primary_muscle: 'pectoraux', role_hint: 'compound', chosen_exercise_id: null },
+      ],
+    });
+    expect(dayC).toMatch(/Full Body C · Pectoraux/);
+
+    // Sans cells : fallback focus_muscles.
     const noCells = buildSessionLabel({
-      day_index: 0,
-      split_label: 'Full A',
+      day_index: 1,
+      split_label: 'Full B',
       focus_muscles: ['pectoraux'],
       cells: [],
     });
-    expect(noCells).toMatch(/Full Body · Pectoraux/);
+    expect(noCells).toMatch(/Full Body B · Pectoraux/);
 
-    // Sans cells ni focus → "Full Body · Polyvalent".
+    // Sans cells ni focus → "Full Body X · Polyvalent".
     const empty = buildSessionLabel({
       day_index: 0,
-      split_label: 'Full B',
+      split_label: 'Full A',
       focus_muscles: [],
       cells: [],
     });
-    expect(empty).toBe('Full Body · Polyvalent');
+    expect(empty).toBe('Full Body A · Polyvalent');
   });
   it('Upper avec cells compound : label = muscles primaires dominants', () => {
     const out = buildSessionLabel({

@@ -406,14 +406,16 @@ export function buildSessionLabel(day: SkeletonDay): string {
   const dominants = dominantMusclesFromCells(day);
 
   if (/full/i.test(split_lower)) {
-    if (dominants.length === 0) {
-      const focus = day.focus_muscles
-        .slice(0, 2)
-        .map(prettyMuscle)
-        .join(' + ');
-      return focus.length > 0 ? `Full Body · ${focus}` : 'Full Body · Polyvalent';
-    }
-    return `Full Body · ${dominants.map(prettyMuscle).join(' + ')}`;
+    // Conv #22.4 — Suffixe lettre (A/B/C…) pour distinguer les séances
+    // dans un FB répété où les muscles dominants sont identiques sur
+    // toutes les séances (retour Azur : "on perd l'identification").
+    const tag = letterTag(day.day_index);
+    const body = dominants.length > 0
+      ? dominants.map(prettyMuscle).join(' + ')
+      : day.focus_muscles.length > 0
+        ? day.focus_muscles.slice(0, 2).map(prettyMuscle).join(' + ')
+        : 'Polyvalent';
+    return `Full Body ${tag} · ${body}`;
   }
   if (/upper/i.test(split_lower) || /lower/i.test(split_lower)) {
     if (dominants.length === 0) {
@@ -475,4 +477,10 @@ const MUSCLE_PRETTY_SHORT: Record<string, string> = {
 
 function prettyMuscle(m: string): string {
   return MUSCLE_PRETTY_SHORT[m] ?? m;
+}
+
+/** Conv #22.4 — A/B/C/D/E/F (jusqu'à 6 séances). */
+function letterTag(dayIndex: number): string {
+  const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+  return letters[dayIndex] ?? String(dayIndex + 1);
 }
