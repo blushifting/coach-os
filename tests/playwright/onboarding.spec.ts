@@ -1,17 +1,17 @@
 import { expect, test } from '@playwright/test';
 
 /**
- * E2E onboarding (Conv #4b, redirection finale mise à jour Conv #4c, étape
- * Aperçu ajoutée Conv #11b).
+ * E2E onboarding (refonte Conv #22).
  *
- * Parcours complet : Profil → Muscles (préset) → Équilibre R1-R4 → Programme
- * → Aperçu (Conv #11b) → finalisation → /programme (post-#12a : Séance 0 retirée).
+ * Parcours :
+ *   - Mode guidé : Profil → Muscles → Équilibre → Programme guidé → Récap.
+ *   - Mode custom co-construit : ajoute Squelette → Variantes avant le récap.
  *
- * Garde-fou aussi testé : impossible de passer 2 → 3 sans muscle sélectionné.
+ * Step1 ne contient plus que sexe/âge/poids (Conv #22 retrait niveau et
+ * équipement). Step4 ajoute le sélecteur durée max (default MEDIUM).
  */
 
 test.beforeEach(async ({ context }) => {
-  // Isolation : on vide IndexedDB pour démarrer "vierge" à chaque test.
   await context.clearCookies();
   await context.addInitScript(() => {
     try {
@@ -19,64 +19,63 @@ test.beforeEach(async ({ context }) => {
     } catch {
       /* noop */
     }
+    try {
+      localStorage.setItem('coach-os.skip-auto-demo', '1');
+    } catch {
+      /* noop */
+    }
   });
 });
 
-test('parcours complet : préset par défaut → custom → /programme', async ({ page }) => {
+test('parcours custom co-construit : préset → squelette → variantes → récap', async ({
+  page,
+}) => {
   await page.goto('onboarding');
   await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '1');
 
-  // === Étape 1 : profil ===
+  // Step 1 — Profil (sexe seulement à cliquer, le reste a des défauts).
   await page.getByTestId('sex-homme').click();
-  await page.getByTestId('level-debutant').click();
-  await page.getByTestId('equip-preset-gym').click();
   await page.getByTestId('btn-next').click();
   await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '2');
 
-  // === Étape 2 : préset par défaut (full-body) ===
+  // Step 2 — Préset par défaut.
   await page.getByTestId('preset-default').click();
   await expect(page.getByTestId('priorities-list')).toBeVisible();
-  await expect(page.getByTestId('priority-pectoraux')).toBeVisible();
-  await expect(page.getByTestId('priority-quadriceps')).toBeVisible();
   await page.getByTestId('btn-next').click();
   await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '3');
 
-  // === Étape 3 : suggestions R1-R4 (toutes pré-cochées) ===
+  // Step 3 — Suggestions R1-R4 toutes pré-cochées.
   await expect(page.getByTestId('suggestions-list')).toBeVisible();
-  // R3 gainage : abdos + lombaires doivent apparaître
-  await expect(page.getByTestId('suggestion-abdos')).toBeVisible();
-  await expect(page.getByTestId('suggestion-lombaires')).toBeVisible();
-  // R4 : deltos_posterieurs (pectoraux est PRIORITAIRE dans le préset)
-  await expect(page.getByTestId('suggestion-deltos_posterieurs')).toBeVisible();
-  // Décocher une suggestion pour tester l'override → NON_COUVERT
-  await page.getByTestId('suggestion-checkbox-lombaires').click();
-  await expect(page.getByTestId('suggestion-checkbox-lombaires')).not.toBeChecked();
   await page.getByTestId('btn-next').click();
   await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '4');
 
-  // === Étape 4 : choix custom (default) ===
+  // Step 4 — Custom (default) + MEDIUM duration default.
   await expect(page.getByTestId('program-custom')).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByTestId('duration-medium')).toHaveAttribute('aria-checked', 'true');
   await page.getByTestId('btn-next').click();
   await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '5');
 
-  // === Étape 5 : aperçu programme (Conv #11b) ===
-  await expect(page.getByTestId('step5-preview')).toBeVisible();
-  await expect(page.getByTestId('volume-recap')).toBeVisible();
+  // Step 5 — Squelette (Conv #22), lecture seule.
+  await expect(page.getByTestId('step5-skeleton')).toBeVisible();
+  await page.getByTestId('btn-next').click();
+  await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '6');
 
-  // Finaliser
+  // Step 6 — Variantes (auto-fill au mount + grille 3-cols).
+  await expect(page.getByTestId('step6-variants')).toBeVisible();
+  await page.getByTestId('btn-next').click();
+  await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '7');
+
+  // Step 7 — Récap final.
+  await expect(page.getByTestId('step5-preview')).toBeVisible();
   await page.getByTestId('btn-finish').click();
   await expect(page).toHaveURL(/\/programme$/);
 });
 
-test('garde-fou : impossible d\'avancer étape 2 sans muscle', async ({ page }) => {
+test("garde-fou : impossible d'avancer étape 2 sans muscle", async ({ page }) => {
   await page.goto('onboarding');
-
-  // Étape 1 minimal
-  await page.getByTestId('equip-preset-gym').click();
   await page.getByTestId('btn-next').click();
   await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '2');
 
-  // Pas de muscle sélectionné → bouton Suivant déclenche une erreur, on reste à l'étape 2.
   await page.getByTestId('btn-next').click();
   await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '2');
   await expect(page.getByTestId('onboarding-error')).toBeVisible();
@@ -85,48 +84,41 @@ test('garde-fou : impossible d\'avancer étape 2 sans muscle', async ({ page }) 
 test('bouton retour fonctionnel à chaque étape', async ({ page }) => {
   await page.goto('onboarding');
 
-  // 1 → 2 → 3
   await page.getByTestId('btn-next').click();
   await page.getByTestId('preset-default').click();
   await page.getByTestId('btn-next').click();
   await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '3');
 
-  // Retour 3 → 2
   await page.getByTestId('btn-prev').click();
   await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '2');
-  // Les priorités du préset sont conservées
   await expect(page.getByTestId('priority-pectoraux')).toBeVisible();
 
-  // Retour 2 → 1
   await page.getByTestId('btn-prev').click();
   await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '1');
 
-  // Bouton Précédent désactivé à l'étape 1
   await expect(page.getByTestId('btn-prev')).toBeDisabled();
 });
 
-test('parcours avec programme guidé', async ({ page }) => {
+test('parcours avec programme guidé (5 étapes)', async ({ page }) => {
   await page.goto('onboarding');
 
-  // Étape 1 : 3 séances/sem (compatible Starting Strength)
-  await page.getByTestId('level-debutant').click();
-  await page.getByTestId('equip-preset-gym').click();
+  // Step 1 minimal.
   await page.getByTestId('btn-next').click();
 
-  // Étape 2 : préset par défaut
+  // Step 2.
   await page.getByTestId('preset-default').click();
   await page.getByTestId('btn-next').click();
 
-  // Étape 3 : on accepte tout par défaut
+  // Step 3.
   await page.getByTestId('btn-next').click();
 
-  // Étape 4 : Starting Strength
+  // Step 4 — Starting Strength.
   await page.getByTestId('program-ss').click();
   await expect(page.getByTestId('program-ss')).toHaveAttribute('aria-checked', 'true');
   await page.getByTestId('btn-next').click();
   await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '5');
 
-  // Étape 5 : aperçu, on valide directement
+  // Step 5 — Récap direct (mode guidé saute squelette/variantes).
   await expect(page.getByTestId('step5-preview')).toBeVisible();
   await page.getByTestId('btn-finish').click();
   await expect(page).toHaveURL(/\/programme$/);

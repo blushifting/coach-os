@@ -1,23 +1,26 @@
 /**
  * Conv #22 — Étape E : choix des variantes case par case.
  *
- * Pour chaque case du squelette, l'user clique pour ouvrir la sheet
- * `VariantCellSheet` qui propose 3 variantes canoniques + option "Voir plus".
+ * Pour chaque case du squelette, on affiche directement les 3 premières
+ * variantes en grille 3-cols (du plus guidé à gauche au plus libre à droite).
+ * L'user tap pour sélectionner — un liseré rouge marque le choix actif.
  *
- * Le choix est mémorisé dans `chosenVariantsPerCell` (clé `dayIdx:cellIdx`).
- * Au mount, on auto-fill les cases vides avec les défauts pour donner un
- * point de départ déjà sensé (l'user peut tout swap).
+ * Un lien discret "Voir d'autres options" ouvre la `VariantCellSheet` qui
+ * liste TOUTES les variantes triées de la même manière, pour explorer hors
+ * du top 3.
  *
- * Bouton "Continuer" actif quand toutes les cases sont remplies.
+ * Au mount, on auto-fill les cases vides avec la 1re variante de la liste
+ * triée (= la plus guidée + favori user en priorité).
  */
 
 import { useMemo, useState, useEffect } from 'react';
 import { Card } from '@/components/Card';
-import { Button } from '@/components/Button';
 import { VariantCellSheet } from '@/components/VariantCellSheet';
 import type { Catalog } from '@/engine/catalog';
-import type { PatternCell, SkeletonTemplate } from '@/engine/models';
+import type { Exercise, PatternCell, SkeletonTemplate } from '@/engine/models';
+import { ExType } from '@/engine/models';
 import { buildSessionLabel } from '@/engine/skeleton_builder';
+import { candidatesForCell } from '@/engine/pattern_grid';
 import {
   applyChosenVariantsToSkeleton,
   autoFillSkeletonDefaults,
@@ -34,6 +37,7 @@ interface Step6VariantsProps {
   readonly chosenVariantsPerCell: Readonly<Record<string, string>>;
   readonly favorites: Readonly<Record<string, string>>;
   readonly onChange: (next: Readonly<Record<string, string>>) => void;
+  /** Conv #22 — gardé pour compat ; non affiché. */
   readonly stepLabel?: string;
 }
 
@@ -79,7 +83,6 @@ export function Step6Variants({
   chosenVariantsPerCell,
   favorites,
   onChange,
-  stepLabel,
 }: Step6VariantsProps) {
   const [sheet, setSheet] = useState<SheetTarget | null>(null);
 
@@ -95,7 +98,6 @@ export function Step6Variants({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [skeleton, catalog]);
 
-  // Squelette enrichi pour affichage (chosen_exercise_id posé).
   const effectiveSkeleton = useMemo(() => {
     if (skeleton === null) return null;
     return applyChosenVariantsToSkeleton(skeleton, chosenVariantsPerCell);
@@ -124,29 +126,41 @@ export function Step6Variants({
   function closeSheet() {
     setSheet(null);
   }
-  function handleChoose(exerciseId: string) {
+  function pickInline(dayIndex: number, cellIndex: number, exerciseId: string) {
+    const key = cellKey(dayIndex, cellIndex);
+    onChange({ ...chosenVariantsPerCell, [key]: exerciseId });
+  }
+  function handleChooseFromSheet(exerciseId: string) {
     if (sheet === null) return;
-    const key = cellKey(sheet.dayIndex, sheet.cellIndex);
-    const next = { ...chosenVariantsPerCell, [key]: exerciseId };
-    onChange(next);
+    pickInline(sheet.dayIndex, sheet.cellIndex, exerciseId);
     setSheet(null);
   }
 
   return (
     <div className="flex flex-col gap-4 p-4" data-testid="step6-variants">
-      <header className="flex flex-col gap-1">
-        <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
-          {stepLabel ?? 'Étape · Variantes'}
-        </span>
+      <header className="flex flex-col gap-2">
         <h1 className="font-display text-3xl leading-tight tracking-wide text-white">
-          Choisis tes exos
+          Choisis tes exercices
         </h1>
+        <div className="space-y-2 text-sm leading-relaxed text-anthracite-300">
+          <p>
+            Pour chaque case, trois options à choisir : à{' '}
+            <strong className="text-anthracite-100">gauche</strong> l'exo le plus
+            guidé (machine), à <strong className="text-anthracite-100">droite</strong>{' '}
+            le plus libre (barre, poids du corps). Pas de bonne ou mauvaise
+            réponse — prends ce qui te convient.
+          </p>
+          <p className="text-anthracite-400">
+            Tu peux modifier ces choix plus tard depuis ton programme.
+          </p>
+        </div>
       </header>
 
       <Card>
         <div className="flex items-center justify-between text-sm">
           <span className="text-anthracite-200">
-            Cases remplies : <span className="font-semibold text-white">{filled}</span> / {total}
+            Cases remplies :{' '}
+            <span className="font-semibold text-white">{filled}</span> / {total}
           </span>
           {filled === total && (
             <span className="rounded-full bg-sang-900/40 px-2 py-0.5 text-[10px] uppercase tracking-wider text-sang-300">
@@ -162,55 +176,30 @@ export function Step6Variants({
         </div>
       </Card>
 
-      <p className="text-xs leading-relaxed text-anthracite-300">
-        Pour chaque case, on te propose 3 variantes courantes. Touche pour
-        choisir ou parcourir d'autres options. Tu pourras encore swap des
-        exos plus tard depuis le programme.
-      </p>
-
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4">
         {effectiveSkeleton?.days.map((day) => {
           const label = buildSessionLabel(day);
           return (
             <Card key={day.day_index} data-testid={`var-day-${day.day_index}`}>
-              <div className="mb-2 text-sm font-semibold text-white">
+              <div className="mb-3 text-sm font-semibold text-white">
                 Séance {day.day_index + 1} · {label}
               </div>
-              <ul className="flex flex-col gap-1.5">
-                {day.cells.map((cell, ci) => {
-                  const patternLbl =
-                    PATTERN_LABEL[cell.pattern] ?? cell.pattern;
-                  const muscleLbl =
-                    MUSCLE_LABEL[cell.primary_muscle] ?? cell.primary_muscle;
-                  const exId = cell.chosen_exercise_id;
-                  let chosenName: string | null = null;
-                  if (exId !== null && catalog.has(exId)) {
-                    chosenName = catalog.get(exId).nom_fr;
-                  }
-                  return (
-                    <li key={ci}>
-                      <button
-                        type="button"
-                        onClick={() => openSheet(day.day_index, ci, cell)}
-                        className={cn(
-                          'w-full rounded-xl border bg-anthracite-950 px-3 py-2 text-left transition',
-                          chosenName !== null
-                            ? 'border-anthracite-700 hover:border-anthracite-500'
-                            : 'border-sang-700/60 hover:border-sang-500',
-                        )}
-                        data-testid={`var-cell-${day.day_index}-${ci}`}
-                      >
-                        <div className="text-[10px] uppercase tracking-wider text-anthracite-400">
-                          {patternLbl} · {muscleLbl}
-                        </div>
-                        <div className="text-sm text-white">
-                          {chosenName ?? 'À choisir'}
-                        </div>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+              <div className="flex flex-col gap-4">
+                {day.cells.map((cell, ci) => (
+                  <CellRow
+                    key={ci}
+                    dayIndex={day.day_index}
+                    cellIndex={ci}
+                    cell={cell}
+                    catalog={catalog}
+                    favoriteId={favorites[cell.pattern]}
+                    usedIds={usedIds}
+                    chosenId={cell.chosen_exercise_id}
+                    onPick={(id) => pickInline(day.day_index, ci, id)}
+                    onOpenSheet={() => openSheet(day.day_index, ci, cell)}
+                  />
+                ))}
+              </div>
             </Card>
           );
         })}
@@ -221,15 +210,117 @@ export function Step6Variants({
         cell={sheet?.cell ?? null}
         catalog={catalog}
         usedIds={usedIds}
-        {...(favorites[sheet?.cell?.pattern ?? ''] !== undefined
-          ? { favoriteId: favorites[sheet!.cell.pattern]! }
+        {...(sheet !== null && favorites[sheet.cell.pattern] !== undefined
+          ? { favoriteId: favorites[sheet.cell.pattern]! }
           : {})}
-        onChoose={handleChoose}
+        onChoose={handleChooseFromSheet}
         onClose={closeSheet}
       />
     </div>
   );
 }
 
-// Export du Button non utilisé ici, mais permet à OnboardingPage de coordonner.
-export const _unusedButton = Button;
+interface CellRowProps {
+  readonly dayIndex: number;
+  readonly cellIndex: number;
+  readonly cell: PatternCell;
+  readonly catalog: Catalog;
+  readonly favoriteId?: string;
+  readonly usedIds: ReadonlySet<string>;
+  readonly chosenId: string | null;
+  readonly onPick: (exerciseId: string) => void;
+  readonly onOpenSheet: () => void;
+}
+
+function CellRow({
+  cell,
+  catalog,
+  favoriteId,
+  usedIds,
+  chosenId,
+  onPick,
+  onOpenSheet,
+}: CellRowProps) {
+  const allCandidates = useMemo<Exercise[]>(
+    () =>
+      candidatesForCell(cell, catalog, {
+        ...(favoriteId !== undefined ? { favoriteId } : {}),
+        excludeIds: usedIds,
+      }),
+    [cell, catalog, favoriteId, usedIds],
+  );
+
+  // Conv #22 — sécurité bug "case non remplissable" : si l'exo choisi
+  // n'est pas dans les candidats (héritage obsolète), on ne plante pas,
+  // on affiche juste les 3 premiers candidats.
+  const top3 = allCandidates.slice(0, 3);
+  const patternLbl = PATTERN_LABEL[cell.pattern] ?? cell.pattern;
+  const muscleLbl = MUSCLE_LABEL[cell.primary_muscle] ?? cell.primary_muscle;
+
+  if (top3.length === 0) {
+    return (
+      <div>
+        <div className="mb-1 text-[10px] uppercase tracking-wider text-anthracite-400">
+          {patternLbl} · {muscleLbl}
+        </div>
+        <p className="rounded-xl border border-sang-700 bg-sang-900/20 px-3 py-2 text-xs text-sang-400">
+          Aucune variante au catalogue. Tu pourras ajouter un exo personnalisé
+          plus tard depuis le Catalogue.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="mb-1 text-[10px] uppercase tracking-wider text-anthracite-400">
+        {patternLbl} · {muscleLbl}
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {top3.map((ex) => {
+          const selected = chosenId === ex.id;
+          const isCompound = ex.type === ExType.COMPOUND;
+          return (
+            <button
+              key={ex.id}
+              type="button"
+              onClick={() => onPick(ex.id)}
+              className={cn(
+                'flex h-full min-h-[60px] flex-col items-start gap-1 rounded-xl border bg-anthracite-950 px-2.5 py-2 text-left transition',
+                selected
+                  ? 'border-sang-500 ring-1 ring-sang-500/40'
+                  : 'border-anthracite-700 hover:border-anthracite-500',
+              )}
+              data-testid={`variant-inline-${ex.id}`}
+              aria-pressed={selected}
+            >
+              <span className="text-[12px] font-medium leading-tight text-white">
+                {ex.nom_fr}
+              </span>
+              <span
+                className={cn(
+                  'rounded-full border px-1.5 py-0.5 text-[9px] uppercase tracking-wider',
+                  isCompound
+                    ? 'border-anthracite-600 text-anthracite-300'
+                    : 'border-anthracite-700 text-anthracite-400',
+                )}
+              >
+                {isCompound ? 'compound' : 'iso'}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {allCandidates.length > 3 && (
+        <button
+          type="button"
+          onClick={onOpenSheet}
+          className="mt-1.5 text-[11px] text-anthracite-400 underline-offset-2 hover:text-anthracite-200 hover:underline"
+          data-testid="variant-open-other"
+        >
+          Voir d'autres variantes ({allCandidates.length - 3})
+        </button>
+      )}
+    </div>
+  );
+}

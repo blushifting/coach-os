@@ -25,12 +25,17 @@ export async function runOnboardingMinimal(page: Page): Promise<void> {
     `try { localStorage.setItem('coach-os.skip-auto-demo', '1'); } catch (e) {}`,
   );
   await page.goto('onboarding');
-  await page.getByTestId('equip-preset-gym').click();
-  await page.getByTestId('btn-next').click();
+  // Conv #22 — Step1 sans équipement ni niveau, juste sexe/âge/poids.
+  await page.getByTestId('btn-next').click(); // Step1 -> Step2 (Muscles)
   await page.getByTestId('preset-default').click();
-  await page.getByTestId('btn-next').click();
-  await page.getByTestId('btn-next').click();
-  await page.getByTestId('btn-next').click();
+  await page.getByTestId('btn-next').click(); // Step2 -> Step3 (Équilibre)
+  await page.getByTestId('btn-next').click(); // Step3 -> Step4 (Programme)
+  // Step4 : on prend un programme guidé pour court-circuiter les étapes
+  // 5/6 du mode custom co-construit (qui demanderait de remplir cases).
+  // Onboarding minimal = parcours rapide, l'algo programme guidé/custom
+  // est testé en unitaire.
+  await page.getByTestId('program-ss').click(); // Starting Strength
+  await page.getByTestId('btn-next').click(); // Step4 -> Step5 (Récap guidé)
   await page.getByTestId('btn-finish').click();
   await expect(page).toHaveURL(/\/programme$/);
 }
@@ -41,12 +46,17 @@ export async function runOnboardingMinimal(page: Page): Promise<void> {
  */
 export async function runOnboardingMinimalWithAutoDemo(page: Page): Promise<void> {
   await page.goto('onboarding');
-  await page.getByTestId('equip-preset-gym').click();
-  await page.getByTestId('btn-next').click();
+  // Conv #22 — Step1 sans équipement ni niveau, juste sexe/âge/poids.
+  await page.getByTestId('btn-next').click(); // Step1 -> Step2 (Muscles)
   await page.getByTestId('preset-default').click();
-  await page.getByTestId('btn-next').click();
-  await page.getByTestId('btn-next').click();
-  await page.getByTestId('btn-next').click();
+  await page.getByTestId('btn-next').click(); // Step2 -> Step3 (Équilibre)
+  await page.getByTestId('btn-next').click(); // Step3 -> Step4 (Programme)
+  // Step4 : on prend un programme guidé pour court-circuiter les étapes
+  // 5/6 du mode custom co-construit (qui demanderait de remplir cases).
+  // Onboarding minimal = parcours rapide, l'algo programme guidé/custom
+  // est testé en unitaire.
+  await page.getByTestId('program-ss').click(); // Starting Strength
+  await page.getByTestId('btn-next').click(); // Step4 -> Step5 (Récap guidé)
   await page.getByTestId('btn-finish').click();
   await expect(page).toHaveURL(/\/programme$/);
 }

@@ -98,6 +98,40 @@ export default function OnboardingPage() {
     if (mainRef.current !== null) mainRef.current.scrollTop = 0;
   }, [step]);
 
+  // Conv #22 — Invalide `chosenVariantsPerCell` dès que la grille du
+  // squelette est susceptible de changer (prios, accepted suggestions,
+  // sessions, durée, programmeId). Sans ça, l'utilisateur qui modifie
+  // ses prios garde d'anciennes références d'exos qui peuvent ne plus
+  // matcher le nouveau squelette (cf. bug remonté : "exos qui n'ont
+  // rien à voir avec la case", héritage d'un autre choix).
+  const inputsKey = useMemo(
+    () =>
+      JSON.stringify({
+        prios: draft.priorities.map((p) => `${p.muscle}:${p.objective}`),
+        accepted: [...draft.acceptedSuggestions].sort(),
+        sessions: draft.sessionsPerWeek,
+        duration: draft.durationCategory,
+        programme: draft.programmeId,
+      }),
+    [
+      draft.priorities,
+      draft.acceptedSuggestions,
+      draft.sessionsPerWeek,
+      draft.durationCategory,
+      draft.programmeId,
+    ],
+  );
+  const prevInputsKey = useRef(inputsKey);
+  useEffect(() => {
+    if (prevInputsKey.current !== inputsKey) {
+      prevInputsKey.current = inputsKey;
+      if (Object.keys(draft.chosenVariantsPerCell).length > 0) {
+        setDraft((d) => ({ ...d, chosenVariantsPerCell: {} }));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputsKey]);
+
   // Skeleton calculé à la volée à partir de l'étape 5 (custom seulement).
   // tmpState mémorisé pour la finalize.
   const skeletonResult = useMemo(() => {
@@ -510,7 +544,10 @@ export default function OnboardingPage() {
 }
 
 /**
- * Conv #22 — barre de progression sobre (segments discrets sans noms).
+ * Conv #22 — barre de progression continue, longueur fixe.
+ * Le ratio current/total règle le remplissage : en mode guidé (5 étapes),
+ * step 5 = 100 % ; en mode custom (7 étapes), step 7 = 100 %. Visuellement
+ * la même barre, juste un rythme de remplissage différent.
  */
 function ProgressBar({
   current,
@@ -519,28 +556,20 @@ function ProgressBar({
   readonly current: number;
   readonly total: number;
 }) {
+  const pct = total > 0 ? Math.min(100, Math.max(0, (current / total) * 100)) : 0;
   return (
     <div
-      className="flex flex-1 items-center gap-1.5"
+      className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-anthracite-800"
       role="progressbar"
       aria-valuemin={1}
       aria-valuemax={total}
       aria-valuenow={current}
       data-testid="onboarding-progress"
     >
-      {Array.from({ length: total }).map((_, i) => {
-        const active = i + 1 <= current;
-        return (
-          <span
-            key={i}
-            className={
-              active
-                ? 'h-1.5 flex-1 rounded-full bg-sang-500 transition-colors'
-                : 'h-1.5 flex-1 rounded-full bg-anthracite-800 transition-colors'
-            }
-          />
-        );
-      })}
+      <div
+        className="absolute inset-y-0 left-0 rounded-full bg-sang-500 transition-[width] duration-300 ease-out"
+        style={{ width: `${pct}%` }}
+      />
     </div>
   );
 }

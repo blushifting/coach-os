@@ -44,28 +44,32 @@ function objectivesToFr(objs: readonly MuscleObjective[]): string {
   return objs.map(objectiveLabel).join(' + ');
 }
 
-export function Step4Program({ draft, onChange, stepLabel }: Step4Props) {
+export function Step4Program({ draft, onChange }: Step4Props) {
   return (
     <div className="flex flex-col gap-4 p-4">
-      <header className="flex flex-col gap-1">
-        <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
-          {stepLabel ?? 'Étape 4 · Programme'}
-        </span>
+      <header className="flex flex-col gap-2">
         <h1 className="font-display text-3xl leading-tight tracking-wide text-white">
-          Choix du programme
+          Ton programme
         </h1>
+        <div className="space-y-2 text-sm leading-relaxed text-anthracite-300">
+          <p>
+            Tu peux <strong className="text-white">construire ton programme</strong>{' '}
+            avec l'app (custom) ou prendre un <strong className="text-white">programme tout fait</strong>{' '}
+            d'un coach reconnu. Dans les deux cas, l'app suit tes performances
+            séance après séance et ajuste les charges.
+          </p>
+        </div>
       </header>
-      <p className="text-sm text-anthracite-300">
-        Pars sur un programme guidé éprouvé ou laisse l'app générer un programme
-        custom adapté à tes muscles cibles.
-      </p>
 
-      {/* Conv #18 — `sessions_per_week` déplacé ici depuis Step1 (seul
-          paramètre profil qui impacte vraiment la structure du programme).
-          Les programmes guidés ont chacun leur fréquence imposée et
-          poseront un warning si l'user a une autre valeur. */}
       <Card>
-        <div className="mb-3 text-sm font-medium text-white">Séances par semaine</div>
+        <div className="mb-1 text-sm font-medium text-white">
+          Combien de séances par semaine ?
+        </div>
+        <p className="mb-3 text-[12px] leading-relaxed text-anthracite-300">
+          Plus tu en fais, plus tu peux étaler du volume sur la semaine et
+          progresser vite — mais il faut récupérer entre les séances. 3 à 4
+          est un bon point d'équilibre pour la plupart.
+        </p>
         <Stepper
           value={draft.sessionsPerWeek}
           onChange={(v) => onChange({ sessionsPerWeek: v })}
@@ -73,22 +77,28 @@ export function Step4Program({ draft, onChange, stepLabel }: Step4Props) {
           max={6}
           suffix=" / sem"
         />
-        <p className="mt-2 text-[11px] text-anthracite-300">
-          Sert au mode custom. Les programmes guidés imposent leur propre
-          fréquence (un avertissement s'affiche si ça diffère).
+        <p className="mt-2 text-[11px] text-anthracite-400">
+          Les programmes guidés ont leur propre fréquence ; un avertissement
+          s'affiche si elle ne correspond pas à ton choix.
         </p>
       </Card>
 
-      {/* Conv #22 — Durée MAX par séance, plafond du nouveau path co-construit. */}
+      {/* Conv #22 — Durée limite par séance, sert au dimensionnement co-construit. */}
       <Card>
-        <div className="mb-3 text-sm font-medium text-white">
-          Durée maximale par séance
+        <div className="mb-1 text-sm font-medium text-white">
+          Combien de temps maximum par séance ?
         </div>
+        <p className="mb-3 text-[12px] leading-relaxed text-anthracite-300">
+          C'est ta <strong className="text-white">limite haute</strong> : l'app
+          dimensionne ton programme en dessous, selon tes priorités. Si tes
+          prios tiennent en moins de temps, tes séances seront plus courtes
+          que ta limite — l'app te le dira.
+        </p>
         <div className="grid grid-cols-3 gap-2">
           {[
-            { v: DurationCategory.SHORT, label: '≤ 1h', sub: '4 exos max' },
-            { v: DurationCategory.MEDIUM, label: '≤ 1h30', sub: '6 exos max' },
-            { v: DurationCategory.LONG, label: '≤ 2h', sub: '8 exos max' },
+            { v: DurationCategory.SHORT, label: '≤ 1h', sub: '~4 exos max' },
+            { v: DurationCategory.MEDIUM, label: '≤ 1h30', sub: '~6 exos max' },
+            { v: DurationCategory.LONG, label: '≤ 2h', sub: '~8 exos max' },
           ].map((opt) => {
             const selected = draft.durationCategory === opt.v;
             return (
@@ -112,11 +122,6 @@ export function Step4Program({ draft, onChange, stepLabel }: Step4Props) {
             );
           })}
         </div>
-        <p className="mt-2 text-[11px] text-anthracite-300">
-          Plafond : le programme est dimensionné selon tes priorités et peut
-          être plus court. L'app prévient si tu réserves beaucoup plus que
-          nécessaire.
-        </p>
       </Card>
 
       <ProgramRow

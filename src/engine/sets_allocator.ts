@@ -28,6 +28,7 @@ import type {
   UserState,
 } from './models';
 import {
+  ExType,
   ProgressionRule,
   exercisePrimaires,
   makePlannedExercise,
@@ -49,9 +50,15 @@ export const MIN_SETS_PER_EXERCISE = 3;
 /** Plafond séries/exo : au-dessus, rendement décroissant (Schoenfeld 2017). */
 export const MAX_SETS_PER_EXERCISE = 6;
 
-/** Estimation grossière de durée par série (cf. Conv #19 calibration). */
-const SECONDS_PER_SET = 90;     // exec + transition + repos moyen
+/**
+ * Constantes de durée alignées sur Conv #19 (`lib/onboarding-preview.ts`)
+ * pour cohérence avec l'estimation présentée à l'user. Compound = repos long,
+ * iso = repos court ; SET_EXEC = 40 s exec + thumbing du téléphone.
+ */
 const SECONDS_SETUP_PER_EXO = 75;
+const SECONDS_SET_EXEC = 40;
+const SECONDS_REST_COMPOUND = 150;
+const SECONDS_REST_ISOLATION = 80;
 const SECONDS_TRANSITION = 60;
 
 /** Durée cible (minutes) selon DurationCategory. Sert au check soft. */
@@ -89,7 +96,11 @@ function estimateDurationSec(exos: readonly AllocatedExo[]): number {
   if (exos.length === 0) return 0;
   let total = 0;
   for (const e of exos) {
-    total += SECONDS_SETUP_PER_EXO + e.n_sets * SECONDS_PER_SET;
+    const restS =
+      e.exercise.type === ExType.COMPOUND
+        ? SECONDS_REST_COMPOUND
+        : SECONDS_REST_ISOLATION;
+    total += SECONDS_SETUP_PER_EXO + e.n_sets * (SECONDS_SET_EXEC + restS);
   }
   total += (exos.length - 1) * SECONDS_TRANSITION;
   return total;

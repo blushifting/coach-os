@@ -383,28 +383,82 @@ export function buildSkeleton(
 
 /**
  * Construit le label final d'une séance pour affichage UI.
- * Format : `<split-label>` ou `<split-label> · <focus>` selon le split.
  *
- *   - PPL (Push/Pull/Legs) : le label split est déjà explicite, pas de focus.
- *   - U/L : label + 1-2 muscles focus ("Upper · Pec/Dos").
- *   - Full Body : label + focus rotatif ("Full Body · Focus Pec/Triceps").
+ * Stratégie (Conv #22, retour Azur sur Full Body 3× monotone) : on dérive
+ * la "zone dominante" et le focus du **1er pattern compound** de la séance
+ * (= celui qui ouvre la séance par convention §6.5). Ça produit des labels
+ * variés même quand le split label est répétitif :
+ *
+ *   - PPL : on garde le label split tel quel ("Push", "Pull", "Legs").
+ *   - U/L : "Upper · <focus>" / "Lower · <focus>" selon le pattern d'ouverture.
+ *   - Full Body : la séance prend le nom de sa dominante ("Push dominant",
+ *     "Pull dominant", "Jambes dominant") plutôt qu'un "Full A · Focus X/Y"
+ *     répétitif.
  */
 export function buildSessionLabel(day: SkeletonDay): string {
   const split = day.split_label;
-  // PPL ou splits déjà très explicites (label contient déjà un muscle/zone).
-  const isExplicitSplit = /push|pull|legs|spec/i.test(split);
-  if (isExplicitSplit) {
-    return split;
+  const split_lower = split.toLowerCase();
+  // PPL : le label est déjà très explicite.
+  if (/push|pull|legs/i.test(split_lower)) return split;
+  // Spec / autres splits exotiques : on laisse tel quel.
+  if (/spec/i.test(split_lower)) return split;
+
+  const firstCompound = day.cells.find((c) => c.role_hint === 'compound');
+  const anchor = firstCompound ?? day.cells[0];
+  const dominance = anchor !== undefined ? patternDominance(anchor.pattern) : null;
+
+  if (/full/i.test(split_lower)) {
+    if (dominance === null) return split;
+    return `Full Body · ${dominance.full}`;
   }
-  // Sinon ajoute le focus si on en a un.
+  if (/upper/i.test(split_lower)) {
+    if (dominance === null || dominance.zone !== 'upper') {
+      // Fallback focus muscles.
+      const focus = day.focus_muscles.slice(0, 2).map(prettyMuscle).join('/');
+      return focus.length > 0 ? `${split} · ${focus}` : split;
+    }
+    return `${split} · ${dominance.short}`;
+  }
+  if (/lower/i.test(split_lower)) {
+    if (dominance === null || dominance.zone !== 'lower') {
+      const focus = day.focus_muscles.slice(0, 2).map(prettyMuscle).join('/');
+      return focus.length > 0 ? `${split} · ${focus}` : split;
+    }
+    return `${split} · ${dominance.short}`;
+  }
+  // Défaut : focus muscles.
   if (day.focus_muscles.length === 0) return split;
-  const focus = day.focus_muscles
-    .slice(0, 2)
-    .map(prettyMuscle)
-    .join('/');
-  // Pour Full Body on précise "Focus".
-  if (/full/i.test(split)) return `${split} · Focus ${focus}`;
+  const focus = day.focus_muscles.slice(0, 2).map(prettyMuscle).join('/');
   return `${split} · ${focus}`;
+}
+
+/**
+ * Conv #22 — Mapping pattern d'ouverture → dominance lisible. Utilisé pour
+ * varier les labels de Full Body et préciser les U/L.
+ */
+function patternDominance(
+  pattern: string,
+): { zone: 'upper' | 'lower' | 'core'; full: string; short: string } | null {
+  switch (pattern) {
+    case 'squat':
+      return { zone: 'lower', full: 'Squat / Quads', short: 'Quads' };
+    case 'hinge':
+      return { zone: 'lower', full: 'Hinge / Ischios', short: 'Hinge' };
+    case 'lunge':
+      return { zone: 'lower', full: 'Fente / Jambes', short: 'Jambes' };
+    case 'push_h':
+      return { zone: 'upper', full: 'Push horizontal', short: 'Pec' };
+    case 'push_v':
+      return { zone: 'upper', full: 'Push vertical', short: 'Épaules' };
+    case 'pull_h':
+      return { zone: 'upper', full: 'Pull horizontal', short: 'Dos' };
+    case 'pull_v':
+      return { zone: 'upper', full: 'Pull vertical', short: 'Lats' };
+    case 'core':
+      return { zone: 'core', full: 'Gainage', short: 'Core' };
+    default:
+      return null;
+  }
 }
 
 function prettyMuscle(m: string): string {

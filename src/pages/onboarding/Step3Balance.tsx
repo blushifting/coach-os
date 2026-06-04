@@ -33,7 +33,7 @@ const RULE_BADGES: Record<string, string> = {
   R4: 'Posture épaules',
 };
 
-export function Step3Balance({ draft, onChange, stepLabel }: Step3Props) {
+export function Step3Balance({ draft, onChange }: Step3Props) {
   const suggestions: MuscleGoal[] = useMemo(
     () => computeBalanceSuggestions(draft.priorities),
     [draft.priorities],
@@ -48,19 +48,24 @@ export function Step3Balance({ draft, onChange, stepLabel }: Step3Props) {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <header className="flex flex-col gap-1">
-        <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
-          {stepLabel ?? 'Étape 3 · Équilibre'}
-        </span>
+      <header className="flex flex-col gap-2">
         <h1 className="font-display text-3xl leading-tight tracking-wide text-white">
           Équilibre musculaire
         </h1>
+        <div className="space-y-2 text-sm leading-relaxed text-anthracite-300">
+          <p>
+            D'après tes priorités, l'app te propose d'ajouter ces muscles en
+            <strong className="text-white"> maintien </strong> (un peu de
+            volume pour ne pas perdre, sans chercher à grossir).
+          </p>
+          <p>
+            Pourquoi ? Un déséquilibre prolongé entre des muscles antagonistes
+            (ex. beaucoup de pectoraux sans assez de dos) augmente le risque
+            de blessure et de mauvaise posture. Tu peux décocher si tu n'as
+            pas envie de t'occuper d'un muscle particulier.
+          </p>
+        </div>
       </header>
-      <p className="text-sm text-anthracite-300">
-        D'après tes priorités, on te suggère d'ajouter ces muscles en maintien
-        (volume minimum) pour éviter les déséquilibres. Décoche ceux que tu ne
-        veux pas travailler.
-      </p>
 
       {suggestions.length === 0 ? (
         <Card>

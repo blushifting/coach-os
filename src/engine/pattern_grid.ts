@@ -18,7 +18,7 @@
 
 import type { Catalog } from './catalog';
 import type { Exercise, PatternCell, RoleHint } from './models';
-import { ExType, Pattern, exercisePrimaires } from './models';
+import { ChargeType, ExType, Pattern, exercisePrimaires } from './models';
 
 // =============================================================================
 // Mapping muscle → patterns naturels (ordre = préférence compound puis iso)
@@ -214,12 +214,19 @@ export function candidatesForCell(
   const avoidAngles = options.avoidAngles ?? new Set<string>();
 
   const all = catalog.all();
-  const filtered = all.filter((ex) => {
-    if (excludeIds.has(ex.id)) return false;
-    if (ex.pattern !== cell.pattern) return false;
-    if (!exercisePrimaires(ex).includes(cell.primary_muscle)) return false;
-    return true;
-  });
+  const matchPatternMuscle = (ex: Exercise) =>
+    ex.pattern === cell.pattern &&
+    exercisePrimaires(ex).includes(cell.primary_muscle);
+
+  let filtered = all.filter(
+    (ex) => !excludeIds.has(ex.id) && matchPatternMuscle(ex),
+  );
+  // Fallback : si l'exclusion (cycle déjà rempli) vide la liste, on retry
+  // sans excludeIds — vaut mieux un doublon qu'une case impossible à
+  // remplir (cf. retour Conv #22 d'Azur : "case non remplissable").
+  if (filtered.length === 0) {
+    filtered = all.filter(matchPatternMuscle);
+  }
 
   filtered.sort((a, b) => {
     // 1. Favori user toujours en tête.
@@ -235,7 +242,13 @@ export function candidatesForCell(
     const aClash = a.tags.some((t) => avoidAngles.has(t)) ? 1 : 0;
     const bClash = b.tags.some((t) => avoidAngles.has(t)) ? 1 : 0;
     if (aClash !== bClash) return aClash - bClash;
-    // 4. Polyarticularité (selon role_hint).
+    // 4. Niveau de "guidage" (Conv #22, retour Azur) — du plus guidé
+    // (machine fixe) au plus libre (barre, poids du corps), pour aider
+    // les débutants à choisir des variantes accessibles à gauche.
+    const gA = guidanceLevel(a);
+    const gB = guidanceLevel(b);
+    if (gA !== gB) return gA - gB;
+    // 5. Polyarticularité (selon role_hint).
     const aN = Object.keys(a.muscles).length;
     const bN = Object.keys(b.muscles).length;
     if (cell.role_hint === 'compound') {
@@ -243,11 +256,39 @@ export function candidatesForCell(
     } else {
       if (aN !== bN) return aN - bN; // moins = mieux pour iso
     }
-    // 5. Difficulté ascendante (défaut = accessible d'abord).
+    // 6. Difficulté ascendante (défaut = accessible d'abord).
     return a.dif < b.dif ? -1 : a.dif > b.dif ? 1 : 0;
   });
 
   return filtered;
+}
+
+/**
+ * Conv #22 — Score de "guidage" d'un exo : plus la valeur est basse, plus
+ * l'exo est guidé/accessible (idéal pour débutants).
+ *  0 = machine guidée (trajectoire fixe, pas de stabilisation requise)
+ *  1 = câbles / bw assisté
+ *  2 = haltères
+ *  3 = barre (technique + stabilisation)
+ *  4 = poids du corps libre (tractions, dips… exigent un ratio force/poids)
+ */
+function guidanceLevel(ex: Exercise): number {
+  switch (ex.charge) {
+    case ChargeType.MACHINE_STACK:
+      return 0;
+    case ChargeType.CABLE:
+    case ChargeType.BODYWEIGHT_ASSISTED:
+      return 1;
+    case ChargeType.DUMBBELL:
+      return 2;
+    case ChargeType.BARBELL:
+      return 3;
+    case ChargeType.BODYWEIGHT:
+    case ChargeType.BODYWEIGHT_LOADED:
+      return 4;
+    default:
+      return 2;
+  }
 }
 
 function matchesRoleHint(ex: Exercise, hint: RoleHint): boolean {

@@ -27,7 +27,7 @@ import {
 import { ImportValidationError } from '@/io/import';
 import { exportToJsonString } from '@/io/export';
 import { ALL_GUIDED_PROGRAMS } from '@/engine/guided_programs';
-import { Level, Sex, type Profile } from '@/engine/models';
+import { Sex, type Profile } from '@/engine/models';
 import { muscleLabel, objectiveLabel } from '@/lib/balance-reasons';
 import {
   goalsDraftFromState,
@@ -37,12 +37,6 @@ import { useCoachOsStore } from '@/store';
 import { useDemoMode } from '@/store/selectors';
 import { AideSheet } from './profil/AideSheet';
 import { EditProfileSheet } from './profil/EditProfileSheet';
-
-const LEVEL_LABEL: Record<Level, string> = {
-  [Level.DEBUTANT]: 'Débutant',
-  [Level.INTERMEDIAIRE]: 'Intermédiaire',
-  [Level.AVANCE]: 'Avancé',
-};
 
 const SEX_LABEL: Record<Sex, string> = {
   [Sex.HOMME]: 'Homme',
@@ -185,24 +179,11 @@ export default function ProfilPage() {
           <SummaryRow
             label="Poids"
             value={`${userState.profile.bodyweight_kg} kg`}
-          />
-          <SummaryRow
-            label="Niveau"
-            value={LEVEL_LABEL[userState.profile.level]}
-          />
-          {/* Conv #20 — Séances/sem + Objectif retirés du résumé Identité :
-              gérés dans la Card "Priorités & programme" ci-dessous (édités
-              via le flux restart d'onboarding, pas via la sheet Identité
-              cosmétique). Objectif est plus précis par muscle dans la prio. */}
-          <SummaryRow
-            label="Équipements"
-            value={
-              userState.profile.available_equip.size === 0
-                ? 'Aucun'
-                : `${userState.profile.available_equip.size} cochés`
-            }
             wide
           />
+          {/* Conv #22 — Niveau et équipement retirés de l'identité (auto-
+              calibration cycle / révélés par les choix d'exos). Conv #20 —
+              Séances/sem + Objectif gérés via "Priorités & programme". */}
         </dl>
       </Card>
 

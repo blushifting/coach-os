@@ -444,14 +444,61 @@ describe('Conv #22 — buildSessionLabel (item L)', () => {
     });
     expect(out).toMatch(/Upper A · Pec\/Lats/);
   });
-  it('Full Body : label + "Focus" + muscle(s)', () => {
-    const out = buildSessionLabel({
+  it('Full Body : nom dérivé du 1er pattern compound (varie selon dominante)', () => {
+    const pushH = buildSessionLabel({
+      day_index: 0,
+      split_label: 'Full A',
+      focus_muscles: ['pectoraux'],
+      cells: [
+        {
+          pattern: 'push_h' as never,
+          primary_muscle: 'pectoraux',
+          role_hint: 'compound',
+          chosen_exercise_id: null,
+        },
+      ],
+    });
+    expect(pushH).toMatch(/Full Body · Push horizontal/);
+
+    const squat = buildSessionLabel({
+      day_index: 1,
+      split_label: 'Full B',
+      focus_muscles: ['quadriceps'],
+      cells: [
+        {
+          pattern: 'squat' as never,
+          primary_muscle: 'quadriceps',
+          role_hint: 'compound',
+          chosen_exercise_id: null,
+        },
+      ],
+    });
+    expect(squat).toMatch(/Full Body · Squat \/ Quads/);
+
+    // Sans cells (cas dégénéré) → split label seul.
+    const noCells = buildSessionLabel({
       day_index: 0,
       split_label: 'Full A',
       focus_muscles: ['pectoraux'],
       cells: [],
     });
-    expect(out).toMatch(/Full A · Focus Pec/);
+    expect(noCells).toBe('Full A');
+  });
+  it('Upper avec cell compound : focus dérivé du pattern', () => {
+    const out = buildSessionLabel({
+      day_index: 0,
+      split_label: 'Upper A',
+      focus_muscles: ['dos_largeur'],
+      cells: [
+        {
+          pattern: 'pull_v' as never,
+          primary_muscle: 'dos_largeur',
+          role_hint: 'compound',
+          chosen_exercise_id: null,
+        },
+      ],
+    });
+    expect(out).toMatch(/Upper A · Lats/);
   });
 });
 

@@ -19,27 +19,31 @@ import type { OnboardingDraft } from '@/lib/onboarding-state';
 interface Step1Props {
   readonly draft: OnboardingDraft;
   readonly onChange: (patch: Partial<OnboardingDraft>) => void;
+  /** Conv #22 — gardé pour compat ascendante ; non affiché. */
   readonly stepLabel?: string;
 }
 
-export function Step1Profile({ draft, onChange, stepLabel }: Step1Props) {
+export function Step1Profile({ draft, onChange }: Step1Props) {
   return (
     <div className="flex flex-col gap-5 p-4">
-      <header className="flex flex-col gap-1">
-        <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
-          {stepLabel ?? 'Étape 1 · Profil'}
-        </span>
+      <header className="flex flex-col gap-2">
         <h1 className="font-display text-3xl leading-tight tracking-wide text-white">
-          Profil
+          On commence par toi
         </h1>
+        <p className="text-sm leading-relaxed text-anthracite-200">
+          Ces infos servent à fixer un point de départ raisonnable pour ton
+          volume d'entraînement et tes charges. L'app affine ensuite ton
+          programme cycle après cycle, selon ce que tu fais en vrai.
+        </p>
       </header>
-      <p className="text-sm leading-relaxed text-anthracite-200">
-        Ces infos servent à calibrer ton volume cible et tes plafonds de départ.
-        L'app affine ensuite ton programme cycle après cycle selon tes résultats.
-      </p>
 
       <Card>
-        <div className="mb-3 text-sm font-medium text-white">Sexe</div>
+        <div className="mb-1 text-sm font-medium text-white">Sexe</div>
+        <p className="mb-3 text-xs leading-relaxed text-anthracite-300">
+          Sert à ajuster les volumes recommandés (les études montrent que les
+          femmes tolèrent mieux un volume hebdo un peu plus haut sur le haut
+          du corps).
+        </p>
         <div className="flex gap-2" role="radiogroup" aria-label="Sexe">
           <ChipRadio
             label="Homme"
@@ -57,7 +61,12 @@ export function Step1Profile({ draft, onChange, stepLabel }: Step1Props) {
       </Card>
 
       <Card>
-        <div className="mb-3 text-sm font-medium text-white">Âge</div>
+        <div className="mb-1 text-sm font-medium text-white">Âge</div>
+        <p className="mb-3 text-xs leading-relaxed text-anthracite-300">
+          Au-delà de 50 ans, l'app prévoit un peu plus de récupération et
+          plafonne le volume max — la progression reste réelle mais plus
+          progressive.
+        </p>
         <Stepper
           value={draft.age}
           onChange={(v) => onChange({ age: v })}
@@ -68,7 +77,12 @@ export function Step1Profile({ draft, onChange, stepLabel }: Step1Props) {
       </Card>
 
       <Card>
-        <div className="mb-3 text-sm font-medium text-white">Poids</div>
+        <div className="mb-1 text-sm font-medium text-white">Poids</div>
+        <p className="mb-3 text-xs leading-relaxed text-anthracite-300">
+          Sert à estimer une charge de départ réaliste sur les exercices au
+          poids du corps (tractions, dips, pompes) et à fixer un plafond
+          initial sur les exos chargés.
+        </p>
         <Stepper
           value={draft.bodyweightKg}
           onChange={(v) => onChange({ bodyweightKg: v })}

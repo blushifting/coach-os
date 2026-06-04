@@ -56,7 +56,7 @@ const OBJECTIVES: readonly MuscleObjective[] = [
   MuscleObjective.MAINTIEN,
 ];
 
-export function Step2Muscles({ draft, onChange, stepLabel }: Step2Props) {
+export function Step2Muscles({ draft, onChange }: Step2Props) {
   const selectedSet = useMemo(
     () => new Set(draft.priorities.map((p) => p.muscle)),
     [draft.priorities],
@@ -118,19 +118,26 @@ export function Step2Muscles({ draft, onChange, stepLabel }: Step2Props) {
 
   return (
     <div className="flex flex-col gap-3 p-3">
-      <header className="flex flex-col gap-0.5">
-        <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
-          {stepLabel ?? 'Étape 2 · Muscles'}
-        </span>
+      <header className="flex flex-col gap-2">
         <h1 className="flex items-center gap-2 font-display text-2xl leading-tight tracking-wide text-white">
-          Muscles cibles
+          Tes muscles cibles
           <HelpButton topic="deltoides" label="Aide : deltoïdes" />
         </h1>
+        <div className="space-y-2 text-[12px] leading-relaxed text-anthracite-200">
+          <p>
+            Choisis les muscles que tu veux développer en priorité, puis
+            glisse-les pour les classer du plus prioritaire au moins.
+          </p>
+          <p className="text-anthracite-300">
+            <strong className="text-anthracite-100">Prioritaire</strong> = un
+            muscle sur lequel l'app va concentrer du volume pour qu'il
+            progresse. <strong className="text-anthracite-100">Maintien</strong>{' '}
+            (les autres muscles) = volume minimum pour ne pas perdre, sans
+            chercher la croissance — utile pour rester équilibré sans
+            disperser ton énergie. 3 à 5 prios suffisent.
+          </p>
+        </div>
       </header>
-      <p className="text-[12px] leading-relaxed text-anthracite-200">
-        Choisis tes muscles prioritaires et leur ordre d'importance (glisse
-        pour réorganiser).
-      </p>
 
       <div className="flex flex-wrap gap-2">
         <Button

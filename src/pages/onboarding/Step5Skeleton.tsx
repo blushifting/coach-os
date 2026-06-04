@@ -18,6 +18,7 @@ import { buildSessionLabel } from '@/engine/skeleton_builder';
 
 interface Step5SkeletonProps {
   readonly skeleton: SkeletonTemplate | null;
+  /** Conv #22 — gardé pour compat ; non affiché. */
   readonly stepLabel?: string;
 }
 
@@ -51,12 +52,12 @@ const MUSCLE_LABEL: Record<string, string> = {
   lombaires: 'lombaires',
 };
 
-export function Step5Skeleton({ skeleton, stepLabel }: Step5SkeletonProps) {
+export function Step5Skeleton({ skeleton }: Step5SkeletonProps) {
   if (skeleton === null) {
     return (
       <div className="p-4">
         <p className="text-sm text-anthracite-300">
-          Squelette en cours de génération…
+          Structure en cours de génération…
         </p>
       </div>
     );
@@ -64,20 +65,26 @@ export function Step5Skeleton({ skeleton, stepLabel }: Step5SkeletonProps) {
 
   return (
     <div className="flex flex-col gap-4 p-4" data-testid="step5-skeleton">
-      <header className="flex flex-col gap-1">
-        <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-sang-400">
-          {stepLabel ?? 'Étape · Squelette'}
-        </span>
+      <header className="flex flex-col gap-2">
         <h1 className="font-display text-3xl leading-tight tracking-wide text-white">
-          Voici la structure proposée
+          La structure de ton programme
         </h1>
+        <div className="space-y-2 text-sm leading-relaxed text-anthracite-300">
+          <p>
+            L'app a découpé tes priorités sur la semaine selon une structure
+            éprouvée :{' '}
+            <span className="font-semibold text-white">{skeleton.split_name}</span>{' '}
+            — {skeleton.days.length} séances par semaine.
+          </p>
+          <p>
+            Chaque séance contient des cases qui décrivent le{' '}
+            <strong className="text-anthracite-100">type de mouvement</strong>{' '}
+            (tirage vertical, poussée horizontale…) et le muscle visé. À
+            l'étape suivante, tu choisiras tes <strong className="text-anthracite-100">exercices préférés</strong>{' '}
+            pour chaque case.
+          </p>
+        </div>
       </header>
-
-      <p className="text-sm leading-relaxed text-anthracite-300">
-        L'algo a dimensionné ton cycle selon tes priorités et la durée que
-        tu as choisie. <span className="font-semibold text-white">{skeleton.split_name}</span>{' '}
-        — {skeleton.days.length} séances par semaine.
-      </p>
 
       <div className="flex flex-col gap-3">
         {skeleton.days.map((day) => {
