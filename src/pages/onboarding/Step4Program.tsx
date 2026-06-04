@@ -12,7 +12,12 @@
  */
 
 import { ALL_GUIDED_PROGRAMS } from '@/engine/guided_programs';
-import { Level, type GuidedProgram, type MuscleObjective } from '@/engine/models';
+import {
+  DurationCategory,
+  Level,
+  type GuidedProgram,
+  type MuscleObjective,
+} from '@/engine/models';
 import { Card } from '@/components/Card';
 import { Stepper } from '@/components/Stepper';
 import { cn } from '@/lib/cn';
@@ -71,6 +76,46 @@ export function Step4Program({ draft, onChange, stepLabel }: Step4Props) {
         <p className="mt-2 text-[11px] text-anthracite-300">
           Sert au mode custom. Les programmes guidés imposent leur propre
           fréquence (un avertissement s'affiche si ça diffère).
+        </p>
+      </Card>
+
+      {/* Conv #22 — Durée MAX par séance, plafond du nouveau path co-construit. */}
+      <Card>
+        <div className="mb-3 text-sm font-medium text-white">
+          Durée maximale par séance
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { v: DurationCategory.SHORT, label: '≤ 1h', sub: '4 exos max' },
+            { v: DurationCategory.MEDIUM, label: '≤ 1h30', sub: '6 exos max' },
+            { v: DurationCategory.LONG, label: '≤ 2h', sub: '8 exos max' },
+          ].map((opt) => {
+            const selected = draft.durationCategory === opt.v;
+            return (
+              <button
+                key={opt.v}
+                type="button"
+                onClick={() => onChange({ durationCategory: opt.v })}
+                className={cn(
+                  'rounded-xl border px-3 py-2 text-center transition',
+                  selected
+                    ? 'border-sang-500 bg-sang-900/30 text-white'
+                    : 'border-anthracite-700 bg-anthracite-900 text-anthracite-300 hover:border-anthracite-500',
+                )}
+                data-testid={`duration-${opt.v}`}
+                role="radio"
+                aria-checked={selected}
+              >
+                <div className="text-sm font-semibold">{opt.label}</div>
+                <div className="text-[11px] opacity-80">{opt.sub}</div>
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-2 text-[11px] text-anthracite-300">
+          Plafond : le programme est dimensionné selon tes priorités et peut
+          être plus court. L'app prévient si tu réserves beaucoup plus que
+          nécessaire.
         </p>
       </Card>
 

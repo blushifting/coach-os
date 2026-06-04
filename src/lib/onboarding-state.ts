@@ -12,6 +12,7 @@
  */
 
 import {
+  DurationCategory,
   Level,
   MuscleObjective,
   MuscleStatus,
@@ -50,6 +51,12 @@ export interface OnboardingDraft {
   // Étape 4 : choix programme
   /** `null` = mode custom (pas de programme guidé). */
   readonly programmeId: string | null;
+  /**
+   * Conv #22 — durée MAX par séance (plafond patterns/séance).
+   * Sert au nouveau path co-construit (mode custom seulement).
+   * Default : MEDIUM (≤ 1h30).
+   */
+  readonly durationCategory: DurationCategory;
 }
 
 // =============================================================================
@@ -85,6 +92,7 @@ export function makeInitialDraft(): OnboardingDraft {
     priorities: [],
     acceptedSuggestions: new Set<string>(),
     programmeId: null,
+    durationCategory: DurationCategory.MEDIUM,
   };
 }
 
@@ -119,6 +127,8 @@ export function draftFromUserState(state: UserState): OnboardingDraft {
     priorities,
     acceptedSuggestions: accepted,
     programmeId: state.active_guided_program_id,
+    durationCategory:
+      state.profile.duration_category ?? DurationCategory.MEDIUM,
   };
 }
 
@@ -204,6 +214,7 @@ export function buildProfile(
     sessions_per_week: draft.sessionsPerWeek,
     bodyweight_kg: draft.bodyweightKg,
     available_equip: draft.equipment,
+    duration_category: draft.durationCategory,
   });
 }
 

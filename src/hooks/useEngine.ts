@@ -22,6 +22,7 @@ import {
 import * as engine from '@/engine/engine';
 import { applyBalanceRules } from '@/engine/balance';
 import {
+  autoGenerateCyclePlanV2,
   generateCyclePlan,
   mergeEquivalentExercisesInPlan,
   rotateEmphasis,
@@ -302,7 +303,18 @@ export async function generateInitialCyclePlan(): Promise<InitialCyclePlanResult
     }
     next.current_cycle_plan = weekly;
   } else {
-    next.current_cycle_plan = generateCyclePlan(next, catalog);
+    // Conv #22 — Si le profile porte une `duration_category` (nouveau path
+    // co-construit), bascule sur autoGenerateCyclePlanV2 qui utilise
+    // skeleton_builder + sets_allocator. Sinon legacy generateCyclePlan.
+    if (next.profile.duration_category !== undefined) {
+      next.current_cycle_plan = autoGenerateCyclePlanV2(
+        next,
+        catalog,
+        next.profile.duration_category,
+      );
+    } else {
+      next.current_cycle_plan = generateCyclePlan(next, catalog);
+    }
   }
 
   await txSaveUserStateOnly(next);

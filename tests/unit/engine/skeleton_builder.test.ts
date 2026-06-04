@@ -27,7 +27,6 @@ import {
   totalCellDemand,
   selectBestSplit,
 } from '@/engine/skeleton_builder';
-import { allocateSets } from '@/engine/sets_allocator';
 import {
   computeDeloadStrategy,
   DeloadStrategy,

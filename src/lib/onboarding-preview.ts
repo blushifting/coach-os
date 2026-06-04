@@ -20,7 +20,10 @@ import {
 } from '@/engine/models';
 import { startUser as engineStartUser } from '@/engine/engine';
 import { fitGuidedProgram, getGuidedProgram } from '@/engine/guided_programs';
-import { generateCyclePlan } from '@/engine/cycle_planner';
+import {
+  autoGenerateCyclePlanV2,
+  generateCyclePlan,
+} from '@/engine/cycle_planner';
 
 /** Resultat d'une preview. */
 export interface PreviewResult {
@@ -61,6 +64,22 @@ export function buildPreviewTemplate(
       1,
     );
     return { template: weekly, blocking };
+  }
+
+  // Conv #22 — Si le profil porte une `duration_category` (= nouveau path
+  // co-construit, custom uniquement), on bascule sur autoGenerateCyclePlanV2
+  // qui passe par buildSkeleton + sets_allocator. L'auto-fill des variantes
+  // sert ici à présenter un programme cohérent dans le récap ; l'user pourra
+  // toujours swap des exos via VariantPickerSheet (path existant).
+  if (profile.duration_category !== undefined) {
+    return {
+      template: autoGenerateCyclePlanV2(
+        tmpState,
+        catalog,
+        profile.duration_category,
+      ),
+      blocking: [],
+    };
   }
 
   return { template: generateCyclePlan(tmpState, catalog), blocking: [] };
