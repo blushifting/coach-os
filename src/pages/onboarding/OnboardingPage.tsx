@@ -1,17 +1,20 @@
 /**
- * Orchestrateur du wizard d'onboarding (Conv #4b + refonte Conv #22).
+ * Orchestrateur du wizard d'onboarding (refonte Conv #22.2).
  *
- * Routing dynamique selon le mode choisi à l'étape 4 :
- *  - Mode **custom co-construit** (Conv #22) : 7 étapes
- *    1. Profil  2. Muscles  3. Équilibre  4. Programme (+ durée max)
- *    5. Squelette (lecture seule)  6. Variantes (remplissage cases)
- *    7. Récap final
- *  - Mode **programme guidé** : 5 étapes (path legacy intact)
- *    1. Profil  2. Muscles  3. Équilibre  4. Programme  5. Récap
+ * Flow unifié 5 étapes pour les deux modes :
+ *   1. Profil (sexe / âge / poids)
+ *   2. Muscles prioritaires + ranking
+ *   3. Équilibre R1-R4 (suggestions pré-cochées)
+ *   4. Programme (nb séances + durée max + préférence équipement +
+ *      choix custom / programme guidé)
+ *   5. Récap : programme déjà construit (custom = squelette V2 auto-fill
+ *      basé sur la préférence ; guidé = fitGuidedProgram). L'user peut
+ *      swap des exos via la VariantPickerSheet existante.
  *
- * En mode `restart`, on skip Step1 dans les deux cas.
+ * En mode `restart`, on saute Step1 (4 étapes restantes affichées comme
+ * 1/4..4/4 dans la barre).
  *
- * Barre de progression sobre, sans noms d'étapes (Conv #22 décision UX).
+ * Barre de progression continue, longueur fixe.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -48,18 +51,19 @@ import {
 } from '@/lib/onboarding-preview';
 import {
   applyChosenVariantsToSkeleton,
+  autoFillSkeletonDefaults,
   buildOnboardingSkeleton,
+  chosenVariantsFromSkeleton,
   isSkeletonFullyFilled,
 } from '@/lib/skeleton-onboarding';
-import { generateCyclePlanV2 } from '@/engine/cycle_planner';
 import { useCoachOsStore } from '@/store';
 import { Step1Profile } from './Step1Profile';
 import { Step2Muscles } from './Step2Muscles';
 import { Step3Balance } from './Step3Balance';
 import { Step4Program } from './Step4Program';
-import { Step5Skeleton } from './Step5Skeleton';
-import { Step6Variants } from './Step6Variants';
 import { Step5Preview } from './Step5Preview';
+
+const LAST_STEP = 5;
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
@@ -74,11 +78,8 @@ export default function OnboardingPage() {
       : makeInitialDraft(),
   );
 
-  // Étapes en absolu (1..7 max). En mode guidé on saute 5+6 ; en restart on
-  // skip 1. Le "step UI" affiché est calculé dynamiquement.
-  const isCustom = draft.programmeId === null;
   const initialStep = isRestart ? 2 : 1;
-  const lastStep = isCustom ? 7 : 5;
+  const isCustom = draft.programmeId === null;
 
   const [step, setStep] = useState<number>(initialStep);
   const [submitting, setSubmitting] = useState(false);
@@ -92,51 +93,17 @@ export default function OnboardingPage() {
     void bootstrap();
   }, []);
 
-  // Scroll en haut à chaque changement d'étape.
   const mainRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
     if (mainRef.current !== null) mainRef.current.scrollTop = 0;
   }, [step]);
 
-  // Conv #22 — Invalide `chosenVariantsPerCell` dès que la grille du
-  // squelette est susceptible de changer (prios, accepted suggestions,
-  // sessions, durée, programmeId). Sans ça, l'utilisateur qui modifie
-  // ses prios garde d'anciennes références d'exos qui peuvent ne plus
-  // matcher le nouveau squelette (cf. bug remonté : "exos qui n'ont
-  // rien à voir avec la case", héritage d'un autre choix).
-  const inputsKey = useMemo(
-    () =>
-      JSON.stringify({
-        prios: draft.priorities.map((p) => `${p.muscle}:${p.objective}`),
-        accepted: [...draft.acceptedSuggestions].sort(),
-        sessions: draft.sessionsPerWeek,
-        duration: draft.durationCategory,
-        programme: draft.programmeId,
-      }),
-    [
-      draft.priorities,
-      draft.acceptedSuggestions,
-      draft.sessionsPerWeek,
-      draft.durationCategory,
-      draft.programmeId,
-    ],
-  );
-  const prevInputsKey = useRef(inputsKey);
-  useEffect(() => {
-    if (prevInputsKey.current !== inputsKey) {
-      prevInputsKey.current = inputsKey;
-      if (Object.keys(draft.chosenVariantsPerCell).length > 0) {
-        setDraft((d) => ({ ...d, chosenVariantsPerCell: {} }));
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inputsKey]);
-
-  // Skeleton calculé à la volée à partir de l'étape 5 (custom seulement).
-  // tmpState mémorisé pour la finalize.
+  // Conv #22.2 — Squelette + chosenVariants auto-fillés au passage en
+  // Step5 (récap) en mode custom. Le récap montre directement le résultat ;
+  // l'user modifie via VariantPickerSheet du Step5Preview.
   const skeletonResult = useMemo(() => {
     if (!isCustom || catalog === null) return null;
-    if (step < 5) return null;
+    if (step < LAST_STEP) return null;
     try {
       const globalObjective = deriveGlobalObjective(draft);
       const profile = buildProfile(draft, globalObjective);
@@ -156,15 +123,29 @@ export default function OnboardingPage() {
   const skeleton = skeletonResult?.skeleton ?? null;
   const tmpState = skeletonResult?.tmpState ?? null;
 
-  // Preview pour le récap final (étape 7 custom / étape 5 guidé). En mode
-  // custom : on utilise le skeleton rempli via generateCyclePlanV2. En guidé :
-  // path legacy via buildPreviewTemplate.
+  // Auto-fill du squelette dès qu'on a un skeleton + catalog.
+  // Utilise la préférence équipement du draft pour orienter le 1er pick.
+  useEffect(() => {
+    if (skeleton === null || catalog === null) return;
+    if (Object.keys(draft.chosenVariantsPerCell).length > 0) return;
+    const seeded = autoFillSkeletonDefaults(
+      skeleton,
+      catalog,
+      userState?.favorite_exercise_per_pattern ?? {},
+      draft.equipmentPreference,
+    );
+    const filled = chosenVariantsFromSkeleton(seeded);
+    if (Object.keys(filled).length > 0) {
+      setDraft((d) => ({ ...d, chosenVariantsPerCell: filled }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [skeleton, catalog]);
+
   const preview = useMemo(() => {
     if (catalog === null) {
       return { template: null, blocking: [] as readonly string[] };
     }
-    const isFinalStep = step === lastStep;
-    if (!isFinalStep) {
+    if (step < LAST_STEP) {
       return { template: null, blocking: [] as readonly string[] };
     }
     if (isCustom) {
@@ -176,7 +157,21 @@ export default function OnboardingPage() {
         draft.chosenVariantsPerCell,
       );
       if (!isSkeletonFullyFilled(filled)) {
-        return { template: null, blocking: ['Toutes les cases ne sont pas remplies'] };
+        // Auto-fill silencieux si jamais quelques cases sont vides
+        // (cas pathologique : changement de prios en arrière puis retour).
+        const seeded = autoFillSkeletonDefaults(
+          filled,
+          catalog,
+          userState?.favorite_exercise_per_pattern ?? {},
+          draft.equipmentPreference,
+        );
+        try {
+          const template = generateCyclePlanV2(seeded, tmpState, catalog);
+          return { template, blocking: [] };
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : 'Erreur preview';
+          return { template: null, blocking: [msg] };
+        }
       }
       try {
         const template = generateCyclePlanV2(filled, tmpState, catalog);
@@ -202,15 +197,42 @@ export default function OnboardingPage() {
       const msg = e instanceof Error ? e.message : 'Erreur preview';
       return { template: null, blocking: [msg] };
     }
-  }, [step, lastStep, isCustom, skeleton, tmpState, draft, catalog]);
+  }, [step, isCustom, skeleton, tmpState, draft, catalog, userState]);
+
+  // Conv #22 — Invalide chosenVariantsPerCell dès que la grille du
+  // squelette change (prios, accepted suggestions, sessions, durée,
+  // préférence équipement, programmeId).
+  const inputsKey = useMemo(
+    () =>
+      JSON.stringify({
+        prios: draft.priorities.map((p) => `${p.muscle}:${p.objective}`),
+        accepted: [...draft.acceptedSuggestions].sort(),
+        sessions: draft.sessionsPerWeek,
+        duration: draft.durationCategory,
+        equipPref: draft.equipmentPreference,
+        programme: draft.programmeId,
+      }),
+    [
+      draft.priorities,
+      draft.acceptedSuggestions,
+      draft.sessionsPerWeek,
+      draft.durationCategory,
+      draft.equipmentPreference,
+      draft.programmeId,
+    ],
+  );
+  const prevInputsKey = useRef(inputsKey);
+  useEffect(() => {
+    if (prevInputsKey.current !== inputsKey) {
+      prevInputsKey.current = inputsKey;
+      if (Object.keys(draft.chosenVariantsPerCell).length > 0) {
+        setDraft((d) => ({ ...d, chosenVariantsPerCell: {} }));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputsKey]);
 
   const canAdvanceFromStep2 = !isEmptySelection(draft);
-  const canAdvanceFromStep6 =
-    !isCustom ||
-    (skeleton !== null &&
-      isSkeletonFullyFilled(
-        applyChosenVariantsToSkeleton(skeleton, draft.chosenVariantsPerCell),
-      ));
 
   function patchDraft(patch: Partial<OnboardingDraft>) {
     setDraft((prev) => ({ ...prev, ...patch }));
@@ -219,11 +241,6 @@ export default function OnboardingPage() {
   function goPrev() {
     setError(null);
     if (step === initialStep) return;
-    // Custom : 7→6→5→4. Guidé : 5→4. Steps 1-4 communs.
-    if (step === 7 && !isCustom) {
-      setStep(4);
-      return;
-    }
     setStep((s) => s - 1);
   }
 
@@ -243,20 +260,9 @@ export default function OnboardingPage() {
       }
     }
     if (step === 4) {
-      // Passage 4 → suivant : reset variantes legacy + chosenVariantsPerCell
-      // si on change le mode programme.
       setVariantReplacements([]);
     }
-    if (step === 6 && !canAdvanceFromStep6) {
-      setError('Termine de choisir tes variantes pour continuer.');
-      return;
-    }
-    if (step >= lastStep) return;
-    // Custom : 4→5. Guidé : 4→5 (qui est le récap, lastStep=5).
-    if (step === 4 && !isCustom) {
-      setStep(5); // lastStep = 5 en guidé → bouton Valider apparait
-      return;
-    }
+    if (step >= LAST_STEP) return;
     setStep((s) => s + 1);
   }
 
@@ -300,25 +306,25 @@ export default function OnboardingPage() {
           newMuscleGoals: muscleGoals,
         });
         if (isCustom && skeleton !== null) {
-          // En custom restart, on remplace le plan par celui issu du squelette
-          // co-construit. endOfCycle a déjà régénéré via path legacy/V2, mais
-          // si l'user a personnalisé ses variantes on doit appliquer ses choix.
           const filled = applyChosenVariantsToSkeleton(
             skeleton,
             draft.chosenVariantsPerCell,
           );
-          if (isSkeletonFullyFilled(filled)) {
-            // current_cycle_plan a déjà été posé par endOfCycle. On force le
-            // remplacement via generateInitialCyclePlanFromSkeleton après un
-            // bypass : reset puis re-pose.
-            const sCurrent = useCoachOsStore.getState().userState;
-            if (sCurrent !== null) {
-              sCurrent.current_cycle_plan = null;
-              useCoachOsStore.setState({ userState: sCurrent });
-              await generateInitialCyclePlanFromSkeleton(filled);
-            }
-            await persistFavoritesFromSkeleton(filled);
+          const fullyFilled = isSkeletonFullyFilled(filled)
+            ? filled
+            : autoFillSkeletonDefaults(
+                filled,
+                catalog!,
+                userState.favorite_exercise_per_pattern ?? {},
+                draft.equipmentPreference,
+              );
+          const sCurrent = useCoachOsStore.getState().userState;
+          if (sCurrent !== null) {
+            sCurrent.current_cycle_plan = null;
+            useCoachOsStore.setState({ userState: sCurrent });
+            await generateInitialCyclePlanFromSkeleton(fullyFilled);
           }
+          await persistFavoritesFromSkeleton(fullyFilled);
         }
         if (variantReplacements.length > 0) {
           await applyVariantReplacements(variantReplacements);
@@ -327,7 +333,6 @@ export default function OnboardingPage() {
         return;
       }
 
-      // Onboarding initial.
       await startUser({
         profile,
         muscleGoals,
@@ -339,13 +344,16 @@ export default function OnboardingPage() {
           skeleton,
           draft.chosenVariantsPerCell,
         );
-        if (isSkeletonFullyFilled(filled)) {
-          await generateInitialCyclePlanFromSkeleton(filled);
-          await persistFavoritesFromSkeleton(filled);
-        } else {
-          // Fallback : auto-fill (cohérent avec le path V2 standard).
-          await generateInitialCyclePlan();
-        }
+        const fullyFilled = isSkeletonFullyFilled(filled)
+          ? filled
+          : autoFillSkeletonDefaults(
+              filled,
+              catalog!,
+              {},
+              draft.equipmentPreference,
+            );
+        await generateInitialCyclePlanFromSkeleton(fullyFilled);
+        await persistFavoritesFromSkeleton(fullyFilled);
       } else {
         await generateInitialCyclePlan();
       }
@@ -368,14 +376,10 @@ export default function OnboardingPage() {
     }
   }
 
-  // Conv #22 — mémorise comme favori l'exo choisi pour chaque pattern dans
-  // le squelette (lookup au catalog pour récupérer le pattern de chaque exo).
   async function persistFavoritesFromSkeleton(
     sk: ReturnType<typeof applyChosenVariantsToSkeleton>,
   ) {
     if (catalog === null) return;
-    // 1 fav par pattern : le 1er rencontré gagne. Cohérent avec
-    // candidatesForCell qui pousse les favoris en tête.
     const seen = new Set<string>();
     for (const day of sk.days) {
       for (const cell of day.cells) {
@@ -391,13 +395,11 @@ export default function OnboardingPage() {
     }
   }
 
-  const isLastStep = step === lastStep;
-
-  // Index UI 1-based pour la barre de progression sobre.
-  //  - Restart : on a sauté Step1, donc on décale tout d'un cran (step=2 → UI 1).
-  //  - Custom = 7 steps absolus, Guidé = 5 steps absolus. lastStep règle ça.
+  const isLastStep = step === LAST_STEP;
+  // Barre de progression : même longueur pour les deux modes. En restart
+  // on saute Step1 donc on décale d'un cran.
   const stepUiIndex = step - (isRestart ? 1 : 0);
-  const totalUi = lastStep - (isRestart ? 1 : 0);
+  const totalUi = LAST_STEP - (isRestart ? 1 : 0);
 
   const stepContent = useMemo(() => {
     switch (step) {
@@ -410,30 +412,6 @@ export default function OnboardingPage() {
       case 4:
         return <Step4Program draft={draft} onChange={patchDraft} />;
       case 5:
-        if (isCustom) {
-          return <Step5Skeleton skeleton={skeleton} />;
-        }
-        return (
-          <Step5Preview
-            template={preview.template}
-            blocking={preview.blocking}
-            catalog={catalog}
-            equipment={draft.equipment}
-            replacements={variantReplacements}
-            onChangeReplacements={setVariantReplacements}
-          />
-        );
-      case 6:
-        return (
-          <Step6Variants
-            skeleton={skeleton}
-            catalog={catalog}
-            chosenVariantsPerCell={draft.chosenVariantsPerCell}
-            favorites={userState?.favorite_exercise_per_pattern ?? {}}
-            onChange={(next) => patchDraft({ chosenVariantsPerCell: next })}
-          />
-        );
-      case 7:
         return (
           <Step5Preview
             template={preview.template}
@@ -447,7 +425,7 @@ export default function OnboardingPage() {
       default:
         return null;
     }
-  }, [step, draft, preview, catalog, variantReplacements, isCustom, skeleton, userState]);
+  }, [step, draft, preview, catalog, variantReplacements]);
 
   return (
     <div
@@ -545,9 +523,6 @@ export default function OnboardingPage() {
 
 /**
  * Conv #22 — barre de progression continue, longueur fixe.
- * Le ratio current/total règle le remplissage : en mode guidé (5 étapes),
- * step 5 = 100 % ; en mode custom (7 étapes), step 7 = 100 %. Visuellement
- * la même barre, juste un rythme de remplissage différent.
  */
 function ProgressBar({
   current,
@@ -616,3 +591,6 @@ function CancelRestartDialog({
     </div>
   );
 }
+
+// Conv #22.2 — Import direct (au lieu de require()) pour le preview.
+import { generateCyclePlanV2 } from '@/engine/cycle_planner';

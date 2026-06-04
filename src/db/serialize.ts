@@ -7,7 +7,13 @@
  */
 
 import type { Profile, UserState } from '@/engine/models';
-import { DurationCategory, Level, Objective, Sex } from '@/engine/models';
+import {
+  DurationCategory,
+  EquipmentPreference,
+  Level,
+  Objective,
+  Sex,
+} from '@/engine/models';
 import type { SerializedProfile, SerializedUserState } from './schema';
 
 export function serializeProfile(p: Profile): SerializedProfile {
@@ -22,6 +28,9 @@ export function serializeProfile(p: Profile): SerializedProfile {
   };
   if (p.duration_category !== undefined) {
     out.duration_category = p.duration_category;
+  }
+  if (p.equipment_preference !== undefined) {
+    out.equipment_preference = p.equipment_preference;
   }
   return out;
 }
@@ -38,6 +47,9 @@ export function deserializeProfile(s: SerializedProfile): Profile {
   };
   if (s.duration_category !== undefined) {
     out.duration_category = s.duration_category as DurationCategory;
+  }
+  if (s.equipment_preference !== undefined) {
+    out.equipment_preference = s.equipment_preference as EquipmentPreference;
   }
   return out;
 }

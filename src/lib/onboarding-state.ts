@@ -13,6 +13,7 @@
 
 import {
   DurationCategory,
+  EquipmentPreference,
   Level,
   MuscleObjective,
   MuscleStatus,
@@ -58,9 +59,14 @@ export interface OnboardingDraft {
    */
   readonly durationCategory: DurationCategory;
   /**
-   * Conv #22 — exos choisis par l'user à l'étape E (remplissage variantes
-   * du squelette). Clé = `${dayIdx}:${cellIdx}`, valeur = `exercise_id`.
-   * Seul utilisé en mode custom co-construit. Vide en mode guidé.
+   * Conv #22 — Préférence d'équipement (machines / poids libres / aucune).
+   * Sert au tri auto des exos à l'onboarding.
+   */
+  readonly equipmentPreference: EquipmentPreference;
+  /**
+   * Conv #22 — exos choisis par l'user lorsqu'il swap dans le récap final.
+   * Clé = `${dayIdx}:${cellIdx}`, valeur = `exercise_id`. Vide tant que
+   * l'user n'a pas modifié les exos auto-pickés. En mode guidé : non utilisé.
    */
   readonly chosenVariantsPerCell: Readonly<Record<string, string>>;
 }
@@ -104,6 +110,7 @@ export function makeInitialDraft(): OnboardingDraft {
     acceptedSuggestions: new Set<string>(),
     programmeId: null,
     durationCategory: DurationCategory.MEDIUM,
+    equipmentPreference: EquipmentPreference.NO_PREFERENCE,
     chosenVariantsPerCell: {},
   };
 }
@@ -141,6 +148,8 @@ export function draftFromUserState(state: UserState): OnboardingDraft {
     programmeId: state.active_guided_program_id,
     durationCategory:
       state.profile.duration_category ?? DurationCategory.MEDIUM,
+    equipmentPreference:
+      state.profile.equipment_preference ?? EquipmentPreference.NO_PREFERENCE,
     chosenVariantsPerCell: {},
   };
 }
@@ -228,6 +237,7 @@ export function buildProfile(
     bodyweight_kg: draft.bodyweightKg,
     available_equip: draft.equipment,
     duration_category: draft.durationCategory,
+    equipment_preference: draft.equipmentPreference,
   });
 }
 

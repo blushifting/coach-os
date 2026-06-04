@@ -61,6 +61,25 @@ export const MAX_PATTERNS_PER_SESSION: Record<DurationCategory, number> = {
 };
 
 /**
+ * Conv #22 — Préférence d'équipement de l'utilisateur, sert à orienter le
+ * choix automatique des exercices à l'onboarding.
+ *
+ *   MACHINES        → favoriser machines guidées + câbles (trajectoire
+ *                     fixe, idéal débutants ou récupération sécurisée).
+ *   FREE_WEIGHTS    → favoriser haltères / barre / poids du corps
+ *                     (transfert maximal, sport / force).
+ *   NO_PREFERENCE   → l'app choisit la convention salle classique :
+ *                     poids libres sur les compounds (barre/haltères pour
+ *                     squat, bench, rowing), machines/câbles sur les
+ *                     isolations (pec deck, leg curl, lateral raise).
+ */
+export enum EquipmentPreference {
+  MACHINES = 'machines',
+  FREE_WEIGHTS = 'free_weights',
+  NO_PREFERENCE = 'no_preference',
+}
+
+/**
  * Objectif global du profil utilisateur (path "rapide" de l'onboarding).
  * Conservé pour rétrocompat. Pour les décisions algorithmiques fines (par muscle),
  * voir `MuscleObjective`. Puissance retirée en V1 (cf. 09 §3.5).
@@ -296,6 +315,11 @@ export interface Profile {
    * Optionnel pour rétrocompat (UserStates pre-Conv#22 n'en ont pas).
    */
   duration_category?: DurationCategory;
+  /**
+   * Conv #22 — Préférence machines / poids libres / aucune préférence.
+   * Sert au tri auto des exos à l'onboarding. Optionnel pour rétrocompat.
+   */
+  equipment_preference?: EquipmentPreference;
 }
 
 export interface ProfileInput {
@@ -307,6 +331,7 @@ export interface ProfileInput {
   bodyweight_kg: number;
   available_equip?: Set<string> | Iterable<string>;
   duration_category?: DurationCategory;
+  equipment_preference?: EquipmentPreference;
 }
 
 /** Construit un Profile en validant les invariants (port de `Profile.__post_init__`). */
@@ -331,6 +356,9 @@ export function makeProfile(input: ProfileInput): Profile {
   };
   if (input.duration_category !== undefined) {
     profile.duration_category = input.duration_category;
+  }
+  if (input.equipment_preference !== undefined) {
+    profile.equipment_preference = input.equipment_preference;
   }
   return profile;
 }

@@ -475,14 +475,25 @@ describe('Conv #22 — buildSessionLabel (item L)', () => {
     });
     expect(squat).toMatch(/Full Body · Squat \/ Quads/);
 
-    // Sans cells (cas dégénéré) → split label seul.
+    // Sans cells : fallback via focus_muscles → "Full Body · <focus>".
+    // Conv #22.2 : jamais "Full A/B/C" brut (incohérent visuellement
+    // face aux séances qui ont une dominance dérivée).
     const noCells = buildSessionLabel({
       day_index: 0,
       split_label: 'Full A',
       focus_muscles: ['pectoraux'],
       cells: [],
     });
-    expect(noCells).toBe('Full A');
+    expect(noCells).toMatch(/Full Body · Pec/);
+
+    // Sans cells ni focus → "Full Body · Polyvalent" (cas dégénéré).
+    const empty = buildSessionLabel({
+      day_index: 0,
+      split_label: 'Full B',
+      focus_muscles: [],
+      cells: [],
+    });
+    expect(empty).toBe('Full Body · Polyvalent');
   });
   it('Upper avec cell compound : focus dérivé du pattern', () => {
     const out = buildSessionLabel({

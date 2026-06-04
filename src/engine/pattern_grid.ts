@@ -18,7 +18,13 @@
 
 import type { Catalog } from './catalog';
 import type { Exercise, PatternCell, RoleHint } from './models';
-import { ChargeType, ExType, Pattern, exercisePrimaires } from './models';
+import {
+  ChargeType,
+  EquipmentPreference,
+  ExType,
+  Pattern,
+  exercisePrimaires,
+} from './models';
 
 // =============================================================================
 // Mapping muscle → patterns naturels (ordre = préférence compound puis iso)
@@ -36,6 +42,17 @@ export interface MusclePatternMap {
   isolationPatterns: Pattern[];
 }
 
+/**
+ * Mapping muscle → patterns validés contre le catalogue réel
+ * (`exercises.json`). Conv #22 fix : on évite les patterns théoriquement
+ * cohérents mais qui n'ont AUCUN exo primaire au catalogue
+ * (biceps → PULL_V, deltos_posterieurs → PULL_H, etc. n'existaient pas
+ * et créaient des cases "non remplissables").
+ *
+ * Petits muscles dont aucun compound dédié n'existe → tout en ISOLATION.
+ * Le volume incident des compounds d'autres muscles complète naturellement
+ * (cf. §3.4 doc : volume incident OK pour ces muscles).
+ */
 const MUSCLE_PATTERNS: Record<string, MusclePatternMap> = {
   pectoraux: {
     compoundPatterns: [Pattern.PUSH_H],
@@ -49,8 +66,10 @@ const MUSCLE_PATTERNS: Record<string, MusclePatternMap> = {
     compoundPatterns: [Pattern.PULL_H],
     isolationPatterns: [Pattern.ISOLATION],
   },
+  // Catalogue : trapezes_hauts primaire sur isolation (shrugs) + push_v
+  // (upright row). Pas de PULL_H/PULL_V primaire.
   trapezes_hauts: {
-    compoundPatterns: [Pattern.PULL_H, Pattern.PULL_V],
+    compoundPatterns: [Pattern.PUSH_V, Pattern.ISOLATION],
     isolationPatterns: [Pattern.ISOLATION],
   },
   quadriceps: {
@@ -65,24 +84,32 @@ const MUSCLE_PATTERNS: Record<string, MusclePatternMap> = {
     compoundPatterns: [Pattern.HINGE, Pattern.LUNGE, Pattern.SQUAT],
     isolationPatterns: [Pattern.ISOLATION],
   },
+  // Mollets : aucun compound dédié, tout en ISOLATION.
   mollets: {
     compoundPatterns: [Pattern.ISOLATION],
     isolationPatterns: [Pattern.ISOLATION],
   },
+  // Deltos latéraux : push_v primaire (OHP), iso (élévations latérales).
   deltos_lateraux: {
     compoundPatterns: [Pattern.PUSH_V],
     isolationPatterns: [Pattern.ISOLATION],
   },
+  // Deltos postérieurs : aucun PULL_H avec deltos_post primaire au
+  // catalogue (les face_pull/rear_delt_fly sont pattern=isolation).
+  // Tout en ISOLATION pour éviter les cases non remplissables.
   deltos_posterieurs: {
-    compoundPatterns: [Pattern.PULL_H],
+    compoundPatterns: [Pattern.ISOLATION],
     isolationPatterns: [Pattern.ISOLATION],
   },
+  // Biceps : aucun PULL_V/PULL_H primaire au catalogue (les tractions
+  // sont primaires dos_largeur, biceps secondaire). Tout en ISOLATION.
   biceps: {
-    compoundPatterns: [Pattern.PULL_V, Pattern.PULL_H],
+    compoundPatterns: [Pattern.ISOLATION],
     isolationPatterns: [Pattern.ISOLATION],
   },
+  // Triceps : push_h primaire (close grip bench), iso (extensions).
   triceps: {
-    compoundPatterns: [Pattern.PUSH_H, Pattern.PUSH_V],
+    compoundPatterns: [Pattern.PUSH_H, Pattern.ISOLATION],
     isolationPatterns: [Pattern.ISOLATION],
   },
   abdos: {
@@ -202,6 +229,14 @@ export interface CandidatesForCellOptions {
   excludeIds?: ReadonlySet<string>;
   /** Tags d'angle à éviter (diversification, cf. case sœur d'un même muscle). */
   avoidAngles?: ReadonlySet<string>;
+  /**
+   * Conv #22 — Préférence d'équipement utilisateur. Sert au tri auto :
+   *  - MACHINES → trie en privilégiant machines guidées et câbles.
+   *  - FREE_WEIGHTS → trie en privilégiant haltères / barre / poids du corps.
+   *  - NO_PREFERENCE ou undefined → convention salle classique :
+   *    poids libres sur compounds, machines/câbles sur isolations.
+   */
+  equipmentPreference?: EquipmentPreference;
 }
 
 export function candidatesForCell(
@@ -242,12 +277,11 @@ export function candidatesForCell(
     const aClash = a.tags.some((t) => avoidAngles.has(t)) ? 1 : 0;
     const bClash = b.tags.some((t) => avoidAngles.has(t)) ? 1 : 0;
     if (aClash !== bClash) return aClash - bClash;
-    // 4. Niveau de "guidage" (Conv #22, retour Azur) — du plus guidé
-    // (machine fixe) au plus libre (barre, poids du corps), pour aider
-    // les débutants à choisir des variantes accessibles à gauche.
-    const gA = guidanceLevel(a);
-    const gB = guidanceLevel(b);
-    if (gA !== gB) return gA - gB;
+    // 4. Préférence d'équipement utilisateur (Conv #22 refonte).
+    //    Plus la valeur est basse, plus l'exo colle à la préférence.
+    const pA = preferenceScore(a, cell, options.equipmentPreference);
+    const pB = preferenceScore(b, cell, options.equipmentPreference);
+    if (pA !== pB) return pA - pB;
     // 5. Polyarticularité (selon role_hint).
     const aN = Object.keys(a.muscles).length;
     const bN = Object.keys(b.muscles).length;
@@ -289,6 +323,40 @@ function guidanceLevel(ex: Exercise): number {
     default:
       return 2;
   }
+}
+
+/**
+ * Conv #22 — Score d'adéquation d'un exo à la préférence utilisateur. Plus
+ * la valeur est basse, plus l'exo colle à la préférence (donc passe en tête
+ * dans le tri).
+ *
+ *   - MACHINES → guidance 0-1 = score 0, sinon 1.
+ *   - FREE_WEIGHTS → guidance 2-4 = score 0, sinon 1.
+ *   - NO_PREFERENCE (ou undefined) → convention salle classique :
+ *     - compound → poids libre (haltères / barre / BW) en tête (score 0).
+ *     - isolation → machines / câbles en tête (score 0).
+ *     Donne au final un programme "naturel" : squat barbell, bench DB,
+ *     pec deck, leg curl. Pas le plus guidé partout, pas le plus libre partout.
+ */
+function preferenceScore(
+  ex: Exercise,
+  cell: PatternCell,
+  preference: EquipmentPreference | undefined,
+): number {
+  const g = guidanceLevel(ex);
+  if (preference === EquipmentPreference.MACHINES) {
+    return g <= 1 ? 0 : 1 + (g - 1);
+  }
+  if (preference === EquipmentPreference.FREE_WEIGHTS) {
+    return g >= 2 ? 0 : 1 + (2 - g);
+  }
+  // NO_PREFERENCE / undefined : convention salle.
+  if (cell.role_hint === 'compound') {
+    // Compound → poids libre privilégié : guidance ≥ 2 = score 0.
+    return g >= 2 ? 0 : 1 + (2 - g);
+  }
+  // Isolation → machines/câbles privilégiés : guidance ≤ 1 = score 0.
+  return g <= 1 ? 0 : 1 + (g - 1);
 }
 
 function matchesRoleHint(ex: Exercise, hint: RoleHint): boolean {

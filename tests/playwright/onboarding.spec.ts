@@ -1,14 +1,14 @@
 import { expect, test } from '@playwright/test';
 
 /**
- * E2E onboarding (refonte Conv #22).
+ * E2E onboarding (refonte Conv #22.2).
  *
- * Parcours :
- *   - Mode guidé : Profil → Muscles → Équilibre → Programme guidé → Récap.
- *   - Mode custom co-construit : ajoute Squelette → Variantes avant le récap.
+ * Flow unifié 5 étapes pour les deux modes :
+ *   Profil → Muscles → Équilibre → Programme → Récap.
  *
- * Step1 ne contient plus que sexe/âge/poids (Conv #22 retrait niveau et
- * équipement). Step4 ajoute le sélecteur durée max (default MEDIUM).
+ * Step1 ne contient plus que sexe/âge/poids. Step4 ajoute durée max
+ * + préférence équipement. Le mode custom auto-fill les exos via la
+ * préférence ; l'user swap dans le récap final.
  */
 
 test.beforeEach(async ({ context }) => {
@@ -27,45 +27,35 @@ test.beforeEach(async ({ context }) => {
   });
 });
 
-test('parcours custom co-construit : préset → squelette → variantes → récap', async ({
-  page,
-}) => {
+test('parcours custom : préset → récap auto-fillé → /programme', async ({ page }) => {
   await page.goto('onboarding');
   await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '1');
 
-  // Step 1 — Profil (sexe seulement à cliquer, le reste a des défauts).
+  // Step 1 — défaut (sexe homme, etc.).
   await page.getByTestId('sex-homme').click();
   await page.getByTestId('btn-next').click();
   await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '2');
 
   // Step 2 — Préset par défaut.
   await page.getByTestId('preset-default').click();
-  await expect(page.getByTestId('priorities-list')).toBeVisible();
   await page.getByTestId('btn-next').click();
   await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '3');
 
-  // Step 3 — Suggestions R1-R4 toutes pré-cochées.
-  await expect(page.getByTestId('suggestions-list')).toBeVisible();
+  // Step 3 — Suggestions R1-R4 pré-cochées.
   await page.getByTestId('btn-next').click();
   await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '4');
 
-  // Step 4 — Custom (default) + MEDIUM duration default.
+  // Step 4 — Custom (default), MEDIUM, NO_PREFERENCE par défaut.
   await expect(page.getByTestId('program-custom')).toHaveAttribute('aria-checked', 'true');
   await expect(page.getByTestId('duration-medium')).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByTestId('equip-pref-no_preference')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
   await page.getByTestId('btn-next').click();
   await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '5');
 
-  // Step 5 — Squelette (Conv #22), lecture seule.
-  await expect(page.getByTestId('step5-skeleton')).toBeVisible();
-  await page.getByTestId('btn-next').click();
-  await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '6');
-
-  // Step 6 — Variantes (auto-fill au mount + grille 3-cols).
-  await expect(page.getByTestId('step6-variants')).toBeVisible();
-  await page.getByTestId('btn-next').click();
-  await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '7');
-
-  // Step 7 — Récap final.
+  // Step 5 — Récap programme déjà construit.
   await expect(page.getByTestId('step5-preview')).toBeVisible();
   await page.getByTestId('btn-finish').click();
   await expect(page).toHaveURL(/\/programme$/);
@@ -99,26 +89,40 @@ test('bouton retour fonctionnel à chaque étape', async ({ page }) => {
   await expect(page.getByTestId('btn-prev')).toBeDisabled();
 });
 
-test('parcours avec programme guidé (5 étapes)', async ({ page }) => {
+test('parcours avec programme guidé', async ({ page }) => {
   await page.goto('onboarding');
 
-  // Step 1 minimal.
   await page.getByTestId('btn-next').click();
 
-  // Step 2.
   await page.getByTestId('preset-default').click();
   await page.getByTestId('btn-next').click();
 
-  // Step 3.
   await page.getByTestId('btn-next').click();
 
-  // Step 4 — Starting Strength.
   await page.getByTestId('program-ss').click();
   await expect(page.getByTestId('program-ss')).toHaveAttribute('aria-checked', 'true');
   await page.getByTestId('btn-next').click();
   await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '5');
 
-  // Step 5 — Récap direct (mode guidé saute squelette/variantes).
+  await expect(page.getByTestId('step5-preview')).toBeVisible();
+  await page.getByTestId('btn-finish').click();
+  await expect(page).toHaveURL(/\/programme$/);
+});
+
+test('préférence machines guidées change l\'orientation du tri', async ({ page }) => {
+  await page.goto('onboarding');
+
+  await page.getByTestId('btn-next').click();
+  await page.getByTestId('preset-default').click();
+  await page.getByTestId('btn-next').click();
+  await page.getByTestId('btn-next').click();
+  // Step 4 — préférence MACHINES.
+  await page.getByTestId('equip-pref-machines').click();
+  await expect(page.getByTestId('equip-pref-machines')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+  await page.getByTestId('btn-next').click();
   await expect(page.getByTestId('step5-preview')).toBeVisible();
   await page.getByTestId('btn-finish').click();
   await expect(page).toHaveURL(/\/programme$/);

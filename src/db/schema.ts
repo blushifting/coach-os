@@ -43,6 +43,8 @@ export interface SerializedProfile {
   available_equip: string[];
   /** Conv #22 — durée MAX par séance (path co-construit). Absent sur anciens blobs. */
   duration_category?: string;
+  /** Conv #22 — préférence équipement. Absent sur anciens blobs. */
+  equipment_preference?: string;
 }
 
 export interface SerializedUserState {

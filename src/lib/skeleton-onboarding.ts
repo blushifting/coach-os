@@ -76,9 +76,11 @@ export function applyChosenVariantsToSkeleton(
 }
 
 /**
- * Pour chaque case non remplie, propose la 1re variante canonique
- * (compatible favoris user). Sert au passage Step5 → Step6 pour donner
- * un point de départ déjà sensé. L'user pourra changer ensuite.
+ * Pour chaque case non remplie, propose la 1re variante du tri
+ * `candidatesForCell` — qui tient compte de la **préférence d'équipement**
+ * (Conv #22) et des favoris user. Sert à l'auto-fill du squelette dans le
+ * flow d'onboarding co-construit : l'user voit directement une liste d'exos
+ * cohérente avec sa préférence, et peut modifier au récap.
  *
  * Mutation : pose `chosen_exercise_id` sur les cases vides uniquement.
  */
@@ -86,8 +88,8 @@ export function autoFillSkeletonDefaults(
   skeleton: SkeletonTemplate,
   catalog: Catalog,
   favorites: Readonly<Record<string, string>> = {},
+  equipmentPreference?: import('@/engine/models').EquipmentPreference,
 ): SkeletonTemplate {
-  // Tracker exos déjà choisis (toutes cases) pour éviter doublons stricts.
   const usedIds = new Set<string>();
   for (const day of skeleton.days) {
     for (const c of day.cells) {
@@ -100,10 +102,13 @@ export function autoFillSkeletonDefaults(
     cells: day.cells.map((cell) => {
       if (cell.chosen_exercise_id !== null) return { ...cell };
       const favoriteId = favorites[cell.pattern];
-      const cands = candidatesForCell(cell, catalog, {
-        favoriteId,
+      const opts: Parameters<typeof candidatesForCell>[2] = {
         excludeIds: usedIds,
-      });
+      };
+      if (favoriteId !== undefined) opts.favoriteId = favoriteId;
+      if (equipmentPreference !== undefined)
+        opts.equipmentPreference = equipmentPreference;
+      const cands = candidatesForCell(cell, catalog, opts);
       const pick = cands[0];
       if (pick) {
         usedIds.add(pick.id);

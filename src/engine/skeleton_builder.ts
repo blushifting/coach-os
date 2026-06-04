@@ -408,7 +408,19 @@ export function buildSessionLabel(day: SkeletonDay): string {
   const dominance = anchor !== undefined ? patternDominance(anchor.pattern) : null;
 
   if (/full/i.test(split_lower)) {
-    if (dominance === null) return split;
+    if (dominance === null) {
+      // Fallback : focus muscles plutôt que "Full A/B/C" brut, qui crée
+      // une incohérence visuelle dans un cycle Full Body 3× (Conv #22
+      // retour Azur : "un Full C qui fait tout seul face à des Full Body").
+      if (day.focus_muscles.length > 0) {
+        const focus = day.focus_muscles
+          .slice(0, 2)
+          .map(prettyMuscle)
+          .join('/');
+        return `Full Body · ${focus}`;
+      }
+      return 'Full Body · Polyvalent';
+    }
     return `Full Body · ${dominance.full}`;
   }
   if (/upper/i.test(split_lower)) {

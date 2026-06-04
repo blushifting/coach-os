@@ -14,6 +14,7 @@
 import { ALL_GUIDED_PROGRAMS } from '@/engine/guided_programs';
 import {
   DurationCategory,
+  EquipmentPreference,
   Level,
   type GuidedProgram,
   type MuscleObjective,
@@ -81,6 +82,62 @@ export function Step4Program({ draft, onChange }: Step4Props) {
           Les programmes guidés ont leur propre fréquence ; un avertissement
           s'affiche si elle ne correspond pas à ton choix.
         </p>
+      </Card>
+
+      {/* Conv #22 — Préférence d'équipement : oriente le choix auto des exos. */}
+      <Card>
+        <div className="mb-1 text-sm font-medium text-white">
+          Tes préférences d'équipement
+        </div>
+        <p className="mb-3 text-[12px] leading-relaxed text-anthracite-300">
+          On choisit tes exos à ta place pour démarrer. Tu pourras tout
+          modifier au récap final.{' '}
+          <strong className="text-anthracite-100">Machines guidées</strong> =
+          plus accessible (trajectoire fixe, idéal débutants).{' '}
+          <strong className="text-anthracite-100">Poids libres</strong> =
+          haltères / barre / poids du corps (meilleur transfert sportif,
+          plus technique).
+        </p>
+        <div className="flex flex-col gap-2">
+          {[
+            {
+              v: EquipmentPreference.MACHINES,
+              label: 'Machines guidées',
+              sub: 'Trajectoire fixe, contrôle facile',
+            },
+            {
+              v: EquipmentPreference.FREE_WEIGHTS,
+              label: 'Poids libres',
+              sub: 'Haltères, barre, poids du corps',
+            },
+            {
+              v: EquipmentPreference.NO_PREFERENCE,
+              label: 'Aucune préférence',
+              sub: 'L\'app choisit la convention salle (compounds en libre, isolations en machine)',
+            },
+          ].map((opt) => {
+            const selected = draft.equipmentPreference === opt.v;
+            return (
+              <button
+                key={opt.v}
+                type="button"
+                onClick={() => onChange({ equipmentPreference: opt.v })}
+                className={cn(
+                  'flex flex-col items-start rounded-xl border px-3 py-2 text-left transition',
+                  selected
+                    ? 'border-sang-500 bg-sang-900/30 text-white'
+                    : 'border-anthracite-700 bg-anthracite-900 text-anthracite-300 hover:border-anthracite-500',
+                )}
+                data-testid={`equip-pref-${opt.v}`}
+                role="radio"
+                aria-checked={selected}
+              >
+                <span className="text-sm font-semibold">{opt.label}</span>
+                <span className="text-[11px] opacity-80">{opt.sub}</span>
+              </button>
+            );
+          })}
+        </div>
       </Card>
 
       {/* Conv #22 — Durée limite par séance, sert au dimensionnement co-construit. */}
