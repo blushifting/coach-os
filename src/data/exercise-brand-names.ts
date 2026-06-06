@@ -59,6 +59,11 @@ export const BRAND_NAMES: Readonly<
     crunch_machine: 'Abdominal Crunch',
     bicep_curl_machine: 'Arm Curl',
     tricep_extension_machine: 'Arm Extension',
+    pullover_machine: 'Pullover',
+    preacher_curl_machine: 'Preacher Curl',
+    glute_kickback_machine: 'Glute',
+    hip_abductor_machine: 'Abductor',
+    hip_adductor_machine: 'Adductor',
   },
 
   // Hammer Strength Iso-Lateral (plate-loaded). Le préfixe « Iso-Lateral »
@@ -79,6 +84,7 @@ export const BRAND_NAMES: Readonly<
     machine_shrug: 'Iso-Lateral Shrug',
     bicep_curl_machine: 'Iso-Lateral Bicep Curl',
     tricep_extension_machine: 'Iso-Lateral Tricep Extension',
+    pullover_machine: 'Iso-Lateral Pullover',
   },
 
   // Matrix (Magic Form). Étiquetage Aura / Versa retiré : sur la
@@ -104,6 +110,10 @@ export const BRAND_NAMES: Readonly<
     crunch_machine: 'Abdominal',
     bicep_curl_machine: 'Bicep Curl',
     tricep_extension_machine: 'Tricep Extension',
+    pullover_machine: 'Pullover',
+    preacher_curl_machine: 'Preacher Curl',
+    hip_abductor_machine: 'Abductor',
+    hip_adductor_machine: 'Adductor',
   },
 
   // Life Fitness (Basic-Fit). Étiquetage Signature / Insignia retiré.

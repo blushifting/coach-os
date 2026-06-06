@@ -4146,5 +4146,158 @@
     "e1RM_app": "full",
     "tags": [],
     "note": ""
+  },
+  {
+    "id": "pullover_machine",
+    "nom_fr": "Pullover machine",
+    "synonymes": [],
+    "pattern": "pull_v",
+    "type": "isolation",
+    "charge": "machine_stack",
+    "equip": [
+      "pullover_machine"
+    ],
+    "uni": false,
+    "muscles": {
+      "dos_largeur": 1,
+      "pectoraux": 0.5
+    },
+    "subst": "db_pullover",
+    "inc_kg": 1,
+    "reps_hyp": [
+      8,
+      15
+    ],
+    "reps_force": [
+      6,
+      10
+    ],
+    "repos_s": 90,
+    "dif": "moyen",
+    "e1RM_app": "full",
+    "tags": [
+      "lengthened_bias"
+    ],
+    "note": ""
+  },
+  {
+    "id": "preacher_curl_machine",
+    "nom_fr": "Curl pupitre machine",
+    "synonymes": [],
+    "pattern": "isolation",
+    "type": "isolation",
+    "charge": "machine_stack",
+    "equip": [
+      "preacher_machine"
+    ],
+    "uni": false,
+    "muscles": {
+      "biceps": 1
+    },
+    "subst": "preacher_curl_bb",
+    "inc_kg": 1,
+    "reps_hyp": [
+      8,
+      15
+    ],
+    "reps_force": [
+      6,
+      10
+    ],
+    "repos_s": 90,
+    "dif": "facile",
+    "e1RM_app": "full",
+    "tags": [],
+    "note": ""
+  },
+  {
+    "id": "glute_kickback_machine",
+    "nom_fr": "Kickback fessiers machine",
+    "synonymes": [],
+    "pattern": "isolation",
+    "type": "isolation",
+    "charge": "machine_stack",
+    "equip": [
+      "glute_kickback_machine"
+    ],
+    "uni": true,
+    "muscles": {
+      "fessiers": 1
+    },
+    "subst": "cable_kickback",
+    "inc_kg": 1,
+    "reps_hyp": [
+      8,
+      15
+    ],
+    "reps_force": [
+      6,
+      10
+    ],
+    "repos_s": 90,
+    "dif": "facile",
+    "e1RM_app": "partial",
+    "tags": [],
+    "note": ""
+  },
+  {
+    "id": "hip_abductor_machine",
+    "nom_fr": "Abducteurs machine",
+    "synonymes": [],
+    "pattern": "isolation",
+    "type": "isolation",
+    "charge": "machine_stack",
+    "equip": [
+      "abductor_machine"
+    ],
+    "uni": false,
+    "muscles": {
+      "fessiers": 1
+    },
+    "subst": null,
+    "inc_kg": 1,
+    "reps_hyp": [
+      10,
+      20
+    ],
+    "reps_force": [
+      8,
+      15
+    ],
+    "repos_s": 60,
+    "dif": "facile",
+    "e1RM_app": "partial",
+    "tags": [],
+    "note": ""
+  },
+  {
+    "id": "hip_adductor_machine",
+    "nom_fr": "Adducteurs machine",
+    "synonymes": [],
+    "pattern": "isolation",
+    "type": "isolation",
+    "charge": "machine_stack",
+    "equip": [
+      "adductor_machine"
+    ],
+    "uni": false,
+    "muscles": {
+      "ischios": 1
+    },
+    "subst": null,
+    "inc_kg": 1,
+    "reps_hyp": [
+      10,
+      20
+    ],
+    "reps_force": [
+      8,
+      15
+    ],
+    "repos_s": 60,
+    "dif": "facile",
+    "e1RM_app": "partial",
+    "tags": [],
+    "note": "Cible les adducteurs (groupe interne cuisse) ; rattaché ici aux ischios médiaux dans le modèle 15 muscles."
   }
 ]

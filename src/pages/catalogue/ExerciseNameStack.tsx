@@ -14,7 +14,7 @@
  * homogène pour les exos non-machine (barre, haltère, poids du corps).
  */
 
-import type { Exercise } from '@/engine/models';
+import type { Exercise, GymBrand } from '@/engine/models';
 import { displayExerciseName } from '@/lib/catalog-filter';
 import { useGymBrand } from '@/store/selectors';
 
@@ -23,6 +23,12 @@ interface ExerciseNameStackProps {
   /** Taille de typo du titre. Default 'sm'. */
   readonly size?: 'xs' | 'sm' | 'base' | 'lg';
   readonly className?: string;
+  /**
+   * Conv #23 — force une marque autre que celle du store. Utilisé
+   * pendant l'onboarding (le draft contient une marque pas encore
+   * persistée dans `state.profile.gym_brand`).
+   */
+  readonly brandOverride?: GymBrand;
 }
 
 const TITLE_SIZE_CLS: Record<'xs' | 'sm' | 'base' | 'lg', string> = {
@@ -43,9 +49,11 @@ export function ExerciseNameStack({
   exercise,
   size = 'sm',
   className,
+  brandOverride,
 }: ExerciseNameStackProps) {
-  const brand = useGymBrand();
-  const displayed = displayExerciseName(exercise, brand ?? undefined);
+  const storeBrand = useGymBrand();
+  const brand = brandOverride ?? storeBrand ?? undefined;
+  const displayed = displayExerciseName(exercise, brand);
   const isBranded = displayed !== exercise.nom_fr;
   return (
     <span

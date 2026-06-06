@@ -420,6 +420,7 @@ export default function OnboardingPage() {
             equipment={draft.equipment}
             replacements={variantReplacements}
             onChangeReplacements={setVariantReplacements}
+            gymBrand={draft.gymBrand}
           />
         );
       default:

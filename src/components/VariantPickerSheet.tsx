@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Sheet } from '@/components/Sheet';
 import { Button } from '@/components/Button';
-import type { Exercise } from '@/engine/models';
+import type { Exercise, GymBrand } from '@/engine/models';
 import { ExercisePhotoPopin } from '@/pages/catalogue/ExercisePhotoPopin';
 import { ExerciseNameStack } from '@/pages/catalogue/ExerciseNameStack';
 import { photosFor } from '@/data/exercise-photos';
@@ -17,6 +17,11 @@ interface VariantPickerSheetProps {
   readonly onPick: (newExerciseId: string) => void;
   readonly onClose: () => void;
   readonly title?: string;
+  /**
+   * Conv #23 — force une marque autre que celle du store. Utilisé dans
+   * l'onboarding (le draft contient une marque pas encore persistée).
+   */
+  readonly brandOverride?: GymBrand;
 }
 
 export function VariantPickerSheet({
@@ -28,8 +33,10 @@ export function VariantPickerSheet({
   onPick,
   onClose,
   title = 'Changer de variante',
+  brandOverride,
 }: VariantPickerSheetProps) {
-  const brand = useGymBrand() ?? undefined;
+  const storeBrand = useGymBrand();
+  const brand = brandOverride ?? storeBrand ?? undefined;
   const [previewExo, setPreviewExo] = useState<Exercise | null>(null);
 
   return (
@@ -72,7 +79,7 @@ export function VariantPickerSheet({
                     data-testid={`variant-option-${alt.id}`}
                     className="flex-1 rounded-xl border border-anthracite-700 bg-anthracite-800 px-4 py-3 text-left transition hover:border-sang-700 active:scale-[0.99] disabled:opacity-50"
                   >
-                    <ExerciseNameStack exercise={alt} size="sm" />
+                    <ExerciseNameStack exercise={alt} size="sm" brandOverride={brand} />
                     <div className="mt-0.5 text-xs text-anthracite-300">
                       {alt.equip.length > 0 ? alt.equip.join(', ') : 'Poids du corps'}
                     </div>

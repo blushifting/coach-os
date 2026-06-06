@@ -249,6 +249,25 @@ export const EXERCISE_SYNONYMES: Readonly<Record<string, readonly string[]>> = {
     'curl machine', 'curl biceps machine', 'machine curl', 'arm curl',
     'iso-lateral bicep curl', 'selection arm curl', 'machine bicep curl',
   ],
+  preacher_curl_machine: [
+    'preacher curl machine', 'curl pupitre machine', 'curl scott machine',
+    'machine preacher curl',
+  ],
+  pullover_machine: [
+    'pullover machine', 'machine pullover', 'iso-lateral pullover',
+    'nautilus pullover',
+  ],
+  glute_kickback_machine: [
+    'glute kickback machine', 'glute machine', 'kickback fessier machine',
+  ],
+  hip_abductor_machine: [
+    'abductor', 'abducteurs machine', 'machine abducteurs',
+    'thigh abductor', 'hip abductor',
+  ],
+  hip_adductor_machine: [
+    'adductor', 'adducteurs machine', 'machine adducteurs',
+    'thigh adductor', 'hip adductor',
+  ],
   ez_curl: ['curl EZ', 'EZ curl', 'curl pied', 'ez-bar curl'],
   db_curl_alt: ['curl haltères', 'curl alterné', 'biceps curl', 'db curl', 'alternate dumbbell curl'],
   incline_db_curl: ['curl incliné', 'incline db curl', 'incline dumbbell curl'],

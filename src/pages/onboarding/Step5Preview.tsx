@@ -53,6 +53,13 @@ interface Step5Props {
   readonly replacements: ReadonlyArray<VariantReplacement>;
   readonly onChangeReplacements: (next: ReadonlyArray<VariantReplacement>) => void;
   readonly stepLabel?: string;
+  /**
+   * Conv #23 — marque déclarée dans le draft d'onboarding. Step5
+   * affiche les noms d'exos en utilisant cette marque, avant que la
+   * marque ne soit persistée dans `state.profile.gym_brand` à la
+   * finalisation.
+   */
+  readonly gymBrand?: import('@/engine/models').GymBrand;
 }
 
 interface SlotPickerState {
@@ -68,12 +75,18 @@ export function Step5Preview({
   equipment,
   replacements,
   onChangeReplacements,
+  gymBrand,
 }: Step5Props) {
   const [picker, setPicker] = useState<SlotPickerState | null>(null);
   const [expanded, setExpanded] = useState(true);
   const [pedagogyOpen, setPedagogyOpen] = useState(false);
   const [preview, setPreview] = useState<{ id: string; title: string } | null>(null);
-  const brand = useGymBrand() ?? undefined;
+  const storeBrand = useGymBrand();
+  // Conv #23 — prop `gymBrand` (draft onboarding) prime sur le store
+  // (qui ne contient pas encore la marque tant que l'user n'a pas
+  // finalisé). En restart, draft.gymBrand est déjà hydraté depuis le
+  // state.
+  const brand = gymBrand ?? storeBrand ?? undefined;
 
   // Le plan effectivement affiché (avec variantes appliquées).
   const effectiveTemplate = useMemo<WeeklyTemplate | null>(() => {
@@ -310,6 +323,7 @@ export function Step5Preview({
           onPick={handlePick}
           onClose={() => setPicker(null)}
           title="Choisir une variante"
+          brandOverride={brand}
         />
       )}
       {preview !== null && (
