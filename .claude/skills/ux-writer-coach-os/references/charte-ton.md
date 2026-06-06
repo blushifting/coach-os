@@ -41,9 +41,9 @@ Tout texte se situe sur 4 axes. Voici où Coach OS se place, et pourquoi.
 
 **Capitalisation : à la française.** Une majuscule en début de phrase/libellé, le reste en minuscules. « Commencer la séance », pas « Commencer La Séance » ni « COMMENCER ». Les termes UI verrouillés gardent leur majuscule de nom propre quand c'est leur sens technique (Plafond, Cycle, Récupération) — voir vocabulaire.
 
-**Chiffres en chiffres.** « 5 reps », « 3 séries », « RPE 8 », « 2 min de repos » — jamais « cinq répétitions ». Les chiffres se scannent mieux et c'est une app pleine de nombres. (Aligne-toi sur les chiffres tabulaires prévus dans le design.)
+**Chiffres en chiffres.** « 5 reps », « 3 séries », « Effort 8 », « 2 min de repos » — jamais « cinq répétitions ». Les chiffres se scannent mieux et c'est une app pleine de nombres. (Aligne-toi sur les chiffres tabulaires prévus dans le design.)
 
-**Pas d'anglicismes évitables.** On garde « RPE » et « set »→ dis plutôt **série**. « reps » est admis (usage courant en salle). Évite « warm-up » → **échauffement**, « tracker » → **suivre**, « load » → **charge**. Exceptions tolérées car ancrées dans la communauté : RPE, déload (avec infobulle), PR (avec glose « record perso » à la première occurrence).
+**Pas d'anglicismes évitables.** Le label d'interface de l'effort perçu est **Effort**, pas « RPE » (le sigle ne sert plus que d'ancrage scientifique dans l'aide, glosé « aussi appelé RPE »). « set » → dis **série**. « reps » est admis (usage courant en salle). Évite « warm-up » → **échauffement**, « tracker » → **suivre**, « load » → **charge**. Exceptions tolérées car ancrées dans la communauté : déload (avec infobulle), PR (avec glose « record perso » à la première occurrence).
 
 ## Ponctuation, emoji, intensité
 
@@ -67,9 +67,9 @@ Tout texte se situe sur 4 axes. Voici où Coach OS se place, et pourquoi.
 - ❌ « Veuillez sélectionner l'objectif d'entraînement souhaité pour chacun des groupes musculaires ciblés. »
 - ✅ « Pour chaque muscle, choisis ce que tu veux travailler : prendre du volume, gagner en force, ou juste entretenir. »
 
-**Infobulle RPE**
+**Infobulle Effort**
 - ❌ « RPE : Rating of Perceived Exertion basé sur le RIR. »
-- ✅ « RPE = à quel point la série était dure, de 6 à 10. RPE 8, c'est : tu aurais pu faire 2 reps de plus. »
+- ✅ « Effort = à quel point la série était dure, de 6 à 10. Effort 8, c'est : tu aurais pu faire 2 reps de plus. » (dans l'aide, on peut ajouter « aussi appelé RPE ».)
 
 **Message d'erreur (charge vide)**
 - ❌ « Erreur : champ invalide. »

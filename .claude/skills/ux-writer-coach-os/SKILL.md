@@ -60,9 +60,9 @@ Naming verrouillé, non négociable (table complète + glose dans `references/vo
 - mésocycle → **Cycle** (ou Bloc) · déload → **Récupération** (terme « Déload » toléré avec infobulle)
 - lengthened bias → **Étiré** · ROM complet → **Amplitude complète**
 - objectif hypertrophie → **Hypertrophie** (jamais « Volume musculaire » : collision avec Volume hebdo)
-- volume technique → **Séries / semaine** ou **Volume hebdo** · RPE → **RPE** (gardé + infobulle)
+- volume technique → **Séries / semaine** ou **Volume hebdo** · RPE → **Effort** (label UI ; « RPE » réservé à l'aide comme ancrage scientifique)
 
-Si tu vois « e1RM », « compound », « mésocycle », « lengthened bias » ou « Volume musculaire » dans du texte utilisateur, c'est un bug de wording à corriger.
+Si tu vois « e1RM », « compound », « mésocycle », « lengthened bias », « Volume musculaire » ou « RPE » employé comme **label / titre d'interface** dans du texte utilisateur, c'est un bug de wording à corriger. Le sigle « RPE » n'est admis que dans l'aide / « En savoir plus », glosé « aussi appelé RPE » — partout ailleurs c'est **Effort**.
 
 ## Les fichiers de référence du skill
 

@@ -32,9 +32,9 @@ Sur un lien d'aide, mets ce qu'on va apprendre : « Comment on calcule ton Plafo
 
 - Label : « Charge utilisée » · Placeholder : « ex. 60 » · Aide : « En kg, barre comprise. »
 - Label : « Reps réalisées » · Placeholder : « ex. 8 »
-- Label : « RPE ressenti » · Aide : « Difficulté de la série, 6 à 10. » + « ? » vers l'infobulle
+- Label : « Effort ressenti » · Aide : « Difficulté de la série, 6 à 10. » + « ? » vers l'infobulle
 
-Saisie de feedback entre séries : vise **moins de 5 secondes** pour le cas normal. Pré-remplis avec la cible (reps et RPE prévus) ; la personne corrige seulement si ça a différé.
+Saisie de feedback entre séries : vise **moins de 5 secondes** pour le cas normal. Pré-remplis avec la cible (reps et effort prévus) ; la personne corrige seulement si ça a différé.
 
 ## Messages d'erreur
 
@@ -45,7 +45,7 @@ Saisie de feedback entre séries : vise **moins de 5 secondes** pour le cas norm
 3. **Ne culpabilise pas, préserve la saisie.** Le système s'adapte à l'utilisateur, pas l'inverse. Ne fais jamais retaper ce qui était bon.
 
 - ❌ « Erreur : champ invalide. » → ✅ « Indique la charge pour enregistrer ta série. »
-- ❌ « Valeur incorrecte. » → ✅ « Le RPE va de 6 à 10. Choisis une valeur dans cette plage. »
+- ❌ « Valeur incorrecte. » → ✅ « L'effort va de 6 à 10. Choisis une valeur dans cette plage. »
 - ❌ « Échec de chargement. » → ✅ « Impossible de charger ta séance. Vérifie ta connexion et réessaie. »
 
 N'affiche pas l'erreur trop tôt (pas avant que la personne ait fini de remplir / quitte le champ vide juste en explorant). Pas d'humour dans une erreur : on la relit trop souvent.
@@ -124,4 +124,4 @@ Le ton : un coach qui prend tes mesures avant de bâtir ton programme. Chaque é
 
 ## Infobulles & bottom sheets
 
-**Principe :** déclenchées par le « ? », jamais imposées. 1 à 2 phrases + un exemple concret chiffré. Le détail scientifique va derrière un « En savoir plus » optionnel. Voir `glossaire-vulgarisation.md` pour le contenu rédigé de chaque terme. Couvre au minimum : Plafond, RPE, Cycle, Récupération, Polyarticulaire, Isolation, Étiré, Volume hebdo, V_min/V_max, Amplitude, Hypertrophie.
+**Principe :** déclenchées par le « ? », jamais imposées. 1 à 2 phrases + un exemple concret chiffré. Le détail scientifique va derrière un « En savoir plus » optionnel. Voir `glossaire-vulgarisation.md` pour le contenu rédigé de chaque terme. Couvre au minimum : Plafond, Effort, Cycle, Récupération, Polyarticulaire, Isolation, Étiré, Volume hebdo, V_min/V_max, Amplitude, Hypertrophie.

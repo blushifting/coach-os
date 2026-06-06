@@ -174,9 +174,22 @@ Workflow type pour un écran/composant : ux-ui-designer (skill) pour le
 visuel → ux-writer-coach-os (skill) ou agent ux-writer pour le copy →
 agent test-runner en fin de phase.
 
-Source originale en OneDrive (`…\Coach OS\skills\`, `…\Coach OS\agents\`)
-pour discussion hors-code ; **canon = `.claude/` du repo** (versionné,
-chargé auto, suit le projet). Toute évolution se fait dans `.claude/`.
+**Emplacement de chargement (important — corrigé Conv #24)** : Claude Code
+découvre les skills/agents projet dans `<dossier de lancement>/.claude/`.
+Or les sessions Coach OS sont lancées depuis le dossier **OneDrive**
+(`C:\Users\antoi\OneDrive\Desktop\Coach OS`), pas depuis `D:\coach-os`.
+Le `.claude/` du repo D **n'est donc jamais auto-chargé** (le « chargé
+auto » d'avant Conv #24 était faux). Décision Azur Conv #24 : skills +
+agents installés en **global** dans `C:\Users\antoi\.claude\skills\` et
+`\agents\` → chargés dans toutes les sessions, quel que soit le dossier de
+lancement.
+
+**Règle de sync** : le **canon éditable et versionné reste
+`D:\coach-os\.claude\`** (git). Toute évolution se fait là, PUIS on
+recopie vers `~/.claude/` (`cp -r D:\coach-os\.claude\skills\* …`) pour que
+le changement prenne effet. La copie OneDrive racine (`…\Coach OS\skills\`,
+`…\agents\`) est une vieille source de discussion — considérée obsolète,
+ne pas s'y fier.
 
 ---
 
