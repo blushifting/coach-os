@@ -40,6 +40,8 @@ import { displayExerciseName } from '@/lib/catalog-filter';
 import { useGymBrand } from '@/store/selectors';
 import { cn } from '@/lib/cn';
 import { muscleLabel } from '@/lib/progress';
+import { ExercisePhotoPopin } from '@/pages/catalogue/ExercisePhotoPopin';
+import { photosFor } from '@/data/exercise-photos';
 import { PatternIcon } from '@/pages/seance/PatternIcon';
 import { VariantPickerSheet } from '@/components/VariantPickerSheet';
 
@@ -70,6 +72,7 @@ export function Step5Preview({
   const [picker, setPicker] = useState<SlotPickerState | null>(null);
   const [expanded, setExpanded] = useState(true);
   const [pedagogyOpen, setPedagogyOpen] = useState(false);
+  const [preview, setPreview] = useState<{ id: string; title: string } | null>(null);
   const brand = useGymBrand() ?? undefined;
 
   // Le plan effectivement affiché (avec variantes appliquées).
@@ -242,6 +245,23 @@ export function Step5Preview({
                             : '—'}
                         </span>
                       </div>
+                      {photosFor(planned.exercise_id) !== null && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPreview({ id: planned.exercise_id, title: exNomFr })
+                          }
+                          aria-label="Voir le mouvement"
+                          data-testid={`btn-preview-${di}-${pi}`}
+                          title="Voir le mouvement"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-anthracite-700 text-anthracite-300 transition hover:border-sang-700 hover:text-white"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                        </button>
+                      )}
                       <Button
                         variant="secondary"
                         size="sm"
@@ -290,6 +310,14 @@ export function Step5Preview({
           onPick={handlePick}
           onClose={() => setPicker(null)}
           title="Choisir une variante"
+        />
+      )}
+      {preview !== null && (
+        <ExercisePhotoPopin
+          exerciseId={preview.id}
+          title={preview.title}
+          open={true}
+          onClose={() => setPreview(null)}
         />
       )}
     </div>

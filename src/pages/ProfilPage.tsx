@@ -33,6 +33,7 @@ import {
   goalsDraftFromState,
   profileDraftFromState,
 } from '@/lib/profile-edit';
+import { gymBrandLabel } from '@/lib/catalog-filter';
 import { useCoachOsStore } from '@/store';
 import { useDemoMode } from '@/store/selectors';
 import { AideSheet } from './profil/AideSheet';
@@ -179,7 +180,12 @@ export default function ProfilPage() {
           <SummaryRow
             label="Poids"
             value={`${userState.profile.bodyweight_kg} kg`}
-            wide
+          />
+          {/* Conv #23 — Marque des machines : affichée en clair, modifiable
+              via le bouton "Modifier" en haut de la Card. */}
+          <SummaryRow
+            label="Marque machines"
+            value={gymBrandLabel(userState.profile.gym_brand)}
           />
           {/* Conv #22 — Niveau et équipement retirés de l'identité (auto-
               calibration cycle / révélés par les choix d'exos). Conv #20 —

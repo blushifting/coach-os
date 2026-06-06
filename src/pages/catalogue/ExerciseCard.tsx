@@ -1,34 +1,14 @@
-import { ChargeType, exercisePrimaires } from '@/engine/models';
+import { exercisePrimaires } from '@/engine/models';
 import type { Exercise } from '@/engine/models';
 import {
   buildDescription,
-  chargeLabel,
-  displayExerciseName,
   extypeLabel,
   kgUnitLabelShort,
 } from '@/lib/catalog-filter';
 import { muscleLabel } from '@/lib/progress';
-import { useGymBrand } from '@/store/selectors';
-import { PatternIcon } from '@/pages/seance/PatternIcon';
-import { ChargeIcon } from './ChargeIcon';
+import { ChargeBadge } from './ChargeBadge';
+import { ExerciseNameStack } from './ExerciseNameStack';
 import { MiniSilhouette } from './MiniSilhouette';
-
-/**
- * Couleur de fond du chip d'équipement (Conv #23, item P).
- *
- * Toutes restent dans la palette anthracite + sang. La distinction est
- * subtile (intensité du fond + ton du contour) ; le picto reste le
- * différenciateur principal pour l'accessibilité.
- */
-const CHARGE_CHIP_STYLE: Record<ChargeType, string> = {
-  [ChargeType.BARBELL]: 'bg-anthracite-700 text-white ring-1 ring-inset ring-anthracite-500',
-  [ChargeType.DUMBBELL]: 'bg-anthracite-700 text-white ring-1 ring-inset ring-anthracite-500',
-  [ChargeType.MACHINE_STACK]: 'bg-anthracite-800 text-anthracite-100 ring-1 ring-inset ring-anthracite-600',
-  [ChargeType.CABLE]: 'bg-anthracite-800 text-anthracite-100 ring-1 ring-inset ring-anthracite-600',
-  [ChargeType.BODYWEIGHT]: 'bg-sang-900/30 text-white ring-1 ring-inset ring-sang-800/60',
-  [ChargeType.BODYWEIGHT_LOADED]: 'bg-sang-900/30 text-white ring-1 ring-inset ring-sang-800/60',
-  [ChargeType.BODYWEIGHT_ASSISTED]: 'bg-sang-900/30 text-white ring-1 ring-inset ring-sang-800/60',
-};
 
 interface ExerciseCardProps {
   readonly exercise: Exercise;
@@ -41,8 +21,6 @@ export function ExerciseCard({ exercise, onClick, e1rm = null }: ExerciseCardPro
   const primaires = exercisePrimaires(exercise);
   const description = buildDescription(exercise);
   const isLengthened = exercise.tags.includes('lengthened_bias');
-  const brand = useGymBrand();
-  const displayName = displayExerciseName(exercise, brand ?? undefined);
 
   return (
     <button
@@ -54,9 +32,7 @@ export function ExerciseCard({ exercise, onClick, e1rm = null }: ExerciseCardPro
       <MiniSilhouette exercise={exercise} />
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="flex items-start justify-between gap-2">
-          <span className="truncate text-sm font-medium text-white">
-            {displayName}
-          </span>
+          <ExerciseNameStack exercise={exercise} size="sm" className="flex-1" />
           <div className="flex shrink-0 items-center gap-1.5">
             {/* Conv #11h — plafond mis en évidence : chip distinct à droite
                 du nom, fond sang plein + font-display tabulaire pour
@@ -70,7 +46,9 @@ export function ExerciseCard({ exercise, onClick, e1rm = null }: ExerciseCardPro
                 {e1rm.toFixed(0)} {kgUnitLabelShort(exercise.charge)}
               </span>
             )}
-            <PatternIcon pattern={exercise.pattern} size="sm" />
+            {/* Conv #23 — picto catégorie en évidence avec couleur de fond
+                distincte. Remplace l'ancien PatternIcon (peu évocateur). */}
+            <ChargeBadge charge={exercise.charge} size={28} />
           </div>
         </div>
         <p className="line-clamp-2 text-xs leading-snug text-anthracite-400">
@@ -79,13 +57,6 @@ export function ExerciseCard({ exercise, onClick, e1rm = null }: ExerciseCardPro
         <div className="flex flex-wrap items-center gap-1">
           <span className="rounded bg-anthracite-700 px-1.5 py-0.5 text-[10px] text-white">
             {extypeLabel(exercise.type)}
-          </span>
-          <span
-            className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] ${CHARGE_CHIP_STYLE[exercise.charge]}`}
-            data-testid={`card-charge-${exercise.id}`}
-          >
-            <ChargeIcon charge={exercise.charge} size={12} />
-            {chargeLabel(exercise.charge)}
           </span>
           {isLengthened && (
             <span

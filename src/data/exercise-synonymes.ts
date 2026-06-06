@@ -245,6 +245,10 @@ export const EXERCISE_SYNONYMES: Readonly<Record<string, readonly string[]>> = {
 
   // Biceps
   bb_curl: ['curl biceps', 'curl barre', 'barbell curl'],
+  bicep_curl_machine: [
+    'curl machine', 'curl biceps machine', 'machine curl', 'arm curl',
+    'iso-lateral bicep curl', 'selection arm curl', 'machine bicep curl',
+  ],
   ez_curl: ['curl EZ', 'EZ curl', 'curl pied', 'ez-bar curl'],
   db_curl_alt: ['curl haltères', 'curl alterné', 'biceps curl', 'db curl', 'alternate dumbbell curl'],
   incline_db_curl: ['curl incliné', 'incline db curl', 'incline dumbbell curl'],
@@ -256,6 +260,11 @@ export const EXERCISE_SYNONYMES: Readonly<Record<string, readonly string[]>> = {
   concentration_curl: ['concentration', 'concentration curl'],
 
   // Triceps
+  tricep_extension_machine: [
+    'extension triceps machine', 'machine triceps extension',
+    'arm extension', 'iso-lateral tricep extension',
+    'selection arm extension',
+  ],
   triceps_pushdown_bar: [
     'pushdown', 'extension triceps poulie', 'tirage triceps',
     'triceps pushdown', 'triceps extension cable',

@@ -26,6 +26,9 @@ import { Button } from './Button';
 import { cn } from '@/lib/cn';
 import { displayExerciseName } from '@/lib/catalog-filter';
 import { useGymBrand } from '@/store/selectors';
+import { ExercisePhotoPopin } from '@/pages/catalogue/ExercisePhotoPopin';
+import { ExerciseNameStack } from '@/pages/catalogue/ExerciseNameStack';
+import { photosFor } from '@/data/exercise-photos';
 
 interface VariantCellSheetProps {
   readonly open: boolean;
@@ -199,40 +202,65 @@ interface VariantRowProps {
 function VariantRow({ exercise, isFavorite, onChoose }: VariantRowProps) {
   const brand = useGymBrand() ?? undefined;
   const isCompound = exercise.type === ExType.COMPOUND;
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const hasPhoto = photosFor(exercise.id) !== null;
   return (
     <li>
-      <button
-        type="button"
-        className={cn(
-          'w-full rounded-xl border bg-anthracite-950 px-3 py-2 text-left transition',
-          isFavorite
-            ? 'border-sang-500/70 hover:border-sang-500'
-            : 'border-anthracite-700 hover:border-anthracite-500',
-        )}
-        onClick={onChoose}
-        data-testid={`variant-pick-${exercise.id}`}
-      >
-        <div className="flex items-center gap-2">
-          <span className="flex-1 text-sm font-medium text-white">
-            {displayExerciseName(exercise, brand)}
-          </span>
-          {isFavorite && (
-            <span className="rounded-full bg-sang-900/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-sang-300">
-              favori
-            </span>
+      <div className="flex items-stretch gap-2">
+        <button
+          type="button"
+          className={cn(
+            'flex-1 rounded-xl border bg-anthracite-950 px-3 py-2 text-left transition',
+            isFavorite
+              ? 'border-sang-500/70 hover:border-sang-500'
+              : 'border-anthracite-700 hover:border-anthracite-500',
           )}
-          <span
-            className={cn(
-              'rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wider',
-              isCompound
-                ? 'border-anthracite-600 text-anthracite-300'
-                : 'border-anthracite-700 text-anthracite-400',
+          onClick={onChoose}
+          data-testid={`variant-pick-${exercise.id}`}
+        >
+          <div className="flex items-center gap-2">
+            <ExerciseNameStack exercise={exercise} size="sm" className="flex-1" />
+            {isFavorite && (
+              <span className="rounded-full bg-sang-900/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-sang-300">
+                favori
+              </span>
             )}
+            <span
+              className={cn(
+                'rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wider',
+                isCompound
+                  ? 'border-anthracite-600 text-anthracite-300'
+                  : 'border-anthracite-700 text-anthracite-400',
+              )}
+            >
+              {isCompound ? 'compound' : 'iso'}
+            </span>
+          </div>
+        </button>
+        {hasPhoto && (
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(true)}
+            aria-label="Voir le mouvement"
+            data-testid={`variant-preview-${exercise.id}`}
+            className="flex w-10 shrink-0 items-center justify-center rounded-xl border border-anthracite-700 bg-anthracite-900 text-anthracite-300 transition hover:border-sang-700 hover:text-white"
+            title="Voir le mouvement"
           >
-            {isCompound ? 'compound' : 'iso'}
-          </span>
-        </div>
-      </button>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
+        )}
+      </div>
+      {previewOpen && (
+        <ExercisePhotoPopin
+          exerciseId={exercise.id}
+          title={displayExerciseName(exercise, brand)}
+          open={true}
+          onClose={() => setPreviewOpen(false)}
+        />
+      )}
     </li>
   );
 }

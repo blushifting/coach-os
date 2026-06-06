@@ -1,21 +1,28 @@
 /**
  * Noms marketing des machines par marque (Conv #23, item O extension).
  *
- * Quand l'utilisateur déclare sa salle (via `Profile.gym_brand`), les
- * exos machine s'affichent avec le nom commercial qu'il voit étiqueté
- * sur la machine, au lieu du libellé générique FR. Aucun effet algo.
+ * Quand l'utilisateur déclare la marque de ses machines (via
+ * `Profile.gym_brand`), les exos machine s'affichent avec le nom
+ * commercial qu'il voit étiqueté sur la machine — **sans le nom de
+ * gamme** (Selection, Aura, Eagle, Signature…) qui n'apparaît jamais en
+ * gros sur la machine et n'aide pas à la reconnaître. Aucun effet algo.
  *
- * Couverture : Technogym Selection (le plus complet, dominant en FR),
- * Hammer Strength Iso-Lateral (zones strength des chaînes premium),
- * Matrix Aura/Versa (Magic Form), Life Fitness Signature/Insignia,
- * Cybex Eagle/VR3, Nautilus (glute drive principalement).
+ * Stratégie (corrigée Conv #23 retour Azur) :
+ *  - Pour la majorité des marques, les noms sont les libellés anglais
+ *    standards visibles sur la machine : « Chest Press », « Pulldown »,
+ *    « Leg Press »… Identiques entre Technogym / Matrix / Life Fitness /
+ *    Cybex, parce que c'est vraiment ce que la machine affiche.
+ *  - **Hammer Strength** a une nomenclature propre « Iso-Lateral X »
+ *    qu'on garde car c'est ce qui est étiqueté sur ses machines.
+ *  - **Nautilus** a un nom commercial spécifique (« Glute Drive ») pour
+ *    le hip thrust qu'on garde.
+ *
+ * Couverture (Conv #23) : Technogym Selection (dominant en FR), Hammer
+ * Strength Iso-Lateral (zones strength chaînes premium), Matrix Aura /
+ * Versa (Magic Form), Life Fitness Signature, Cybex Eagle, Nautilus.
  *
  * Si une marque n'a pas de nom pour un exo donné, le résolveur tombe
  * sur le nom générique FR du catalogue (cf. `displayExerciseName`).
- *
- * Convention : nom français court tel qu'il apparaîtrait dans une fiche
- * machine FR (« Chest Press », pas « Selection 900 Chest Press »).
- * Les noms anglais courants restent en anglais (« Pulldown », « Row »…).
  */
 
 import { GymBrand } from '@/engine/models';
@@ -25,33 +32,38 @@ export const BRAND_NAMES: Readonly<
 > = {
   [GymBrand.NONE]: {},
 
-  // Technogym Selection (Pulldown, Chest Press, Leg Press…)
+  // Technogym (étiquetage Selection 700/900) — noms anglais standards
+  // tels qu'ils apparaissent sur la machine.
   [GymBrand.TECHNOGYM]: {
-    chest_press_machine: 'Chest Press Selection',
-    chest_press_incl_machine: 'Incline Chest Press Selection',
-    pec_deck: 'Pectoral Machine Selection',
-    lat_pulldown: 'Pulldown Selection',
-    lat_pulldown_neutral: 'Pulldown Selection (prise neutre)',
-    lat_pulldown_supin: 'Pulldown Selection (supination)',
-    lat_pulldown_wide: 'Pulldown Selection (prise large)',
-    seated_row_machine: 'Row Selection',
+    chest_press_machine: 'Chest Press',
+    chest_press_incl_machine: 'Incline Chest Press',
+    pec_deck: 'Pectoral Machine',
+    lat_pulldown: 'Pulldown',
+    lat_pulldown_neutral: 'Pulldown (prise neutre)',
+    lat_pulldown_supin: 'Pulldown (supination)',
+    lat_pulldown_wide: 'Pulldown (prise large)',
+    seated_row_machine: 'Row',
     hack_squat_machine: 'Hack Squat',
-    leg_press_45: 'Leg Press Selection',
-    leg_press_horizontal: 'Leg Press Horizontal Selection',
-    leg_extension: 'Leg Extension Selection',
-    leg_curl_lying: 'Leg Curl Selection (couché)',
-    leg_curl_seated: 'Leg Curl Selection (assis)',
-    leg_curl_standing: 'Leg Curl Selection (debout)',
-    hip_thrust_machine: 'Glute Selection',
-    calf_standing_machine: 'Standing Calf Selection',
-    calf_seated_machine: 'Seated Calf Selection',
-    machine_shoulder_press: 'Shoulder Press Selection',
-    machine_lateral_raise: 'Lateral Raise Selection',
-    reverse_pec_deck: 'Rear Delt Selection',
-    crunch_machine: 'Abdominal Crunch Selection',
+    leg_press_45: 'Leg Press',
+    leg_press_horizontal: 'Horizontal Leg Press',
+    leg_extension: 'Leg Extension',
+    leg_curl_lying: 'Leg Curl (couché)',
+    leg_curl_seated: 'Leg Curl (assis)',
+    leg_curl_standing: 'Leg Curl (debout)',
+    hip_thrust_machine: 'Glute',
+    calf_standing_machine: 'Standing Calf',
+    calf_seated_machine: 'Seated Calf',
+    machine_shoulder_press: 'Shoulder Press',
+    machine_lateral_raise: 'Lateral Raise',
+    reverse_pec_deck: 'Rear Delt',
+    crunch_machine: 'Abdominal Crunch',
+    bicep_curl_machine: 'Arm Curl',
+    tricep_extension_machine: 'Arm Extension',
   },
 
-  // Hammer Strength Iso-Lateral (plate-loaded, mouvements indépendants)
+  // Hammer Strength Iso-Lateral (plate-loaded). Le préfixe « Iso-Lateral »
+  // est l'identité même de la machine : mouvements indépendants gauche /
+  // droite, c'est marqué dessus.
   [GymBrand.HAMMER_STRENGTH]: {
     chest_press_machine: 'Iso-Lateral Chest Press',
     chest_press_incl_machine: 'Iso-Lateral Incline Press',
@@ -65,59 +77,65 @@ export const BRAND_NAMES: Readonly<
     leg_curl_seated: 'Iso-Lateral Leg Curl (assis)',
     machine_shoulder_press: 'Iso-Lateral Shoulder Press',
     machine_shrug: 'Iso-Lateral Shrug',
+    bicep_curl_machine: 'Iso-Lateral Bicep Curl',
+    tricep_extension_machine: 'Iso-Lateral Tricep Extension',
   },
 
-  // Matrix Aura / Versa (Magic Form)
+  // Matrix (Magic Form). Étiquetage Aura / Versa retiré : sur la
+  // machine on lit « Chest Press », « Pulldown »…
   [GymBrand.MATRIX]: {
-    chest_press_machine: 'Aura Chest Press',
-    chest_press_incl_machine: 'Aura Incline Chest Press',
-    pec_deck: 'Aura Pec Fly',
-    lat_pulldown: 'Aura Pulldown',
-    lat_pulldown_neutral: 'Aura Pulldown (prise neutre)',
-    seated_row_machine: 'Aura Seated Row',
-    hack_squat_machine: 'Aura Hack Squat',
-    leg_press_45: 'Aura Leg Press',
-    leg_press_horizontal: 'Aura Horizontal Leg Press',
-    leg_extension: 'Aura Leg Extension',
-    leg_curl_lying: 'Aura Lying Leg Curl',
-    leg_curl_seated: 'Aura Seated Leg Curl',
-    calf_standing_machine: 'Aura Standing Calf',
-    calf_seated_machine: 'Aura Seated Calf',
-    machine_shoulder_press: 'Aura Shoulder Press',
-    machine_lateral_raise: 'Aura Lateral Raise',
-    reverse_pec_deck: 'Aura Rear Delt Fly',
-    crunch_machine: 'Aura Abdominal',
+    chest_press_machine: 'Chest Press',
+    chest_press_incl_machine: 'Incline Chest Press',
+    pec_deck: 'Pec Fly',
+    lat_pulldown: 'Pulldown',
+    lat_pulldown_neutral: 'Pulldown (prise neutre)',
+    seated_row_machine: 'Seated Row',
+    hack_squat_machine: 'Hack Squat',
+    leg_press_45: 'Leg Press',
+    leg_press_horizontal: 'Horizontal Leg Press',
+    leg_extension: 'Leg Extension',
+    leg_curl_lying: 'Lying Leg Curl',
+    leg_curl_seated: 'Seated Leg Curl',
+    calf_standing_machine: 'Standing Calf',
+    calf_seated_machine: 'Seated Calf',
+    machine_shoulder_press: 'Shoulder Press',
+    machine_lateral_raise: 'Lateral Raise',
+    reverse_pec_deck: 'Rear Delt Fly',
+    crunch_machine: 'Abdominal',
+    bicep_curl_machine: 'Bicep Curl',
+    tricep_extension_machine: 'Tricep Extension',
   },
 
-  // Life Fitness Signature / Insignia (Basic-Fit)
+  // Life Fitness (Basic-Fit). Étiquetage Signature / Insignia retiré.
   [GymBrand.LIFE_FITNESS]: {
-    chest_press_machine: 'Signature Chest Press',
-    pec_deck: 'Signature Pectoral Fly',
-    lat_pulldown: 'Signature Pulldown',
-    seated_row_machine: 'Signature Seated Row',
-    leg_press_45: 'Signature Leg Press',
-    leg_extension: 'Signature Leg Extension',
-    leg_curl_seated: 'Signature Seated Leg Curl',
-    machine_shoulder_press: 'Signature Shoulder Press',
-    reverse_pec_deck: 'Signature Rear Delt Fly',
+    chest_press_machine: 'Chest Press',
+    pec_deck: 'Pectoral Fly',
+    lat_pulldown: 'Pulldown',
+    seated_row_machine: 'Seated Row',
+    leg_press_45: 'Leg Press',
+    leg_extension: 'Leg Extension',
+    leg_curl_seated: 'Seated Leg Curl',
+    machine_shoulder_press: 'Shoulder Press',
+    reverse_pec_deck: 'Rear Delt Fly',
   },
 
-  // Cybex Eagle / VR3 (CMG, salles premium)
+  // Cybex (CMG, salles premium). Étiquetage Eagle / VR3 retiré.
   [GymBrand.CYBEX]: {
-    chest_press_machine: 'Eagle Chest Press',
-    lat_pulldown: 'Eagle Pulldown',
-    seated_row_machine: 'Eagle Row',
-    leg_press_45: 'Eagle Leg Press',
-    leg_extension: 'Eagle Leg Extension',
-    leg_curl_lying: 'Eagle Prone Leg Curl',
-    machine_shoulder_press: 'Eagle Shoulder Press',
+    chest_press_machine: 'Chest Press',
+    lat_pulldown: 'Pulldown',
+    seated_row_machine: 'Row',
+    leg_press_45: 'Leg Press',
+    leg_extension: 'Leg Extension',
+    leg_curl_lying: 'Prone Leg Curl',
+    machine_shoulder_press: 'Shoulder Press',
   },
 
-  // Nautilus (glute drive principalement)
+  // Nautilus — Glute Drive est le nom commercial spécifique de leur
+  // machine de hip thrust, on le garde.
   [GymBrand.NAUTILUS]: {
-    hip_thrust_machine: 'Nautilus Glute Drive',
-    chest_press_machine: 'Nautilus Chest Press',
-    seated_row_machine: 'Nautilus Row',
-    leg_press_45: 'Nautilus Leg Press',
+    hip_thrust_machine: 'Glute Drive',
+    chest_press_machine: 'Chest Press',
+    seated_row_machine: 'Row',
+    leg_press_45: 'Leg Press',
   },
 };

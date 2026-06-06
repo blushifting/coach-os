@@ -6,7 +6,6 @@ import type { Catalog } from '@/engine/catalog';
 import { exercisePrimaires, exerciseSynergistes } from '@/engine/models';
 import {
   buildDescription,
-  chargeLabel,
   equipLabel,
   extypeLabel,
   patternLabel,
@@ -17,8 +16,7 @@ import { muscleLabel } from '@/lib/progress';
 import { formatRest } from '@/lib/session-runner';
 import { useCoachOsStore } from '@/store';
 import { useDemoMode } from '@/store/selectors';
-import { PatternIcon } from './PatternIcon';
-import { ChargeIcon } from '@/pages/catalogue/ChargeIcon';
+import { ChargeBadge } from '@/pages/catalogue/ChargeBadge';
 import { ExercisePhoto } from '@/pages/catalogue/ExercisePhoto';
 import { VariantPickerSheet } from '@/components/VariantPickerSheet';
 import { displayExerciseName } from '@/lib/catalog-filter';
@@ -122,16 +120,12 @@ export function ExerciseDetailSheet({
           <ExercisePhoto exerciseId={exercise.id} />
 
           <div className="flex flex-wrap items-center justify-center gap-2">
-            <PatternIcon pattern={exercise.pattern} size="sm" />
+            <ChargeBadge charge={exercise.charge} size={32} />
             <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
               {extypeLabel(exercise.type)}
             </span>
             <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
               {patternLabel(exercise.pattern)}
-            </span>
-            <span className="flex items-center gap-1 rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
-              <ChargeIcon charge={exercise.charge} size={13} />
-              {chargeLabel(exercise.charge)}
             </span>
           </div>
 

@@ -57,8 +57,11 @@ export function ExercisePhoto({
   }
 
   return (
-    <div
-      className="relative mx-auto aspect-square w-full max-w-[280px] overflow-hidden rounded-xl border border-anthracite-700 bg-anthracite-900"
+    <button
+      type="button"
+      onClick={() => setRevealed(false)}
+      aria-label="Masquer le mouvement"
+      className="relative mx-auto block aspect-square w-full max-w-[280px] overflow-hidden rounded-xl border border-anthracite-700 bg-anthracite-900"
       data-testid={`exercise-photo-${exerciseId}`}
     >
       {/* Les deux images sont chargées en parallèle, on superpose et on
@@ -85,8 +88,8 @@ export function ExercisePhoto({
       />
       {/* Indicateur discret de cycle 2 frames + crédit photo */}
       <div className="pointer-events-none absolute bottom-1 right-2 text-[9px] leading-none text-anthracite-300/80">
-        free-exercise-db
+        free-exercise-db · clic pour masquer
       </div>
-    </div>
+    </button>
   );
 }

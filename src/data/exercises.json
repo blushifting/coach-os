@@ -4086,5 +4086,65 @@
     "e1RM_app": "partial",
     "tags": [],
     "note": ""
+  },
+  {
+    "id": "bicep_curl_machine",
+    "nom_fr": "Curl biceps machine",
+    "synonymes": [],
+    "pattern": "isolation",
+    "type": "isolation",
+    "charge": "machine_stack",
+    "equip": [
+      "bicep_curl_machine"
+    ],
+    "uni": false,
+    "muscles": {
+      "biceps": 1
+    },
+    "subst": "cable_curl",
+    "inc_kg": 1,
+    "reps_hyp": [
+      8,
+      15
+    ],
+    "reps_force": [
+      6,
+      10
+    ],
+    "repos_s": 90,
+    "dif": "facile",
+    "e1RM_app": "full",
+    "tags": [],
+    "note": ""
+  },
+  {
+    "id": "tricep_extension_machine",
+    "nom_fr": "Extension triceps machine",
+    "synonymes": [],
+    "pattern": "isolation",
+    "type": "isolation",
+    "charge": "machine_stack",
+    "equip": [
+      "tricep_extension_machine"
+    ],
+    "uni": false,
+    "muscles": {
+      "triceps": 1
+    },
+    "subst": "triceps_pushdown_bar",
+    "inc_kg": 1,
+    "reps_hyp": [
+      8,
+      15
+    ],
+    "reps_force": [
+      6,
+      10
+    ],
+    "repos_s": 90,
+    "dif": "facile",
+    "e1RM_app": "full",
+    "tags": [],
+    "note": ""
   }
 ]

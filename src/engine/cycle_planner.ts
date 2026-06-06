@@ -723,6 +723,9 @@ export function generateCyclePlan(
   // au lookup historique des feedbacks). L'UI lit toujours
   // `cyclePlan.days[i]` donc l'index passé à `generateSession` reste valide.
   orderDaysByNeuralCost(rebalanced, catalog);
+  // Conv #23 — réassigne les suffixes A/B/C après le tri neuro pour que
+  // le 1er jour soit toujours « X A », le 2e « X B », etc.
+  renumberSessionLabels(rebalanced);
 
   return rebalanced;
 }
@@ -787,6 +790,7 @@ export function generateCyclePlanV2(
     // best-effort : si le rééquilibrage échoue, on garde la version brute.
   }
   orderDaysByNeuralCost(weekly, catalog);
+  renumberSessionLabels(weekly);
   return weekly;
 }
 
@@ -899,4 +903,37 @@ export function orderDaysByNeuralCost(
     if (cb !== ca) return cb - ca; // décroissant
     return a.day_index - b.day_index; // tie-break stable
   });
+}
+
+/**
+ * Conv #23 — Renomme les suffixes A/B/C des labels de séances selon
+ * leur position dans `template.days[]`, regroupés par préfixe.
+ *
+ * Pourquoi : `orderDaysByNeuralCost` réordonne les days par coût neuro
+ * décroissant mais conserve `day_index` (id stable pour le lookup
+ * historique). Les labels générés par `buildSessionLabel` ou les
+ * splits eux-mêmes dépendaient de cet index ; après tri on pouvait
+ * obtenir « Full Body B » → « Full Body A » → « Full Body C », ce qui
+ * cassait la lecture user (« mon programme commence par B ?! »).
+ *
+ * Comportement :
+ *  - Pour chaque day, on détecte un suffixe `\s+[A-F]$`.
+ *  - On regroupe les days par leur préfixe (« Full Body », « Upper »,
+ *    « Push »…).
+ *  - Au sein de chaque groupe, on réassigne A, B, C… dans l'ordre du
+ *    tableau (= ordre du tri neuro).
+ *  - Les labels sans suffixe lettre (« Bonus », labels guidés du genre
+ *    « Workout A2 ») sont laissés intacts.
+ */
+export function renumberSessionLabels(template: WeeklyTemplate): void {
+  const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
+  const counters: Record<string, number> = {};
+  for (const day of template.days) {
+    const m = day.label.match(/^(.+?)\s+[A-F]$/);
+    if (m === null) continue;
+    const prefix = m[1]!;
+    const idx = counters[prefix] ?? 0;
+    counters[prefix] = idx + 1;
+    day.label = `${prefix} ${LETTERS[idx] ?? String(idx + 1)}`;
+  }
 }
