@@ -2,7 +2,9 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import type { Catalog } from '@/engine/catalog';
-import { kgUnitLabel } from '@/lib/catalog-filter';
+import { displayExerciseName, kgUnitLabel } from '@/lib/catalog-filter';
+import { useGymBrand } from '@/store/selectors';
+import { GymBrand } from '@/engine/models';
 import { cn } from '@/lib/cn';
 import type { PlafondChange, SessionSummaryData } from '@/lib/session-runner';
 
@@ -18,6 +20,7 @@ interface SessionSummaryProps {
  * Volume du jour, comparaison à la semaine dernière (même `label`), PR.
  */
 export function SessionSummary({ label, data, catalog, onClose }: SessionSummaryProps) {
+  const brand = useGymBrand() ?? undefined;
   return (
     <div className="flex flex-col gap-3" data-testid="session-summary">
       <Card>
@@ -67,7 +70,7 @@ export function SessionSummary({ label, data, catalog, onClose }: SessionSummary
               <PlafondRow
                 key={c.exerciseId}
                 change={c}
-                name={nameOf(catalog, c.exerciseId)}
+                name={nameOf(catalog, c.exerciseId, brand)}
                 chargeLabel={chargeLabelOf(catalog, c.exerciseId)}
               />
             ))}
@@ -113,10 +116,10 @@ function Metric({
   );
 }
 
-function nameOf(catalog: Catalog | null, exerciseId: string): string {
+function nameOf(catalog: Catalog | null, exerciseId: string, brand?: GymBrand): string {
   if (catalog === null) return exerciseId;
   try {
-    return catalog.get(exerciseId).nom_fr;
+    return displayExerciseName(catalog.get(exerciseId), brand);
   } catch {
     return exerciseId;
   }

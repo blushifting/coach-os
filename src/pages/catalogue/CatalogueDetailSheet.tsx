@@ -9,6 +9,7 @@ import { useEngine } from '@/hooks/useEngine';
 import {
   buildDescription,
   chargeLabel,
+  displayExerciseName,
   equipLabel,
   extypeLabel,
   kgUnitLabel,
@@ -18,9 +19,11 @@ import {
 import { muscleLabel } from '@/lib/progress';
 import { formatRest } from '@/lib/session-runner';
 import { useCoachOsStore } from '@/store';
-import { useDemoMode } from '@/store/selectors';
+import { useDemoMode, useGymBrand } from '@/store/selectors';
 import { ManualE1rmSheet } from '@/pages/seance/ManualE1rmSheet';
 import { PatternIcon } from '@/pages/seance/PatternIcon';
+import { ChargeIcon } from './ChargeIcon';
+import { ExercisePhoto } from './ExercisePhoto';
 import { EquipmentOverrideSheet } from './EquipmentOverrideSheet';
 
 interface CatalogueDetailSheetProps {
@@ -66,8 +69,10 @@ export function CatalogueDetailSheet({
   );
   const engine = useEngine();
   const demoActive = useDemoMode();
+  const brand = useGymBrand();
 
   if (exercise === null) return null;
+  const displayName = displayExerciseName(exercise, brand ?? undefined);
 
   const primaires = exercisePrimaires(exercise);
   const synergistes = exerciseSynergistes(exercise);
@@ -85,7 +90,7 @@ export function CatalogueDetailSheet({
   const repsForce = exercise.reps_force;
 
   return (
-    <Sheet open={open} onClose={onClose} title={exercise.nom_fr}>
+    <Sheet open={open} onClose={onClose} title={displayName}>
       <div className="flex flex-col gap-4" data-testid="catalogue-detail-content">
         <div className="flex justify-center">
           <AnatomicalSilhouette
@@ -96,6 +101,8 @@ export function CatalogueDetailSheet({
           />
         </div>
 
+        <ExercisePhoto exerciseId={exercise.id} />
+
         <div className="flex flex-wrap items-center justify-center gap-2">
           <PatternIcon pattern={exercise.pattern} size="sm" />
           <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
@@ -104,7 +111,11 @@ export function CatalogueDetailSheet({
           <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
             {patternLabel(exercise.pattern)}
           </span>
-          <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
+          <span
+            className="flex items-center gap-1 rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white"
+            data-testid="catalogue-detail-charge"
+          >
+            <ChargeIcon charge={exercise.charge} size={13} />
             {chargeLabel(exercise.charge)}
           </span>
         </div>
@@ -296,7 +307,7 @@ export function CatalogueDetailSheet({
         title="Supprimer cet exercice ?"
         description={
           <>
-            L'exercice <strong>{exercise.nom_fr}</strong> sera retiré du
+            L'exercice <strong>{displayName}</strong> sera retiré du
             catalogue. Les séances passées qui le référencent garderont
             leurs données, mais le nom de l'exo n'apparaîtra plus.
           </>

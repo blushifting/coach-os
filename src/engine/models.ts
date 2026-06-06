@@ -80,6 +80,33 @@ export enum EquipmentPreference {
 }
 
 /**
+ * Marque d'équipement de la salle de l'utilisateur (Conv #23, item O).
+ *
+ * Optionnelle, affecte uniquement les **intitulés affichés** des exos
+ * machine (et indirectement la recherche fuzzy via les synonymes
+ * existants). Aucun effet sur l'algo. `NONE` = libellés génériques FR
+ * actuels (« Développé machine », « Tirage vertical poulie haute »…).
+ *
+ * Les marques retenues couvrent l'essentiel du marché FR :
+ * - Technogym : Fitness Park (mixte), Keepcool, L'Orange Bleue, L'Appart
+ *   Fitness, Magic Form (équipements complémentaires), CMG.
+ * - Hammer Strength : Fitness Park (zone strength), salles premium.
+ * - Matrix : Magic Form, certaines indé.
+ * - Life Fitness : Basic-Fit, salles hôtels.
+ * - Cybex : CMG, salles haut de gamme.
+ * - Nautilus : historique, glute drive principalement.
+ */
+export enum GymBrand {
+  NONE = 'none',
+  TECHNOGYM = 'technogym',
+  HAMMER_STRENGTH = 'hammer_strength',
+  MATRIX = 'matrix',
+  LIFE_FITNESS = 'life_fitness',
+  CYBEX = 'cybex',
+  NAUTILUS = 'nautilus',
+}
+
+/**
  * Objectif global du profil utilisateur (path "rapide" de l'onboarding).
  * Conservé pour rétrocompat. Pour les décisions algorithmiques fines (par muscle),
  * voir `MuscleObjective`. Puissance retirée en V1 (cf. 09 §3.5).
@@ -320,6 +347,13 @@ export interface Profile {
    * Sert au tri auto des exos à l'onboarding. Optionnel pour rétrocompat.
    */
   equipment_preference?: EquipmentPreference;
+  /**
+   * Conv #23 — Marque dominante d'équipement de la salle. Affecte
+   * uniquement l'affichage des intitulés (« Matrix Chest Press » au
+   * lieu de « Développé machine »). Optionnel pour rétrocompat ;
+   * `undefined` ou `NONE` = libellés génériques.
+   */
+  gym_brand?: GymBrand;
 }
 
 export interface ProfileInput {
@@ -332,6 +366,7 @@ export interface ProfileInput {
   available_equip?: Set<string> | Iterable<string>;
   duration_category?: DurationCategory;
   equipment_preference?: EquipmentPreference;
+  gym_brand?: GymBrand;
 }
 
 /** Construit un Profile en validant les invariants (port de `Profile.__post_init__`). */
@@ -359,6 +394,9 @@ export function makeProfile(input: ProfileInput): Profile {
   }
   if (input.equipment_preference !== undefined) {
     profile.equipment_preference = input.equipment_preference;
+  }
+  if (input.gym_brand !== undefined) {
+    profile.gym_brand = input.gym_brand;
   }
   return profile;
 }
@@ -647,6 +685,22 @@ export interface GuidedProgram {
   readonly days: readonly GuidedDayTemplate[];
   readonly progression_rule: ProgressionRule;
   readonly notes: string;
+  /**
+   * Conv #23 — pitch en une ligne « pour qui / pour quoi », style coach
+   * kiné. Affiché sous le nom du programme dans le sélecteur. Optionnel
+   * pour rétrocompat.
+   */
+  readonly short_pitch?: string;
+  /**
+   * Conv #23 — raisons concrètes de choisir ce programme. Bullets de
+   * 1 ligne, vocabulaire verrouillé (Plafond, Hypertrophie, Cycle…).
+   */
+  readonly pour?: readonly string[];
+  /**
+   * Conv #23 — raisons concrètes d'éviter ce programme (mauvais fit).
+   * Mêmes contraintes de rédaction que `pour`.
+   */
+  readonly contre?: readonly string[];
 }
 
 // =============================================================================

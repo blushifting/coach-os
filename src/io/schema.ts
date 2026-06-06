@@ -33,6 +33,11 @@ const profileSchema = z
     sessions_per_week: z.number().int().min(2).max(6),
     bodyweight_kg: z.number().positive(),
     available_equip: z.array(z.string()),
+    // Conv #22 — optionnels pour rétrocompat exports antérieurs.
+    duration_category: z.string().optional(),
+    equipment_preference: z.string().optional(),
+    // Conv #23 — marque salle (libellés affichés des exos machine).
+    gym_brand: z.string().optional(),
   })
   .strict();
 
@@ -82,6 +87,10 @@ const userStateSchema = z
     weekly_volume_debt: recordOfNumber.optional(),
     // Conv #18 : routine fixée par jour-of-week (clé "0".."6", value dayIndex).
     fixed_routine: recordOfNumber.optional(),
+    // Conv #22 — optionnels pour rétrocompat exports antérieurs.
+    current_skeleton: z.union([z.null(), z.object({}).passthrough()]).optional(),
+    favorite_exercise_per_pattern: recordOfString.optional(),
+    deload_strategy: z.union([z.null(), z.string()]).optional(),
   })
   .strict();
 

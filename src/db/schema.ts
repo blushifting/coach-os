@@ -45,6 +45,8 @@ export interface SerializedProfile {
   duration_category?: string;
   /** Conv #22 — préférence équipement. Absent sur anciens blobs. */
   equipment_preference?: string;
+  /** Conv #23 — marque de la salle (Technogym, Hammer Strength, Matrix…). Absent sur anciens blobs. */
+  gym_brand?: string;
 }
 
 export interface SerializedUserState {

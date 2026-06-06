@@ -10,6 +10,7 @@ import type { Profile, UserState } from '@/engine/models';
 import {
   DurationCategory,
   EquipmentPreference,
+  GymBrand,
   Level,
   Objective,
   Sex,
@@ -32,6 +33,9 @@ export function serializeProfile(p: Profile): SerializedProfile {
   if (p.equipment_preference !== undefined) {
     out.equipment_preference = p.equipment_preference;
   }
+  if (p.gym_brand !== undefined) {
+    out.gym_brand = p.gym_brand;
+  }
   return out;
 }
 
@@ -50,6 +54,9 @@ export function deserializeProfile(s: SerializedProfile): Profile {
   }
   if (s.equipment_preference !== undefined) {
     out.equipment_preference = s.equipment_preference as EquipmentPreference;
+  }
+  if (s.gym_brand !== undefined) {
+    out.gym_brand = s.gym_brand as GymBrand;
   }
   return out;
 }

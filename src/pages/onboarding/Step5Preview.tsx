@@ -36,6 +36,8 @@ import {
   type VariantReplacement,
 } from '@/lib/onboarding-preview';
 import { alternativeVariantsFor } from '@/lib/calibration';
+import { displayExerciseName } from '@/lib/catalog-filter';
+import { useGymBrand } from '@/store/selectors';
 import { cn } from '@/lib/cn';
 import { muscleLabel } from '@/lib/progress';
 import { PatternIcon } from '@/pages/seance/PatternIcon';
@@ -68,6 +70,7 @@ export function Step5Preview({
   const [picker, setPicker] = useState<SlotPickerState | null>(null);
   const [expanded, setExpanded] = useState(true);
   const [pedagogyOpen, setPedagogyOpen] = useState(false);
+  const brand = useGymBrand() ?? undefined;
 
   // Le plan effectivement affiché (avec variantes appliquées).
   const effectiveTemplate = useMemo<WeeklyTemplate | null>(() => {
@@ -205,7 +208,7 @@ export function Step5Preview({
                 let primaires: readonly string[] = [];
                 try {
                   const ex = catalog!.get(planned.exercise_id);
-                  exNomFr = ex.nom_fr;
+                  exNomFr = displayExerciseName(ex, brand);
                   pattern = ex.pattern;
                   primaires = exercisePrimaires(ex);
                 } catch {
@@ -396,20 +399,24 @@ function PedagogyPanel({
       {open && (
         <div className="flex flex-col gap-2 text-xs leading-relaxed text-anthracite-100">
           <p>
-            Chaque séance cible plusieurs muscles avec un nombre de séries calculé
-            pour rester dans une zone de progression efficace (ni trop peu, ni
-            trop). À chaque série, tu indiques l'effort perçu (sur 10) et l'app
-            ajuste les charges et le volume pour la suite.
+            Chaque séance cible plusieurs muscles avec un nombre de séries
+            calculé pour rester dans une zone de progression efficace : ni
+            trop peu, ni trop. À chaque série, tu notes ton Effort perçu
+            (de 6 à 10) et l'app ajuste les charges et le Volume hebdo pour
+            la suite.
           </p>
           <p>
-            Le programme tourne sur 5 semaines : 4 d'intensification (+1 série
-            par exo par semaine, plafonné) puis 1 semaine de décharge plus
-            légère.
+            Le Cycle dure 5 semaines : 4 semaines où on monte
+            progressivement en volume, puis 1 semaine de Récupération plus
+            légère pour laisser la fatigue redescendre. Cette Récupération
+            n'est pas un cadeau, c'est ce qui fait que ton corps
+            progresse.
           </p>
           <p>
-            Tu peux à tout moment remplacer un exo pendant une séance (si la
-            machine est prise, par exemple). L'app reportera ce qui n'a pas été
-            fait sur les autres séances de la semaine si possible.
+            Tu peux à tout moment remplacer un exo pendant une séance — par
+            exemple si la machine est prise. L'app reporte ce qui n'a pas
+            été fait sur les autres séances de la semaine quand c'est
+            possible.
           </p>
         </div>
       )}

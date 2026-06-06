@@ -11,6 +11,7 @@
  * programme à partir des `muscle_goals` via split + cycle_planner.
  */
 
+import { useState } from 'react';
 import { ALL_GUIDED_PROGRAMS } from '@/engine/guided_programs';
 import {
   DurationCategory,
@@ -208,6 +209,9 @@ export function Step4Program({ draft, onChange }: Step4Props) {
                 ? `Ce programme demande ${p.sessions_per_week} séances/sem (tu as choisi ${draft.sessionsPerWeek}).`
                 : null
             }
+            shortPitch={p.short_pitch ?? null}
+            pour={p.pour ?? null}
+            contre={p.contre ?? null}
             selected={draft.programmeId === p.id}
             onSelect={() => onChange({ programmeId: p.id })}
           />
@@ -223,6 +227,9 @@ interface ProgramRowProps {
   readonly subtitle: string;
   readonly meta: string;
   readonly warning?: string | null;
+  readonly shortPitch?: string | null;
+  readonly pour?: readonly string[] | null;
+  readonly contre?: readonly string[] | null;
   readonly selected: boolean;
   readonly onSelect: () => void;
 }
@@ -233,10 +240,16 @@ function ProgramRow({
   subtitle,
   meta,
   warning,
+  shortPitch,
+  pour,
+  contre,
   selected,
   onSelect,
 }: ProgramRowProps) {
   const testId = id === null ? 'program-custom' : `program-${id}`;
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const hasDetails =
+    (pour && pour.length > 0) || (contre && contre.length > 0);
   return (
     <Card
       className={cn(
@@ -266,11 +279,68 @@ function ProgramRow({
         <div className="flex-1">
           <div className="text-sm font-semibold text-white">{title}</div>
           <div className="text-xs text-anthracite-300">{subtitle}</div>
+          {shortPitch ? (
+            <p className="mt-1 text-xs leading-snug text-anthracite-100">
+              {shortPitch}
+            </p>
+          ) : null}
           <div className="mt-1 text-[11px] text-anthracite-300">{meta}</div>
           {warning ? (
             <div className="mt-2 rounded-lg border border-sang-700/60 bg-sang-900/20 px-2 py-1 text-[11px] text-sang-500">
               ⚠ {warning}
             </div>
+          ) : null}
+          {hasDetails ? (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDetailsOpen((v) => !v);
+                }}
+                data-testid={`program-details-toggle-${id ?? 'custom'}`}
+                className="mt-2 text-[11px] font-medium text-anthracite-300 underline-offset-2 hover:text-white hover:underline"
+              >
+                {detailsOpen ? 'Masquer les détails' : 'Pour qui c\'est fait ?'}
+              </button>
+              {detailsOpen ? (
+                <div
+                  className="mt-2 space-y-2"
+                  data-testid={`program-details-${id ?? 'custom'}`}
+                >
+                  {pour && pour.length > 0 ? (
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-anthracite-300">
+                        À choisir si
+                      </div>
+                      <ul className="mt-1 space-y-0.5 text-[12px] leading-snug text-anthracite-100">
+                        {pour.map((s, i) => (
+                          <li key={i} className="flex gap-1.5">
+                            <span className="text-sang-500">•</span>
+                            <span>{s}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                  {contre && contre.length > 0 ? (
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-anthracite-300">
+                        À éviter si
+                      </div>
+                      <ul className="mt-1 space-y-0.5 text-[12px] leading-snug text-anthracite-100">
+                        {contre.map((s, i) => (
+                          <li key={i} className="flex gap-1.5">
+                            <span className="text-anthracite-400">•</span>
+                            <span>{s}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </>
           ) : null}
         </div>
       </div>

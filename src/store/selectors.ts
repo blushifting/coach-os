@@ -49,3 +49,13 @@ export const useBootstrapped = () => useCoachOsStore(selectBootstrapped);
 export const useCycleProgress = () => useCoachOsStore(selectCycleProgress);
 export const useDemoMode = () => useCoachOsStore(selectDemoMode);
 export const useDemoSnapshot = () => useCoachOsStore(selectDemoSnapshot);
+
+/**
+ * Conv #23 — marque de salle déclarée par l'user. Utilisé par
+ * `displayExerciseName` pour afficher le nom commercial des machines
+ * (ex. « Matrix Aura Pulldown » au lieu de « Tirage vertical poulie
+ * haute »). `null` si profil non chargé ou pas de salle déclarée.
+ */
+export const selectGymBrand = (s: CoachOsState) =>
+  s.userState?.profile?.gym_brand ?? null;
+export const useGymBrand = () => useCoachOsStore(selectGymBrand);

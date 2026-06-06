@@ -45,7 +45,7 @@ const TUTORIALS: readonly Tutorial[] = [
       "Pas de séance de test dédiée : Kotsh apprend tes plafonds en marchant. " +
       "À ta 1re séance, l'app pré-remplit des charges raisonnables selon ton poids et ton " +
       "niveau ; tu modifies si la réalité diffère. Pour chaque série tu saisis reps faites, " +
-      "charge et effort perçu (sur 10, aussi appelé RPE). L'algo en déduit ton plafond via " +
+      "charge et Effort perçu (sur 10, aussi appelé RPE dans la littérature). L'algo en déduit ton plafond via " +
       "la formule d'Epley étendue, et affine séance après séance — sans phase de calibration " +
       "préalable.",
   },
@@ -106,23 +106,23 @@ const FAQ: readonly FaqItem[] = [
   },
   {
     id: 'rpe-pas-pct',
-    question: 'Pourquoi RPE et pas % du 1RM ?',
+    question: "Pourquoi l'Effort perçu et pas un % du 1RM ?",
     answer:
       "Le 1RM réel varie jour à jour (sommeil, stress, alimentation, fatigue " +
       "résiduelle) de ±5 à 15 %. Programmer à 80 % d'un 1RM mesuré il y a 6 semaines " +
-      "amène souvent à un effort de 7 ou de 10 selon la journée. Le RPE (Helms 2018, " +
-      "Zourdos 2016) règle ça : tu pilotes l'intensité par le ressenti, qui s'ajuste " +
+      "amène souvent à un Effort de 7 ou de 10 selon la journée. Piloter l'intensité " +
+      "par le ressenti (Helms 2018, Zourdos 2016) règle ça : ça s'ajuste " +
       "automatiquement à ta forme du moment. Plus précis en pratique qu'un %.",
   },
   {
     id: 'rpe-min-6',
-    question: "Pourquoi l'échelle d'effort commence à 6 et pas à 1 ?",
+    question: "Pourquoi l'échelle d'Effort commence à 6 et pas à 1 ?",
     answer:
-      "Sous RPE 6 (= 4+ reps en réserve), une série est trop facile pour apprendre " +
-      "ton plafond. Epley n'est calibré que ~RPE 6-10 (n_équivalent ≤ 15) ; en dessous " +
-      "la formule sort de sa zone fiable et l'app ne pourrait pas extrapoler ton plafond " +
-      "sans erreur. Le slider du SetInput plafonne donc à 6 minimum — c'est " +
-      "l'effort minimum 'informatif' pour la calibration.",
+      "Sous un Effort de 6 (= 4+ reps en réserve), une série est trop facile pour apprendre " +
+      "ton plafond. La formule d'Epley n'est calibrée que ~6-10 (n_équivalent ≤ 15) ; en dessous " +
+      "elle sort de sa zone fiable et l'app ne pourrait pas extrapoler ton plafond " +
+      "sans erreur. Le curseur Effort plafonne donc à 6 minimum — c'est " +
+      "l'Effort minimum « informatif » pour la calibration.",
   },
   {
     id: 'semaine5-deload',

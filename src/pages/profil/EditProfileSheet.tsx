@@ -16,8 +16,9 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Sheet } from '@/components/Sheet';
 import { Stepper } from '@/components/Stepper';
-import { Sex, type Profile } from '@/engine/models';
+import { GymBrand, Sex, type Profile } from '@/engine/models';
 import { cn } from '@/lib/cn';
+import { GYM_BRAND_LABEL_FR } from '@/lib/catalog-filter';
 import {
   buildProfileFromDraft,
   type ProfileDraft,
@@ -105,6 +106,34 @@ export function EditProfileSheet({
               max={200}
               suffix=" kg"
             />
+          </Card>
+
+          <Card>
+            <div className="mb-1 text-sm font-medium text-white">
+              Tes machines
+            </div>
+            <p className="mb-3 text-xs leading-relaxed text-anthracite-300">
+              Marque des machines que tu utilises. Sert juste à afficher
+              les noms commerciaux à l'écran (par ex. « Aura Pulldown » au
+              lieu de « Tirage vertical poulie haute »). Aucun effet sur
+              les exos prescrits.
+            </p>
+            <label className="sr-only" htmlFor="profil-gym-brand">
+              Marque des machines
+            </label>
+            <select
+              id="profil-gym-brand"
+              data-testid="profil-gym-brand-select"
+              value={draft.gymBrand}
+              onChange={(e) => patch({ gymBrand: e.target.value as GymBrand })}
+              className="w-full rounded-xl border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-sm text-white focus:border-sang-600 focus:outline-none"
+            >
+              {Object.entries(GYM_BRAND_LABEL_FR).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
           </Card>
 
           {error !== null && (

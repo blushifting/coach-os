@@ -30,6 +30,8 @@ import {
   totalCells,
 } from '@/lib/skeleton-onboarding';
 import { cn } from '@/lib/cn';
+import { displayExerciseName } from '@/lib/catalog-filter';
+import { useGymBrand } from '@/store/selectors';
 
 interface Step6VariantsProps {
   readonly skeleton: SkeletonTemplate | null;
@@ -256,6 +258,7 @@ function CellRow({
   const top3 = allCandidates.slice(0, 3);
   const patternLbl = PATTERN_LABEL[cell.pattern] ?? cell.pattern;
   const muscleLbl = MUSCLE_LABEL[cell.primary_muscle] ?? cell.primary_muscle;
+  const brand = useGymBrand() ?? undefined;
 
   if (top3.length === 0) {
     return (
@@ -295,7 +298,7 @@ function CellRow({
               aria-pressed={selected}
             >
               <span className="text-[12px] font-medium leading-tight text-white">
-                {ex.nom_fr}
+                {displayExerciseName(ex, brand)}
               </span>
               <span
                 className={cn(

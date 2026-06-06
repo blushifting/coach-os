@@ -12,7 +12,8 @@
 
 import { Card } from '@/components/Card';
 import { HelpButton } from '@/components/HelpButton';
-import { kgUnitLabel } from '@/lib/catalog-filter';
+import { displayExerciseName, kgUnitLabel } from '@/lib/catalog-filter';
+import { useCatalog, useGymBrand } from '@/store/selectors';
 import { cn } from '@/lib/cn';
 import type { ExerciseE1rmSeries } from '@/lib/progress';
 
@@ -21,6 +22,15 @@ interface ForceViewProps {
 }
 
 export function ForceView({ series }: ForceViewProps) {
+  const catalog = useCatalog();
+  const brand = useGymBrand() ?? undefined;
+  const resolveName = (s: ExerciseE1rmSeries): string => {
+    if (catalog !== null && catalog.has(s.exercise_id)) {
+      return displayExerciseName(catalog.get(s.exercise_id), brand);
+    }
+    return s.nom_fr;
+  };
+
   if (series.length === 0) {
     return (
       <Card data-testid="force-empty">
@@ -47,7 +57,7 @@ export function ForceView({ series }: ForceViewProps) {
           <header className="mb-2 flex items-baseline justify-between gap-2">
             <div className="flex min-w-0 flex-col gap-0.5">
               <div className="text-sm font-medium text-white truncate">
-                {s.nom_fr}
+                {resolveName(s)}
               </div>
               {/* Conv #17 — Affiche le nombre de séances ayant alimenté la
                   courbe. Évite la question "pourquoi cet exo a moins de

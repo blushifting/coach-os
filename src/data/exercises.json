@@ -34,42 +34,6 @@
     "note": ""
   },
   {
-    "id": "bench_bb_paused",
-    "nom_fr": "Développé couché barre avec pause",
-    "synonymes": [],
-    "pattern": "push_h",
-    "type": "compound",
-    "charge": "barbell",
-    "equip": [
-      "bb_oly",
-      "bench_flat",
-      "rack"
-    ],
-    "uni": false,
-    "muscles": {
-      "pectoraux": 1,
-      "triceps": 0.5,
-      "deltos_anterieurs": 0.5
-    },
-    "subst": "bench_h_bb",
-    "inc_kg": 1,
-    "reps_hyp": [
-      4,
-      8
-    ],
-    "reps_force": [
-      2,
-      5
-    ],
-    "repos_s": 210,
-    "dif": "élevé",
-    "e1RM_app": "full",
-    "tags": [
-      "pause_3s"
-    ],
-    "note": ""
-  },
-  {
     "id": "bench_bb_incl30",
     "nom_fr": "Développé incliné barre 30°",
     "synonymes": [],
@@ -1078,40 +1042,6 @@
     "note": ""
   },
   {
-    "id": "pendlay_row",
-    "nom_fr": "Pendlay row (départ sol)",
-    "synonymes": [],
-    "pattern": "pull_h",
-    "type": "compound",
-    "charge": "barbell",
-    "equip": [
-      "bb_oly"
-    ],
-    "uni": false,
-    "muscles": {
-      "dos_epaisseur": 1,
-      "dos_largeur": 0.5,
-      "biceps": 0.5
-    },
-    "subst": "row_h_bb",
-    "inc_kg": 1,
-    "reps_hyp": [
-      5,
-      8
-    ],
-    "reps_force": [
-      3,
-      5
-    ],
-    "repos_s": 180,
-    "dif": "élevé",
-    "e1RM_app": "full",
-    "tags": [
-      "explosif"
-    ],
-    "note": ""
-  },
-  {
     "id": "t_bar_row",
     "nom_fr": "T-bar row (landmine)",
     "synonymes": [],
@@ -1206,42 +1136,6 @@
       6
     ],
     "repos_s": 120,
-    "dif": "moyen",
-    "e1RM_app": "full",
-    "tags": [
-      "torse_appuye"
-    ],
-    "note": ""
-  },
-  {
-    "id": "seal_row",
-    "nom_fr": "Seal row (allongé sur banc haut)",
-    "synonymes": [],
-    "pattern": "pull_h",
-    "type": "compound",
-    "charge": "barbell",
-    "equip": [
-      "bb_oly",
-      "bench_flat"
-    ],
-    "uni": false,
-    "muscles": {
-      "dos_epaisseur": 1,
-      "dos_largeur": 0.5,
-      "biceps": 0.5,
-      "deltos_posterieurs": 0.5
-    },
-    "subst": "row_h_bb",
-    "inc_kg": 1,
-    "reps_hyp": [
-      8,
-      12
-    ],
-    "reps_force": [
-      4,
-      6
-    ],
-    "repos_s": 150,
     "dif": "moyen",
     "e1RM_app": "full",
     "tags": [
@@ -1868,39 +1762,6 @@
     "note": ""
   },
   {
-    "id": "pendulum_squat",
-    "nom_fr": "Pendulum squat",
-    "synonymes": [],
-    "pattern": "squat",
-    "type": "compound",
-    "charge": "machine_stack",
-    "equip": [
-      "hack_squat"
-    ],
-    "uni": false,
-    "muscles": {
-      "quadriceps": 1,
-      "fessiers": 0.5
-    },
-    "subst": "squat_machine",
-    "inc_kg": 1,
-    "reps_hyp": [
-      8,
-      12
-    ],
-    "reps_force": [
-      4,
-      6
-    ],
-    "repos_s": 180,
-    "dif": "moyen",
-    "e1RM_app": "full",
-    "tags": [
-      "guide"
-    ],
-    "note": ""
-  },
-  {
     "id": "bulgarian_split",
     "nom_fr": "Squat bulgare",
     "synonymes": [],
@@ -2408,34 +2269,6 @@
     "dif": "facile",
     "e1RM_app": "partial",
     "tags": [],
-    "note": ""
-  },
-  {
-    "id": "nordic_curl",
-    "nom_fr": "Nordic hamstring curl",
-    "synonymes": [],
-    "pattern": "isolation",
-    "type": "isolation",
-    "charge": "bodyweight",
-    "equip": [],
-    "uni": false,
-    "muscles": {
-      "ischios": 1
-    },
-    "subst": "leg_curl",
-    "inc_kg": 0,
-    "reps_hyp": [
-      5,
-      10
-    ],
-    "reps_force": null,
-    "repos_s": 120,
-    "dif": "élevé",
-    "e1RM_app": "partial",
-    "tags": [
-      "excentrique_++",
-      "lengthened_bias"
-    ],
     "note": ""
   },
   {
@@ -3071,35 +2904,6 @@
     "e1RM_app": "non",
     "tags": [
       "guide"
-    ],
-    "note": ""
-  },
-  {
-    "id": "lu_raise",
-    "nom_fr": "Lu raise (leaning lateral)",
-    "synonymes": [],
-    "pattern": "isolation",
-    "type": "isolation",
-    "charge": "dumbbell",
-    "equip": [
-      "db"
-    ],
-    "uni": true,
-    "muscles": {
-      "deltos_lateraux": 1
-    },
-    "subst": "lateral_raise",
-    "inc_kg": 2,
-    "reps_hyp": [
-      12,
-      20
-    ],
-    "reps_force": null,
-    "repos_s": 60,
-    "dif": "facile",
-    "e1RM_app": "non",
-    "tags": [
-      "lengthened_bias"
     ],
     "note": ""
   },
@@ -4089,66 +3893,6 @@
     "note": ""
   },
   {
-    "id": "cable_woodchopper",
-    "nom_fr": "Woodchopper poulie",
-    "synonymes": [],
-    "pattern": "core",
-    "type": "isolation",
-    "charge": "cable",
-    "equip": [
-      "cable_high"
-    ],
-    "uni": true,
-    "muscles": {
-      "obliques": 1,
-      "abdos": 0.5
-    },
-    "subst": "oblique_rotation",
-    "inc_kg": 1,
-    "reps_hyp": [
-      10,
-      15
-    ],
-    "reps_force": null,
-    "repos_s": 60,
-    "dif": "facile",
-    "e1RM_app": "non",
-    "tags": [
-      "rotation"
-    ],
-    "note": ""
-  },
-  {
-    "id": "cable_pallof_press",
-    "nom_fr": "Pallof press anti-rotation",
-    "synonymes": [],
-    "pattern": "core",
-    "type": "isolation",
-    "charge": "cable",
-    "equip": [
-      "cable_low"
-    ],
-    "uni": true,
-    "muscles": {
-      "obliques": 1,
-      "abdos": 0.5
-    },
-    "subst": "oblique_rotation",
-    "inc_kg": 1,
-    "reps_hyp": [
-      8,
-      15
-    ],
-    "reps_force": null,
-    "repos_s": 60,
-    "dif": "facile",
-    "e1RM_app": "non",
-    "tags": [
-      "anti_rotation"
-    ],
-    "note": ""
-  },
-  {
     "id": "db_side_bend",
     "nom_fr": "Inclinaison latérale haltère",
     "synonymes": [],
@@ -4341,68 +4085,6 @@
     "dif": "moyen",
     "e1RM_app": "partial",
     "tags": [],
-    "note": ""
-  },
-  {
-    "id": "good_morning_machine",
-    "nom_fr": "Good morning machine",
-    "synonymes": [],
-    "pattern": "hinge",
-    "type": "compound",
-    "charge": "machine_stack",
-    "equip": [],
-    "uni": false,
-    "muscles": {
-      "lombaires": 1,
-      "ischios": 0.5,
-      "fessiers": 0.5
-    },
-    "subst": "hinge_gm",
-    "inc_kg": 1,
-    "reps_hyp": [
-      10,
-      15
-    ],
-    "reps_force": [
-      5,
-      8
-    ],
-    "repos_s": 120,
-    "dif": "moyen",
-    "e1RM_app": "full",
-    "tags": [
-      "guide"
-    ],
-    "note": ""
-  },
-  {
-    "id": "jefferson_curl",
-    "nom_fr": "Jefferson curl",
-    "synonymes": [],
-    "pattern": "hinge",
-    "type": "compound",
-    "charge": "dumbbell",
-    "equip": [
-      "db"
-    ],
-    "uni": false,
-    "muscles": {
-      "lombaires": 1
-    },
-    "subst": "back_extension",
-    "inc_kg": 2,
-    "reps_hyp": [
-      8,
-      12
-    ],
-    "reps_force": null,
-    "repos_s": 90,
-    "dif": "élevé",
-    "e1RM_app": "partial",
-    "tags": [
-      "mobilite",
-      "controverse"
-    ],
     "note": ""
   }
 ]

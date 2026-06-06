@@ -70,8 +70,7 @@ export function Step3Balance({ draft, onChange }: Step3Props) {
       {suggestions.length === 0 ? (
         <Card>
           <p className="text-sm text-white">
-            Aucune suggestion. Ta sélection est déjà équilibrée selon les règles
-            R1-R4.
+            Aucune suggestion : ta sélection est déjà équilibrée.
           </p>
         </Card>
       ) : (

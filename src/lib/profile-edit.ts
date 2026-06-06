@@ -15,6 +15,7 @@
  */
 
 import {
+  GymBrand,
   MuscleObjective,
   MuscleStatus,
   makeMuscleGoal,
@@ -35,6 +36,8 @@ export interface ProfileDraft {
   readonly objective: Objective;
   readonly sessionsPerWeek: number;
   readonly equipment: ReadonlySet<string>;
+  /** Conv #23 — marque salle (libellés exos). Default NONE. */
+  readonly gymBrand: GymBrand;
 }
 
 export interface RankedGoal {
@@ -62,6 +65,7 @@ export function profileDraftFromState(state: UserState): ProfileDraft {
     objective: state.profile.objective,
     sessionsPerWeek: state.profile.sessions_per_week,
     equipment: new Set(state.profile.available_equip),
+    gymBrand: state.profile.gym_brand ?? GymBrand.NONE,
   };
 }
 
@@ -96,6 +100,7 @@ export function buildProfileFromDraft(draft: ProfileDraft): Profile {
     sessions_per_week: draft.sessionsPerWeek,
     bodyweight_kg: draft.bodyweightKg,
     available_equip: draft.equipment,
+    gym_brand: draft.gymBrand,
   });
 }
 

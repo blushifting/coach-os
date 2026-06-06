@@ -12,9 +12,10 @@
  */
 
 import type { Catalog } from '@/engine/catalog';
-import { ChargeType, ExType, Pattern } from '@/engine/models';
+import { ChargeType, ExType, GymBrand, Pattern } from '@/engine/models';
 import type { Exercise } from '@/engine/models';
 import { exercisePrimaires } from '@/engine/models';
+import { BRAND_NAMES } from '@/data/exercise-brand-names';
 import { muscleLabel } from './progress';
 
 // =============================================================================
@@ -101,6 +102,44 @@ export function kgUnitLabel(c: ChargeType | undefined): string {
 export function kgUnitLabelShort(c: ChargeType | undefined): string {
   return c === ChargeType.DUMBBELL ? 'kg/halt' : 'kg';
 }
+
+/**
+ * Conv #23 — libellés FR des marques de salle (UI sélecteur).
+ */
+export const GYM_BRAND_LABEL_FR: Record<string, string> = {
+  none: 'Aucune / Je ne sais pas',
+  technogym: 'Technogym',
+  hammer_strength: 'Hammer Strength',
+  matrix: 'Matrix',
+  life_fitness: 'Life Fitness',
+  cybex: 'Cybex',
+  nautilus: 'Nautilus',
+};
+
+export function gymBrandLabel(b: string | undefined): string {
+  if (b === undefined) return GYM_BRAND_LABEL_FR['none'] ?? 'Aucune';
+  return GYM_BRAND_LABEL_FR[b] ?? b;
+}
+
+/**
+ * Conv #23 — nom affiché d'un exo, modulé par la marque salle de l'user.
+ *
+ * Si une marque est définie et qu'un nom marketing existe pour
+ * `(brand, exercise.id)`, on le retourne ; sinon on tombe sur le nom
+ * générique `nom_fr` du catalogue. Aucun effet pour les exos non-machine
+ * (barre / haltères / poids du corps) : la marque ne change rien à un
+ * squat ou à des pompes.
+ */
+export function displayExerciseName(
+  exercise: Exercise,
+  brand?: GymBrand,
+): string {
+  if (!brand || brand === GymBrand.NONE) return exercise.nom_fr;
+  const brandMap = BRAND_NAMES[brand];
+  if (brandMap === undefined) return exercise.nom_fr;
+  return brandMap[exercise.id] ?? exercise.nom_fr;
+}
+
 export function tagLabel(tag: string): string | null {
   return TAG_LABEL_FR[tag] ?? null;
 }

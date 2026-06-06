@@ -145,6 +145,41 @@ puis copier (cf. `prototype/README.md` pour l'historique).
 
 ---
 
+## 10. Skills et agents projet (`.claude/`)
+
+Deux skills et deux agents sont versionnés dans `.claude/` et chargés
+automatiquement par Claude Code. **À déclencher au moment opportun, sans
+attendre qu'Azur le demande** :
+
+- **Skill `ux-writer-coach-os`** — dès qu'on touche du texte visible par
+  l'utilisateur (libellés, titres, placeholders, infobulles, messages,
+  états vides, microcopy d'onboarding). Vocabulaire verrouillé (e1RM →
+  Plafond, compound → Polyarticulaire, mésocycle → Cycle, déload →
+  Récupération, etc.), ton coach kiné, vulgarisation. **Cœur du chantier
+  M Conv #23 (onboarding).**
+- **Skill `ux-ui-designer`** — dès qu'on crée/refond un écran ou
+  composant, harmonise des couleurs, fait du data-viz, ou audite
+  l'utilisabilité. **DA actuelle = on reste dans le thème anthracite +
+  rouge sombre verrouillé** ; améliorations de finition OK, refonte
+  d'identité visuelle exclue. Demander la direction esthétique précise
+  (intensité, densité, retenue) si non évidente.
+- **Agent `test-runner` (haiku)** — invoque-le en fin de chantier pour
+  lancer Vitest/Playwright et rapporter, plutôt que parser les logs
+  toi-même (économie de contexte / anti-compaction).
+- **Agent `ux-writer` (sonnet)** — invoque-le **proactivement juste après**
+  chaque modif de composant contenant du texte. Il relit, corrige
+  directement dans les fichiers, rend un récap avant→après.
+
+Workflow type pour un écran/composant : ux-ui-designer (skill) pour le
+visuel → ux-writer-coach-os (skill) ou agent ux-writer pour le copy →
+agent test-runner en fin de phase.
+
+Source originale en OneDrive (`…\Coach OS\skills\`, `…\Coach OS\agents\`)
+pour discussion hors-code ; **canon = `.claude/` du repo** (versionné,
+chargé auto, suit le projet). Toute évolution se fait dans `.claude/`.
+
+---
+
 ## État courant — fin Conv #17 (2026-05-23) — V1.7.0
 
 Vague de raffinages UX + refonte de l'onglet Progrès. 12 chantiers livrés

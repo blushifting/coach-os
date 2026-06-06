@@ -184,7 +184,7 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
           onClick={applyPreset}
           data-testid="preset-default"
         >
-          Préset par défaut (full-body)
+          Sélection par défaut (full-body)
         </Button>
         {draft.priorities.length > 0 && (
           <Button

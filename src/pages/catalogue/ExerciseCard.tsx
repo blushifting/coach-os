@@ -1,14 +1,34 @@
-import { exercisePrimaires } from '@/engine/models';
+import { ChargeType, exercisePrimaires } from '@/engine/models';
 import type { Exercise } from '@/engine/models';
 import {
   buildDescription,
   chargeLabel,
+  displayExerciseName,
   extypeLabel,
   kgUnitLabelShort,
 } from '@/lib/catalog-filter';
 import { muscleLabel } from '@/lib/progress';
+import { useGymBrand } from '@/store/selectors';
 import { PatternIcon } from '@/pages/seance/PatternIcon';
+import { ChargeIcon } from './ChargeIcon';
 import { MiniSilhouette } from './MiniSilhouette';
+
+/**
+ * Couleur de fond du chip d'équipement (Conv #23, item P).
+ *
+ * Toutes restent dans la palette anthracite + sang. La distinction est
+ * subtile (intensité du fond + ton du contour) ; le picto reste le
+ * différenciateur principal pour l'accessibilité.
+ */
+const CHARGE_CHIP_STYLE: Record<ChargeType, string> = {
+  [ChargeType.BARBELL]: 'bg-anthracite-700 text-white ring-1 ring-inset ring-anthracite-500',
+  [ChargeType.DUMBBELL]: 'bg-anthracite-700 text-white ring-1 ring-inset ring-anthracite-500',
+  [ChargeType.MACHINE_STACK]: 'bg-anthracite-800 text-anthracite-100 ring-1 ring-inset ring-anthracite-600',
+  [ChargeType.CABLE]: 'bg-anthracite-800 text-anthracite-100 ring-1 ring-inset ring-anthracite-600',
+  [ChargeType.BODYWEIGHT]: 'bg-sang-900/30 text-white ring-1 ring-inset ring-sang-800/60',
+  [ChargeType.BODYWEIGHT_LOADED]: 'bg-sang-900/30 text-white ring-1 ring-inset ring-sang-800/60',
+  [ChargeType.BODYWEIGHT_ASSISTED]: 'bg-sang-900/30 text-white ring-1 ring-inset ring-sang-800/60',
+};
 
 interface ExerciseCardProps {
   readonly exercise: Exercise;
@@ -21,6 +41,8 @@ export function ExerciseCard({ exercise, onClick, e1rm = null }: ExerciseCardPro
   const primaires = exercisePrimaires(exercise);
   const description = buildDescription(exercise);
   const isLengthened = exercise.tags.includes('lengthened_bias');
+  const brand = useGymBrand();
+  const displayName = displayExerciseName(exercise, brand ?? undefined);
 
   return (
     <button
@@ -33,7 +55,7 @@ export function ExerciseCard({ exercise, onClick, e1rm = null }: ExerciseCardPro
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="flex items-start justify-between gap-2">
           <span className="truncate text-sm font-medium text-white">
-            {exercise.nom_fr}
+            {displayName}
           </span>
           <div className="flex shrink-0 items-center gap-1.5">
             {/* Conv #11h — plafond mis en évidence : chip distinct à droite
@@ -58,7 +80,11 @@ export function ExerciseCard({ exercise, onClick, e1rm = null }: ExerciseCardPro
           <span className="rounded bg-anthracite-700 px-1.5 py-0.5 text-[10px] text-white">
             {extypeLabel(exercise.type)}
           </span>
-          <span className="rounded bg-anthracite-700 px-1.5 py-0.5 text-[10px] text-white">
+          <span
+            className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] ${CHARGE_CHIP_STYLE[exercise.charge]}`}
+            data-testid={`card-charge-${exercise.id}`}
+          >
+            <ChargeIcon charge={exercise.charge} size={12} />
             {chargeLabel(exercise.charge)}
           </span>
           {isLengthened && (

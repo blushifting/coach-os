@@ -1,6 +1,8 @@
 import { Sheet } from '@/components/Sheet';
 import { Button } from '@/components/Button';
 import type { Exercise } from '@/engine/models';
+import { displayExerciseName } from '@/lib/catalog-filter';
+import { useGymBrand } from '@/store/selectors';
 
 interface VariantPickerSheetProps {
   readonly open: boolean;
@@ -23,6 +25,7 @@ export function VariantPickerSheet({
   onClose,
   title = 'Changer de variante',
 }: VariantPickerSheetProps) {
+  const brand = useGymBrand() ?? undefined;
   return (
     <Sheet open={open} onClose={onClose} title={title}>
       <div className="mb-3 flex items-center justify-between gap-2">
@@ -60,7 +63,7 @@ export function VariantPickerSheet({
                 data-testid={`variant-option-${alt.id}`}
                 className="w-full rounded-xl border border-anthracite-700 bg-anthracite-800 px-4 py-3 text-left transition hover:border-sang-700 active:scale-[0.99] disabled:opacity-50"
               >
-                <div className="font-medium text-white">{alt.nom_fr}</div>
+                <div className="font-medium text-white">{displayExerciseName(alt, brand)}</div>
                 <div className="mt-0.5 text-xs text-anthracite-300">
                   {alt.equip.length > 0 ? alt.equip.join(', ') : 'Poids du corps'}
                 </div>

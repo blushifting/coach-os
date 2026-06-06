@@ -10,7 +10,8 @@ import type { Catalog } from '@/engine/catalog';
 import { ChargeType, type SessionPlan } from '@/engine/models';
 import { useEngine } from '@/hooks/useEngine';
 import { useCoachOsStore } from '@/store';
-import { useDemoMode } from '@/store/selectors';
+import { useDemoMode, useGymBrand } from '@/store/selectors';
+import { displayExerciseName } from '@/lib/catalog-filter';
 import {
   countDoneSets,
   countPlannedSets,
@@ -68,6 +69,7 @@ export function SessionRunner({
   const navigate = useNavigate();
   const userState = useCoachOsStore((s) => s.userState);
   const demoActive = useDemoMode();
+  const brand = useGymBrand();
   const snapshots = useCoachOsStore((s) => s.history.e1rmSnapshots);
   const [detail, setDetail] = useState<{ exerciseId: string; itemIndex: number } | null>(null);
   const [confirmSkip, setConfirmSkip] = useState(false);
@@ -273,7 +275,7 @@ export function SessionRunner({
                   {ex !== null && <PatternIcon pattern={ex.pattern} size="sm" />}
                   <div className="flex flex-1 flex-col">
                     <span className="text-sm font-semibold text-white">
-                      {ex?.nom_fr ?? item.exercise_id}
+                      {ex ? displayExerciseName(ex, brand ?? undefined) : item.exercise_id}
                     </span>
                     <span className="text-xs text-anthracite-300">
                       <span
@@ -296,7 +298,7 @@ export function SessionRunner({
                   />
                   <button
                     type="button"
-                    aria-label={`Détail ${ex?.nom_fr ?? item.exercise_id}`}
+                    aria-label={`Détail ${ex ? displayExerciseName(ex, brand ?? undefined) : item.exercise_id}`}
                     data-testid={`btn-detail-${i}`}
                     onClick={() => setDetail({ exerciseId: item.exercise_id, itemIndex: i })}
                     className="h-7 w-7 rounded-full bg-anthracite-700 text-xs text-anthracite-300 hover:text-white"
@@ -308,7 +310,7 @@ export function SessionRunner({
                       facile, on protège l'user d'un retrait accidentel. */}
                   <button
                     type="button"
-                    aria-label={`Retirer ${ex?.nom_fr ?? item.exercise_id} de la séance`}
+                    aria-label={`Retirer ${ex ? displayExerciseName(ex, brand ?? undefined) : item.exercise_id} de la séance`}
                     data-testid={`btn-remove-${i}`}
                     disabled={demoActive || finishing}
                     onClick={() => setConfirmRemove(i)}

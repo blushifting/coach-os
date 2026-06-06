@@ -16,7 +16,9 @@ import { E1RMApp, ExType, MUSCLES } from '@/engine/models';
 describe('loadExercises', () => {
   it('charge tous les exos du JSON embarqué', () => {
     const exos = loadExercises();
-    expect(exos.length).toBeGreaterThanOrEqual(135);
+    // Conv #23 — 10 exos retirés du catalogue (variantes/niches sans
+    // photo dispo), passé de 141 à 131.
+    expect(exos.length).toBeGreaterThanOrEqual(130);
   });
 
   it('chaque exo a un ID non vide', () => {

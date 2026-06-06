@@ -87,7 +87,7 @@ export const HELP_GLOSSARY: Readonly<Record<HelpTopic, HelpEntry>> = {
   },
   hypertrophie: {
     title: 'Hypertrophie',
-    body: 'Augmenter la taille du muscle. Reps 6-15, RPE 7-9, volume élevé. À ne pas confondre avec le « volume hebdo » qui est juste le nombre de séries/sem.',
+    body: 'Augmenter la taille du muscle. Reps 6-15, Effort 7-9, volume élevé. À ne pas confondre avec le « volume hebdo » qui est juste le nombre de séries/sem.',
   },
   vsSem1: {
     title: 'vs sem1',

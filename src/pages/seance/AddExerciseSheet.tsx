@@ -17,6 +17,8 @@ import { Sheet } from '@/components/Sheet';
 import type { Catalog } from '@/engine/catalog';
 import type { Exercise } from '@/engine/models';
 import { useEngine } from '@/hooks/useEngine';
+import { displayExerciseName } from '@/lib/catalog-filter';
+import { useGymBrand } from '@/store/selectors';
 import { cn } from '@/lib/cn';
 
 /** Normalisation simple (lowercase + retire accents) pour le search inline. */
@@ -48,6 +50,7 @@ export function AddExerciseSheet({
   onAdded,
 }: AddExerciseSheetProps) {
   const engine = useEngine();
+  const brand = useGymBrand() ?? undefined;
   const [query, setQuery] = useState('');
   const [picked, setPicked] = useState<Exercise | null>(null);
   const [nSets, setNSets] = useState(DEFAULT_SETS);
@@ -136,7 +139,7 @@ export function AddExerciseSheet({
                         )}
                       >
                         <div className="flex items-center justify-between gap-2">
-                          <span className="truncate">{ex.nom_fr}</span>
+                          <span className="truncate">{displayExerciseName(ex, brand)}</span>
                           {already ? (
                             <span className="shrink-0 text-[10px] uppercase tracking-wide text-anthracite-400">
                               déjà dans la séance
@@ -153,7 +156,7 @@ export function AddExerciseSheet({
         ) : (
           <div className="flex flex-col gap-3">
             <div data-testid="add-exo-preview" className="rounded-lg border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-sm">
-              <div className="font-semibold text-white">{picked.nom_fr}</div>
+              <div className="font-semibold text-white">{displayExerciseName(picked, brand)}</div>
               <div className="mt-1 text-xs text-anthracite-300">
                 Pattern {picked.pattern} · {picked.charge} ·{' '}
                 {picked.type === 'compound' ? 'polyarticulaire' : 'isolation'}

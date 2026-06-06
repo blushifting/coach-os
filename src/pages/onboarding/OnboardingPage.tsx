@@ -169,7 +169,7 @@ export default function OnboardingPage() {
           const template = generateCyclePlanV2(seeded, tmpState, catalog);
           return { template, blocking: [] };
         } catch (e) {
-          const msg = e instanceof Error ? e.message : 'Erreur preview';
+          const msg = e instanceof Error ? e.message : 'Impossible de générer l\'aperçu.';
           return { template: null, blocking: [msg] };
         }
       }
@@ -177,7 +177,7 @@ export default function OnboardingPage() {
         const template = generateCyclePlanV2(filled, tmpState, catalog);
         return { template, blocking: [] };
       } catch (e) {
-        const msg = e instanceof Error ? e.message : 'Erreur preview';
+        const msg = e instanceof Error ? e.message : 'Impossible de générer l\'aperçu.';
         return { template: null, blocking: [msg] };
       }
     }
@@ -194,7 +194,7 @@ export default function OnboardingPage() {
       const muscleGoals = buildMuscleGoals(draft, suggestions);
       return buildPreviewTemplate(profile, muscleGoals, draft.programmeId, catalog);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Erreur preview';
+      const msg = e instanceof Error ? e.message : 'Impossible de générer l\'aperçu.';
       return { template: null, blocking: [msg] };
     }
   }, [step, isCustom, skeleton, tmpState, draft, catalog, userState]);
@@ -370,7 +370,7 @@ export default function OnboardingPage() {
         /* LS indispo */
       }
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Erreur inattendue';
+      const msg = e instanceof Error ? e.message : 'Quelque chose s\'est mal passé. Réessaie.';
       setError(msg);
       setSubmitting(false);
     }
@@ -493,8 +493,8 @@ export default function OnboardingPage() {
                   ? 'Redémarrage…'
                   : 'Création…'
                 : isRestart
-                  ? 'Démarrer le nouveau cycle'
-                  : 'Valider et continuer'}
+                  ? 'Démarrer le nouveau Cycle'
+                  : 'Démarrer mon programme'}
             </Button>
           ) : (
             <Button

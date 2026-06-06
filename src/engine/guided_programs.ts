@@ -81,7 +81,7 @@ export const STARTING_STRENGTH: GuidedProgram = Object.freeze({
         }),
         ce({
           role: 'main_press', preferred_id: 'bench_bb',
-          fallback_subst: ['bench_bb_paused'],
+          fallback_subst: [],
           sets: 3, reps_scheme: '3x5',
           intensity_scheme: 'linear_+2.5kg', is_replaceable: false,
         }),
@@ -127,7 +127,7 @@ export const STARTING_STRENGTH: GuidedProgram = Object.freeze({
         }),
         ce({
           role: 'main_press', preferred_id: 'bench_bb',
-          fallback_subst: ['bench_bb_paused'],
+          fallback_subst: [],
           sets: 3, reps_scheme: '3x5',
           intensity_scheme: 'linear_+2.5kg', is_replaceable: false,
         }),
@@ -141,6 +141,18 @@ export const STARTING_STRENGTH: GuidedProgram = Object.freeze({
     },
   ]),
   notes: 'Progression linéaire +2.5 kg/séance sur les compounds, +5 kg sur deadlift.',
+  short_pitch:
+    'Pour bâtir une base de Force solide quand tu démarres la muscu.',
+  pour: [
+    'Tu débutes et tu veux poser des bases solides sur les gros mouvements.',
+    'Tu préfères 3 séances simples plutôt qu\'un emploi du temps chargé.',
+    'Tu acceptes que ça soit surtout barre, squat et soulevé de terre.',
+  ],
+  contre: [
+    'Tu vises l\'Hypertrophie : il y a peu de Volume hebdo et presque pas de bras.',
+    'Tu n\'as pas accès à une barre olympique et un rack.',
+    'Tu as déjà 6-12 mois de muscu : la progression linéaire va vite s\'épuiser.',
+  ],
 });
 
 // =============================================================================
@@ -163,7 +175,7 @@ export const GREYSKULL_LP: GuidedProgram = Object.freeze({
       canonical_exercises: Object.freeze([
         ce({
           role: 'main_press', preferred_id: 'bench_bb',
-          fallback_subst: ['bench_bb_paused'],
+          fallback_subst: [],
           sets: 3, reps_scheme: '2x5+1xAMRAP',
           intensity_scheme: 'linear_+2.5kg', is_replaceable: false,
         }),
@@ -208,7 +220,7 @@ export const GREYSKULL_LP: GuidedProgram = Object.freeze({
       canonical_exercises: Object.freeze([
         ce({
           role: 'main_press', preferred_id: 'bench_bb',
-          fallback_subst: ['bench_bb_paused'],
+          fallback_subst: [],
           sets: 3, reps_scheme: '2x5+1xAMRAP',
           intensity_scheme: 'linear_+2.5kg', is_replaceable: false,
         }),
@@ -222,6 +234,17 @@ export const GREYSKULL_LP: GuidedProgram = Object.freeze({
     },
   ]),
   notes: 'Dernier set en AMRAP (As Many Reps As Possible). Si AMRAP > 10, +5 kg sem suiv.',
+  short_pitch:
+    'Une base de Force qui garde un peu d\'Hypertrophie pour les bras.',
+  pour: [
+    'Tu veux progresser en Force sans complètement négliger les bras.',
+    'Tu sors d\'un Starting Strength et tu cherches un peu plus complet.',
+    'Tu aimes les séances variables : la dernière série monte au maximum de reps possibles.',
+  ],
+  contre: [
+    'Tu cherches un programme purement Hypertrophie avec beaucoup d\'isolation.',
+    'Tu n\'as pas accès à une salle équipée (barre, rack, banc).',
+  ],
 });
 
 // =============================================================================
@@ -244,12 +267,12 @@ export const UL_HELMS: GuidedProgram = Object.freeze({
       canonical_exercises: Object.freeze([
         ce({
           role: 'main_press', preferred_id: 'bench_bb',
-          fallback_subst: ['bench_bb_paused', 'chest_press_machine'],
+          fallback_subst: ['chest_press_machine'],
           sets: 4, reps_scheme: '4x5', intensity_scheme: 'RPE_8',
         }),
         ce({
           role: 'main_pull_h', preferred_id: 'bb_row',
-          fallback_subst: ['pendlay_row', 'chest_supported_db_row', 'seated_row'],
+          fallback_subst: ['chest_supported_db_row', 'seated_row'],
           sets: 4, reps_scheme: '4x5', intensity_scheme: 'RPE_8',
         }),
         ce({
@@ -309,13 +332,24 @@ export const UL_HELMS: GuidedProgram = Object.freeze({
         }),
         ce({
           role: 'accessory_hams', preferred_id: 'leg_curl_lying',
-          fallback_subst: ['leg_curl_seated', 'nordic_curl'],
+          fallback_subst: ['leg_curl_seated'],
           sets: 4, reps_scheme: '4x12', intensity_scheme: 'RPE_9', is_replaceable: true,
         }),
       ]),
     },
   ]),
   notes: 'Force en début de semaine, hypertrophie en fin. RPE-based. Cycle 4+1 (déload sem 5).',
+  short_pitch:
+    'Pour prendre du muscle quand tu peux venir 4 fois par semaine.',
+  pour: [
+    'Tu vises l\'Hypertrophie comme objectif principal.',
+    'Tu peux tenir 4 séances par semaine régulièrement.',
+    'Tu veux un partage haut / bas du corps équilibré, sans surmener le même muscle plusieurs jours d\'affilée.',
+  ],
+  contre: [
+    'Tu ne peux faire que 2 ou 3 séances par semaine.',
+    'Tu vises surtout la Force pure sur le squat / développé / soulevé : préfère Starting Strength ou 5/3/1.',
+  ],
 });
 
 // =============================================================================
@@ -370,7 +404,7 @@ export const WENDLER_531_BBB: GuidedProgram = Object.freeze({
       canonical_exercises: Object.freeze([
         ce({
           role: 'main_bench', preferred_id: 'bench_bb',
-          fallback_subst: ['bench_bb_paused'],
+          fallback_subst: [],
           sets: 3, reps_scheme: '5/3/1+',
           intensity_scheme: 'TM*0.65/0.75/0.85', is_replaceable: false,
         }),
@@ -399,6 +433,17 @@ export const WENDLER_531_BBB: GuidedProgram = Object.freeze({
     },
   ]),
   notes: 'TM = Training Max = 90% du 1RM réel. Ondulations 5/3/1, BBB = volume @ 50% TM.',
+  short_pitch:
+    'Pour gagner en Force lentement mais sûrement, avec un peu d\'Hypertrophie en accessoire.',
+  pour: [
+    'Tu as déjà 1 ou 2 ans de muscu et la progression linéaire s\'épuise.',
+    'Tu acceptes des Cycles de 4 semaines avec des charges calculées depuis ton Plafond.',
+    'Tu cherches une approche éprouvée sur le long terme, qui dure des années.',
+  ],
+  contre: [
+    'Tu débutes : les pourcentages et la planification sur 4 semaines seront trop abstraits.',
+    'Tu vises surtout l\'Hypertrophie : préfère Upper / Lower Helms ou PPL Nippard.',
+  ],
 });
 
 // =============================================================================
@@ -421,7 +466,7 @@ export const PPL_NIPPARD: GuidedProgram = Object.freeze({
       canonical_exercises: Object.freeze([
         ce({
           role: 'main_bench', preferred_id: 'bench_bb',
-          fallback_subst: ['bench_bb_paused', 'chest_press_machine'],
+          fallback_subst: ['chest_press_machine'],
           sets: 4, reps_scheme: '4x6-8', intensity_scheme: 'RPE_8',
         }),
         ce({
@@ -469,7 +514,7 @@ export const PPL_NIPPARD: GuidedProgram = Object.freeze({
         }),
         ce({
           role: 'hams', preferred_id: 'leg_curl_lying',
-          fallback_subst: ['leg_curl_seated', 'nordic_curl'],
+          fallback_subst: ['leg_curl_seated'],
           sets: 4, reps_scheme: '4x10-12', intensity_scheme: 'RPE_9', is_replaceable: true,
         }),
         ce({
@@ -534,6 +579,18 @@ export const PPL_NIPPARD: GuidedProgram = Object.freeze({
     },
   ]),
   notes: '6 jours, focus hypertrophie. Reps fourchettes, RPE 8-9 sur les accessoires.',
+  short_pitch:
+    'Pousser / tirer / jambes, 6 jours, pour prendre du muscle quand tu viens souvent.',
+  pour: [
+    'Tu peux venir 5 ou 6 fois par semaine de façon stable.',
+    'Tu vises l\'Hypertrophie maximale, muscle par muscle.',
+    'Tu veux un Volume hebdo élevé et bien réparti, sans tout faire en 4 séances.',
+  ],
+  contre: [
+    'Tu ne peux pas tenir 6 séances par semaine : 3 ou 4 suffisent largement, prends Upper / Lower Helms.',
+    'Tu débutes : le Volume hebdo sera trop élevé à digérer dès le départ.',
+    'Tu veux progresser en Force pure : préfère 5/3/1 BBB.',
+  ],
 });
 
 // =============================================================================

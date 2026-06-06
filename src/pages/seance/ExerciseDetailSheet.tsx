@@ -18,7 +18,11 @@ import { formatRest } from '@/lib/session-runner';
 import { useCoachOsStore } from '@/store';
 import { useDemoMode } from '@/store/selectors';
 import { PatternIcon } from './PatternIcon';
+import { ChargeIcon } from '@/pages/catalogue/ChargeIcon';
+import { ExercisePhoto } from '@/pages/catalogue/ExercisePhoto';
 import { VariantPickerSheet } from '@/components/VariantPickerSheet';
+import { displayExerciseName } from '@/lib/catalog-filter';
+import { useGymBrand } from '@/store/selectors';
 
 interface ExerciseDetailSheetProps {
   readonly open: boolean;
@@ -99,9 +103,12 @@ export function ExerciseDetailSheet({
     }
   }
 
+  const brand = useGymBrand();
+  const displayName = displayExerciseName(exercise, brand ?? undefined);
+
   return (
     <>
-      <Sheet open={open} onClose={onClose} title={exercise.nom_fr}>
+      <Sheet open={open} onClose={onClose} title={displayName}>
         <div className="flex flex-col gap-4" data-testid="exercise-detail-content">
           <div className="flex justify-center">
             <AnatomicalSilhouette
@@ -112,6 +119,8 @@ export function ExerciseDetailSheet({
             />
           </div>
 
+          <ExercisePhoto exerciseId={exercise.id} />
+
           <div className="flex flex-wrap items-center justify-center gap-2">
             <PatternIcon pattern={exercise.pattern} size="sm" />
             <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
@@ -120,7 +129,8 @@ export function ExerciseDetailSheet({
             <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
               {patternLabel(exercise.pattern)}
             </span>
-            <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
+            <span className="flex items-center gap-1 rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
+              <ChargeIcon charge={exercise.charge} size={13} />
               {chargeLabel(exercise.charge)}
             </span>
           </div>

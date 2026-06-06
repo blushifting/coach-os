@@ -14,6 +14,7 @@
 import {
   DurationCategory,
   EquipmentPreference,
+  GymBrand,
   Level,
   MuscleObjective,
   MuscleStatus,
@@ -64,6 +65,11 @@ export interface OnboardingDraft {
    */
   readonly equipmentPreference: EquipmentPreference;
   /**
+   * Conv #23 — Marque dominante de la salle. Affecte uniquement les
+   * intitulés affichés des exos machine. Default : NONE.
+   */
+  readonly gymBrand: GymBrand;
+  /**
    * Conv #22 — exos choisis par l'user lorsqu'il swap dans le récap final.
    * Clé = `${dayIdx}:${cellIdx}`, valeur = `exercise_id`. Vide tant que
    * l'user n'a pas modifié les exos auto-pickés. En mode guidé : non utilisé.
@@ -111,6 +117,7 @@ export function makeInitialDraft(): OnboardingDraft {
     programmeId: null,
     durationCategory: DurationCategory.MEDIUM,
     equipmentPreference: EquipmentPreference.NO_PREFERENCE,
+    gymBrand: GymBrand.NONE,
     chosenVariantsPerCell: {},
   };
 }
@@ -150,6 +157,7 @@ export function draftFromUserState(state: UserState): OnboardingDraft {
       state.profile.duration_category ?? DurationCategory.MEDIUM,
     equipmentPreference:
       state.profile.equipment_preference ?? EquipmentPreference.NO_PREFERENCE,
+    gymBrand: state.profile.gym_brand ?? GymBrand.NONE,
     chosenVariantsPerCell: {},
   };
 }
@@ -238,6 +246,7 @@ export function buildProfile(
     available_equip: draft.equipment,
     duration_category: draft.durationCategory,
     equipment_preference: draft.equipmentPreference,
+    gym_brand: draft.gymBrand,
   });
 }
 

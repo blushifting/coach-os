@@ -10,10 +10,11 @@
  * `sessions_per_week` est en Step4 (Conv #18).
  */
 
-import { Sex } from '@/engine/models';
+import { GymBrand, Sex } from '@/engine/models';
 import { Card } from '@/components/Card';
 import { Stepper } from '@/components/Stepper';
 import { cn } from '@/lib/cn';
+import { GYM_BRAND_LABEL_FR } from '@/lib/catalog-filter';
 import type { OnboardingDraft } from '@/lib/onboarding-state';
 
 interface Step1Props {
@@ -90,6 +91,35 @@ export function Step1Profile({ draft, onChange }: Step1Props) {
           max={200}
           suffix=" kg"
         />
+      </Card>
+
+      <Card>
+        <div className="mb-1 text-sm font-medium text-white">
+          Tes machines
+        </div>
+        <p className="mb-3 text-xs leading-relaxed text-anthracite-300">
+          Si tu connais la marque des machines que tu utilises, indique-la
+          ici. Les noms des exos sur machine s'afficheront alors avec leur
+          libellé commercial — celui que tu vois étiqueté sur la machine.
+          Tu peux changer plus tard. Aucune incidence sur les exos
+          prescrits ni sur l'algo.
+        </p>
+        <label className="sr-only" htmlFor="onboarding-gym-brand">
+          Marque des machines
+        </label>
+        <select
+          id="onboarding-gym-brand"
+          data-testid="onboarding-gym-brand-select"
+          value={draft.gymBrand}
+          onChange={(e) => onChange({ gymBrand: e.target.value as GymBrand })}
+          className="w-full rounded-xl border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-sm text-white focus:border-sang-600 focus:outline-none"
+        >
+          {Object.entries(GYM_BRAND_LABEL_FR).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
       </Card>
     </div>
   );

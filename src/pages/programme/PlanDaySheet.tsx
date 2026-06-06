@@ -24,7 +24,8 @@ import type {
   SetFeedback,
   WeeklyTemplate,
 } from '@/engine/models';
-import { kgUnitLabelShort } from '@/lib/catalog-filter';
+import { displayExerciseName, kgUnitLabelShort } from '@/lib/catalog-filter';
+import { useGymBrand } from '@/store/selectors';
 import { estimateDayDurationMinutes } from '@/lib/onboarding-preview';
 
 interface PlanDaySheetProps {
@@ -328,6 +329,7 @@ function PlannedSessionBlock({
   readonly onCancel: () => void;
 }) {
   const plan: SessionPlan = session.plan;
+  const brand = useGymBrand();
   return (
     <div className="flex flex-col gap-3" data-testid="day-status-text">
       <p className="text-sm text-anthracite-100">
@@ -350,7 +352,7 @@ function PlannedSessionBlock({
             // absent). Cohérent avec l'affichage "séance faite" en dessous.
             const name =
               catalog !== null && catalog.has(item.exercise_id)
-                ? catalog.get(item.exercise_id).nom_fr
+                ? displayExerciseName(catalog.get(item.exercise_id), brand ?? undefined)
                 : item.exercise_id;
             return (
               <li
@@ -728,6 +730,7 @@ function CompletedSessionBlock({
   }
   const rollups = rollupByExercise(feedback.sets);
   const volume = totalVolumeKg(feedback.sets);
+  const brand = useGymBrand();
   return (
     <div className="flex flex-col gap-3" data-testid="day-status-text">
       <p className="text-sm text-anthracite-100">
@@ -744,7 +747,7 @@ function CompletedSessionBlock({
               const ex = catalog !== null && catalog.has(r.exerciseId)
                 ? catalog.get(r.exerciseId)
                 : null;
-              const name = ex !== null ? ex.nom_fr : r.exerciseId;
+              const name = ex !== null ? displayExerciseName(ex, brand ?? undefined) : r.exerciseId;
               const repsPerSet = Math.round(r.repsTotal / r.setsDone);
               // Conv #20 — kg/halt pour les exos DUMBBELL (load_kg stocké
               // est en per-haltère par convention catalogue).

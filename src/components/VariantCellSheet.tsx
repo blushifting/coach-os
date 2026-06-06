@@ -24,6 +24,8 @@ import {
 import { Sheet } from './Sheet';
 import { Button } from './Button';
 import { cn } from '@/lib/cn';
+import { displayExerciseName } from '@/lib/catalog-filter';
+import { useGymBrand } from '@/store/selectors';
 
 interface VariantCellSheetProps {
   readonly open: boolean;
@@ -195,6 +197,7 @@ interface VariantRowProps {
 }
 
 function VariantRow({ exercise, isFavorite, onChoose }: VariantRowProps) {
+  const brand = useGymBrand() ?? undefined;
   const isCompound = exercise.type === ExType.COMPOUND;
   return (
     <li>
@@ -211,7 +214,7 @@ function VariantRow({ exercise, isFavorite, onChoose }: VariantRowProps) {
       >
         <div className="flex items-center gap-2">
           <span className="flex-1 text-sm font-medium text-white">
-            {exercise.nom_fr}
+            {displayExerciseName(exercise, brand)}
           </span>
           {isFavorite && (
             <span className="rounded-full bg-sang-900/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-sang-300">

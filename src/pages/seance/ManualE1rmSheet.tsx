@@ -15,6 +15,8 @@ import { Sheet } from '@/components/Sheet';
 import { Button } from '@/components/Button';
 import { useEngine } from '@/hooks/useEngine';
 import { ChargeType, type Exercise } from '@/engine/models';
+import { displayExerciseName } from '@/lib/catalog-filter';
+import { useGymBrand } from '@/store/selectors';
 
 interface ManualE1rmSheetProps {
   readonly open: boolean;
@@ -45,6 +47,8 @@ export function ManualE1rmSheet({
   onClose,
 }: ManualE1rmSheetProps) {
   const engine = useEngine();
+  const brand = useGymBrand() ?? undefined;
+  const displayName = displayExerciseName(exercise, brand);
   const [raw, setRaw] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,7 +85,7 @@ export function ManualE1rmSheet({
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title={`Plafond — ${exercise.nom_fr}`}>
+    <Sheet open={open} onClose={onClose} title={`Plafond — ${displayName}`}>
       <p className="mb-3 text-sm leading-relaxed text-anthracite-200">
         Saisis la charge maximale que tu peux soulever sur 1 rep propre. L'app
         l'utilisera pour caler tes séries de travail — tu pourras toujours
