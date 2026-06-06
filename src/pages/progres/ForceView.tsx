@@ -35,8 +35,8 @@ export function ForceView({ series }: ForceViewProps) {
     return (
       <Card data-testid="force-empty">
         <p className="text-sm text-anthracite-300">
-          Pas encore assez de données. Termine 2 séances avec un même exo
-          pour voir ta courbe de plafond.
+          Pas encore assez de données. Termine 2 séances avec un même exercice
+          pour voir ta courbe de Plafond.
         </p>
       </Card>
     );
@@ -45,8 +45,8 @@ export function ForceView({ series }: ForceViewProps) {
   return (
     <div className="flex flex-col gap-3" data-testid="force-view">
       <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-anthracite-300">
-        Plafond par exo
-        <HelpButton topic="plafond" label="Aide : plafond" />
+        Plafond par exercice
+        <HelpButton topic="plafond" label="Aide : Plafond" />
       </div>
       {series.map((s) => (
         <Card
@@ -173,7 +173,7 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
       className="w-full"
       style={{ height: H }}
       role="img"
-      aria-label="Courbe de progression du plafond"
+      aria-label="Courbe de progression du Plafond"
       data-testid={testId}
     >
       {/* Axe Y : labels kg + ticks horizontaux discrets. */}

@@ -131,8 +131,8 @@ export function Step5Preview({
           </ul>
         </Card>
         <p className="text-xs text-anthracite-300">
-          Reviens à l'étape précédente pour choisir un programme custom ou un
-          autre programme guidé.
+          Reviens à l'étape précédente pour choisir un programme sur mesure ou
+          un autre programme guidé.
         </p>
       </div>
     );
@@ -176,7 +176,7 @@ export function Step5Preview({
           Ton programme
         </h1>
         <p className="text-sm leading-relaxed text-anthracite-300">
-          Voici les séances générées d'après tes choix. Touche un exo pour
+          Voici les séances générées d'après tes choix. Touche un exercice pour
           le remplacer par une variante. Tu pourras toujours modifier
           ponctuellement pendant une séance.
         </p>
@@ -200,7 +200,7 @@ export function Step5Preview({
                 className="text-[11px] text-anthracite-300"
                 data-testid={`day-duration-${di}`}
               >
-                {day.exercises.length} exos · {nSets} séries · ~{Math.round(dayMin)} min
+                {day.exercises.length} exercices · {nSets} séries · ~{Math.round(dayMin)} min
               </span>
             </header>
             {day.target_muscles_focus.length > 0 && (
@@ -293,8 +293,8 @@ export function Step5Preview({
                         <span className="font-medium">
                           {delta.lost.map(muscleLabel).join(', ')}
                         </span>
-                        . Tu peux ajuster un autre exo sur ce muscle si tu veux
-                        compenser.
+                        . Tu peux ajuster un autre exercice sur ce muscle si tu
+                        veux compenser.
                       </div>
                     )}
                   </li>
@@ -444,7 +444,7 @@ function PedagogyPanel({
             Chaque séance cible plusieurs muscles avec un nombre de séries
             calculé pour rester dans une zone de progression efficace : ni
             trop peu, ni trop. À chaque série, tu notes ton Effort perçu
-            (de 6 à 10) et l'app ajuste les charges et le Volume hebdo pour
+            (de 6 à 10) et Kotsh ajuste les charges et le Volume hebdo pour
             la suite.
           </p>
           <p>
@@ -455,8 +455,8 @@ function PedagogyPanel({
             progresse.
           </p>
           <p>
-            Tu peux à tout moment remplacer un exo pendant une séance — par
-            exemple si la machine est prise. L'app reporte ce qui n'a pas
+            Tu peux à tout moment remplacer un exercice pendant une séance — par
+            exemple si la machine est prise. Kotsh reporte ce qui n'a pas
             été fait sur les autres séances de la semaine quand c'est
             possible.
           </p>

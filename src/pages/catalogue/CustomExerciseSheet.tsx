@@ -234,10 +234,10 @@ export function CustomExerciseSheet({
   if (!open) return null;
 
   return (
-    <Sheet open={open} onClose={close} title="Créer un exercice custom">
+    <Sheet open={open} onClose={close} title="Créer un exercice">
       <div className="max-h-[80dvh] overflow-y-auto pr-1">
         <div className="flex flex-col gap-4">
-          <Field label="Nom de l'exo *" error={errorsByField['nom_fr']}>
+          <Field label="Nom de l'exercice *" error={errorsByField['nom_fr']}>
             <input
               data-testid="custom-name"
               type="text"
@@ -267,7 +267,7 @@ export function CustomExerciseSheet({
             </select>
           </Field>
 
-          <Field label="Pattern de mouvement *" error={errorsByField['pattern']}>
+          <Field label="Type de mouvement *" error={errorsByField['pattern']}>
             <select
               data-testid="custom-pattern"
               value={draft.pattern}
@@ -376,7 +376,7 @@ export function CustomExerciseSheet({
 
           <Field
             label="Équipement requis"
-            help="Coche tout ce que l'exo demande à ta salle. Laisse tout décoché pour bodyweight pur. Tu peux ajouter des équipements inconnus dans le champ 'Autre' (séparés par virgule)."
+            help="Coche tout ce que l'exercice demande à ta salle. Laisse tout décoché pour un exercice au poids du corps. Tu peux ajouter des équipements inconnus dans le champ 'Autre' (séparés par virgule)."
           >
             <div className="flex max-h-44 flex-wrap gap-1 overflow-y-auto rounded-lg border border-anthracite-700 bg-anthracite-900/50 p-2">
               {KNOWN_EQUIP.map((e) => {
@@ -434,7 +434,7 @@ export function CustomExerciseSheet({
               <p className="mt-1 text-xs text-amber-300/80">
                 {confirmDuplicate.kind === 'exact-name'
                   ? 'Le nom est déjà pris. Change le nom pour pouvoir créer.'
-                  : 'Même pattern + charge + muscles primaires. Si tu as une vraie variation (tempo, pause, prise), continue. Sinon utilise l\'exo existant.'}
+                  : 'Même mouvement, même charge, mêmes muscles. Si tu as une vraie variation (tempo, pause, prise), continue. Sinon utilise l\'exercice existant.'}
               </p>
             </div>
           ) : null}
@@ -462,7 +462,7 @@ export function CustomExerciseSheet({
               {confirmDuplicate !== null &&
               confirmDuplicate.kind === 'similar-profile'
                 ? 'Créer quand même'
-                : 'Créer cet exo'}
+                : 'Créer cet exercice'}
             </Button>
           </div>
         </div>

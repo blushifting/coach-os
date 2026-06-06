@@ -56,8 +56,8 @@ export function Step4Program({ draft, onChange }: Step4Props) {
         <div className="space-y-2 text-sm leading-relaxed text-anthracite-300">
           <p>
             Tu peux <strong className="text-white">construire ton programme</strong>{' '}
-            avec l'app (custom) ou prendre un <strong className="text-white">programme tout fait</strong>{' '}
-            d'un coach reconnu. Dans les deux cas, l'app suit tes performances
+            avec Kotsh (sur mesure) ou prendre un <strong className="text-white">programme tout fait</strong>{' '}
+            d'un coach reconnu. Dans les deux cas, Kotsh suit tes performances
             séance après séance et ajuste les charges.
           </p>
         </div>
@@ -91,7 +91,7 @@ export function Step4Program({ draft, onChange }: Step4Props) {
           Tes préférences d'équipement
         </div>
         <p className="mb-3 text-[12px] leading-relaxed text-anthracite-300">
-          On choisit tes exos à ta place pour démarrer. Tu pourras tout
+          On choisit tes exercices à ta place pour démarrer. Tu pourras tout
           modifier au récap final.{' '}
           <strong className="text-anthracite-100">Machines guidées</strong> =
           plus accessible (trajectoire fixe, idéal débutants).{' '}
@@ -114,7 +114,7 @@ export function Step4Program({ draft, onChange }: Step4Props) {
             {
               v: EquipmentPreference.NO_PREFERENCE,
               label: 'Aucune préférence',
-              sub: 'L\'app choisit la convention salle (compounds en libre, isolations en machine)',
+              sub: 'Kotsh choisit la convention salle (polyarticulaires en libre, isolations en machine)',
             },
           ].map((opt) => {
             const selected = draft.equipmentPreference === opt.v;
@@ -147,16 +147,16 @@ export function Step4Program({ draft, onChange }: Step4Props) {
           Combien de temps maximum par séance ?
         </div>
         <p className="mb-3 text-[12px] leading-relaxed text-anthracite-300">
-          C'est ta <strong className="text-white">limite haute</strong> : l'app
+          C'est ta <strong className="text-white">limite haute</strong> : Kotsh
           dimensionne ton programme en dessous, selon tes priorités. Si tes
           prios tiennent en moins de temps, tes séances seront plus courtes
-          que ta limite — l'app te le dira.
+          que ta limite — Kotsh te le dira.
         </p>
         <div className="grid grid-cols-3 gap-2">
           {[
-            { v: DurationCategory.SHORT, label: '≤ 1h', sub: '~4 exos max' },
-            { v: DurationCategory.MEDIUM, label: '≤ 1h30', sub: '~6 exos max' },
-            { v: DurationCategory.LONG, label: '≤ 2h', sub: '~8 exos max' },
+            { v: DurationCategory.SHORT, label: '≤ 1h', sub: '~4 exercices max' },
+            { v: DurationCategory.MEDIUM, label: '≤ 1h30', sub: '~6 exercices max' },
+            { v: DurationCategory.LONG, label: '≤ 2h', sub: '~8 exercices max' },
           ].map((opt) => {
             const selected = draft.durationCategory === opt.v;
             return (
@@ -184,7 +184,7 @@ export function Step4Program({ draft, onChange }: Step4Props) {
 
       <ProgramRow
         id={null}
-        title="Programme custom"
+        title="Programme sur mesure"
         subtitle="Généré à partir de tes muscles cibles + objectifs"
         meta={`${draft.sessionsPerWeek} séances / sem`}
         selected={draft.programmeId === null}

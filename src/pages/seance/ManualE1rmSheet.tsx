@@ -78,7 +78,11 @@ export function ManualE1rmSheet({
       });
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur inattendue');
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Impossible d'enregistrer. Réessaie dans un instant.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -94,8 +98,8 @@ export function ManualE1rmSheet({
 
       {isBwPure ? (
         <div className="mb-4 rounded-lg border border-anthracite-700 bg-anthracite-900 px-3 py-3 text-sm text-anthracite-200">
-          Cet exo est au poids du corps : ton plafond est ton bodyweight
-          ({bodyweightKg.toFixed(1)} kg). Pas de saisie supplémentaire.
+          Cet exercice est au poids du corps : ton Plafond est ton poids de
+          corps ({bodyweightKg.toFixed(1)} kg). Pas de saisie supplémentaire.
         </div>
       ) : (
         <div className="mb-4 flex flex-col gap-1.5">

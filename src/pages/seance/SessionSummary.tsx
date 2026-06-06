@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { Concept } from '@/components/Concept';
 import type { Catalog } from '@/engine/catalog';
 import { displayExerciseName, kgUnitLabel } from '@/lib/catalog-filter';
 import { useGymBrand } from '@/store/selectors';
@@ -26,10 +27,10 @@ export function SessionSummary({ label, data, catalog, onClose }: SessionSummary
       <Card>
         <div className="flex flex-col gap-1">
           <span className="text-xs uppercase tracking-wide text-anthracite-300">
-            Séance terminée — {label}
+            Bilan — {label}
           </span>
           <span className="text-lg font-semibold text-white">
-            Bon boulot.
+            Séance bouclée.
           </span>
         </div>
       </Card>
@@ -40,7 +41,7 @@ export function SessionSummary({ label, data, catalog, onClose }: SessionSummary
           value={`${Math.round(data.volumeKgToday).toLocaleString('fr-FR')} kg`}
         />
         <Metric
-          label="vs sem dernière"
+          label="vs semaine dernière"
           value={
             data.volumeDeltaPct === null
               ? '—'
@@ -58,11 +59,12 @@ export function SessionSummary({ label, data, catalog, onClose }: SessionSummary
 
       <Card data-testid="summary-plafonds" className="flex flex-col gap-2">
         <h3 className="text-sm font-semibold text-white">
-          Évolution des plafonds
+          Évolution des <Concept topic="plafond">Plafonds</Concept>
         </h3>
         {data.plafondChanges.length === 0 ? (
           <p className="text-xs text-anthracite-300">
-            Pas de série fiable cette séance — aucun plafond mis à jour.
+            Aucune série assez intense cette séance pour mettre à jour tes
+            Plafonds.
           </p>
         ) : (
           <ul className="flex flex-col gap-1">

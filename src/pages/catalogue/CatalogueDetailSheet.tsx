@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Sheet } from '@/components/Sheet';
 import { Button } from '@/components/Button';
+import { Concept } from '@/components/Concept';
 import { Dialog } from '@/components/Dialog';
 import { AnatomicalSilhouette, type SilhouetteStatus } from '@/components/AnatomicalSilhouette';
 import { exercisePrimaires, exerciseSynergistes } from '@/engine/models';
@@ -124,7 +125,7 @@ export function CatalogueDetailSheet({
             className="flex items-baseline justify-between rounded-xl border border-sang-700/40 bg-sang-900/25 px-3 py-2"
           >
             <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-sang-300">
-              Ton plafond
+              Ton <Concept topic="plafond">Plafond</Concept>
             </span>
             <span className="font-display text-xl tabular-nums text-white">
               {e1rm.toFixed(1)} {kgUnitLabel(exercise.charge)}
@@ -143,8 +144,8 @@ export function CatalogueDetailSheet({
           onClick={() => setManualOpen(true)}
         >
           {e1rm !== null && e1rm > 0
-            ? 'Modifier mon plafond'
-            : 'Je connais mon plafond'}
+            ? 'Modifier mon Plafond'
+            : 'Je connais mon Plafond'}
         </Button>
 
         <ManualE1rmSheet
@@ -191,7 +192,7 @@ export function CatalogueDetailSheet({
         )}
 
         {synergistes.length > 0 && (
-          <Section label="Synergistes">
+          <Section label="Muscles secondaires">
             <div className="flex flex-wrap gap-1" data-testid="catalogue-muscles-synergistes">
               {synergistes.map((m) => (
                 <span
@@ -276,8 +277,8 @@ export function CatalogueDetailSheet({
           >
             <p className="mb-2 text-[11px] leading-snug text-anthracite-400">
               Cet exercice a été ajouté par toi. Tu peux le retirer du
-              catalogue — les feedbacks historiques resteront mais le nom
-              brut sera affiché.
+              catalogue — tes séances passées resteront, mais l'exercice
+              s'affichera sous son code.
             </p>
             <Button
               variant="ghost"
@@ -300,7 +301,7 @@ export function CatalogueDetailSheet({
           <>
             L'exercice <strong>{displayName}</strong> sera retiré du
             catalogue. Les séances passées qui le référencent garderont
-            leurs données, mais le nom de l'exo n'apparaîtra plus.
+            leurs données, mais le nom de l'exercice n'apparaîtra plus.
           </>
         }
         confirmLabel="Supprimer"

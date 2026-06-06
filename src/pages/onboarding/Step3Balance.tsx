@@ -54,7 +54,7 @@ export function Step3Balance({ draft, onChange }: Step3Props) {
         </h1>
         <div className="space-y-2 text-sm leading-relaxed text-anthracite-300">
           <p>
-            D'après tes priorités, l'app te propose d'ajouter ces muscles en
+            D'après tes priorités, Kotsh te propose d'ajouter ces muscles en
             <strong className="text-white"> maintien </strong> (un peu de
             volume pour ne pas perdre, sans chercher à grossir).
           </p>

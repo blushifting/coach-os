@@ -41,7 +41,7 @@ export function ExerciseCard({ exercise, onClick, e1rm = null }: ExerciseCardPro
               <span
                 data-testid={`card-e1rm-${exercise.id}`}
                 className="rounded-md bg-gradient-to-b from-sang-600 to-sang-800 px-2 py-0.5 font-display text-xs leading-none tabular-nums text-white shadow-glow-sang"
-                title="Ton plafond mesuré (1 rep)"
+                title="Ton Plafond mesuré (1 rep)"
               >
                 {e1rm.toFixed(0)} {kgUnitLabelShort(exercise.charge)}
               </span>

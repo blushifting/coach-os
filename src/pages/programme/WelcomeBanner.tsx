@@ -79,15 +79,14 @@ export function WelcomeBanner({ feedbackCount }: WelcomeBannerProps) {
         Pour démarrer ta 1re séance, tape la case{' '}
         <span className="font-medium text-white">d'aujourd'hui</span> dans le
         calendrier ci-dessous (entourée en rouge). Tu peux aussi taper une
-        autre case pour planifier la séance d'un autre jour. Tes plafonds
-        s'apprendront automatiquement au fil des séries, pas de calibration
-        préalable.
+        autre case pour planifier la séance d'un autre jour. Tes Plafonds
+        s'apprennent automatiquement au fil des séries, sans test préalable.
       </p>
       <p className="text-justify rounded-lg border border-sang-800/50 bg-sang-900/15 px-3 py-2 text-[12px] leading-relaxed text-anthracite-100 hyphens-auto">
         <span className="font-medium text-sang-300">Comment ça marche : </span>
-        l'app te suggère <span className="font-medium text-white">charge, reps et effort</span> pour chaque série,
+        Kotsh te suggère <span className="font-medium text-white">charge, reps et effort</span> pour chaque série,
         c'est un <span className="italic">objectif</span>, pas une obligation. Si tu fais plus ou moins en
-        réalité, modifie le résultat saisi : l'algorithme apprend de ton vrai
+        réalité, modifie le résultat saisi : Kotsh apprend de ton vrai
         ressenti et ajuste les séries suivantes.
       </p>
       <div className="mt-2">
@@ -96,7 +95,7 @@ export function WelcomeBanner({ feedbackCount }: WelcomeBannerProps) {
           onClick={() => void startDemo()}
           data-testid="btn-start-demo-from-welcome"
         >
-          Voir un exemple : 8 sem d'entraînement
+          Voir un exemple : 8 semaines d'entraînement
         </Button>
       </div>
     </Card>

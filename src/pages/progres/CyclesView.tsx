@@ -74,7 +74,7 @@ function CycleCard({ item, catalog }: CycleCardProps) {
           unit="kg"
         />
         <Metric
-          label="Top plafond"
+          label="Meilleur Plafond"
           value={
             item.plafondsTop.length > 0
               ? `${formatDelta(item.plafondsTop[0]![1])} kg`
@@ -88,7 +88,7 @@ function CycleCard({ item, catalog }: CycleCardProps) {
       {item.plafondsTop.length > 0 && (
         <div className="flex flex-col gap-1">
           <span className="text-[10px] uppercase tracking-wide text-anthracite-300">
-            Progressions plafonds
+            Progression des Plafonds
           </span>
           <ul className="flex flex-col gap-1">
             {item.plafondsTop.map(([exId, delta]) => (
@@ -221,7 +221,7 @@ function Metric({ label, value, delta }: MetricProps) {
                 : 'text-anthracite-300',
           )}
         >
-          {formatDelta(delta)} vs cycle préc.
+          {formatDelta(delta)} vs cycle précédent
         </span>
       )}
     </div>

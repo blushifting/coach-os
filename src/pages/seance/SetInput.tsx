@@ -506,7 +506,7 @@ function RpeSlider({ index, value, target, disabled, onChange }: RpeSliderProps)
         }}
         className="rpe-slider"
         style={trackStyle}
-        aria-label={`Effort RPE (${RPE_MIN} à ${RPE_MAX})`}
+        aria-label={`Effort, de ${RPE_MIN} à ${RPE_MAX}`}
       />
       <div
         aria-hidden="true"

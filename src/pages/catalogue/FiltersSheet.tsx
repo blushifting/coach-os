@@ -79,7 +79,7 @@ export function FiltersSheet({
             onClick={toggleHabitual}
             testId="filter-habitual-only"
           >
-            Exos habituels
+            Exercices habituels
           </Chip>
           <Chip
             active={filters.measuredOnly}
@@ -114,7 +114,7 @@ export function FiltersSheet({
           </Chip>
         </Section>
 
-        <Section title="Pattern moteur">
+        <Section title="Mouvement">
           {FILTER_PATTERNS.map((p) => (
             <Chip
               key={p}

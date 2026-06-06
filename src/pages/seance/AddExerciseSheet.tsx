@@ -17,7 +17,12 @@ import { Sheet } from '@/components/Sheet';
 import type { Catalog } from '@/engine/catalog';
 import type { Exercise } from '@/engine/models';
 import { useEngine } from '@/hooks/useEngine';
-import { displayExerciseName } from '@/lib/catalog-filter';
+import {
+  chargeLabel,
+  displayExerciseName,
+  extypeLabel,
+  patternLabel,
+} from '@/lib/catalog-filter';
 import { useGymBrand } from '@/store/selectors';
 import { cn } from '@/lib/cn';
 
@@ -119,7 +124,7 @@ export function AddExerciseSheet({
             <ul className="flex flex-1 flex-col gap-1 overflow-y-auto pr-1">
               {results.length === 0 ? (
                 <li className="px-2 py-4 text-center text-sm text-anthracite-400">
-                  Aucun exo trouvé. Crée-le depuis le Catalogue.
+                  Aucun exercice trouvé. Tu peux le créer depuis le Catalogue.
                 </li>
               ) : (
                 results.slice(0, 50).map((ex) => {
@@ -158,8 +163,8 @@ export function AddExerciseSheet({
             <div data-testid="add-exo-preview" className="rounded-lg border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-sm">
               <div className="font-semibold text-white">{displayExerciseName(picked, brand)}</div>
               <div className="mt-1 text-xs text-anthracite-300">
-                Pattern {picked.pattern} · {picked.charge} ·{' '}
-                {picked.type === 'compound' ? 'polyarticulaire' : 'isolation'}
+                {patternLabel(picked.pattern)} · {chargeLabel(picked.charge)} ·{' '}
+                {extypeLabel(picked.type)}
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -192,9 +197,9 @@ export function AddExerciseSheet({
               </div>
             </div>
             <p className="text-[11px] leading-snug text-anthracite-400">
-              L'app pose une charge et un nombre de reps prescrits à partir de
-              ton plafond connu (ou d'une estimation si tu n'as jamais fait
-              cet exo). Tu peux les ajuster avant de cocher chaque série.
+              Kotsh pose une charge et un nombre de reps à partir de ton
+              Plafond connu (ou d'une estimation si tu n'as jamais fait cet
+              exercice). Tu peux les ajuster avant de cocher chaque série.
             </p>
             {serverError !== null ? (
               <p data-testid="add-exo-error" className="text-sm text-sang-400">
@@ -212,7 +217,9 @@ export function AddExerciseSheet({
                 onClick={() => void confirmAdd()}
                 disabled={submitting}
               >
-                {submitting ? 'Ajout…' : `Ajouter ${nSets} séries`}
+                {submitting
+                  ? 'Ajout…'
+                  : `Ajouter ${nSets} série${nSets > 1 ? 's' : ''}`}
               </Button>
             </div>
           </div>

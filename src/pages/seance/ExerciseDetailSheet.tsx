@@ -149,7 +149,7 @@ export function ExerciseDetailSheet({
           )}
 
           {synergistes.length > 0 && (
-            <SectionBlock label="Synergistes">
+            <SectionBlock label="Muscles secondaires">
               <div className="flex flex-wrap gap-1">
                 {synergistes.map((m) => (
                   <span
@@ -229,7 +229,7 @@ export function ExerciseDetailSheet({
               data-testid="btn-replace-exercise"
               title={demoActive ? 'Désactivé en mode démo' : undefined}
             >
-              {replacing ? 'Remplacement…' : 'Remplacer cet exo'}
+              {replacing ? 'Remplacement…' : 'Remplacer cet exercice'}
             </Button>
           )}
         </div>
@@ -244,7 +244,7 @@ export function ExerciseDetailSheet({
           onToggleExpand={() => setExpanded((v) => !v)}
           onPick={handlePickReplacement}
           onClose={() => setPickerOpen(false)}
-          title="Remplacer cet exo"
+          title="Remplacer cet exercice"
         />
       )}
     </>

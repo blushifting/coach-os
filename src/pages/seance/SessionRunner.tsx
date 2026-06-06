@@ -385,12 +385,13 @@ export function SessionRunner({
             <>
               Tu as coché <strong>{done}/{total}</strong> séries. Une fois
               terminée, tu ne pourras plus modifier la séance — les séries non
-              cochées seront comptées comme non faites (dette de volume).
+              cochées comptent comme non faites. Kotsh rattrapera ce volume
+              manquant plus tard.
             </>
           ) : (
             <>
               Toutes les séries sont cochées. La séance sera enregistrée et
-              tes plafonds seront mis à jour.
+              tes Plafonds seront mis à jour.
             </>
           )
         }
@@ -414,7 +415,7 @@ export function SessionRunner({
         disabled={finishing || skipping || cancelling || demoActive}
         data-testid="btn-skip-session"
       >
-        {skipping ? 'Marquage…' : 'Sauter cette séance'}
+        {skipping ? 'Enregistrement…' : 'Sauter cette séance'}
       </Button>
 
       {/* Conv #15 vague 3 — annuler : retire complètement la séance, comme
@@ -437,7 +438,8 @@ export function SessionRunner({
         description={
           <>
             La séance sera retirée du calendrier comme si elle n'avait jamais
-            été programmée. Tes coches éventuelles ne seront pas enregistrées.
+            été programmée. Les séries que tu as validées ne seront pas
+            enregistrées.
           </>
         }
         confirmLabel="Annuler la séance"
@@ -453,8 +455,9 @@ export function SessionRunner({
         description={
           done > 0 ? (
             <>
-              Tu as déjà coché {done} série(s) — elles ne seront pas enregistrées.
-              La séance restera marquée comme sautée dans le calendrier.
+              Tu as déjà validé {done} série{done > 1 ? 's' : ''} — elles ne
+              seront pas enregistrées. La séance restera marquée comme sautée
+              dans le calendrier.
             </>
           ) : (
             <>La séance sera marquée comme sautée dans le calendrier. Tu pourras
@@ -499,7 +502,7 @@ export function SessionRunner({
           adapté selon qu'il y a des sets cochés ou non. */}
       <Dialog
         open={confirmRemove !== null}
-        title="Retirer cet exo ?"
+        title="Retirer cet exercice ?"
         description={(() => {
           if (confirmRemove === null) return null;
           const rowDone =

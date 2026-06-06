@@ -196,7 +196,7 @@ function CyclePctWidget({ cycle }: { readonly cycle: CycleProgress }) {
             {cycle.planned > 0 ? `${cycle.done}/${cycle.planned}` : '—'}
           </span>
           <span className="mt-1 text-[11px] text-anthracite-300">
-            {cycle.planned > 0 ? 'séances faites' : 'pas de cycle posé'}
+            {cycle.planned > 0 ? 'séances faites' : 'aucun cycle en cours'}
           </span>
         </div>
       </div>

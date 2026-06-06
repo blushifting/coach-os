@@ -218,7 +218,7 @@ export default function ProfilPage() {
         >
           <span className="text-anthracite-300">Programme</span>
           <span className="text-right font-medium text-white">
-            {activeProgramme !== null ? activeProgramme.name : 'Custom'} ·{' '}
+            {activeProgramme !== null ? activeProgramme.name : 'Sur mesure'} ·{' '}
             <span className="tabular-nums text-anthracite-300">
               {userState.profile.sessions_per_week} séances/sem
             </span>
@@ -288,8 +288,8 @@ export default function ProfilPage() {
           Mes données
         </div>
         <p className="mb-3 text-xs text-anthracite-300">
-          Tout reste sur ton téléphone (IndexedDB). Exporte régulièrement pour
-          ne rien perdre.
+          Tout reste sur ton téléphone. Exporte régulièrement pour ne rien
+          perdre.
         </p>
         <div className="flex flex-col gap-2">
           <Button
@@ -356,7 +356,7 @@ export default function ProfilPage() {
         description={
           <>
             Cette action efface <strong>toutes tes données</strong> (séances,
-            feedbacks, cycles, plafonds, objectifs). Cette opération est
+            cycles, Plafonds, objectifs). Cette opération est
             irréversible. Pense à exporter avant.
           </>
         }

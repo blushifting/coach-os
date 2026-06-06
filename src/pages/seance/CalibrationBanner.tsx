@@ -18,6 +18,7 @@
 
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/Button';
+import { Concept } from '@/components/Concept';
 import type { Exercise } from '@/engine/models';
 import { kgUnitLabel } from '@/lib/catalog-filter';
 import {
@@ -79,14 +80,15 @@ export function CalibrationBanner({
         {liveE1rm !== null ? (
           <p className="text-sang-200">
             <span className="font-semibold text-white">
-              Plafond appris : {liveE1rm.toFixed(1)} {unit}
+              <Concept topic="plafond">Plafond</Concept> appris :{' '}
+              {liveE1rm.toFixed(1)} {unit}
             </span>{' '}
             — les séries suivantes sont ajustées automatiquement.
           </p>
         ) : unreliable !== null ? (
           <p>
             <span className="font-semibold text-sang-300">
-              Trop facile pour calibrer
+              Trop facile pour mesurer ton Plafond
             </span>{' '}
             — vise un effort 7-8/10 (2-3 reps en réserve avant l'échec).
             {suggestedLoad !== null ? (
@@ -107,8 +109,8 @@ export function CalibrationBanner({
             </span>{' '}
             —{' '}
             {isStale
-              ? 'plafond pas mesuré depuis 8 semaines, cette série le rafraîchira.'
-              : "vise un vrai effort 7-8/10 (2-3 reps en réserve). C'est cet effort élevé qui permet à l'appli d'apprendre ton plafond — fais 3-12 reps puis renseigne reps + effort ressenti."}
+              ? 'Plafond pas mesuré depuis 8 semaines, cette série va le rafraîchir.'
+              : "vise un vrai effort 7-8/10 (2-3 reps en réserve). C'est cet effort élevé qui permet à Kotsh d'apprendre ton Plafond — fais 3-12 reps puis renseigne reps + effort ressenti."}
           </p>
         )}
 
@@ -120,7 +122,7 @@ export function CalibrationBanner({
               data-testid={`btn-manual-e1rm-${exercise.id}`}
               onClick={() => setSheetOpen(true)}
             >
-              Je connais mon plafond
+              Je connais mon Plafond
             </Button>
           </div>
         ) : null}

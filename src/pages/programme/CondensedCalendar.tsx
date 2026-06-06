@@ -1,4 +1,5 @@
 import { Card } from '@/components/Card';
+import { Concept } from '@/components/Concept';
 import { cn } from '@/lib/cn';
 import type { CalendarDay, CalendarMatrix } from '@/lib/dashboard';
 import { DayCell } from './DayCell';
@@ -60,7 +61,7 @@ function Legend() {
         />
       </div>
       <span className="text-[10px] text-anthracite-300">
-        D = semaine de déload (charges réduites)
+        D = semaine de <Concept topic="deload">Déload</Concept> (charges réduites)
       </span>
     </div>
   );

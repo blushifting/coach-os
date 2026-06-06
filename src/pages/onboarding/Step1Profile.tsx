@@ -33,7 +33,7 @@ export function Step1Profile({ draft, onChange }: Step1Props) {
         </h1>
         <p className="text-sm leading-relaxed text-anthracite-200">
           Ces infos servent à fixer un point de départ raisonnable pour ton
-          volume d'entraînement et tes charges. L'app affine ensuite ton
+          volume d'entraînement et tes charges. Kotsh affine ensuite ton
           programme cycle après cycle, selon ce que tu fais en vrai.
         </p>
       </header>
@@ -64,7 +64,7 @@ export function Step1Profile({ draft, onChange }: Step1Props) {
       <Card>
         <div className="mb-1 text-sm font-medium text-white">Âge</div>
         <p className="mb-3 text-xs leading-relaxed text-anthracite-300">
-          Au-delà de 50 ans, l'app prévoit un peu plus de récupération et
+          Au-delà de 50 ans, Kotsh prévoit un peu plus de récupération et
           plafonne le volume max — la progression reste réelle mais plus
           progressive.
         </p>
@@ -81,8 +81,8 @@ export function Step1Profile({ draft, onChange }: Step1Props) {
         <div className="mb-1 text-sm font-medium text-white">Poids</div>
         <p className="mb-3 text-xs leading-relaxed text-anthracite-300">
           Sert à estimer une charge de départ réaliste sur les exercices au
-          poids du corps (tractions, dips, pompes) et à fixer un plafond
-          initial sur les exos chargés.
+          poids du corps (tractions, dips, pompes) et à fixer un Plafond
+          initial sur les exercices chargés.
         </p>
         <Stepper
           value={draft.bodyweightKg}
@@ -99,10 +99,10 @@ export function Step1Profile({ draft, onChange }: Step1Props) {
         </div>
         <p className="mb-3 text-xs leading-relaxed text-anthracite-300">
           Si tu connais la marque des machines que tu utilises, indique-la
-          ici. Les noms des exos sur machine s'afficheront alors avec leur
-          libellé commercial — celui que tu vois étiqueté sur la machine.
-          Tu peux changer plus tard. Aucune incidence sur les exos
-          prescrits ni sur l'algo.
+          ici. Les noms des exercices sur machine s'afficheront alors avec
+          leur libellé commercial — celui que tu vois étiqueté sur la
+          machine. Tu peux changer plus tard. Aucune incidence sur les
+          exercices prescrits.
         </p>
         <label className="sr-only" htmlFor="onboarding-gym-brand">
           Marque des machines

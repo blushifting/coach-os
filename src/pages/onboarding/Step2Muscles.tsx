@@ -131,7 +131,7 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
           </p>
           <p className="text-anthracite-300">
             <strong className="text-anthracite-100">Prioritaire</strong> = un
-            muscle sur lequel l'app va concentrer du volume pour qu'il
+            muscle sur lequel Kotsh va concentrer du volume pour qu'il
             progresse. <strong className="text-anthracite-100">Maintien</strong>{' '}
             (les autres muscles) = volume minimum pour ne pas perdre, sans
             chercher la croissance — utile pour rester équilibré sans
@@ -272,7 +272,7 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
         </div>
         {available.length === 0 ? (
           <div className="text-xs text-anthracite-300">
-            Tous les muscles canoniques sont sélectionnés.
+            Tous les muscles sont déjà sélectionnés.
           </div>
         ) : (
           <div className="flex flex-wrap gap-2">

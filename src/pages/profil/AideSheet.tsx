@@ -31,40 +31,40 @@ const TUTORIALS: readonly Tutorial[] = [
     id: 'onboarding',
     title: 'Configurer son profil',
     body:
-      "Au premier lancement, l'app te demande ton sexe, âge, poids, niveau, " +
-      "fréquence d'entraînement et l'équipement dispo. Tu choisis ensuite tes muscles " +
-      'prioritaires (5 conseillés) et leur objectif (force, hypertrophie, endurance ou ' +
-      "maintien). L'app suggère automatiquement des muscles d'équilibre (push/pull, " +
-      'gainage, antagonistes) pour limiter les déséquilibres. Tu termines en choisissant ' +
-      'un programme guidé ou en mode custom.',
+      "Au premier lancement, Kotsh te demande ton sexe, ton âge et ton poids. " +
+      'Tu choisis ensuite tes muscles prioritaires (5 conseillés) et leur objectif ' +
+      '(force, hypertrophie, endurance ou entretien). Kotsh suggère automatiquement ' +
+      "des muscles d'équilibre (pousser/tirer, gainage, antagonistes) pour limiter " +
+      'les déséquilibres. Tu termines en choisissant ta fréquence de séances et un ' +
+      'programme guidé ou sur mesure.',
   },
   {
     id: 'first-session',
     title: 'Première séance (calibration transparente)',
     body:
-      "Pas de séance de test dédiée : Kotsh apprend tes plafonds en marchant. " +
-      "À ta 1re séance, l'app pré-remplit des charges raisonnables selon ton poids et ton " +
-      "niveau ; tu modifies si la réalité diffère. Pour chaque série tu saisis reps faites, " +
-      "charge et Effort perçu (sur 10, aussi appelé RPE dans la littérature). L'algo en déduit ton plafond via " +
-      "la formule d'Epley étendue, et affine séance après séance — sans phase de calibration " +
+      "Pas de séance de test dédiée : Kotsh apprend tes Plafonds en marchant. " +
+      "À ta 1re séance, Kotsh pré-remplit des charges raisonnables selon ton poids ; " +
+      "tu modifies si la réalité diffère. Pour chaque série tu saisis les reps faites, " +
+      "la charge et l'Effort perçu (sur 10, aussi appelé RPE dans la littérature). Kotsh en déduit ton Plafond via " +
+      "la formule d'Epley étendue, et l'affine séance après séance — sans phase de calibration " +
       "préalable.",
   },
   {
     id: 'feedback',
-    title: 'Donner du feedback à la fin de chaque séance',
+    title: 'Faire ton bilan après chaque séance',
     body:
-      "Pour chaque série, tu indiques combien de reps tu as faites et ton effort perçu " +
-      "(sur 10). L'app ajuste automatiquement le plafond, repère les plateaux, et adapte les " +
+      "Pour chaque série, tu indiques combien de reps tu as faites et ton Effort perçu " +
+      "(sur 10). Kotsh ajuste automatiquement ton Plafond, repère les plateaux et adapte les " +
       "charges de la séance suivante. Pas besoin de tenir un journal séparé.",
   },
   {
     id: 'cycle',
     title: 'Comprendre le cycle 4+1',
     body:
-      'Un cycle = 4 semaines de montée progressive + 1 semaine allégée (déload). ' +
-      "À la fin du cycle, l'app te propose un bilan : muscles qui ont progressé, " +
-      "ceux qui ont plafonné, et te suggère soit de continuer, ajuster les objectifs, " +
-      'tourner les emphases, ou changer de programme.',
+      'Un cycle = 4 semaines de montée progressive + 1 semaine allégée (Déload). ' +
+      'À la fin du cycle, Kotsh te propose un bilan : muscles qui ont progressé, ' +
+      "ceux qui ont plafonné, et te suggère de continuer, d'ajuster tes objectifs " +
+      'ou de changer de programme.',
   },
 ];
 
@@ -91,7 +91,7 @@ const FAQ: readonly FaqItem[] = [
       "pas plus de gain et coûte plus en récupération. L'app calcule la fréquence " +
       "cible à partir de ton V_min divisé par les ~5 séries/séance optimales par " +
       "muscle. Pour un muscle à 10 séries/sem, ça donne 2 séances. Tu peux dépasser " +
-      "en ajoutant un exo en séance (à venir Conv #21b).",
+      "en ajoutant un exercice en séance.",
   },
   {
     id: 'pec-haut-bas',
@@ -102,7 +102,7 @@ const FAQ: readonly FaqItem[] = [
       "tous les angles, l'incline modifie la contribution claviculaire mais pas " +
       "fondamentalement le muscle ciblé. Les apps de référence (Hevy, Strong, " +
       "RP Hypertrophy) traitent pec comme un muscle unique. Pour cibler le haut, " +
-      "filtrer les exos par tag `pec_haut` ou `incline_30/45` suffit.",
+      "filtre les exercices inclinés dans le catalogue.",
   },
   {
     id: 'rpe-pas-pct',
@@ -119,8 +119,8 @@ const FAQ: readonly FaqItem[] = [
     question: "Pourquoi l'échelle d'Effort commence à 6 et pas à 1 ?",
     answer:
       "Sous un Effort de 6 (= 4+ reps en réserve), une série est trop facile pour apprendre " +
-      "ton plafond. La formule d'Epley n'est calibrée que ~6-10 (n_équivalent ≤ 15) ; en dessous " +
-      "elle sort de sa zone fiable et l'app ne pourrait pas extrapoler ton plafond " +
+      "ton Plafond. La formule d'Epley n'est calibrée que ~6-10 (n_équivalent ≤ 15) ; en dessous " +
+      "elle sort de sa zone fiable et Kotsh ne pourrait pas extrapoler ton Plafond " +
       "sans erreur. Le curseur Effort plafonne donc à 6 minimum — c'est " +
       "l'Effort minimum « informatif » pour la calibration.",
   },
@@ -132,7 +132,7 @@ const FAQ: readonly FaqItem[] = [
       "MEV/MAV/MRV). Sur 4 semaines de montée progressive en volume + intensité, " +
       "la fatigue résiduelle s'accumule et finit par masquer les gains. Une semaine " +
       "à ~50 % du volume habituel laisse la récupération rattraper, et tu repars " +
-      "frais pour le cycle suivant — souvent avec un plafond plus haut.",
+      "frais pour le cycle suivant — souvent avec un Plafond plus haut.",
   },
   {
     id: 'dette-plafonnee',
@@ -145,7 +145,7 @@ const FAQ: readonly FaqItem[] = [
   },
   {
     id: 'plafond-baisse',
-    question: "Mon plafond a baissé après une mauvaise séance, c'est normal ?",
+    question: "Mon Plafond a baissé après une mauvaise séance, c'est normal ?",
     answer:
       "L'algo utilise une moyenne mobile pondérée (EMA) : il intègre les nouvelles " +
       "mesures sans tout écraser, mais une vraie mauvaise journée laisse une trace " +

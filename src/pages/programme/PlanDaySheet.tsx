@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { Concept } from '@/components/Concept';
 import { Sheet } from '@/components/Sheet';
 import { useEngine } from '@/hooks/useEngine';
 import { getDb } from '@/db';
@@ -237,7 +238,7 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
 
         {day.status === 'skipped' && (
           <p className="text-sm text-anthracite-300" data-testid="day-status-text">
-            Séance sautée — pas d'action disponible ici.
+            Séance sautée. Rien à faire ici.
           </p>
         )}
 
@@ -341,7 +342,7 @@ function PlannedSessionBlock({
 
       <Card className="flex flex-col gap-1.5">
         <span className="text-xs uppercase tracking-wide text-anthracite-300">
-          Exos prévus
+          Exercices prévus
         </span>
         <ul
           className="flex flex-col gap-1 text-sm text-anthracite-100"
@@ -447,7 +448,7 @@ function FreeFutureBlock({
   if (cyclePlan === null || cyclePlan.days.length === 0) {
     return (
       <p className="text-sm text-anthracite-300" data-testid="day-status-text">
-        Aucun programme posé pour le moment.
+        Aucun programme pour le moment.
       </p>
     );
   }
@@ -457,7 +458,13 @@ function FreeFutureBlock({
         {isToday
           ? 'Choisis la séance à démarrer maintenant'
           : 'Choisis la séance à programmer ce jour'}
-        {isDeload && <span className="text-sang-500"> (semaine de déload)</span>}.
+        {isDeload && (
+          <span className="text-sang-500">
+            {' '}
+            (semaine de <Concept topic="deload">Déload</Concept>)
+          </span>
+        )}
+        .
       </p>
       {suggestion !== null && (
         <p
@@ -467,9 +474,9 @@ function FreeFutureBlock({
         >
           {suggestion.reason === 'skipped' ? (
             <>
-              ↩️ Tu as sauté{' '}
+              Tu as sauté{' '}
               <strong className="text-white">{suggestion.previousLabel}</strong>{' '}
-              récemment — rattrape-la :{' '}
+              récemment. Rattrape-la :{' '}
               <strong className="text-sang-300">
                 {cyclePlan.days[suggestion.suggestedDayIndex]?.label}
               </strong>
@@ -477,9 +484,9 @@ function FreeFutureBlock({
             </>
           ) : (
             <>
-              💡 Tu as fait{' '}
+              Tu as fait{' '}
               <strong className="text-white">{suggestion.previousLabel}</strong>{' '}
-              récemment — pour varier, suggérée :{' '}
+              récemment. Pour varier, essaie :{' '}
               <strong className="text-sang-300">
                 {cyclePlan.days[suggestion.suggestedDayIndex]?.label}
               </strong>
@@ -641,7 +648,6 @@ function FixedRoutineBlock({
       data-testid="fixed-routine-banner"
     >
       <p className="text-sm text-anthracite-100">
-        <span aria-hidden className="mr-1">📌</span>
         Routine fixée le {dayOfWeekLabel(dayOfWeek)} :{' '}
         <strong className="text-white">{day.label}</strong>
       </p>
@@ -724,7 +730,11 @@ function CompletedSessionBlock({
     return (
       <p className="text-sm text-anthracite-300" data-testid="day-status-text">
         Séance <strong className="text-white">{day.sessionLabel}</strong> faite.{' '}
-        {day.isDeload && <span className="text-sang-500">(déload)</span>}
+        {day.isDeload && (
+          <span className="text-sang-500">
+            (<Concept topic="deload">Déload</Concept>)
+          </span>
+        )}
       </p>
     );
   }
@@ -735,12 +745,18 @@ function CompletedSessionBlock({
     <div className="flex flex-col gap-3" data-testid="day-status-text">
       <p className="text-sm text-anthracite-100">
         Séance <strong className="text-white">{feedback.label}</strong> faite
-        {day.isDeload && <span className="text-sang-500"> (déload)</span>}.
+        {day.isDeload && (
+          <span className="text-sang-500">
+            {' '}
+            (<Concept topic="deload">Déload</Concept>)
+          </span>
+        )}
+        .
       </p>
       {rollups.length > 0 && (
         <Card className="flex flex-col gap-1.5" data-testid="completed-session-rollup">
           <span className="text-xs uppercase tracking-wide text-anthracite-300">
-            Exos faits
+            Exercices faits
           </span>
           <ul className="flex flex-col gap-1 text-sm text-anthracite-100">
             {rollups.map((r) => {
@@ -793,7 +809,7 @@ function PeriodicityNudge({
       data-testid="periodicity-nudge"
     >
       <p className="text-sm text-anthracite-100">
-        💡 Tu fais souvent{' '}
+        Tu fais souvent{' '}
         <strong className="text-white">{suggestion.label}</strong> le{' '}
         <strong className="text-white">{dayOfWeekLabel(suggestion.dayOfWeek)}</strong>
         {' '}({suggestion.occurrences} fois sur les {suggestion.totalInWindow}{' '}

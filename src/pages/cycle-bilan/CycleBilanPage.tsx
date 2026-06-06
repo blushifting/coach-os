@@ -56,7 +56,7 @@ export default function CycleBilanPage() {
         <Card data-testid="bilan-empty">
           <p className="text-sm text-anthracite-300">
             Aucun bilan disponible pour le moment. Termine un cycle complet pour
-            voir s'afficher tes plafonds, tes records et l'adhérence.
+            voir s'afficher tes Plafonds, tes records et ton assiduité.
           </p>
           <div className="mt-3">
             <Link to="/programme">
@@ -288,7 +288,7 @@ function ReviewActions({ review }: { review: CycleReview }) {
   return (
     <Card data-testid="bilan-actions" className="flex flex-col gap-2">
       <h2 className="text-sm font-semibold text-white">Et maintenant ?</h2>
-      <p className="text-xs text-anthracite-300">Suggestion du moteur : {suggested}.</p>
+      <p className="text-xs text-anthracite-300">Kotsh te suggère : {suggested}.</p>
       <div className="mt-2 flex flex-col gap-2">
         {/* Conv #15 vague 3 — en mode démo, les 3 boutons sont verrouillés :
             sinon l'utilisateur peut accidentellement valider le bilan d'Alex

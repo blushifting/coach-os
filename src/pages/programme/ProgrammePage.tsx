@@ -126,7 +126,7 @@ export default function ProgrammePage() {
       {dashboard.matrix === null ? (
         <Card data-testid="no-cycle-card">
           <p className="text-sm text-anthracite-300">
-            Le cycle n'est pas encore initialisé. Termine l'onboarding pour démarrer.
+            Ton cycle n'est pas encore prêt. Termine la configuration pour démarrer.
           </p>
         </Card>
       ) : (

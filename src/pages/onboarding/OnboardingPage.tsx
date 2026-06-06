@@ -247,7 +247,7 @@ export default function OnboardingPage() {
   function goNext() {
     setError(null);
     if (step === 2 && !canAdvanceFromStep2) {
-      setError('Sélectionne au moins un muscle ou utilise le préset par défaut.');
+      setError('Sélectionne au moins un muscle ou utilise la sélection par défaut.');
       return;
     }
     if (step === 2) {

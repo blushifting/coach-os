@@ -52,7 +52,7 @@ export function DayCell({ day, onClick }: DayCellProps) {
         day.isDeload && 'opacity-90',
       )}
       data-rest-suggested={day.restSuggested ? 'true' : 'false'}
-      aria-label={`${day.date} — ${STATUS_BADGE_LABEL[day.status] || (day.restSuggested ? 'repos recommandé' : day.isDeload ? 'déload' : 'repos')}`}
+      aria-label={`${day.date} — ${STATUS_BADGE_LABEL[day.status] || (day.restSuggested ? 'repos recommandé' : day.isDeload ? 'semaine allégée' : 'repos')}`}
     >
       <span className="text-[10px] uppercase tracking-wide leading-none">
         {WEEKDAY_LABELS[day.dayOfWeek]}

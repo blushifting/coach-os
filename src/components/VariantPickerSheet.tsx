@@ -5,7 +5,7 @@ import type { Exercise, GymBrand } from '@/engine/models';
 import { ExercisePhotoPopin } from '@/pages/catalogue/ExercisePhotoPopin';
 import { ExerciseNameStack } from '@/pages/catalogue/ExerciseNameStack';
 import { photosFor } from '@/data/exercise-photos';
-import { displayExerciseName } from '@/lib/catalog-filter';
+import { displayExerciseName, equipLabel } from '@/lib/catalog-filter';
 import { useGymBrand } from '@/store/selectors';
 
 interface VariantPickerSheetProps {
@@ -45,7 +45,7 @@ export function VariantPickerSheet({
         <div className="mb-3 flex items-center justify-between gap-2">
           <span className="text-xs text-anthracite-300">
             {expanded
-              ? 'Tous les exos ciblant le(s) même(s) muscle(s).'
+              ? 'Tous les exercices ciblant le(s) même(s) muscle(s).'
               : 'Variantes proches (même mouvement).'}
           </span>
           <button
@@ -54,7 +54,7 @@ export function VariantPickerSheet({
             data-testid="btn-toggle-expand"
             className="rounded-lg border border-anthracite-700 px-2 py-1 text-xs text-anthracite-300 hover:text-white"
           >
-            {expanded ? 'Voir seulement les variantes' : 'Voir tous les exos ciblant ce muscle'}
+            {expanded ? 'Voir seulement les variantes' : 'Voir tous les exercices ciblant ce muscle'}
           </button>
         </div>
         {alternatives.length === 0 ? (
@@ -64,7 +64,7 @@ export function VariantPickerSheet({
           >
             {expanded
               ? 'Aucun remplaçant ne correspond à ton équipement.'
-              : 'Aucune variante alternative dispo avec ton équipement.'}
+              : 'Aucune variante alternative disponible avec ton équipement.'}
           </p>
         ) : (
           <ul className="max-h-[60vh] overflow-y-auto" data-testid="variant-picker-list">
@@ -81,7 +81,9 @@ export function VariantPickerSheet({
                   >
                     <ExerciseNameStack exercise={alt} size="sm" brandOverride={brand} />
                     <div className="mt-0.5 text-xs text-anthracite-300">
-                      {alt.equip.length > 0 ? alt.equip.join(', ') : 'Poids du corps'}
+                      {alt.equip.length > 0
+                        ? alt.equip.map(equipLabel).join(', ')
+                        : 'Poids du corps'}
                     </div>
                   </button>
                   {hasPhoto && (

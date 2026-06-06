@@ -291,7 +291,7 @@ function MuscleVolumeCard({
       ) : (
         <p className="text-[11px] leading-snug text-anthracite-300">
           Pas dans tes objectifs. Pour suivre ce muscle, ajoute-le depuis{' '}
-          <span className="text-anthracite-100">Profil → Objectifs musculaires</span>.
+          <span className="text-anthracite-100">Profil → Priorités &amp; programme</span>.
         </p>
       )}
       {series !== null && series.points.length > 0 && (
