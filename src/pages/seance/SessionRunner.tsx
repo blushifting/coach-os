@@ -296,27 +296,38 @@ export function SessionRunner({
                     size={28}
                     strokeWidth={3}
                   />
+                  {/* Conv #24 (D10) — picto info en vrai SVG centré. Avant : la
+                      lettre « i » nue, non centrée dans le cercle (pas de flex),
+                      se collait en haut-gauche → rendu « bugué ». */}
                   <button
                     type="button"
                     aria-label={`Détail ${ex ? displayExerciseName(ex, brand ?? undefined) : item.exercise_id}`}
                     data-testid={`btn-detail-${i}`}
                     onClick={() => setDetail({ exerciseId: item.exercise_id, itemIndex: i })}
-                    className="h-7 w-7 rounded-full bg-anthracite-700 text-xs text-anthracite-300 hover:text-white"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-anthracite-700 text-anthracite-300 transition hover:bg-anthracite-600 hover:text-white"
                   >
-                    i
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <circle cx="12" cy="12" r="9" />
+                      <path d="M12 11v5" />
+                      <path d="M12 7.5h.01" />
+                    </svg>
                   </button>
                   {/* Conv #21b — bouton "retirer cet exo de la séance".
                       Confirmation systématique (Conv #21b-fix) : tap rapide
-                      facile, on protège l'user d'un retrait accidentel. */}
+                      facile, on protège l'user d'un retrait accidentel.
+                      Conv #24 (D10) — croix SVG centrée (même correctif). */}
                   <button
                     type="button"
                     aria-label={`Retirer ${ex ? displayExerciseName(ex, brand ?? undefined) : item.exercise_id} de la séance`}
                     data-testid={`btn-remove-${i}`}
                     disabled={demoActive || finishing}
                     onClick={() => setConfirmRemove(i)}
-                    className="h-7 w-7 rounded-full bg-anthracite-700 text-xs text-anthracite-300 transition hover:bg-sang-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-anthracite-700 text-anthracite-300 transition hover:bg-sang-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    ×
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                    </svg>
                   </button>
                 </header>
 
@@ -337,6 +348,7 @@ export function SessionRunner({
                       entry={entry}
                       chargeType={chargeType}
                       pdcOnly={pdcOnly}
+                      unilateral={ex?.uni ?? false}
                       rpeTarget={item.sets[j]?.rpe_target}
                       checkLocked={j > 0 && !entrySets[j - 1]!.done}
                       onChange={(patch) =>

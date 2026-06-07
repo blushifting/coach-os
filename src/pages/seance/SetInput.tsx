@@ -30,6 +30,12 @@ interface SetInputProps {
    * avec load_kg=0 et reps adaptées (cf. `buildPrescription` PDC branch).
    */
   readonly pdcOnly?: boolean;
+  /**
+   * Conv #24 (D3) — exo unilatéral (`Exercise.uni`). On affiche alors « reps/côté »
+   * sur le label des reps pour rappeler que la prescription est par côté (on
+   * répète la série de chaque côté). N'affecte pas le calcul de volume.
+   */
+  readonly unilateral?: boolean;
   /** Cible RPE de la prescription, affichée discrètement à côté du label "effort". */
   readonly rpeTarget?: number;
 }
@@ -69,6 +75,7 @@ export function SetInput({
   checkLocked = false,
   chargeType,
   pdcOnly = false,
+  unilateral = false,
   rpeTarget,
 }: SetInputProps) {
   // Conv #20 — pdcOnly traite l'exo comme un BW pur (badge figé, charge=0).
@@ -143,7 +150,7 @@ export function SetInput({
 
         <Stepper
           testId={`reps-${index}`}
-          label="reps"
+          label={unilateral ? 'reps/côté' : 'reps'}
           value={entry.reps}
           step={1}
           min={0}
@@ -245,7 +252,7 @@ function Stepper({
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-      <span className="text-[10px] uppercase tracking-wide text-anthracite-300">
+      <span className="whitespace-nowrap text-[10px] uppercase tracking-wide text-anthracite-300">
         {label}
       </span>
       <div className="flex h-11 items-stretch overflow-hidden rounded border border-anthracite-700">

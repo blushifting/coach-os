@@ -177,14 +177,29 @@ export default function SeancePage() {
   }
 
   // État C : bilan post-séance.
+  // Conv #24 (D5) — wrappé dans un conteneur plein écran scrollable et paddé.
+  // Avant, le bilan était rendu nu : pas de scroll (AppShell est en
+  // overflow-hidden), pas de marge horizontale, et surtout son titre « Bilan »
+  // démarrait dans le coin haut-gauche → chevauché par le filigrane K (z-50).
+  // Le `pt` réserve la bande du filigrane comme le font les autres pages.
   if (summary !== null) {
     return (
-      <SessionSummary
-        label={summary.label}
-        data={summary.data}
-        catalog={catalog}
-        onClose={() => setSummary(null)}
-      />
+      <div
+        className="flex h-full flex-1 flex-col bg-anthracite-950"
+        data-testid="seance-summary-page"
+      >
+        <main
+          className="flex-1 overflow-y-auto px-4 pb-8"
+          style={{ paddingTop: 'max(env(safe-area-inset-top), 3.25rem)' }}
+        >
+          <SessionSummary
+            label={summary.label}
+            data={summary.data}
+            catalog={catalog}
+            onClose={() => setSummary(null)}
+          />
+        </main>
+      </div>
     );
   }
 

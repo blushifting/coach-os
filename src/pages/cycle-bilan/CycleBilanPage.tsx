@@ -3,6 +3,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { HelpButton } from '@/components/HelpButton';
+import { TrendArrow } from '@/components/icons';
+import { cn } from '@/lib/cn';
 import { useEngine } from '@/hooks/useEngine';
 import { useCoachOsStore } from '@/store';
 import { selectCycles, useDemoMode } from '@/store/selectors';
@@ -169,31 +171,37 @@ function ReviewPlafonds({
         Plafonds — Évolution sur le cycle
       </h2>
       <ul className="flex flex-col gap-1">
-        {entries.slice(0, 6).map(([exId, delta], i) => (
-          <li
-            key={exId}
-            className="flex animate-reveal-up items-center justify-between text-sm"
-            style={{ animationDelay: `${200 + i * 60}ms` }}
-            data-testid={`plafond-${exId}`}
-          >
-            {/* Conv #15-5 — exId brut → nom français via catalog. */}
-            <span className="min-w-0 truncate pr-2 text-anthracite-300">
-              {exerciseLabel(exId, catalog)}
-            </span>
-            <span
-              className={
-                delta > 0
-                  ? 'shrink-0 tabular-nums text-white'
-                  : delta < 0
-                  ? 'shrink-0 tabular-nums text-sang-500'
-                  : 'shrink-0 tabular-nums text-anthracite-300'
-              }
+        {entries.slice(0, 6).map(([exId, delta], i) => {
+          // Conv #24 (D11) — feu tricolore aligné sur le bilan de séance :
+          // vert = hausse, orange = stable, rouge = baisse, + flèche de tendance.
+          const trend: 'up' | 'down' | 'flat' =
+            delta > 0.05 ? 'up' : delta < -0.05 ? 'down' : 'flat';
+          const toneClass =
+            trend === 'up'
+              ? 'text-emerald-400'
+              : trend === 'down'
+              ? 'text-red-400'
+              : 'text-amber-400';
+          return (
+            <li
+              key={exId}
+              className="flex animate-reveal-up items-center justify-between text-sm"
+              style={{ animationDelay: `${200 + i * 60}ms` }}
+              data-testid={`plafond-${exId}`}
+              data-direction={trend}
             >
-              {delta > 0 ? '+' : ''}
-              {delta.toFixed(1)} kg
-            </span>
-          </li>
-        ))}
+              {/* Conv #15-5 — exId brut → nom français via catalog. */}
+              <span className="min-w-0 truncate pr-2 text-anthracite-300">
+                {exerciseLabel(exId, catalog)}
+              </span>
+              <span className={cn('flex shrink-0 items-center gap-1 tabular-nums', toneClass)}>
+                <TrendArrow trend={trend} className="text-[0.9em]" />
+                {delta > 0 ? '+' : ''}
+                {delta.toFixed(1)} kg
+              </span>
+            </li>
+          );
+        })}
       </ul>
     </Card>
   );

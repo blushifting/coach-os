@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Concept } from '@/components/Concept';
+import { TrendArrow } from '@/components/icons';
 import type { Catalog } from '@/engine/catalog';
 import { displayExerciseName, kgUnitLabel } from '@/lib/catalog-filter';
 import { useGymBrand } from '@/store/selectors';
@@ -137,12 +138,16 @@ function chargeLabelOf(catalog: Catalog | null, exerciseId: string): string {
 }
 
 /**
- * Conv #21 — Ligne d'évolution plafond pour un exo. Trois rendus :
- *   - première calibration : "Plafond mesuré : X kg" (vert atténué — c'est
- *     une bonne nouvelle, on a un repère utilisable maintenant)
- *   - hausse : "X → Y kg (+Δ)" (sang vif)
- *   - baisse / plat : "X → Y kg (±Δ)" (anthracite atténué — on signale
- *     mais sans alarmer, l'EMA digère parfois une mauvaise journée)
+ * Conv #21 — Ligne d'évolution plafond pour un exo. Quatre rendus :
+ *   - première calibration : "X kg · 1re mesure" (vert — on a un repère)
+ *   - hausse : "X → Y kg (+Δ) ↑" (vert : progression)
+ *   - stable : "X → Y kg →" (orange : plateau, on signale sans alarmer)
+ *   - baisse : "X → Y kg (−Δ) ↓" (rouge : régression)
+ *
+ * Conv #24 (D11) — passage au code couleur feu tricolore (vert/orange/rouge),
+ * aligné sur le bilan de cycle, et doublé d'une flèche de tendance pour ne pas
+ * reposer sur la seule couleur (accessibilité). Avant, une hausse s'affichait
+ * en sang (rouge) — contre-intuitif pour une bonne nouvelle.
  */
 function PlafondRow({
   change,
@@ -157,32 +162,30 @@ function PlafondRow({
   const isFirst = oldE === null;
   const isUp = deltaKg !== null && deltaKg > 0.05;
   const isDown = deltaKg !== null && deltaKg < -0.05;
+  const trend: 'up' | 'down' | 'flat' = isUp ? 'up' : isDown ? 'down' : 'flat';
+  const toneClass = isUp
+    ? 'text-emerald-400'
+    : isDown
+      ? 'text-red-400'
+      : 'text-amber-400';
 
   return (
     <li
       data-testid={`plafond-${exerciseId}`}
-      data-direction={isFirst ? 'first' : isUp ? 'up' : isDown ? 'down' : 'flat'}
+      data-direction={isFirst ? 'first' : trend}
       className="flex items-baseline justify-between gap-2 text-sm"
     >
       <span className="min-w-0 flex-1 truncate text-white">{name}</span>
       {isFirst ? (
-        <span className="tabular-nums text-emerald-400">
+        <span className="shrink-0 tabular-nums text-emerald-400">
           {newE.toFixed(1)} {chargeLabel} · 1re mesure
         </span>
       ) : (
-        <span
-          className={cn(
-            'tabular-nums',
-            isUp
-              ? 'text-sang-400'
-              : isDown
-                ? 'text-anthracite-300'
-                : 'text-anthracite-300',
-          )}
-        >
+        <span className={cn('flex shrink-0 items-baseline gap-1 tabular-nums', toneClass)}>
+          <TrendArrow trend={trend} className="self-center text-[0.9em]" />
           {oldE!.toFixed(1)} → {newE.toFixed(1)} {chargeLabel}
           {deltaKg !== null && Math.abs(deltaKg) >= 0.05 ? (
-            <span className="ml-1 text-xs">
+            <span className="text-xs">
               ({deltaKg > 0 ? '+' : ''}
               {deltaKg.toFixed(1)})
             </span>

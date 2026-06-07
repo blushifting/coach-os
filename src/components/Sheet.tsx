@@ -18,6 +18,12 @@ interface SheetProps {
  *   - sheet : fond semi-transparent (anthracite-900/85) + blur 16 px,
  *     bordure haute sang-700/30 pour matérialiser la séparation,
  *     ombre extérieure haute pour décoller du fond
+ *
+ * Conv #24 (D12) — hauteur plafonnée à 90 dvh : le panneau est un `flex-col`
+ * dont le header (titre + croix) reste figé en haut (`shrink-0`) tandis que le
+ * corps défile en interne (`overflow-y-auto`). Sans ça, une fiche longue (exo
+ * détaillé, a fortiori photo dépliée) poussait le titre et sa croix au-dessus
+ * de l'écran → impossible à fermer.
  */
 export function Sheet({ open, onClose, title, children }: SheetProps) {
   useEffect(() => {
@@ -42,26 +48,28 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
       <div
         className={cn(
           // Conv #11c — surface translucide + blur fort = effet "glass"
-          'w-full rounded-t-3xl border-t border-sang-700/30 bg-anthracite-900/85 p-6 backdrop-blur-xl',
+          // Conv #24 — flex-col + max-h pour header figé / corps scrollable.
+          'flex max-h-[90dvh] w-full flex-col rounded-t-3xl border-t border-sang-700/30 bg-anthracite-900/85 backdrop-blur-xl',
           'shadow-[0_-12px_32px_-8px_rgba(0,0,0,0.6)]',
-          'pb-[max(1.5rem,env(safe-area-inset-bottom))]',
         )}
         onClick={(e) => e.stopPropagation()}
       >
         {title && (
-          <div className="mb-3 flex items-center justify-between">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-anthracite-800/70 px-6 pb-3 pt-6">
             <h3 className="text-base font-semibold text-white">{title}</h3>
             <button
               type="button"
               onClick={onClose}
               aria-label="Fermer"
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-anthracite-800/80 text-anthracite-300 transition hover:bg-anthracite-700 hover:text-white"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-anthracite-800/80 text-xl leading-none text-anthracite-300 transition hover:bg-anthracite-700 hover:text-white"
             >
               ×
             </button>
           </div>
         )}
-        {children}
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+          {children}
+        </div>
       </div>
     </div>
   );

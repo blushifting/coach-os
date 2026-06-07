@@ -183,10 +183,10 @@ export function ExerciseDetailSheet({
                 <span className="text-anthracite-300">Repos</span>
                 <span className="tabular-nums">{formatRest(exercise.repos_s)}</span>
               </li>
-              <li className="flex justify-between">
-                <span className="text-anthracite-300">Difficulté</span>
-                <span>{exercise.dif || '—'}</span>
-              </li>
+              {/* Conv #24 — "Difficulté" retirée ici aussi (déjà retirée du
+                  catalogue en Conv #20) : étiquette subjective, encore moins
+                  utile en séance puisqu'on fait déjà l'exo. Le champ data
+                  `dif` reste pour le tie-break interne de `selection.ts`. */}
             </ul>
           </SectionBlock>
 

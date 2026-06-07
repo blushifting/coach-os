@@ -42,7 +42,7 @@ import { cn } from '@/lib/cn';
 import { muscleLabel } from '@/lib/progress';
 import { ExercisePhotoPopin } from '@/pages/catalogue/ExercisePhotoPopin';
 import { photosFor } from '@/data/exercise-photos';
-import { PatternIcon } from '@/pages/seance/PatternIcon';
+import { ChargeBadge } from '@/pages/catalogue/ChargeBadge';
 import { VariantPickerSheet } from '@/components/VariantPickerSheet';
 
 interface Step5Props {
@@ -220,12 +220,12 @@ export function Step5Preview({
                 const original = template?.days[di]?.exercises[pi]?.exercise_id ?? null;
                 const swapped = original !== null && original !== planned.exercise_id;
                 let exNomFr = planned.exercise_id;
-                let pattern: import('@/engine/models').Pattern | null = null;
+                let charge: import('@/engine/models').ChargeType | null = null;
                 let primaires: readonly string[] = [];
                 try {
                   const ex = catalog!.get(planned.exercise_id);
                   exNomFr = displayExerciseName(ex, brand);
-                  pattern = ex.pattern;
+                  charge = ex.charge;
                   primaires = exercisePrimaires(ex);
                 } catch {
                   /* exo inconnu — on garde l'id brut */
@@ -241,7 +241,7 @@ export function Step5Preview({
                     data-swapped={swapped ? 'true' : 'false'}
                   >
                     <div className="flex items-center gap-2 rounded-lg border border-anthracite-700 bg-anthracite-900 p-2">
-                      {pattern !== null && <PatternIcon pattern={pattern} size="sm" />}
+                      {charge !== null && <ChargeBadge charge={charge} size={24} />}
                       <div className="flex flex-1 flex-col">
                         <span className="text-sm font-medium text-white">
                           {exNomFr}
