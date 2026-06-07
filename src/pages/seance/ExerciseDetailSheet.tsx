@@ -55,6 +55,11 @@ export function ExerciseDetailSheet({
   // Conv #17 — protection démo : le remplacement d'exo écrit en DB
   // (replaceSessionExercise) donc on désactive le bouton en mode démo.
   const demoActive = useDemoMode();
+  // Conv #24 (D10) — DOIT rester au-dessus du `return null` ci-dessous : avant,
+  // ce hook était appelé après l'early-return `if (exercise === null)`, donc
+  // le nombre de hooks changeait à l'ouverture de la sheet (exercise null →
+  // non-null) → React plantait (« Rendered more hooks… ») au clic sur « i ».
+  const brand = useGymBrand();
   const [pickerOpen, setPickerOpen] = useState(false);
   // Mode élargi par défaut : Azur veut beaucoup de flexibilité en séance.
   const [expanded, setExpanded] = useState(true);
@@ -101,7 +106,6 @@ export function ExerciseDetailSheet({
     }
   }
 
-  const brand = useGymBrand();
   const displayName = displayExerciseName(exercise, brand ?? undefined);
 
   return (

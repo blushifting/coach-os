@@ -24,10 +24,10 @@ import {
 import { e1rmConfidenceFor } from '@/lib/calibration-status';
 import { bootstrapE1rmIfMissing } from '@/engine/engine';
 import { measurementIsReliable } from '@/engine/prescription';
+import { ChargeBadge } from '@/pages/catalogue/ChargeBadge';
 import { AddExerciseSheet } from './AddExerciseSheet';
 import { CalibrationBanner } from './CalibrationBanner';
 import { ExerciseDetailSheet } from './ExerciseDetailSheet';
-import { PatternIcon } from './PatternIcon';
 import { SetInput } from './SetInput';
 
 /**
@@ -272,7 +272,7 @@ export function SessionRunner({
                 data-exercise-id={item.exercise_id}
               >
                 <header className="flex items-center gap-2">
-                  {ex !== null && <PatternIcon pattern={ex.pattern} size="sm" />}
+                  {ex !== null && <ChargeBadge charge={ex.charge} size={24} />}
                   <div className="flex flex-1 flex-col">
                     <span className="text-sm font-semibold text-white">
                       {ex ? displayExerciseName(ex, brand ?? undefined) : item.exercise_id}
