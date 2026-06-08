@@ -49,13 +49,6 @@ function isBodyweightOnly(charge: ChargeType | undefined): boolean {
   return charge === ChargeType.BODYWEIGHT;
 }
 
-function allowsBodyweightToggle(charge: ChargeType | undefined): boolean {
-  return (
-    charge === ChargeType.BODYWEIGHT_LOADED ||
-    charge === ChargeType.BODYWEIGHT_ASSISTED
-  );
-}
-
 /**
  * Conv #20 — refonte layout :
  *  - rangée haute : [Série N] [reps ±] [kg ±] [✓]
@@ -80,7 +73,6 @@ export function SetInput({
 }: SetInputProps) {
   // Conv #20 — pdcOnly traite l'exo comme un BW pur (badge figé, charge=0).
   const bodyweightOnly = isBodyweightOnly(chargeType) || pdcOnly;
-  const bwToggle = !pdcOnly && allowsBodyweightToggle(chargeType);
   const effectiveLoad: number | null = bodyweightOnly ? 0 : entry.load_kg;
 
   const canCheck =
@@ -165,7 +157,6 @@ export function SetInput({
           index={index}
           load={effectiveLoad}
           bodyweightOnly={bodyweightOnly}
-          bwToggle={bwToggle}
           chargeType={chargeType}
           disabled={disableInputs}
           onChange={(v) => onChange({ load_kg: v })}
@@ -315,7 +306,6 @@ interface LoadFieldProps {
   readonly index: number;
   readonly load: number | null;
   readonly bodyweightOnly: boolean;
-  readonly bwToggle: boolean;
   readonly chargeType?: ChargeType;
   readonly disabled: boolean;
   readonly onChange: (v: number | null) => void;
@@ -325,7 +315,6 @@ function LoadField({
   index,
   load,
   bodyweightOnly,
-  bwToggle,
   chargeType,
   disabled,
   onChange,
@@ -346,7 +335,6 @@ function LoadField({
     );
   }
 
-  const bwActive = load === 0;
   // Conv #20 — pour les exos DUMBBELL, on affiche "kg/halt" pour rappeler
   // que la saisie est par haltère (pas le total bilatéral). Voir
   // `kgUnitLabelShort` + convention dans `bootstrapE1rmIfMissing`.
@@ -354,27 +342,8 @@ function LoadField({
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-      <span className="flex items-baseline justify-between gap-1 text-[10px] uppercase tracking-wide text-anthracite-300">
+      <span className="text-[10px] uppercase tracking-wide text-anthracite-300">
         {kgLabel}
-        {bwToggle ? (
-          <button
-            type="button"
-            data-testid={`toggle-bw-${index}`}
-            aria-label="Poids du corps (charge = 0)"
-            aria-pressed={bwActive}
-            disabled={disabled}
-            onClick={() => onChange(bwActive ? null : 0)}
-            className={cn(
-              'rounded px-1.5 py-0.5 text-[9px] uppercase tracking-wide transition',
-              bwActive
-                ? 'bg-sang-700 text-white'
-                : 'bg-anthracite-700 text-anthracite-200 hover:text-white',
-              disabled && 'cursor-not-allowed opacity-60',
-            )}
-          >
-            PdC
-          </button>
-        ) : null}
       </span>
       <KgStepper
         index={index}

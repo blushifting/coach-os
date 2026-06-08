@@ -240,7 +240,7 @@ export function Step5Preview({
                     data-testid={`slot-${di}-${pi}`}
                     data-swapped={swapped ? 'true' : 'false'}
                   >
-                    <div className="flex items-center gap-2 rounded-lg border border-anthracite-700 bg-anthracite-900 p-2">
+                    <div className="flex items-center gap-2.5 rounded-lg border border-anthracite-700 bg-anthracite-900 p-2">
                       {charge !== null && <ChargeBadge charge={charge} size={24} />}
                       <div className="flex flex-1 flex-col">
                         <span className="text-sm font-medium text-white">
@@ -267,9 +267,9 @@ export function Step5Preview({
                           aria-label="Voir le mouvement"
                           data-testid={`btn-preview-${di}-${pi}`}
                           title="Voir le mouvement"
-                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-anthracite-700 text-anthracite-300 transition hover:border-sang-700 hover:text-white"
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-anthracite-700 text-anthracite-300 transition hover:border-sang-700 hover:text-white"
                         >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                             <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
                             <circle cx="12" cy="12" r="3" />
                           </svg>

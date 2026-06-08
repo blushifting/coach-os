@@ -299,8 +299,11 @@ function ProgramRow({
                   setDetailsOpen((v) => !v);
                 }}
                 data-testid={`program-details-toggle-${id ?? 'custom'}`}
-                className="mt-2 text-[11px] font-medium text-anthracite-300 underline-offset-2 hover:text-white hover:underline"
+                className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-anthracite-200 underline decoration-dotted decoration-anthracite-500 underline-offset-4 transition-colors hover:text-white"
               >
+                <span aria-hidden="true" className="text-[10px]">
+                  {detailsOpen ? '▾' : '▸'}
+                </span>
                 {detailsOpen ? 'Masquer les détails' : 'Pour qui c\'est fait ?'}
               </button>
               {detailsOpen ? (

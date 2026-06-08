@@ -230,7 +230,7 @@ export default function SeancePage() {
           onClick={() => navigate('/programme')}
           data-testid="btn-back-to-programme"
           aria-label="Retour au programme (séance en pause)"
-          className="flex h-9 items-center gap-1 rounded-lg px-2 text-xs text-anthracite-200 hover:bg-anthracite-800 hover:text-white"
+          className="flex h-11 items-center gap-1 rounded-lg px-3 text-sm text-anthracite-200 hover:bg-anthracite-800 hover:text-white"
         >
           <ChevronLeft />
           Programme
