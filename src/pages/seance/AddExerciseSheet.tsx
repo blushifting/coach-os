@@ -109,7 +109,7 @@ export function AddExerciseSheet({
 
   return (
     <Sheet open={open} onClose={close} title="Ajouter un exercice">
-      <div className="flex max-h-[75dvh] flex-col gap-3">
+      <div className="flex flex-col gap-3">
         {picked === null ? (
           <>
             <input
@@ -121,7 +121,7 @@ export function AddExerciseSheet({
               onChange={(e) => setQuery(e.target.value)}
               className="w-full rounded-xl border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-sm text-white outline-none focus:border-sang-700/60"
             />
-            <ul className="flex flex-1 flex-col gap-1 overflow-y-auto pr-1">
+            <ul className="flex max-h-[55dvh] flex-col gap-1 overflow-y-auto pr-1">
               {results.length === 0 ? (
                 <li className="px-2 py-4 text-center text-sm text-anthracite-400">
                   Aucun exercice trouvé. Tu peux le créer depuis le Catalogue.

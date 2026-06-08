@@ -381,7 +381,9 @@ function planFromTemplate(
     const prescr: SetPrescription = {
       exercise_id: ex.id,
       reps,
-      load_kg: loadKg,
+      // Bloc B 1.17 — charges démo Alex en kg entiers (les paliers inc_kg
+      // 1.25/2.5 donnaient des décimales peu lisibles dans la visite guidée).
+      load_kg: Math.round(loadKg),
       rpe_target: rpeTgt,
       rest_s: ex.repos_s,
     };
@@ -419,7 +421,8 @@ function feedbackFromPlan(plan: SessionPlan, sc: Scripted): SessionFeedback {
       sets.push({
         exercise_id: sp.exercise_id,
         reps_done: reps,
-        load_kg: load,
+        // Bloc B 1.17 — charge réalisée en kg entier (cf. prescription).
+        load_kg: Math.round(load),
         rpe_perceived: Math.round(rpe * 2) / 2,
       });
     }

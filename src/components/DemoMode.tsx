@@ -123,7 +123,7 @@ const TOUR_STEPS: readonly TourStep[] = [
     route: '/programme',
     title: 'À toi de jouer',
     body:
-      "Tu as vu la boucle complète. Quitte la démo pour revenir à ton profil et démarrer ta première séance — le reste des fonctionnalités viendra naturellement.",
+      "Tu as vu la boucle complète. Quitte la démo pour revenir à ton profil et reprendre ton entraînement — le reste des fonctionnalités viendra naturellement.",
   },
 ];
 
@@ -387,7 +387,7 @@ function GuidedTourBanner({
                 onClick={onFinish}
                 data-testid="btn-tour-finish"
               >
-                Démarrer ma 1re séance
+                Quitter la démo
               </Button>
             ) : (
               <Button
