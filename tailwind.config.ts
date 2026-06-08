@@ -122,6 +122,23 @@ const config: Config = {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
         },
+        // Bloc C 1.16 — mouvement & transitions (cf. skill esthetique-finition).
+        // Volet / bottom sheet : entre en slide depuis le bas (pas d'apparition
+        // brutale) + backdrop qui se fond.
+        'sheet-up': {
+          '0%': { transform: 'translateY(100%)' },
+          '100%': { transform: 'translateY(0)' },
+        },
+        'backdrop-fade': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        // Transition de page (changement d'onglet/route) : fondu + léger
+        // glissement vers le haut, cohérent dans toute l'app.
+        'page-fade': {
+          '0%': { opacity: '0', transform: 'translateY(4px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
       },
       animation: {
         'tick-pop': 'tick-pop 380ms cubic-bezier(0.34, 1.56, 0.64, 1)',
@@ -130,6 +147,9 @@ const config: Config = {
         'reveal-up': 'reveal-up 420ms cubic-bezier(0.16, 1, 0.3, 1) both',
         'draw-line': 'draw-line 900ms cubic-bezier(0.4, 0, 0.2, 1) forwards',
         'point-fade-in': 'point-fade-in 160ms ease-out both',
+        'sheet-up': 'sheet-up 280ms cubic-bezier(0.16, 1, 0.3, 1)',
+        'backdrop-fade': 'backdrop-fade 200ms ease-out',
+        'page-fade': 'page-fade 200ms ease-out',
       },
       boxShadow: {
         // Conv #11c — halo rouge diffus pour les éléments primaires hover/focus.

@@ -20,7 +20,11 @@ export function TabbedLayout() {
     <>
       <Header />
       <main ref={mainRef} className="flex-1 overflow-y-auto px-5 py-4">
-        <Outlet />
+        {/* Bloc C 1.16 — transition de page cohérente (fondu + léger
+            glissement) à chaque changement de route. La clé relance l'anim. */}
+        <div key={pathname} className="motion-safe:animate-page-fade">
+          <Outlet />
+        </div>
       </main>
       <TabBar />
     </>

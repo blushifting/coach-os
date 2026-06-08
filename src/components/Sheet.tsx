@@ -42,7 +42,7 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      className="fixed inset-0 z-50 flex items-end bg-black/70 backdrop-blur-md animate-in fade-in"
+      className="fixed inset-0 z-50 flex items-end bg-black/70 backdrop-blur-md motion-safe:animate-backdrop-fade"
       onClick={onClose}
     >
       <div
@@ -51,6 +51,8 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
           // Conv #24 — flex-col + max-h pour header figé / corps scrollable.
           'flex max-h-[90dvh] w-full flex-col rounded-t-3xl border-t border-sang-700/30 bg-anthracite-900/85 backdrop-blur-xl',
           'shadow-[0_-12px_32px_-8px_rgba(0,0,0,0.6)]',
+          // Bloc C 1.16 — le volet glisse depuis le bas (motion-safe).
+          'motion-safe:animate-sheet-up',
         )}
         onClick={(e) => e.stopPropagation()}
       >
