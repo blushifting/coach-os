@@ -320,13 +320,6 @@ export function SessionRunner({
                         : `séries — repos ${formatRest(item.sets[0]?.rest_s ?? 0)}`}
                     </span>
                   </div>
-                  {/* Conv #11i — progress ring par exo */}
-                  <ProgressRing
-                    value={doneCount}
-                    total={entrySets.length}
-                    size={28}
-                    strokeWidth={3}
-                  />
                   {/* Conv #24 (D10) — picto info en vrai SVG centré. Avant : la
                       lettre « i » nue, non centrée dans le cercle (pas de flex),
                       se collait en haut-gauche → rendu « bugué ». */}

@@ -75,10 +75,10 @@ export function CalibrationBanner({
       <div
         data-testid={`calibration-banner-${exercise.id}`}
         data-confidence={confidence}
-        className="-mx-1 mb-1 flex flex-col gap-1.5 rounded-lg border border-sang-700/40 bg-sang-900/20 px-3 py-2 text-xs leading-relaxed text-anthracite-100"
+        className="-mx-1 mb-1 flex flex-col gap-1.5 rounded-lg border border-blue-700/40 bg-blue-900/20 px-3 py-2 text-xs leading-relaxed text-anthracite-100"
       >
         {liveE1rm !== null ? (
-          <p className="text-sang-200">
+          <p className="text-blue-200">
             <span className="font-semibold text-white">
               <Concept topic="plafond">Plafond</Concept> appris :{' '}
               {liveE1rm.toFixed(1)} {unit}
@@ -87,7 +87,7 @@ export function CalibrationBanner({
           </p>
         ) : unreliable !== null ? (
           <p>
-            <span className="font-semibold text-sang-300">
+            <span className="font-semibold text-blue-300">
               Trop facile pour mesurer ton Plafond
             </span>{' '}
             — vise un effort 7-8/10 (2-3 reps en réserve avant l'échec).
@@ -104,7 +104,7 @@ export function CalibrationBanner({
           </p>
         ) : (
           <p>
-            <span className="font-semibold text-sang-300">
+            <span className="font-semibold text-blue-300">
               {isStale ? 'À recalibrer' : 'On apprend ta charge'}
             </span>{' '}
             —{' '}

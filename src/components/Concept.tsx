@@ -32,11 +32,10 @@ export function Concept({ topic, children, label, className }: ConceptProps) {
       onClick={() => open(topic)}
       aria-label={a11y}
       className={cn(
-        // Conv #24 — soulignement passé de sang-500/50 à sang-500 pleine
-        // opacité : à 50 % le pointillé devenait quasi invisible sur fond
-        // anthracite sous du texte atténué (ex. légende « Déload » du
-        // calendrier), l'affordance « mot défini » ne se lisait plus.
-        'inline border-b border-dotted border-sang-500 text-inherit underline-offset-2 transition-colors hover:border-sang-400 hover:text-white',
+        // 1.16 — soulignement pointillé en violet : grille sémantique, l'aide
+        // contextuelle (ici « mot défini » tappable) = violet. Pleine opacité
+        // pour rester lisible sur anthracite sous du texte atténué.
+        'inline border-b border-dotted border-violet-400 text-inherit underline-offset-2 transition-colors hover:border-violet-300 hover:text-white',
         className,
       )}
     >

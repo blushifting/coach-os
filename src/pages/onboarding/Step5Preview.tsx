@@ -428,12 +428,15 @@ function PedagogyPanel({
   readonly onToggle: () => void;
 }) {
   return (
-    <Card className="flex flex-col gap-2" data-testid="pedagogy-panel">
+    <Card
+      className="flex flex-col gap-2 border-l-2 border-l-violet-700/50"
+      data-testid="pedagogy-panel"
+    >
       <button
         type="button"
         onClick={onToggle}
         data-testid="btn-pedagogy-toggle"
-        className="flex items-center justify-between text-left text-xs uppercase tracking-wide text-anthracite-300 hover:text-white"
+        className="flex items-center justify-between text-left text-xs uppercase tracking-wide text-violet-300/90 hover:text-white"
       >
         <span>Comment ça marche ?</span>
         <span aria-hidden="true">{open ? '−' : '+'}</span>
