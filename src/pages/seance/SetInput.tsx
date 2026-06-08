@@ -124,10 +124,12 @@ export function SetInput({
       data-locked={checkLocked ? 'true' : 'false'}
       className={cn(
         'rounded-lg border px-2 py-2 text-sm transition-colors duration-300',
+        // 1.16 — série validée = VERT (« c'est fait »), plus de rouge (réservé
+        // aux problèmes dans la grille sémantique).
         entry.done
-          ? 'border-sang-700/70 bg-sang-900/25'
+          ? 'border-green-700/70 bg-green-900/25'
           : 'border-anthracite-700 bg-anthracite-900/70',
-        justChecked && 'animate-row-flash',
+        justChecked && 'animate-validate-flash',
       )}
     >
       {/* Conv #20 — Rangée haute : Série N · reps · kg · ✓, tous alignés
@@ -141,7 +143,7 @@ export function SetInput({
           <span
             className={cn(
               'flex h-11 items-center justify-center font-display text-base leading-none tabular-nums tracking-wide',
-              entry.done ? 'text-sang-400' : 'text-anthracite-200',
+              entry.done ? 'text-green-400' : 'text-anthracite-200',
             )}
           >
             {index + 1}
@@ -183,7 +185,7 @@ export function SetInput({
             className={cn(
               'flex h-11 w-11 items-center justify-center rounded-full text-lg transition-all duration-200 active:scale-95',
               entry.done
-                ? 'bg-gradient-to-b from-sang-500 to-sang-700 text-white shadow-glow-sang'
+                ? 'bg-gradient-to-b from-green-500 to-green-700 text-white shadow-glow-green'
                 : disableCheck
                   ? 'cursor-not-allowed bg-anthracite-800 text-anthracite-500'
                   : 'bg-anthracite-700 text-anthracite-300 hover:text-white',

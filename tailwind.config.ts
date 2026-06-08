@@ -81,17 +81,28 @@ const config: Config = {
       keyframes: {
         // Conv #11i — flash sang one-shot quand on coche une série. Le ✓
         // grossit brièvement et halo plus intense, puis retour normal.
+        // 1.16 — la validation d'une série est désormais VERTE (« c'est fait »,
+        // grille sémantique : vert = succès, le rouge réservé aux problèmes).
+        // green-500 = rgb(34,197,94).
         'tick-pop': {
-          '0%': { transform: 'scale(0.85)', boxShadow: '0 0 0 0 rgba(182,42,58,0.6)' },
-          '50%': { transform: 'scale(1.15)', boxShadow: '0 0 16px 4px rgba(182,42,58,0.55)' },
-          '100%': { transform: 'scale(1)', boxShadow: '0 0 16px -2px rgba(182,42,58,0.35)' },
+          '0%': { transform: 'scale(0.85)', boxShadow: '0 0 0 0 rgba(34,197,94,0.6)' },
+          '50%': { transform: 'scale(1.15)', boxShadow: '0 0 16px 4px rgba(34,197,94,0.55)' },
+          '100%': { transform: 'scale(1)', boxShadow: '0 0 16px -2px rgba(34,197,94,0.35)' },
         },
         // Halo sang pulsant qui parcourt le row une fois (transition douce
-        // mais perceptible). Plus discret que tick-pop.
+        // mais perceptible). Conservé pour le spotlight « regarde ici » de la
+        // visite démo (DemoMode), où ce n'est pas une validation.
         'row-flash': {
           '0%': { backgroundColor: 'rgba(122,26,37,0.15)' },
           '40%': { backgroundColor: 'rgba(122,26,37,0.40)' },
           '100%': { backgroundColor: 'rgba(122,26,37,0.10)' },
+        },
+        // 1.16 — flash VERT au moment où une série est validée (remplace
+        // row-flash sur le SetInput). green-500 / green-800.
+        'validate-flash': {
+          '0%': { backgroundColor: 'rgba(22,101,52,0.15)' },
+          '40%': { backgroundColor: 'rgba(34,197,94,0.30)' },
+          '100%': { backgroundColor: 'rgba(22,101,52,0.10)' },
         },
         // Conv #11i — bilan : numéros qui "count up" via opacity + slide.
         'reveal-up': {
@@ -115,6 +126,7 @@ const config: Config = {
       animation: {
         'tick-pop': 'tick-pop 380ms cubic-bezier(0.34, 1.56, 0.64, 1)',
         'row-flash': 'row-flash 600ms ease-out',
+        'validate-flash': 'validate-flash 600ms ease-out',
         'reveal-up': 'reveal-up 420ms cubic-bezier(0.16, 1, 0.3, 1) both',
         'draw-line': 'draw-line 900ms cubic-bezier(0.4, 0, 0.2, 1) forwards',
         'point-fade-in': 'point-fade-in 160ms ease-out both',
@@ -125,6 +137,10 @@ const config: Config = {
         // Halo rouge plus prononcé (étape active de StepIndicator, etc.).
         'glow-sang-lg':
           '0 0 8px 0 rgba(204,74,89,0.55), 0 0 24px -2px rgba(182,42,58,0.45)',
+        // 1.16 — halo VERT pour l'état « validé » (coche de série faite).
+        // green-500 = rgb(34,197,94).
+        'glow-green':
+          '0 0 8px 0 rgba(34,197,94,0.45), 0 0 24px -4px rgba(34,197,94,0.30)',
         // Conv #11c — ombre extérieure douce + inset clair haut + reflet rouge
         // discret en bas → profondeur "card" avec une signature sang permanente.
         'card-soft':

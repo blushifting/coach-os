@@ -80,6 +80,10 @@ export function SessionRunner({
   // Conv #21b — ajout/retrait d'exo en cours de séance.
   const [addOpen, setAddOpen] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState<number | null>(null);
+  // 1.16 — quand toutes les séries d'un exo sont faites, on replie sa carte
+  // (collapse) pour dégager l'écran sur ce qui reste. `expandedOverrides[i] ===
+  // true` = l'user a ré-ouvert manuellement un exo terminé.
+  const [expandedOverrides, setExpandedOverrides] = useState<Record<number, boolean>>({});
   const sessionId = useCoachOsStore.getState().currentSessionId;
   const done = countDoneSets(entries);
   const total = countPlannedSets(entries);
@@ -254,6 +258,9 @@ export function SessionRunner({
           const entrySets = entries[i] ?? [];
           const doneCount = entrySets.filter((s) => s.done).length;
           const chargeType = ex?.charge;
+          // 1.16 — exo entièrement validé → repli auto (sauf ré-ouverture manuelle).
+          const allDone = entrySets.length > 0 && doneCount === entrySets.length;
+          const collapsed = allDone && expandedOverrides[i] !== true;
           // Conv #20 — l'exo est en mode "Poids du corps seulement" si l'user
           // a posé `pdc_only: true` dans son EquipmentOverride. SetInput
           // adapte alors le rendu de la charge (badge "Poids du corps"
@@ -277,16 +284,40 @@ export function SessionRunner({
                     <span className="text-sm font-semibold text-white">
                       {ex ? displayExerciseName(ex, brand ?? undefined) : item.exercise_id}
                     </span>
-                    <span className="text-xs text-anthracite-300">
+                    <span className="flex items-center gap-1 text-xs text-anthracite-300">
+                      {/* 1.16 — exo terminé : coche verte + « fait » (la couleur
+                          ne porte jamais l'info seule : icône + libellé). */}
+                      {allDone && (
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="13"
+                          height="13"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="text-green-400"
+                          aria-hidden="true"
+                        >
+                          <path d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
                       <span
                         className={cn(
                           'font-display tabular-nums tracking-wide',
-                          doneCount > 0 ? 'text-sang-400' : 'text-anthracite-200',
+                          allDone
+                            ? 'text-green-400'
+                            : doneCount > 0
+                              ? 'text-anthracite-100'
+                              : 'text-anthracite-200',
                         )}
                       >
                         {doneCount}/{entrySets.length}
                       </span>{' '}
-                      séries — repos {formatRest(item.sets[0]?.rest_s ?? 0)}
+                      {allDone
+                        ? 'séries · fait'
+                        : `séries — repos ${formatRest(item.sets[0]?.rest_s ?? 0)}`}
                     </span>
                   </div>
                   {/* Conv #11i — progress ring par exo */}
@@ -329,34 +360,69 @@ export function SessionRunner({
                       <line x1="18" y1="6" x2="6" y2="18" />
                     </svg>
                   </button>
+                  {/* 1.16 — chevron replier/déplier, visible seulement quand
+                      l'exo est terminé. Bouton distinct (pas de clic imbriqué). */}
+                  {allDone && (
+                    <button
+                      type="button"
+                      aria-label={collapsed ? 'Déplier l’exercice' : 'Replier l’exercice'}
+                      aria-expanded={!collapsed}
+                      data-testid={`btn-collapse-${i}`}
+                      onClick={() =>
+                        setExpandedOverrides((m) => ({ ...m, [i]: collapsed }))
+                      }
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-anthracite-700 text-anthracite-300 transition hover:bg-anthracite-600 hover:text-white"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="16"
+                        height="16"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                        className={cn('transition-transform', collapsed ? '' : 'rotate-180')}
+                      >
+                        <path d="M6 9l6 6 6-6" />
+                      </svg>
+                    </button>
+                  )}
                 </header>
 
-                {ex !== null ? (
-                  <CalibrationBanner
-                    exercise={ex}
-                    bodyweightKg={bodyweight}
-                    confidence={confidenceByExo[item.exercise_id] ?? 'measured'}
-                    entries={entrySets}
-                  />
-                ) : null}
+                {/* 1.16 — corps masqué quand l'exo est replié (terminé). Le
+                    chevron du header le ré-ouvre. */}
+                {!collapsed && (
+                  <>
+                    {ex !== null ? (
+                      <CalibrationBanner
+                        exercise={ex}
+                        bodyweightKg={bodyweight}
+                        confidence={confidenceByExo[item.exercise_id] ?? 'measured'}
+                        entries={entrySets}
+                      />
+                    ) : null}
 
-                <div className="flex flex-col gap-1.5">
-                  {entrySets.map((entry, j) => (
-                    <SetInput
-                      key={j}
-                      index={j}
-                      entry={entry}
-                      chargeType={chargeType}
-                      pdcOnly={pdcOnly}
-                      unilateral={ex?.uni ?? false}
-                      rpeTarget={item.sets[j]?.rpe_target}
-                      checkLocked={j > 0 && !entrySets[j - 1]!.done}
-                      onChange={(patch) =>
-                        handleEntriesChange(updateSetEntry(entries, i, j, patch))
-                      }
-                    />
-                  ))}
-                </div>
+                    <div className="flex flex-col gap-1.5">
+                      {entrySets.map((entry, j) => (
+                        <SetInput
+                          key={j}
+                          index={j}
+                          entry={entry}
+                          chargeType={chargeType}
+                          pdcOnly={pdcOnly}
+                          unilateral={ex?.uni ?? false}
+                          rpeTarget={item.sets[j]?.rpe_target}
+                          checkLocked={j > 0 && !entrySets[j - 1]!.done}
+                          onChange={(patch) =>
+                            handleEntriesChange(updateSetEntry(entries, i, j, patch))
+                          }
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
               </Card>
             </li>
           );

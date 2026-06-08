@@ -48,16 +48,17 @@ export function ProgressRing({
       aria-valuemax={total}
     >
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
-        {/* Track — léger halo doré intérieur quand accompli, sinon transparent. */}
+        {/* Track — 1.16 : halo VERT quand accompli (« c'est fait »), plus de
+            doré (le doré vire au jaune/warning en digital). green-500. */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={r}
-          fill={isComplete ? 'rgba(212,160,82,0.16)' : 'none'}
-          stroke={isComplete ? '#d4a052' : 'rgba(38,42,48,0.9)'}
+          fill={isComplete ? 'rgba(34,197,94,0.16)' : 'none'}
+          stroke={isComplete ? '#22c55e' : 'rgba(38,42,48,0.9)'}
           strokeWidth={strokeWidth}
         />
-        {/* Progress — masqué quand accompli (le ring doré du track sert de complet). */}
+        {/* Progress — masqué quand accompli (l'anneau vert du track sert de complet). */}
         {ratio > 0 && !isComplete && (
           <circle
             cx={size / 2}
@@ -71,14 +72,14 @@ export function ProgressRing({
             style={{ transition: 'stroke-dasharray 360ms cubic-bezier(0.4, 0, 0.2, 1)' }}
           />
         )}
-        {/* Conv #20 — Pas d'animation d'accomplissement : la transition rouge
-            → anneau doré ci-dessus suffit comme signal visuel. */}
+        {/* Pas d'animation d'accomplissement : la transition rouge → anneau
+            vert ci-dessus suffit comme signal visuel. */}
       </svg>
       {showLabel && (
         <span
           className={cn(
             'absolute font-display text-[10px] leading-none tabular-nums',
-            isComplete ? 'text-amber-200' : 'text-white',
+            isComplete ? 'text-green-300' : 'text-white',
           )}
         >
           {value}/{total}

@@ -258,8 +258,8 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
       })}
 
       {/* Étoiles "record" — au-dessus de chaque point qui bat le précédent
-          record d'au moins +2 kg. Étoile jaune-doré pleine avec liseré pour
-          ressortir sur la polyline.
+          record d'au moins +2 kg. Étoile verte (réussite) pleine avec liseré
+          pour ressortir sur la polyline.
 
           Conv #16 — fix positionnement : on wrappe l'animation `reveal-up`
           dans un <g> INTERNE. L'animation CSS pose un `transform` qui
@@ -281,9 +281,11 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
               className="animate-reveal-up"
               style={{ animationDelay: `${700 + i * 60}ms`, animationFillMode: 'both' }}
             >
+              {/* 1.16 — étoile record en VERT de réussite (plus de doré : il
+                  vire au jaune/warning en digital). green-500 = #22c55e. */}
               <polygon
                 points="0,-5 1.5,-1.5 5,-1.5 2.2,0.7 3.3,4.5 0,2.2 -3.3,4.5 -2.2,0.7 -5,-1.5 -1.5,-1.5"
-                fill="#fbbf24"
+                fill="#22c55e"
                 stroke="#fff"
                 strokeWidth={0.6}
                 strokeLinejoin="round"
