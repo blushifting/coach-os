@@ -45,6 +45,19 @@ export function Button({ children, onClick, variant = "primary", disabled }: But
 
 Ce squelette illustre les non-négociables : hauteur de cible ≥ 44 px, focus visible avec offset sur le fond sombre, chiffres tabulaires, état pressé (`active:`), état désactivé perceptible, variantes via tokens. Adapte la syntaxe (Tailwind v3/v4, cva, clsx…) aux conventions réelles du repo.
 
+## Validation & complétion (pattern Coach OS)
+
+- Une **série réalisée** se marque par une **coche verte + halo vert** autour de la ligne (vert = « c'est fait », jamais rouge — voir design-system).
+- Quand **toutes les séries d'un exo sont faites**, l'exo se **replie (collapse)** automatiquement pour dégager l'écran sur ce qui reste — avec un **moyen clair de le ré-ouvrir** (tap sur l'en-tête, chevron). Le collapse range l'info, il ne l'efface jamais.
+- La couleur ne suffit pas : la **coche** (icône) + le **repli** portent l'état autant que le vert (accessibilité).
+
+## Affordance — ce qui est cliquable doit se voir
+
+- Un élément interactif **se signale** visuellement : un libellé-lien porte un indice (soulignement, **soulignement pointillé** pour l'aide « pour comprendre »/« en savoir plus », chevron sur une carte dépliable). On ne devine pas qu'on peut cliquer — on le voit (ex. cartes « pour qui c'est fait »).
+- **Pas de cliquable dans un cliquable.** Un bouton/lien imbriqué dans une carte cliquable provoque des mis-clics. Sors le second niveau du bloc, ou crée une hiérarchie nette : la carte mène à un écran, l'action secondaire est un bouton distinct **bien espacé**.
+- **Bouton retour** toujours présent et atteignable au pouce, ≥ 44 px — ne le miniaturise pas (s'inspirer du placement constant d'une app comme Revolut).
+- Deux cibles proches qui se ressemblent (l'œil de visu à côté de « variantes », les ±/− de charge) : **agrandir + espacer** pour éviter le tap raté (doigts en salle).
+
 ## Composer un écran
 
 - Une seule action principale par écran (un seul bouton rouge). Le reste en secondaire.

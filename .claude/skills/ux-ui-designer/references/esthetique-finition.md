@@ -32,6 +32,17 @@ Imite la lumière réelle : **source lumineuse venant d'en haut**. Une ombre dou
 
 Chaque élément en plus rivalise avec les autres et dilue l'essentiel. Avant d'ajouter, demande si c'est nécessaire **maintenant, à ce moment de la séance**. Préfère retirer. Pas de décor gratuit, pas de bordure quand un espace suffit, pas de dégradé qui n'apporte rien. Le luxe ici, c'est le vide bien placé.
 
+## Mouvement & transitions (cohérence avant tout)
+
+Coach OS n'est pas une app plate et figée : les volets, sheets et changements d'écran **s'animent**, pour situer l'utilisateur dans l'espace (d'où ça vient, où ça va). Intention de référence : le « il y a toujours du mouvement » d'une app comme Revolut.
+
+- **Volets / bottom sheets** : entrent en **slide** depuis le bord d'où ils émergent, pas en apparition brutale.
+- **Transitions de page** : **un seul** type cohérent dans toute l'app (fondu *ou* slide directionnel), jamais un mélange au hasard.
+- **Court et au service du sens** : ~150–250 ms, courbe naturelle (ease-out à l'entrée). Le mouvement oriente, il ne fait pas attendre — aucune animation décorative qui retarde une action.
+- **`prefers-reduced-motion`** toujours respecté : on atténue/désactive proprement (voir accessibilité).
+
+Ça **nuance** le curseur « Effets » ci-dessous : même en direction sobre, les **transitions de navigation existent et sont cohérentes**. Ce qu'on garde discret, ce sont les effets décoratifs (glows, ombres marquées), pas le feedback de mouvement.
+
 ## Le mécanisme : direction esthétique en paramètre
 
 Le skill ne fige pas une esthétique. À chaque usage, on part d'une **direction** (donnée par l'utilisateur ou proposée puis validée). Voici comment traduire une direction en choix concrets, **toujours dans le thème verrouillé anthracite + rouge / dark mode** (la direction règle des curseurs, elle ne change pas l'identité).

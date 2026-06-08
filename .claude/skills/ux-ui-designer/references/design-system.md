@@ -19,9 +19,12 @@ Pensé pour le dark mode. Principe clé : **ne pas utiliser le noir pur** comme 
 | Texte primaire | `zinc-100` | charges, titres, l'info qui compte |
 | Texte secondaire | `zinc-400` | labels, sous-titres |
 | Texte atténué | `zinc-500` | aides, métadonnées |
-| Accent | `red-700` / `red-800` | action principale, moments forts (PR, RPE atteint, déload) |
-| Succès | `green-700` | validations, progression positive |
-| Avertissement | `amber-700` | alertes douces (machine occupée, fatigue inhabituelle) |
+| Action principale (marque) | `red-700` / `red-800` | bouton d'action dominant, accents de marque, **décoratif — jamais un état** |
+| Problème / erreur | `red-600` (sémantique) | ça ne va pas : valeur invalide, action bloquée, baisse de Plafond |
+| Succès / validation | `green-600` / `green-700` | série validée, « c'est fait », progression positive |
+| Avertissement | `amber-600` / `amber-700` | alerte douce, déséquilibre, à vérifier avant de continuer |
+| Information neutre | `blue-600` / `blue-700` | info factuelle sans danger, rappel de contexte |
+| Aide contextuelle | `violet-600` / `violet-700` | bloc d'aide / pédagogie / « pour comprendre » |
 
 **Règles dark mode (issues des bonnes pratiques) :**
 
@@ -29,6 +32,20 @@ Pensé pour le dark mode. Principe clé : **ne pas utiliser le noir pur** comme 
 - **Élévation par la clarté, pas l'ombre** : plus une surface est haute dans le z-index, plus elle est claire (zinc-900 → zinc-800 → zinc-700). Un voile blanc 5–10 % d'opacité simule la lumière. Les ombres restent discrètes.
 - **Contraste maîtrisé** : du blanc pur (`#fff`) sur noir pur est trop agressif. D'où `zinc-100` sur `zinc-950`, plus doux mais toujours ≥ 4.5:1 (voir accessibilité).
 - **La couleur ne porte jamais seule une info** : double toujours d'une icône, d'un libellé ou d'une position (daltonisme + lecture à l'arrache en salle).
+
+## Système sémantique de couleur (informatif)
+
+Une couleur qui **porte une information d'état** suit une grille fixe, la même partout :
+
+- **rouge = problème** (erreur, blocage, baisse) · **bleu = information neutre** · **orange/jaune = avertissement** · **violet = aide contextuelle** · **vert = succès / validation (« c'est fait »)**.
+
+Règles qui en découlent (non négociables) :
+
+- **Marque ≠ sémantique.** Le rouge de la DA (sang) reste autorisé pour le **décoratif** (barre de progression, logo, action principale, accents d'ambiance). Mais **dès qu'une couleur signale un état**, elle suit la grille — et là le rouge veut dire « problème », jamais « réussi ».
+- **Validé = vert, pas rouge.** Une série/un exo terminé se colore en **vert** (« c'est fait »). Le rouge « c'est fait » connote le négatif et entre en collision avec le rouge erreur. Assume qu'il y aura **plus de vert qu'avant**.
+- **Pas de doré.** L'or/doré ne tient pas en digital : à l'écran il vire au jaune et se lit comme un **avertissement**. Médailles, records, paliers se traitent autrement (vert de réussite + icône + libellé, ou un traitement DA dédié), jamais un aplat « doré ».
+- **« Fait » ≠ « information ».** Un bloc « quelque chose de fait » ne doit pas ressembler à un bloc informatif : les distinguer **au-delà de la couleur** (icône, libellé, traitement).
+- **Cohérence d'état.** Le même état porte le même traitement partout. Si « sélectionné » est plein/accentué et « non sélectionné » atténué sur un écran, c'est pareil sur tous — pas d'inversion d'un exo à l'autre.
 
 ## Espacement
 
@@ -62,3 +79,5 @@ Pour les boutons : l'action principale en `red-700`, les secondaires en surface 
 - Les surfaces respectent-elles la logique d'élévation (plus haut = plus clair) ?
 - Les états interactifs sont-ils tous définis, focus compris ?
 - Un seul accent rouge fort par écran ?
+- Toute couleur **informative** suit-elle la grille sémantique (rouge=problème, bleu=info, orange=avertissement, violet=aide, vert=validé) ?
+- Aucun rouge employé pour dire « réussi / fait » ? Aucun doré ?

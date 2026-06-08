@@ -22,6 +22,7 @@ Daltonisme + coup d'œil rapide = on ne peut pas se fier à la couleur seule. **
 - RPE élevé / alerte : pas seulement « en rouge » → + texte.
 - Déload dans le calendrier : pas seulement une teinte → + label « Récupération » + traitement visuel distinct.
 - Heatmap silhouette : ne pas reposer uniquement sur l'intensité de rouge → ajouter une légende chiffrée.
+- Bloc « fait » vs bloc « information » : ne pas se distinguer **que** par la couleur → icône + libellé + traitement différents (voir la grille sémantique dans design-system).
 
 ## Focus visible
 
@@ -37,7 +38,7 @@ Tout élément interactif a un **état focus net** (anneau visible, `focus-visib
 
 ## Texte & lisibilité
 
-- Respecte la taille de police système de l'utilisateur quand c'est possible (dynamic type) ; ne bloque pas le zoom.
+- Respecte la taille de police système de l'utilisateur quand c'est possible (dynamic type). Coach OS peut verrouiller le **zoom par pincement** (geste qui parasite la manip en salle — comportement d'app native) ; mais alors tout doit rester lisible **sans** zoom et la mise à l'échelle du texte système doit continuer d'être respectée.
 - Pas de texte dans des images.
 - Lignes ni trop longues ni trop serrées.
 

@@ -34,6 +34,7 @@ Chaque concept technique a **un seul** mot d'interface. On l'emploie partout par
 | `working set` | **série de travail** | « La vraie série qui compte, après l'échauffement. » |
 | `tempo` | **tempo** | « La vitesse d'exécution du mouvement. » |
 | `split` | **répartition** (ou nom du programme) | « Comment les muscles sont répartis sur tes jours de la semaine. » N'expose pas « split » brut. |
+| `session label` (jour de programme) | **Séance A / B / C** | Toujours **préfixé « Séance »** + lettre. Jamais « Upper A » / « Push A » nus : le préfixe fait comprendre qu'on **choisit une séance par jour**. Le type (Upper, Push…) peut suivre en sous-titre, pas remplacer « Séance ». |
 
 ## Détecteur de jargon — termes bannis du texte utilisateur
 

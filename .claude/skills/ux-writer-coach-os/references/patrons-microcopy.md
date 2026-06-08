@@ -8,7 +8,8 @@
 - [Champs : labels, placeholders, aide](#champs--labels-placeholders-aide)
 - [Messages d'erreur](#messages-derreur)
 - [États vides](#états-vides)
-- [Onboarding (4 étapes)](#onboarding-4-étapes)
+- [Onboarding](#onboarding)
+- [Aide contextuelle vs Aide / FAQ](#aide-contextuelle-vs-aide--faq)
 - [Séance 0 / Calibration](#séance-0--calibration)
 - [Confirmations & destructif](#confirmations--destructif)
 - [Succès & PR](#succès--pr)
@@ -58,35 +59,31 @@ N'affiche pas l'erreur trop tôt (pas avant que la personne ait fini de remplir 
 - Progrès vide : « Tes courbes apparaîtront ici après quelques séances. On a besoin d'un peu de données pour suivre ta progression. »
 - Catalogue filtré sans résultat : « Aucun exercice avec ces filtres. Enlève un filtre pour élargir. » (pas de jeu de mots, pas de « oups »)
 
-## Onboarding (4 étapes)
+## Onboarding
 
 **Principe global :** faire avancer, pas faire un cours. On demande le strict nécessaire, on explique chaque notion **au moment où elle sert**, et on repousse le détail dans les « ? ». Pas d'écran de bienvenue : on entre direct. La calibration n'est PAS dans l'onboarding (elle est en séance 0).
 
-Le ton : un coach qui prend tes mesures avant de bâtir ton programme. Chaque étape dit en une ligne **pourquoi** on te demande ça.
+**Condensation (priorité haute sur les écrans d'intro).** Il y a trop de texte sur ces écrans : **supprime les phrases non nécessaires**, garde une ligne de *pourquoi* par étape, pas un paragraphe. Une consigne d'action + une raison courte suffisent. Tout le vocabulaire / les explications non indispensables passent **derrière un « en savoir plus »** (ou un « ? »), jamais en clair dans le flux. Test : si la phrase ne change pas ce que la personne fait à l'instant, elle dégage ou elle va dans l'aide.
 
-**Étape 1 — Profil**
+Le ton : un coach qui prend tes mesures avant de bâtir ton programme.
+
+**Étape — Profil**
 - Titre : « Faisons connaissance »
 - Sous-titre : « Quelques infos pour calibrer ton programme. »
-- Champs : sexe, âge, poids, niveau, séances par semaine.
-- Niveau, en clair (pas « débutant/intermédiaire/avancé » seuls) : « Débutant — moins d'un an de muscu régulière », « Intermédiaire — 1 à 3 ans », « Avancé — plus de 3 ans ». Le niveau ajuste la progression, dis-le : « Ça nous aide à doser ta progression. »
+- Champs : sexe, âge, poids, séances par semaine. (Le niveau et l'équipement ne sont plus demandés : auto-calibration cycle après cycle, équipement déduit des choix d'exos.)
 
-**Étape 2 — Équipement**
-- Titre : « Tu t'entraînes avec quoi ? »
-- Sous-titre : « On ne te proposera que des exercices faisables avec ce que tu as. »
-- Chips à cocher (barre, haltères, machines, poids du corps…).
-
-**Étape 3 — Muscles cibles + objectif par muscle**
+**Étape — Muscles (prioritaires + entretien fusionnés)**
 - Titre : « Sur quoi tu veux progresser ? »
-- Sous-titre : « Choisis tes muscles prioritaires, et ce que tu veux pour chacun. »
-- Pour chaque muscle prioritaire : Force / Hypertrophie / Endurance / Entretien — chaque option avec sa glose courte (voir glossaire). Le « ? » ouvre l'explication.
-- Suggestion intelligente (tutoiement !) : « Tu n'as pas mis les jambes dans tes priorités. On les garde en entretien pour rester équilibré ? »
+- Sous-titre court : « Choisis tes muscles prioritaires. »
+- **Une seule page** : les muscles **prioritaires** et les muscles d'**entretien** vivent ensemble sur la silhouette (deux teintes = prio / entretien — voir design system). Le full body apparaît alors comme l'intégrale des muscles.
+- **Auto-complétion de l'entretien** : les muscles non choisis se mettent en entretien tout seuls pour garder l'équilibre. Si la personne valide un ensemble **déséquilibré**, un **popin d'avertissement** (orange) le signale et propose d'équilibrer — **avec la possibilité de refuser** : « Ton choix laisse [zone] de côté. On l'ajoute en entretien pour rester équilibré ? » → « Équilibrer » / « Garder mon choix ».
+- Objectif par muscle prioritaire (Force / Hypertrophie / Endurance / Entretien) : chaque option avec sa glose courte, le détail derrière le « ? ».
 
-**Étape 4 — Choix du programme**
+**Étape — Programme**
 - Titre : « Ton programme »
-- Deux voies, expliquées simplement :
-  - « **Programme guidé** — on part d'un programme éprouvé, adapté à ton profil. » (chaque prefab avec sa glose « pour qui / pour quoi », voir vocabulaire)
-  - « **Programme sur mesure** — Coach OS le construit à partir de tes muscles et objectifs. »
-- Récap final : le programme proposé + lien « Voir le détail des semaines à venir ».
+- **Voie principale, mise en avant : le sur-mesure.** « Coach OS construit ton programme à partir de tes muscles et objectifs. » C'est le choix recommandé, le plus visible.
+- **En alternative, en dessous et moins en évidence : les programmes prefab**, présentés en **tableau comparatif en lignes** (5–6 programmes = une ligne chacun, question de place) : **en-tête de ligne sélectionnable** + colonnes avantages / inconvénients (checks/croix). Chaque prefab garde son nom propre + sa glose « pour qui / pour quoi » (voir vocabulaire).
+- Récap final : le programme proposé + lien « Voir le détail des semaines à venir ». Les séances y sont nommées **« Séance A / B / C »** (préfixe obligatoire, voir vocabulaire).
 - Fin du wizard → onglet Séance, 1ʳᵉ séance marquée « Séance 0 — Calibration ».
 
 ## Séance 0 / Calibration
@@ -125,3 +122,12 @@ Le ton : un coach qui prend tes mesures avant de bâtir ton programme. Chaque é
 ## Infobulles & bottom sheets
 
 **Principe :** déclenchées par le « ? », jamais imposées. 1 à 2 phrases + un exemple concret chiffré. Le détail scientifique va derrière un « En savoir plus » optionnel. Voir `glossaire-vulgarisation.md` pour le contenu rédigé de chaque terme. Couvre au minimum : Plafond, Effort, Cycle, Récupération, Polyarticulaire, Isolation, Étiré, Volume hebdo, V_min/V_max, Amplitude, Hypertrophie.
+
+## Aide contextuelle vs Aide / FAQ
+
+Deux familles d'aide, à ne pas mélanger — elles ne vivent pas au même endroit :
+
+- **Aide contextuelle** : laissée **au moment de l'action**, quand elle aide à **faire un choix** (choisir une variante, doser son effort, comprendre une suggestion). Forme : « ? », infobulle, une ligne sous un champ. Courte, ciblée, jetable. Elle reste près de la décision.
+- **Aide générale / vocabulaire** : tout ce qui **n'est pas nécessaire pour agir maintenant** (définitions de fond, « pourquoi le modèle fait ça », sources scientifiques). Ça **ne s'impose pas dans le flux** : ça va dans une **section Aide / FAQ** dédiée, atteignable à la demande. Les « ? » contextuels peuvent y **renvoyer** vers l'entrée pertinente.
+
+Règle de tri : *est-ce que cette explication change ce que la personne fait à la seconde où elle la lit ?* Oui → aide contextuelle. Non → Aide / FAQ. Quelques notions-clés mises en avant dans l'app (Plafond, Effort) gardent une aide contextuelle ; le reste du vocabulaire est rangé dans l'Aide.
