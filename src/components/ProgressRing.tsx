@@ -54,8 +54,8 @@ export function ProgressRing({
           cx={size / 2}
           cy={size / 2}
           r={r}
-          fill={isComplete ? 'rgba(34,197,94,0.16)' : 'none'}
-          stroke={isComplete ? '#22c55e' : 'rgba(38,42,48,0.9)'}
+          fill={isComplete ? 'rgba(22,163,74,0.16)' : 'none'}
+          stroke={isComplete ? '#16a34a' : 'rgba(38,42,48,0.9)'}
           strokeWidth={strokeWidth}
         />
         {/* Progress — masqué quand accompli (l'anneau vert du track sert de complet). */}
@@ -79,7 +79,7 @@ export function ProgressRing({
         <span
           className={cn(
             'absolute font-display text-[10px] leading-none tabular-nums',
-            isComplete ? 'text-green-300' : 'text-white',
+            isComplete ? 'text-green-400' : 'text-white',
           )}
         >
           {value}/{total}

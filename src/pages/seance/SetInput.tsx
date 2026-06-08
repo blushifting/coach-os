@@ -143,7 +143,7 @@ export function SetInput({
           <span
             className={cn(
               'flex h-11 items-center justify-center font-display text-base leading-none tabular-nums tracking-wide',
-              entry.done ? 'text-green-400' : 'text-anthracite-200',
+              entry.done ? 'text-green-500' : 'text-anthracite-200',
             )}
           >
             {index + 1}
@@ -185,7 +185,7 @@ export function SetInput({
             className={cn(
               'flex h-11 w-11 items-center justify-center rounded-full text-lg transition-all duration-200 active:scale-95',
               entry.done
-                ? 'bg-gradient-to-b from-green-500 to-green-700 text-white shadow-glow-green'
+                ? 'bg-gradient-to-b from-green-600 to-green-800 text-white shadow-glow-green'
                 : disableCheck
                   ? 'cursor-not-allowed bg-anthracite-800 text-anthracite-500'
                   : 'bg-anthracite-700 text-anthracite-300 hover:text-white',

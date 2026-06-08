@@ -80,10 +80,13 @@ export function SessionRunner({
   // Conv #21b — ajout/retrait d'exo en cours de séance.
   const [addOpen, setAddOpen] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState<number | null>(null);
-  // 1.16 — quand toutes les séries d'un exo sont faites, on replie sa carte
-  // (collapse) pour dégager l'écran sur ce qui reste. `expandedOverrides[i] ===
-  // true` = l'user a ré-ouvert manuellement un exo terminé.
-  const [expandedOverrides, setExpandedOverrides] = useState<Record<number, boolean>>({});
+  // 1.16 — repli (collapse) des cartes d'exo. Par défaut un exo se replie tout
+  // seul quand toutes ses séries sont faites. `collapsedOverrides[i]` (1.16.2)
+  // = choix manuel de l'user via le chevron : `true` replie même avant la fin,
+  // `false` garde ouvert un exo terminé. `undefined` = comportement auto.
+  const [collapsedOverrides, setCollapsedOverrides] = useState<
+    Record<number, boolean | undefined>
+  >({});
   const sessionId = useCoachOsStore.getState().currentSessionId;
   const done = countDoneSets(entries);
   const total = countPlannedSets(entries);
@@ -258,9 +261,10 @@ export function SessionRunner({
           const entrySets = entries[i] ?? [];
           const doneCount = entrySets.filter((s) => s.done).length;
           const chargeType = ex?.charge;
-          // 1.16 — exo entièrement validé → repli auto (sauf ré-ouverture manuelle).
+          // 1.16 — exo entièrement validé → repli auto ; un choix manuel
+          // (chevron) prime sur l'auto. 1.16.2 : repli possible avant la fin.
           const allDone = entrySets.length > 0 && doneCount === entrySets.length;
-          const collapsed = allDone && expandedOverrides[i] !== true;
+          const collapsed = collapsedOverrides[i] ?? allDone;
           // Conv #20 — l'exo est en mode "Poids du corps seulement" si l'user
           // a posé `pdc_only: true` dans son EquipmentOverride. SetInput
           // adapte alors le rendu de la charge (badge "Poids du corps"
@@ -297,7 +301,7 @@ export function SessionRunner({
                           strokeWidth="3"
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          className="text-green-400"
+                          className="text-green-500"
                           aria-hidden="true"
                         >
                           <path d="M5 13l4 4L19 7" />
@@ -307,7 +311,7 @@ export function SessionRunner({
                         className={cn(
                           'font-display tabular-nums tracking-wide',
                           allDone
-                            ? 'text-green-400'
+                            ? 'text-green-500'
                             : doneCount > 0
                               ? 'text-anthracite-100'
                               : 'text-anthracite-200',
@@ -353,41 +357,48 @@ export function SessionRunner({
                       <line x1="18" y1="6" x2="6" y2="18" />
                     </svg>
                   </button>
-                  {/* 1.16 — chevron replier/déplier, visible seulement quand
-                      l'exo est terminé. Bouton distinct (pas de clic imbriqué). */}
-                  {allDone && (
-                    <button
-                      type="button"
-                      aria-label={collapsed ? 'Déplier l’exercice' : 'Replier l’exercice'}
-                      aria-expanded={!collapsed}
-                      data-testid={`btn-collapse-${i}`}
-                      onClick={() =>
-                        setExpandedOverrides((m) => ({ ...m, [i]: collapsed }))
-                      }
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-anthracite-700 text-anthracite-300 transition hover:bg-anthracite-600 hover:text-white"
+                  {/* 1.16.2 — chevron replier/déplier TOUJOURS présent (on peut
+                      replier un exo avant la fin). Bouton distinct = pas de clic
+                      imbriqué. Toggle le choix manuel sur l'état courant. */}
+                  <button
+                    type="button"
+                    aria-label={collapsed ? 'Déplier l’exercice' : 'Replier l’exercice'}
+                    aria-expanded={!collapsed}
+                    data-testid={`btn-collapse-${i}`}
+                    onClick={() =>
+                      setCollapsedOverrides((m) => ({ ...m, [i]: !collapsed }))
+                    }
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-anthracite-700 text-anthracite-300 transition hover:bg-anthracite-600 hover:text-white"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                      className={cn('transition-transform duration-300', collapsed ? '' : 'rotate-180')}
                     >
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="16"
-                        height="16"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                        className={cn('transition-transform', collapsed ? '' : 'rotate-180')}
-                      >
-                        <path d="M6 9l6 6 6-6" />
-                      </svg>
-                    </button>
-                  )}
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </button>
                 </header>
 
-                {/* 1.16 — corps masqué quand l'exo est replié (terminé). Le
-                    chevron du header le ré-ouvre. */}
-                {!collapsed && (
-                  <>
+                {/* 1.16.2 — corps repliable avec micro-animation : grid-rows
+                    0fr↔1fr + overflow-hidden donne un slide de hauteur fluide.
+                    Toujours monté (les séries faites restent en état) ; la
+                    transition passe par motion-safe (reduced-motion = instantané). */}
+                <div
+                  className={cn(
+                    'grid motion-safe:transition-all motion-safe:duration-300 motion-safe:ease-out',
+                    collapsed ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100',
+                  )}
+                  aria-hidden={collapsed}
+                >
+                  <div className="flex min-h-0 flex-col gap-1.5 overflow-hidden">
                     {ex !== null ? (
                       <CalibrationBanner
                         exercise={ex}
@@ -414,8 +425,8 @@ export function SessionRunner({
                         />
                       ))}
                     </div>
-                  </>
-                )}
+                  </div>
+                </div>
               </Card>
             </li>
           );

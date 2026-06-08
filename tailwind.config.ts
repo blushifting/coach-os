@@ -81,13 +81,13 @@ const config: Config = {
       keyframes: {
         // Conv #11i — flash sang one-shot quand on coche une série. Le ✓
         // grossit brièvement et halo plus intense, puis retour normal.
-        // 1.16 — la validation d'une série est désormais VERTE (« c'est fait »,
-        // grille sémantique : vert = succès, le rouge réservé aux problèmes).
-        // green-500 = rgb(34,197,94).
+        // 1.16 — la validation d'une série est VERTE (« c'est fait », grille
+        // sémantique : vert = succès). 1.16.2 — vert assombri (green-600 =
+        // rgb(22,163,74)) pour moins jurer avec le rouge sang.
         'tick-pop': {
-          '0%': { transform: 'scale(0.85)', boxShadow: '0 0 0 0 rgba(34,197,94,0.6)' },
-          '50%': { transform: 'scale(1.15)', boxShadow: '0 0 16px 4px rgba(34,197,94,0.55)' },
-          '100%': { transform: 'scale(1)', boxShadow: '0 0 16px -2px rgba(34,197,94,0.35)' },
+          '0%': { transform: 'scale(0.85)', boxShadow: '0 0 0 0 rgba(22,163,74,0.6)' },
+          '50%': { transform: 'scale(1.15)', boxShadow: '0 0 16px 4px rgba(22,163,74,0.5)' },
+          '100%': { transform: 'scale(1)', boxShadow: '0 0 16px -2px rgba(22,163,74,0.32)' },
         },
         // Halo sang pulsant qui parcourt le row une fois (transition douce
         // mais perceptible). Conservé pour le spotlight « regarde ici » de la
@@ -98,10 +98,10 @@ const config: Config = {
           '100%': { backgroundColor: 'rgba(122,26,37,0.10)' },
         },
         // 1.16 — flash VERT au moment où une série est validée (remplace
-        // row-flash sur le SetInput). green-500 / green-800.
+        // row-flash sur le SetInput). 1.16.2 — pic assombri (green-600).
         'validate-flash': {
           '0%': { backgroundColor: 'rgba(22,101,52,0.15)' },
-          '40%': { backgroundColor: 'rgba(34,197,94,0.30)' },
+          '40%': { backgroundColor: 'rgba(22,163,74,0.26)' },
           '100%': { backgroundColor: 'rgba(22,101,52,0.10)' },
         },
         // Conv #11i — bilan : numéros qui "count up" via opacity + slide.
@@ -138,9 +138,10 @@ const config: Config = {
         'glow-sang-lg':
           '0 0 8px 0 rgba(204,74,89,0.55), 0 0 24px -2px rgba(182,42,58,0.45)',
         // 1.16 — halo VERT pour l'état « validé » (coche de série faite).
-        // green-500 = rgb(34,197,94).
+        // 1.16.2 — green-600 = rgb(22,163,74), un peu moins lumineux pour
+        // s'accorder au rouge sang.
         'glow-green':
-          '0 0 8px 0 rgba(34,197,94,0.45), 0 0 24px -4px rgba(34,197,94,0.30)',
+          '0 0 8px 0 rgba(22,163,74,0.4), 0 0 24px -4px rgba(22,163,74,0.26)',
         // Conv #11c — ombre extérieure douce + inset clair haut + reflet rouge
         // discret en bas → profondeur "card" avec une signature sang permanente.
         'card-soft':
