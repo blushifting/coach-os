@@ -105,8 +105,9 @@ export function AddExerciseSheet({
     }
   }
 
-  if (!open) return null;
-
+  // 1.17 — pas de `if (!open) return null` ici : on laisse `<Sheet>` gérer son
+  // cycle de vie (animation de fermeture comprise). Un early-return démontait
+  // le volet instantanément et court-circuitait le slide-down.
   return (
     <Sheet open={open} onClose={close} title="Ajouter un exercice">
       <div className="flex flex-col gap-3">
@@ -127,7 +128,10 @@ export function AddExerciseSheet({
                   Aucun exercice trouvé. Tu peux le créer depuis le Catalogue.
                 </li>
               ) : (
-                results.slice(0, 50).map((ex) => {
+                // 1.17 (D1) — plus de `.slice(0, 50)` : le catalogue compte
+                // ~138 exos, le cap masquait toute la 2e moitié quand on
+                // parcourait sans recherche (« la liste ne va pas au bout »).
+                results.map((ex) => {
                   const already = existingExerciseIds.has(ex.id);
                   return (
                     <li key={ex.id}>

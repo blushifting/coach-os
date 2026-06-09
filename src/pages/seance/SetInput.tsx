@@ -447,6 +447,18 @@ function RpeSlider({ index, value, target, disabled, onChange }: RpeSliderProps)
     '--rpe-fill': isUnset ? '0%' : `${pct}%`,
   } as CSSProperties;
 
+  // 1.17 (D2) — drag-only : on neutralise le tap-to-set natif du <input range>.
+  // `touch-action: pan-y` (index.css) laissait déjà passer le scroll vertical,
+  // mais un tap stationnaire sur la piste sautait quand même la valeur d'effort
+  // (cause des déplacements accidentels signalés). On enregistre la valeur au
+  // pointer-down ; si le pointeur se relève sans drag horizontal franc (tap),
+  // on la restaure. Un vrai drag (> seuil) commit normalement. Insensible au
+  // `fill` e2e (programmatique, sans événements pointer).
+  const dragRef = useRef<{ x: number; before: number | null; moved: boolean } | null>(
+    null,
+  );
+  const DRAG_PX = 6;
+
   return (
     <div className="mt-3 px-1">
       <div className="mb-1 flex items-baseline justify-between gap-2">
@@ -478,6 +490,22 @@ function RpeSlider({ index, value, target, disabled, onChange }: RpeSliderProps)
         step={RPE_STEP}
         value={visualValue}
         disabled={disabled}
+        onPointerDown={(e) => {
+          dragRef.current = { x: e.clientX, before: value, moved: false };
+        }}
+        onPointerMove={(e) => {
+          const d = dragRef.current;
+          if (d !== null && Math.abs(e.clientX - d.x) > DRAG_PX) d.moved = true;
+        }}
+        onPointerUp={() => {
+          const d = dragRef.current;
+          dragRef.current = null;
+          // Tap sans drag → on annule le saut tap-to-set (restaure l'avant).
+          if (d !== null && !d.moved) onChange(d.before);
+        }}
+        onPointerCancel={() => {
+          dragRef.current = null;
+        }}
         onChange={(e) => {
           const v = Number.parseFloat(e.target.value);
           onChange(Number.isFinite(v) ? v : null);

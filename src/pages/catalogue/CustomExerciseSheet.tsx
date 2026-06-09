@@ -231,8 +231,7 @@ export function CustomExerciseSheet({
     });
   }
 
-  if (!open) return null;
-
+  // 1.17 — laisser `<Sheet>` gérer son démontage (animation de fermeture).
   return (
     <Sheet open={open} onClose={close} title="Créer un exercice">
       <div className="max-h-[80dvh] overflow-y-auto pr-1">
