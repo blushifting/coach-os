@@ -1,6 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
+
+// Durée de l'animation de fermeture (doit matcher `sheet-down` /
+// `backdrop-fade-out` dans tailwind.config.ts).
+const CLOSE_MS = 240;
 
 interface SheetProps {
   readonly open: boolean;
@@ -26,6 +30,27 @@ interface SheetProps {
  * de l'écran → impossible à fermer.
  */
 export function Sheet({ open, onClose, title, children }: SheetProps) {
+  // 1.17 — état « closing » : quand `open` repasse à false, on garde le volet
+  // monté le temps de l'animation de sortie (slide-down + fade), puis on
+  // démonte. `rendered` reste vrai pendant cette fenêtre.
+  const [rendered, setRendered] = useState(open);
+  const [closing, setClosing] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setRendered(true);
+      setClosing(false);
+      return;
+    }
+    if (!rendered) return;
+    setClosing(true);
+    const t = window.setTimeout(() => {
+      setRendered(false);
+      setClosing(false);
+    }, CLOSE_MS);
+    return () => window.clearTimeout(t);
+  }, [open, rendered]);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -35,14 +60,19 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!rendered) return null;
 
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      className="fixed inset-0 z-50 flex items-end bg-black/70 backdrop-blur-md motion-safe:animate-backdrop-fade"
+      className={cn(
+        'fixed inset-0 z-50 flex items-end bg-black/70 backdrop-blur-md',
+        closing
+          ? 'motion-safe:animate-backdrop-fade-out'
+          : 'motion-safe:animate-backdrop-fade',
+      )}
       onClick={onClose}
     >
       <div
@@ -51,8 +81,9 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
           // Conv #24 — flex-col + max-h pour header figé / corps scrollable.
           'flex max-h-[90dvh] w-full flex-col rounded-t-3xl border-t border-sang-700/30 bg-anthracite-900/85 backdrop-blur-xl',
           'shadow-[0_-12px_32px_-8px_rgba(0,0,0,0.6)]',
-          // Bloc C 1.16 — le volet glisse depuis le bas (motion-safe).
-          'motion-safe:animate-sheet-up',
+          // Bloc C 1.16 — le volet glisse depuis le bas ; 1.17 — et redescend
+          // à la fermeture (motion-safe).
+          closing ? 'motion-safe:animate-sheet-down' : 'motion-safe:animate-sheet-up',
         )}
         onClick={(e) => e.stopPropagation()}
       >

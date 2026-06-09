@@ -133,6 +133,16 @@ const config: Config = {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
         },
+        // 1.17 — symétriques de fermeture : le volet redescend + le backdrop
+        // se dissout avant le démontage (état « closing » dans Sheet.tsx).
+        'sheet-down': {
+          '0%': { transform: 'translateY(0)' },
+          '100%': { transform: 'translateY(100%)' },
+        },
+        'backdrop-fade-out': {
+          '0%': { opacity: '1' },
+          '100%': { opacity: '0' },
+        },
         // Transition de page (changement d'onglet/route) : fondu + léger
         // glissement vers le haut, cohérent dans toute l'app.
         'page-fade': {
@@ -149,6 +159,10 @@ const config: Config = {
         'point-fade-in': 'point-fade-in 160ms ease-out both',
         'sheet-up': 'sheet-up 280ms cubic-bezier(0.16, 1, 0.3, 1)',
         'backdrop-fade': 'backdrop-fade 200ms ease-out',
+        // `forwards` : reste à l'état final (volet hors écran / backdrop nul)
+        // jusqu'au démontage, pas de snap-back en fin d'animation.
+        'sheet-down': 'sheet-down 240ms cubic-bezier(0.4, 0, 1, 1) forwards',
+        'backdrop-fade-out': 'backdrop-fade-out 240ms ease-in forwards',
         'page-fade': 'page-fade 200ms ease-out',
       },
       boxShadow: {

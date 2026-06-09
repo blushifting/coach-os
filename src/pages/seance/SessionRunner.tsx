@@ -214,6 +214,26 @@ export function SessionRunner({
           });
         }
       }
+      // 1.17 — compléter toutes les séries d'un exo force le repli, MÊME si
+      // l'user l'avait déplié manuellement avant la fin (override `false`).
+      // On efface l'override sur la transition « pas-tout-fait → tout-fait » :
+      // `collapsed` retombe alors sur le comportement auto (= replié). Un clic
+      // ultérieur sur le chevron repose un override et permet de rouvrir.
+      setCollapsedOverrides((m) => {
+        let out: Record<number, boolean | undefined> | null = null;
+        for (let i = 0; i < next.length; i++) {
+          if (m[i] === undefined) continue;
+          const newRow = next[i] ?? [];
+          const oldRow = entries[i] ?? [];
+          const newAllDone = newRow.length > 0 && newRow.every((s) => s.done);
+          const oldAllDone = oldRow.length > 0 && oldRow.every((s) => s.done);
+          if (newAllDone && !oldAllDone) {
+            out ??= { ...m };
+            delete out[i];
+          }
+        }
+        return out ?? m;
+      });
       onEntriesChange(next);
     },
     [catalog, entries, plan, bodyweight, onEntriesChange, confidenceByExo],

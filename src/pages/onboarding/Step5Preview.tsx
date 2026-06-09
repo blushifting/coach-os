@@ -436,7 +436,7 @@ function PedagogyPanel({
         type="button"
         onClick={onToggle}
         data-testid="btn-pedagogy-toggle"
-        className="flex items-center justify-between text-left text-xs uppercase tracking-wide text-violet-300/90 hover:text-white"
+        className="flex items-center justify-between text-left text-xs uppercase tracking-wide text-violet-300 hover:text-violet-200"
       >
         <span>Comment ça marche ?</span>
         <span aria-hidden="true">{open ? '−' : '+'}</span>

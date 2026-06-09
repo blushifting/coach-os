@@ -15,7 +15,14 @@ export function AppShell() {
 
   return (
     <HelpProvider>
-      <div className="flex h-dvh flex-col overflow-hidden bg-anthracite-950 text-white">
+      {/* Bloc B 1.17 — shell ancré en `fixed inset-0` plutôt que `h-dvh`. En
+          PWA standalone iOS (status-bar black-translucent + viewport-fit=cover),
+          `height: 100dvh` se calcule trop court et laissait une bande du fond
+          <body> visible sous l'app en bas d'écran (« trou » safe-area présent
+          partout). `fixed inset-0` remplit l'écran physique bord à bord ; seul
+          <main> scrolle à l'intérieur. Identique sur desktop/Android. Sert aussi
+          de bloc conteneur pour le BrandWatermark passé en `absolute`. */}
+      <div className="fixed inset-0 flex flex-col overflow-hidden bg-anthracite-950 text-white">
         {bootstrapped ? <Outlet /> : <SplashScreen />}
         <BrandWatermark />
         <UpdatePrompt />
@@ -35,6 +42,13 @@ export function AppShell() {
  * Le Header décale son titre via `pl-12` pour laisser de la place. L'opacity
  * 0.32 et le drop-shadow assurent qu'on distingue toujours bien le filigrane
  * du titre adjacent (titre = opacity 1.0, filigrane = 0.32).
+ *
+ * Bloc B 1.17 — anciennement `position: fixed`. Sur iPhone, un élément `fixed`
+ * suit le viewport VISUEL tandis que le Header `sticky` suit le flux ; quand
+ * les barres d'outils iOS s'animent, les deux référentiels se désynchronisent
+ * et le K dérivait par-dessus le texte (OK sur Android). Passé en `absolute`
+ * dans l'AppShell `relative` (qui remplit `h-dvh` et ne scrolle pas) : même
+ * référentiel que le Header sticky → plus de dérive, rendu identique ailleurs.
  */
 function BrandWatermark() {
   return (
@@ -45,7 +59,7 @@ function BrandWatermark() {
       // StepIndicator de l'onboarding (qui est nettement plus haute que le
       // précédent centre du Header). `flex items-center` centre le K dans
       // l'espace réduit.
-      className="pointer-events-none fixed left-3 z-50 flex h-10 items-center"
+      className="pointer-events-none absolute left-3 z-50 flex h-10 items-center"
       style={{ top: 'max(env(safe-area-inset-top), 0.4rem)' }}
       data-testid="brand-watermark"
     >
