@@ -18,6 +18,7 @@ import type { Catalog } from '@/engine/catalog';
 import type { Exercise } from '@/engine/models';
 import { useEngine } from '@/hooks/useEngine';
 import {
+  buildDescription,
   chargeLabel,
   displayExerciseName,
   extypeLabel,
@@ -166,7 +167,10 @@ export function AddExerciseSheet({
           <div className="flex flex-col gap-3">
             <div data-testid="add-exo-preview" className="rounded-lg border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-sm">
               <div className="font-semibold text-white">{displayExerciseName(picked, brand)}</div>
-              <div className="mt-1 text-xs text-anthracite-300">
+              <p className="mt-1 text-xs leading-relaxed text-anthracite-300">
+                {buildDescription(picked)}
+              </p>
+              <div className="mt-1 text-[10px] text-anthracite-400">
                 {patternLabel(picked.pattern)} · {chargeLabel(picked.charge)} ·{' '}
                 {extypeLabel(picked.type)}
               </div>

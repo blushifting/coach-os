@@ -95,7 +95,7 @@ export function WelcomeBanner({ feedbackCount }: WelcomeBannerProps) {
           onClick={() => void startDemo()}
           data-testid="btn-start-demo-from-welcome"
         >
-          Voir un exemple : 8 semaines d'entraînement
+          Revoir la démo
         </Button>
       </div>
     </Card>

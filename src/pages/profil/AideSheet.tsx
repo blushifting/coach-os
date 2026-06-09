@@ -88,10 +88,10 @@ const FAQ: readonly FaqItem[] = [
     answer:
       "Schoenfeld 2019 (méta-analyse fréquence) montre que 2 séances/semaine " +
       "est optimal pour l'hypertrophie : passer à 3× même volume total ne donne " +
-      "pas plus de gain et coûte plus en récupération. L'app calcule la fréquence " +
-      "cible à partir de ton V_min divisé par les ~5 séries/séance optimales par " +
-      "muscle. Pour un muscle à 10 séries/sem, ça donne 2 séances. Tu peux dépasser " +
-      "en ajoutant un exercice en séance.",
+      "pas plus de gain et coûte plus en récupération. L'app divise ton volume " +
+      "cible par les ~5 séries/séance optimales par muscle pour calculer la " +
+      "fréquence. Pour un muscle à 10 séries/sem, ça donne 2 séances. Tu peux " +
+      "dépasser en ajoutant un exercice en séance.",
   },
   {
     id: 'pec-haut-bas',
@@ -234,6 +234,7 @@ const GLOSSARY_ORDER: readonly HelpTopic[] = [
   'vminmax',
   'amplitude',
   'hypertrophie',
+  'adherence',
   'vsSem1',
   'prDuJour',
   'deltoides',

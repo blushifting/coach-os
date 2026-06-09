@@ -91,8 +91,8 @@ export const HELP_GLOSSARY: Readonly<Record<HelpTopic, HelpEntry>> = {
       "et baisse les cycles avec semaine sautée. À ne pas confondre avec le « volume hebdo » (séries/sem/muscle).",
   },
   vminmax: {
-    title: 'V_min / V_max',
-    body: 'Bornes du volume hebdo apprises par feedback. V_min = volume minimal pour progresser. V_max = avant que la fatigue ne mange les gains. Réajustés à chaque cycle.',
+    title: 'Volume minimal / maximal',
+    body: 'Fourchette de séries par semaine apprise au fil des cycles. Le minimum (V_min) est le seuil en-dessous duquel tu stagnes ; le maximum (V_max) est celui au-dessus duquel la fatigue annule les gains. Kotsh les ajuste automatiquement à chaque bilan de cycle.',
   },
   amplitude: {
     title: 'Amplitude complète',
@@ -103,8 +103,8 @@ export const HELP_GLOSSARY: Readonly<Record<HelpTopic, HelpEntry>> = {
     body: 'Augmenter la taille du muscle. Reps 6-15, 1 à 2 reps en réserve (Réserve 1-2), volume élevé. À ne pas confondre avec le « volume hebdo » qui est juste le nombre de séries/sem.',
   },
   vsSem1: {
-    title: 'vs sem1',
-    body: "Comparaison de la charge actuelle avec celle de la semaine 1 du cycle en cours. Mesure la progression nette intra-cycle, avant déload.",
+    title: 'Progression intra-cycle',
+    body: "Comparaison de la charge actuelle avec celle de la semaine 1 du cycle en cours. Mesure la progression nette sur le cycle, avant déload.",
   },
   prDuJour: {
     title: 'Record du jour',
