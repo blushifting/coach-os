@@ -267,7 +267,7 @@ export function AideSheet({ open, onClose }: AideSheetProps) {
                   onClick={() => void startDemo()}
                   data-testid="btn-relaunch-demo"
                 >
-                  Lancer la démo
+                  Revoir la démo
                 </Button>
               </div>
             </Card>

@@ -268,7 +268,7 @@ export function adjustVolumeBoundsAtCycleEnd(
     if (muscle in state.volume_min) {
       state.volume_min[muscle] = Math.max(2, state.volume_min[muscle]! - 1);
       review.warnings.push(
-        `V_min(${muscle}) ajusté à la baisse, sessions trop courtes ?`,
+        `Volume minimum réduit sur ${muscle} — tes séances sont peut-être trop courtes.`,
       );
     }
   }

@@ -146,7 +146,7 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
             <p>
               Quand tu ajoutes un muscle, tu peux préciser ce que tu cherches.
               Si tu ne sais pas : <strong className="text-anthracite-100">Hypertrophie</strong>{' '}
-              est le défaut le plus courant.
+              est le choix le plus courant.
             </p>
             <ul className="space-y-1.5 pl-1">
               <li>

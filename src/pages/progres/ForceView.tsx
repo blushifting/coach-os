@@ -11,7 +11,7 @@
  */
 
 import { Card } from '@/components/Card';
-import { HelpButton } from '@/components/HelpButton';
+import { Concept } from '@/components/Concept';
 import { displayExerciseName, kgUnitLabel } from '@/lib/catalog-filter';
 import { useCatalog, useGymBrand } from '@/store/selectors';
 import { cn } from '@/lib/cn';
@@ -36,7 +36,7 @@ export function ForceView({ series }: ForceViewProps) {
       <Card data-testid="force-empty">
         <p className="text-sm text-anthracite-300">
           Pas encore assez de données. Termine 2 séances avec un même exercice
-          pour voir ta courbe de Plafond.
+          pour voir ta courbe de <Concept topic="plafond">Plafond</Concept>.
         </p>
       </Card>
     );
@@ -44,10 +44,11 @@ export function ForceView({ series }: ForceViewProps) {
 
   return (
     <div className="flex flex-col gap-3" data-testid="force-view">
-      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-anthracite-300">
-        Plafond par exercice
-        <HelpButton topic="plafond" label="Aide : Plafond" />
-      </div>
+      <header className="flex items-center gap-2">
+        <h2 className="text-sm font-semibold text-white">
+          <Concept topic="plafond">Plafond</Concept> par exercice
+        </h2>
+      </header>
       {series.map((s) => (
         <Card
           key={s.exercise_id}

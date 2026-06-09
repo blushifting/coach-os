@@ -146,13 +146,13 @@ describe('adjustVolumeBoundsAtCycleEnd', () => {
     expect(state.volume_min['pectoraux']!).toBeLessThan(before);
   });
 
-  it('undertrained génère un warning V_min', () => {
+  it('undertrained génère un warning volume minimum', () => {
     const state = stateWithPlan();
     const review = generateCycleReview(state, catalog);
     review.muscles_undertrained = ['pectoraux'];
     review.warnings = [];
     adjustVolumeBoundsAtCycleEnd(state, review);
-    expect(review.warnings.some((w) => w.includes('V_min'))).toBe(true);
+    expect(review.warnings.some((w) => w.includes('Volume minimum'))).toBe(true);
   });
 });
 

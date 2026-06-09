@@ -72,10 +72,8 @@ export function SessionRunner({
   const brand = useGymBrand();
   const snapshots = useCoachOsStore((s) => s.history.e1rmSnapshots);
   const [detail, setDetail] = useState<{ exerciseId: string; itemIndex: number } | null>(null);
-  const [confirmSkip, setConfirmSkip] = useState(false);
   const [confirmFinish, setConfirmFinish] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
-  const [skipping, setSkipping] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   // Conv #21b — ajout/retrait d'exo en cours de séance.
   const [addOpen, setAddOpen] = useState(false);
@@ -91,17 +89,6 @@ export function SessionRunner({
   const done = countDoneSets(entries);
   const total = countPlannedSets(entries);
   const incomplete = done < total;
-
-  async function handleSkip() {
-    setConfirmSkip(false);
-    setSkipping(true);
-    try {
-      await engine.skipCurrentSession();
-      navigate('/programme');
-    } finally {
-      setSkipping(false);
-    }
-  }
 
   // Conv #15 vague 3 — annulation : supprime la session de la DB (vs skip
   // qui la marque `status='skipped'`). La case calendrier redevient libre.
@@ -506,28 +493,14 @@ export function SessionRunner({
         onCancel={() => setConfirmFinish(false)}
       />
 
-      {/* Conv #14b-3 — sortie alternative : marquer la séance comme sautée.
-          Verrouillé en mode démo (protection mutations, Conv #16). */}
-      <Button
-        variant="ghost"
-        size="md"
-        fullWidth
-        onClick={() => setConfirmSkip(true)}
-        disabled={finishing || skipping || cancelling || demoActive}
-        data-testid="btn-skip-session"
-      >
-        {skipping ? 'Enregistrement…' : 'Sauter cette séance'}
-      </Button>
-
       {/* Conv #15 vague 3 — annuler : retire complètement la séance, comme
-          si elle n'avait pas été programmée. Distinct de "Sauter" (qui
-          laisse une trace barrée dans le calendrier). */}
+          si elle n'avait pas été programmée. */}
       <Button
         variant="ghost"
         size="md"
         fullWidth
         onClick={() => setConfirmCancel(true)}
-        disabled={finishing || skipping || cancelling || demoActive}
+        disabled={finishing || cancelling || demoActive}
         data-testid="btn-cancel-session"
       >
         {cancelling ? 'Annulation…' : 'Annuler la séance'}
@@ -548,28 +521,6 @@ export function SessionRunner({
         destructive
         onConfirm={handleCancel}
         onCancel={() => setConfirmCancel(false)}
-      />
-
-      <Dialog
-        open={confirmSkip}
-        title="Sauter cette séance ?"
-        description={
-          done > 0 ? (
-            <>
-              Tu as déjà validé {done} série{done > 1 ? 's' : ''} — elles ne
-              seront pas enregistrées. La séance restera marquée comme sautée
-              dans le calendrier.
-            </>
-          ) : (
-            <>La séance sera marquée comme sautée dans le calendrier. Tu pourras
-            en redémarrer une depuis le Programme.</>
-          )
-        }
-        confirmLabel="Sauter"
-        cancelLabel="Annuler"
-        destructive
-        onConfirm={handleSkip}
-        onCancel={() => setConfirmSkip(false)}
       />
 
       <ExerciseDetailSheet

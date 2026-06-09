@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { Concept } from '@/components/Concept';
 import { HelpButton } from '@/components/HelpButton';
 import { TrendArrow } from '@/components/icons';
 import { cn } from '@/lib/cn';
@@ -159,7 +160,7 @@ function ReviewPlafonds({
   if (entries.length === 0) {
     return (
       <Card data-testid="bilan-plafonds">
-        <h2 className="mb-1 text-sm font-semibold text-white">Plafonds</h2>
+        <h2 className="mb-1 text-sm font-semibold text-white"><Concept topic="plafond">Plafonds</Concept></h2>
         <p className="text-xs text-anthracite-300">Aucune variation enregistrée.</p>
       </Card>
     );
@@ -168,7 +169,7 @@ function ReviewPlafonds({
     <Card data-testid="bilan-plafonds" className="flex flex-col gap-2">
       {/* Conv #15-5 — "Δ sur le cycle" → "Évolution sur le cycle" (mot FR). */}
       <h2 className="text-sm font-semibold text-white">
-        Plafonds — Évolution sur le cycle
+        <Concept topic="plafond">Plafonds</Concept> — Évolution sur le cycle
       </h2>
       <ul className="flex flex-col gap-1">
         {entries.slice(0, 6).map(([exId, delta], i) => {
