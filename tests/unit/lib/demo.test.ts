@@ -130,6 +130,32 @@ describe('enterDemoMode / exitDemoMode', () => {
     expect(s.lastCycleReview!.PRs.length).toBeGreaterThanOrEqual(1);
   });
 
+  it('save/restore des currentSessionEntries (régression : démo effaçait la séance en cours)', async () => {
+    // Séance réelle en cours avec des saisies (coches/reps) déjà remplies.
+    const realEntries = [
+      [
+        { reps: 8, load_kg: 60, rpe: 8, done: true },
+        { reps: 8, load_kg: 60, rpe: null, done: false },
+      ],
+    ];
+    useCoachOsStore.setState({
+      userState: startUser(makeTestProfile(), new Catalog()),
+      currentSessionPlan: null,
+      currentSessionId: 42,
+      currentSessionEntries: realEntries as never,
+    });
+
+    const snap = loadAlex();
+    await enterDemoMode(snap);
+    // Pendant la démo, les entries sont vierges (séance d'Alex).
+    expect(useCoachOsStore.getState().currentSessionEntries).toBeNull();
+
+    exitDemoMode();
+    // Au retour, les saisies réelles sont restaurées à l'identique.
+    expect(useCoachOsStore.getState().currentSessionEntries).toBe(realEntries);
+    expect(useCoachOsStore.getState().currentSessionId).toBe(42);
+  });
+
   it('exitDemoMode restaure currentSessionPlan + lastCycleReview pré-démo', async () => {
     // Pose un userState et un lastCycleReview "réels"
     useCoachOsStore.setState({

@@ -130,9 +130,23 @@ export default function SeancePage() {
     }
     const sessionChanged = currentSessionId !== prevId;
     if (sessionChanged) {
-      setStoredEntries(
-        initEntries(currentSessionPlan, { calibrationExoIds }),
-      );
+      // Conv #26 — on préserve les entries si elles correspondent déjà au plan
+      // entrant. Tous les vrais flux de changement de séance passent par
+      // `setCurrentSession`, qui remet `currentSessionEntries` à null : ils
+      // retombent donc toujours en ré-init. Seul le save/restore du mode démo
+      // réinjecte des entries non nulles à sessionId changé — et on veut alors
+      // les conserver (sinon la séance en cours est effacée au retour de démo).
+      const compatible =
+        storedEntries !== null &&
+        storedEntries.length === currentSessionPlan.items.length &&
+        storedEntries.every(
+          (row, i) => row.length === currentSessionPlan.items[i]!.sets.length,
+        );
+      if (!compatible) {
+        setStoredEntries(
+          initEntries(currentSessionPlan, { calibrationExoIds }),
+        );
+      }
       return;
     }
     // Même session : tester si la structure du plan a changé (remplacement d'exo).

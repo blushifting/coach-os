@@ -26,6 +26,10 @@ interface PreDemoBackup {
   history: HistorySnapshot;
   currentSessionPlan: CoachOsState['currentSessionPlan'];
   currentSessionId: CoachOsState['currentSessionId'];
+  // Conv #26 — les saisies en cours (coches, reps, charges) doivent être
+  // sauvegardées/restaurées comme le plan : sans ça, lancer la démo pendant
+  // une séance écrasait définitivement la séance de l'utilisateur.
+  currentSessionEntries: CoachOsState['currentSessionEntries'];
   lastCycleReview: CoachOsState['lastCycleReview'];
 }
 
@@ -69,6 +73,7 @@ export async function enterDemoMode(snapshot?: DemoSnapshot): Promise<void> {
     history: store.history,
     currentSessionPlan: store.currentSessionPlan,
     currentSessionId: store.currentSessionId,
+    currentSessionEntries: store.currentSessionEntries,
     lastCycleReview: store.lastCycleReview,
   };
   // Zod valide les valeurs string littérales — on cast vers les types métier
@@ -99,6 +104,10 @@ export async function enterDemoMode(snapshot?: DemoSnapshot): Promise<void> {
     },
     currentSessionPlan,
     currentSessionId,
+    // Démarre la séance démo avec des entries vierges (SeancePage les
+    // (ré)initialisera pour le plan d'Alex). Les saisies réelles sont dans
+    // `_backup` et restaurées à la sortie.
+    currentSessionEntries: null,
     lastCycleReview: firstReview,
     demoMode: true,
     demoSnapshot: snap,
@@ -122,6 +131,7 @@ export function exitDemoMode(): void {
     history: _backup.history,
     currentSessionPlan: _backup.currentSessionPlan,
     currentSessionId: _backup.currentSessionId,
+    currentSessionEntries: _backup.currentSessionEntries,
     lastCycleReview: _backup.lastCycleReview,
     demoMode: false,
     demoSnapshot: null,
