@@ -36,14 +36,27 @@ interface SetInputProps {
    * répète la série de chaque côté). N'affecte pas le calcul de volume.
    */
   readonly unilateral?: boolean;
-  /** Cible RPE de la prescription, affichée discrètement à côté du label "effort". */
-  readonly rpeTarget?: number;
 }
 
 const RPE_MIN = 6;
 const RPE_MAX = 10;
 const RPE_STEP = 0.5;
 const RPE_DEFAULT = 8;
+
+/**
+ * 1.17 — l'UI affiche les « reps en réserve » (Réserve), plus un effort. Le
+ * moteur garde le RPE en interne ; conversion : réserve = 10 − RPE.
+ *  - RPE 6  → 4 en réserve → « 4+ » (plancher de l'échelle, on ne descend pas
+ *    plus bas : tout ce qui est ≥ 4 en réserve = trop facile pour mesurer)
+ *  - RPE 10 → 0 en réserve → « échec »
+ *  - demi-crans : 2,5 en réserve… (virgule décimale FR)
+ */
+function reserveLabel(rpe: number): string {
+  const rir = 10 - rpe;
+  if (rir <= 0) return 'échec';
+  if (rir >= 4) return '4+';
+  return Number.isInteger(rir) ? String(rir) : String(rir).replace('.', ',');
+}
 
 function isBodyweightOnly(charge: ChargeType | undefined): boolean {
   return charge === ChargeType.BODYWEIGHT;
@@ -69,7 +82,6 @@ export function SetInput({
   chargeType,
   pdcOnly = false,
   unilateral = false,
-  rpeTarget,
 }: SetInputProps) {
   // Conv #20 — pdcOnly traite l'exo comme un BW pur (badge figé, charge=0).
   const bodyweightOnly = isBodyweightOnly(chargeType) || pdcOnly;
@@ -194,7 +206,6 @@ export function SetInput({
       <RpeSlider
         index={index}
         value={entry.rpe}
-        target={rpeTarget}
         disabled={disableInputs}
         onChange={(v) => onChange({ rpe: v })}
       />
@@ -430,12 +441,11 @@ function KgStepper({ index, value, disabled, onChange }: KgStepperProps) {
 interface RpeSliderProps {
   readonly index: number;
   readonly value: number | null;
-  readonly target?: number;
   readonly disabled: boolean;
   readonly onChange: (v: number | null) => void;
 }
 
-function RpeSlider({ index, value, target, disabled, onChange }: RpeSliderProps) {
+function RpeSlider({ index, value, disabled, onChange }: RpeSliderProps) {
   // Quand pas encore saisi : thumb visuellement positionné au défaut (8) mais
   // atténué (data-unset='true'), label affiche "—" pour ne pas suggérer une
   // valeur. La première interaction commit la valeur réelle.
@@ -463,12 +473,7 @@ function RpeSlider({ index, value, target, disabled, onChange }: RpeSliderProps)
     <div className="mt-3 px-1">
       <div className="mb-1 flex items-baseline justify-between gap-2">
         <span className="text-[10px] uppercase tracking-wide text-anthracite-300">
-          effort
-          {target !== undefined ? (
-            <span className="ml-1 normal-case tracking-normal text-anthracite-500">
-              vise ~{target}
-            </span>
-          ) : null}
+          réserve
         </span>
         <span
           data-testid={`rpe-value-${index}`}
@@ -477,7 +482,7 @@ function RpeSlider({ index, value, target, disabled, onChange }: RpeSliderProps)
             isUnset ? 'text-anthracite-400' : 'text-white',
           )}
         >
-          {isUnset ? '—' : value}
+          {isUnset ? '—' : reserveLabel(value)}
         </span>
       </div>
       <input
@@ -518,11 +523,11 @@ function RpeSlider({ index, value, target, disabled, onChange }: RpeSliderProps)
         aria-hidden="true"
         className="mt-0.5 flex justify-between px-0.5 text-[9px] tabular-nums text-anthracite-500"
       >
-        <span>6</span>
-        <span>7</span>
-        <span>8</span>
-        <span>9</span>
-        <span>10</span>
+        <span>4+</span>
+        <span>3</span>
+        <span>2</span>
+        <span>1</span>
+        <span>échec</span>
       </div>
     </div>
   );

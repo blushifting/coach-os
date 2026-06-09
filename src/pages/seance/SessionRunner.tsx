@@ -437,7 +437,6 @@ export function SessionRunner({
                           chargeType={chargeType}
                           pdcOnly={pdcOnly}
                           unilateral={ex?.uni ?? false}
-                          rpeTarget={item.sets[j]?.rpe_target}
                           checkLocked={j > 0 && !entrySets[j - 1]!.done}
                           onChange={(patch) =>
                             handleEntriesChange(updateSetEntry(entries, i, j, patch))
