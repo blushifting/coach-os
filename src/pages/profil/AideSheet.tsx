@@ -45,7 +45,7 @@ const TUTORIALS: readonly Tutorial[] = [
       "Pas de séance de test dédiée : Kotsh apprend tes Plafonds en marchant. " +
       "À ta 1re séance, Kotsh pré-remplit des charges raisonnables selon ton poids ; " +
       "tu modifies si la réalité diffère. Pour chaque série tu saisis les reps faites, " +
-      "la charge et l'Effort perçu (sur 10, aussi appelé RPE dans la littérature). Kotsh en déduit ton Plafond via " +
+      "la charge et ta Réserve (combien de reps tu aurais encore pu faire — aussi appelé RPE dans la littérature). Kotsh en déduit ton Plafond via " +
       "la formule d'Epley étendue, et l'affine séance après séance — sans phase de calibration " +
       "préalable.",
   },
@@ -53,8 +53,8 @@ const TUTORIALS: readonly Tutorial[] = [
     id: 'feedback',
     title: 'Faire ton bilan après chaque séance',
     body:
-      "Pour chaque série, tu indiques combien de reps tu as faites et ton Effort perçu " +
-      "(sur 10). Kotsh ajuste automatiquement ton Plafond, repère les plateaux et adapte les " +
+      "Pour chaque série, tu indiques combien de reps tu as faites et ta Réserve " +
+      "(combien tu aurais encore pu en faire). Kotsh ajuste automatiquement ton Plafond, repère les plateaux et adapte les " +
       "charges de la séance suivante. Pas besoin de tenir un journal séparé.",
   },
   {
@@ -106,23 +106,23 @@ const FAQ: readonly FaqItem[] = [
   },
   {
     id: 'rpe-pas-pct',
-    question: "Pourquoi l'Effort perçu et pas un % du 1RM ?",
+    question: "Pourquoi la Réserve et pas un % du 1RM ?",
     answer:
       "Le 1RM réel varie jour à jour (sommeil, stress, alimentation, fatigue " +
       "résiduelle) de ±5 à 15 %. Programmer à 80 % d'un 1RM mesuré il y a 6 semaines " +
-      "amène souvent à un Effort de 7 ou de 10 selon la journée. Piloter l'intensité " +
-      "par le ressenti (Helms 2018, Zourdos 2016) règle ça : ça s'ajuste " +
+      "amène parfois à finir avec 4 reps en réserve ou au contraire à l'échec selon la journée. " +
+      "Piloter par la Réserve (Helms 2018, Zourdos 2016) règle ça : ça s'ajuste " +
       "automatiquement à ta forme du moment. Plus précis en pratique qu'un %.",
   },
   {
     id: 'rpe-min-6',
-    question: "Pourquoi l'échelle d'Effort commence à 6 et pas à 1 ?",
+    question: "Pourquoi le curseur de Réserve plafonne à « 4+ » ?",
     answer:
-      "Sous un Effort de 6 (= 4+ reps en réserve), une série est trop facile pour apprendre " +
-      "ton Plafond. La formule d'Epley n'est calibrée que ~6-10 (n_équivalent ≤ 15) ; en dessous " +
-      "elle sort de sa zone fiable et Kotsh ne pourrait pas extrapoler ton Plafond " +
-      "sans erreur. Le curseur Effort plafonne donc à 6 minimum — c'est " +
-      "l'Effort minimum « informatif » pour la calibration.",
+      "Au-delà de 4 reps en réserve, une série est trop facile pour apprendre " +
+      "ton Plafond. La formule d'Epley n'est fiable que pour les séries intenses (≤ 15 reps équivalentes) ; " +
+      "en deçà, Kotsh ne peut pas extrapoler ton Plafond sans erreur. " +
+      "« 4+ » est donc la Réserve maximum « informative » pour la calibration — " +
+      "au-delà, monte la charge.",
   },
   {
     id: 'semaine5-deload',
@@ -224,7 +224,7 @@ const SOURCES: readonly SourceItem[] = [
 
 const GLOSSARY_ORDER: readonly HelpTopic[] = [
   'plafond',
-  'rpe',
+  'reserve',
   'cycle',
   'deload',
   'poly',

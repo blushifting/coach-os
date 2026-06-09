@@ -446,8 +446,9 @@ function PedagogyPanel({
           <p>
             Chaque séance cible plusieurs muscles avec un nombre de séries
             calculé pour rester dans une zone de progression efficace : ni
-            trop peu, ni trop. À chaque série, tu notes ton Effort perçu
-            (de 6 à 10) et Kotsh ajuste les charges et le Volume hebdo pour
+            trop peu, ni trop. À chaque série, tu notes ta{' '}
+            <strong>Réserve</strong> — le nombre de reps que tu aurais encore
+            pu faire — et Kotsh ajuste les charges et le Volume hebdo pour
             la suite.
           </p>
           <p>

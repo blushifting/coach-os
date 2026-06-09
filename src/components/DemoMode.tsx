@@ -88,14 +88,14 @@ const TOUR_STEPS: readonly TourStep[] = [
       durationMs: 700,
     },
   },
-  // Conv #15-9 — étape dédiée à l'effort (notion clé, mal comprise au 1er
-  // contact). Pointe directement sur la cellule "effort" de la 1re série.
+  // Conv #15-9 — étape dédiée à la Réserve (notion clé, mal comprise au 1er
+  // contact). Pointe directement sur la cellule "réserve" de la 1re série.
   {
     id: 'effort',
     route: '/seance/runner',
-    title: "L'effort, le cœur du système",
+    title: 'La Réserve, le cœur du système',
     body:
-      "À la fin de chaque série, note l'effort ressenti sur 10. Repère : 6 = facile, il restait 4 reps en réserve. 8 = dur, 2 reps en réserve. 10 = échec, impossible d'en faire une de plus. Kotsh s'en sert pour ajuster automatiquement tes charges à la séance suivante — c'est ce qui rend le programme autorégulé.",
+      "À la fin de chaque série, note combien de reps tu aurais encore pu faire : c'est ta Réserve. Repère : 4+ = encore très facile. 2 = dur, tu aurais pu en faire 2 de plus. Échec = tu ne peux plus. Kotsh s'en sert pour ajuster automatiquement tes charges à la séance suivante — c'est ce qui rend le programme autorégulé.",
     pointTo: '[data-testid="input-rpe-0"]',
   },
   {
@@ -103,7 +103,7 @@ const TOUR_STEPS: readonly TourStep[] = [
     route: '/progres',
     title: 'Ses plafonds qui montent',
     body:
-      "Voici la progression d'Alex sur ses gros exercices. Les étoiles ★ marquent les records personnels (plafond battu d'au moins 2 kg). Les plateaux ou petits creux ponctuels correspondent à une semaine plus dure (fatigue, effort perçu élevé) ; les semaines de déload réduisent volontairement les charges pour récupérer, sans qu'elles n'apparaissent comme du recul.",
+      "Voici la progression d'Alex sur ses gros exercices. Les étoiles ★ marquent les records personnels (plafond battu d'au moins 2 kg). Les plateaux ou petits creux ponctuels correspondent à une semaine plus dure (peu de reps en réserve, fatigue accumulée) ; les semaines de déload réduisent volontairement les charges pour récupérer, sans qu'elles n'apparaissent comme du recul.",
     pointTo: '[data-testid="force-view"]',
     clickOnEnter: '[data-testid="tab-force"]',
   },

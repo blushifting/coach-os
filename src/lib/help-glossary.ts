@@ -1,5 +1,6 @@
 export type HelpTopic =
   | 'plafond'
+  | 'reserve'
   | 'rpe'
   | 'cycle'
   | 'deload'
@@ -30,17 +31,29 @@ export const HELP_GLOSSARY: Readonly<Record<HelpTopic, HelpEntry>> = {
       "pas besoin de tester un vrai 1RM à chaque fois, c'est plus sûr et tout aussi précis. " +
       "Le plafond se met à jour à chaque séance et sert à calculer tes charges de travail.",
   },
-  rpe: {
-    title: 'Effort',
+  reserve: {
+    title: 'Réserve',
     body:
-      "Note l'intensité ressentie en fin de série, sur une échelle de 6 à 10 " +
-      "(en dessous de 6 c'est trop facile pour stimuler du muscle). " +
-      "Repères : 6 = il restait 4 reps en réserve, 7 = 3 reps, 8 = 2 reps, " +
-      "9 = 1 rep, 10 = échec total (impossible d'en faire une de plus). " +
-      "C'est ce que les coachs appellent RPE (Rate of Perceived Exertion). " +
-      "Kotsh s'en sert pour ajuster automatiquement la charge à la séance " +
-      "suivante : effort plus bas que la cible → on monte ; plus haut → on " +
-      "baisse. Plus tu es honnête dans la note, mieux Kotsh calibre.",
+      "Le nombre de reps que tu aurais encore pu faire avant l'échec. " +
+      "2 en réserve = tu t'arrêtes 2 reps avant de bloquer. " +
+      "Repères : 4+ = encore très facile, 3 = confortable, 2 = dur mais gérable, " +
+      "1 = limite, échec = impossible d'en faire une de plus. " +
+      "Kotsh s'en sert pour ajuster ta charge à la séance suivante — " +
+      "plus tu es honnête, mieux il calibre. " +
+      "Dans la littérature scientifique ce concept porte aussi le nom de RIR (Reps In Reserve) " +
+      "ou RPE (Rate of Perceived Exertion).",
+  },
+  rpe: {
+    title: 'Réserve',
+    body:
+      "Le nombre de reps que tu aurais encore pu faire avant l'échec. " +
+      "2 en réserve = tu t'arrêtes 2 reps avant de bloquer. " +
+      "Repères : 4+ = encore très facile, 3 = confortable, 2 = dur mais gérable, " +
+      "1 = limite, échec = impossible d'en faire une de plus. " +
+      "Kotsh s'en sert pour ajuster ta charge à la séance suivante — " +
+      "plus tu es honnête, mieux il calibre. " +
+      "Dans la littérature scientifique ce concept porte aussi le nom de RIR (Reps In Reserve) " +
+      "ou RPE (Rate of Perceived Exertion).",
   },
   cycle: {
     title: 'Cycle',
@@ -49,7 +62,7 @@ export const HELP_GLOSSARY: Readonly<Record<HelpTopic, HelpEntry>> = {
   deload: {
     title: 'Déload (semaine allégée)',
     body:
-      "Dernière semaine de chaque cycle : moitié moins de séries et effort plafonné à 6/10. " +
+      "Dernière semaine de chaque cycle : moitié moins de séries et au moins 4 reps en réserve (rien de poussé). " +
       "Sert à faire redescendre la fatigue accumulée sans perdre les gains. " +
       "C'est volontairement facile — l'objectif est de récupérer pour repartir frais au cycle suivant.",
   },
@@ -87,7 +100,7 @@ export const HELP_GLOSSARY: Readonly<Record<HelpTopic, HelpEntry>> = {
   },
   hypertrophie: {
     title: 'Hypertrophie',
-    body: 'Augmenter la taille du muscle. Reps 6-15, Effort 7-9, volume élevé. À ne pas confondre avec le « volume hebdo » qui est juste le nombre de séries/sem.',
+    body: 'Augmenter la taille du muscle. Reps 6-15, 1 à 2 reps en réserve (Réserve 1-2), volume élevé. À ne pas confondre avec le « volume hebdo » qui est juste le nombre de séries/sem.',
   },
   vsSem1: {
     title: 'vs sem1',

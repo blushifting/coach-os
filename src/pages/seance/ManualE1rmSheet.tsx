@@ -93,7 +93,7 @@ export function ManualE1rmSheet({
       <p className="mb-3 text-sm leading-relaxed text-anthracite-200">
         Saisis la charge maximale que tu peux soulever sur 1 rep propre. L'app
         l'utilisera pour caler tes séries de travail — tu pourras toujours
-        l'affiner via ton effort perçu au fil des séances.
+        l'affiner via ta Réserve saisie au fil des séances.
       </p>
 
       {isBwPure ? (

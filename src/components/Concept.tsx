@@ -12,7 +12,7 @@ interface ConceptProps {
 }
 
 /**
- * Terme verrouillé de Kotsh (Plafond, Cycle, Effort, Récupération…) rendu
+ * Terme verrouillé de Kotsh (Plafond, Cycle, Réserve, Récupération…) rendu
  * comme un mot « défini » : soulignement pointillé discret dans la teinte
  * marque, tappable pour ouvrir son explication (glossaire d'aide partagé).
  *

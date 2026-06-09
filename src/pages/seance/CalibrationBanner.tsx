@@ -90,7 +90,7 @@ export function CalibrationBanner({
             <span className="font-semibold text-blue-300">
               Trop facile pour mesurer ton Plafond
             </span>{' '}
-            — vise un effort 7-8/10 (2-3 reps en réserve avant l'échec).
+            — garde 2 à 3 reps en réserve (arrête-toi avant l'échec).
             {suggestedLoad !== null ? (
               <>
                 {' '}
@@ -110,7 +110,7 @@ export function CalibrationBanner({
             —{' '}
             {isStale
               ? 'Plafond pas mesuré depuis 8 semaines, cette série va le rafraîchir.'
-              : "vise un vrai effort 7-8/10 (2-3 reps en réserve). C'est cet effort élevé qui permet à Kotsh d'apprendre ton Plafond — fais 3-12 reps puis renseigne reps + effort ressenti."}
+              : "garde 2 à 3 reps en réserve (pousse vraiment). C'est cette intensité qui permet à Kotsh d'apprendre ton Plafond — fais 3-12 reps puis renseigne reps + réserve."}
           </p>
         )}
 
