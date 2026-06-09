@@ -1145,6 +1145,14 @@ export async function endOfCycle(args: EndOfCycleArgs = {}) {
   useCoachOsStore.setState({
     userState: next,
     lastCycleReview: review,
+    // 1.17 (D7) — un nouveau cycle invalide toute séance en cours : sa ligne
+    // DB `planned` vient d'être supprimée par `txEndOfCycle`, mais le store
+    // gardait le `currentSessionPlan` → une séance « commencée » résiduelle
+    // s'affichait sur aujourd'hui au lieu de laisser l'user planifier sa 1re
+    // séance du cycle. On vide l'état de séance en cours.
+    currentSessionPlan: null,
+    currentSessionId: null,
+    currentSessionEntries: null,
   });
   return review;
 }
