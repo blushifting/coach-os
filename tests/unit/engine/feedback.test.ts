@@ -114,6 +114,32 @@ describe('updateE1rmForExercise', () => {
     expect(next).toBeGreaterThan(80);
     expect(next).toBeLessThan(110);
   });
+
+  it('1.17 — séance trop facile (tout RPE 6 / réserve 4+) : plafond monte sans damping', () => {
+    const state = startUserStub(profileIntermediaireH());
+    state.e1rm['bench_bb'] = 100;
+    const ex = catalog.get('bench_bb');
+    // 90 kg × 5 à RPE 6 → e1rm_obs ≈ 90 × (1 + 0,0333×9) ≈ 117 > 100.
+    const fbs: SetFeedback[] = [
+      { exercise_id: 'bench_bb', reps_done: 5, load_kg: 90, rpe_perceived: 6 },
+    ];
+    const [old, next] = updateE1rmForExercise(state, ex, fbs)!;
+    expect(old).toBe(100);
+    // Sans damping EMA (qui aurait donné ~101,7) : on saute vers l'e1RM observé.
+    expect(next).toBeGreaterThan(110);
+  });
+
+  it('1.17 — une séance facile ne baisse jamais le plafond', () => {
+    const state = startUserStub(profileIntermediaireH());
+    state.e1rm['bench_bb'] = 130;
+    const ex = catalog.get('bench_bb');
+    // e1rm observé (~117) < plafond actuel (130) → on garde 130, pas de baisse.
+    const fbs: SetFeedback[] = [
+      { exercise_id: 'bench_bb', reps_done: 5, load_kg: 90, rpe_perceived: 6 },
+    ];
+    const [, next] = updateE1rmForExercise(state, ex, fbs)!;
+    expect(next).toBe(130);
+  });
 });
 
 // =============================================================================

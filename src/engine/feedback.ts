@@ -16,6 +16,14 @@ import {
   nEquiv,
 } from './prescription';
 
+/**
+ * RPE plancher = réserve maximale informative (4 reps en réserve, libellé « 4+ »
+ * côté UI). Une séance dont TOUTES les séries fiables sont à ce plancher est
+ * « trop facile » : signal sans ambiguïté que l'user est plus fort que la
+ * prescription. On réagit en montant le plafond décisivement (cf. update e1RM).
+ */
+export const RPE_RESERVE_FLOOR = 6;
+
 // =============================================================================
 // 1. Coefficient α du filtre EMA (cf. §6.2)
 // =============================================================================
@@ -150,7 +158,16 @@ export function updateE1rmForExercise(
 
   // Bootstrap si vide : on pose old = e1rmAgg.
   const old = state.e1rm[exercise.id] ?? e1rmAgg;
-  const next = alpha * e1rmAgg + (1 - alpha) * old;
+
+  // 1.17 — séance « trop facile » : toutes les séries fiables sont à la réserve
+  // plancher (RPE 6 = 4+ reps en réserve). On NE damp PAS via l'EMA — le plafond
+  // monte décisivement vers l'e1RM observé (borne basse conservatrice : à effort
+  // faible, Epley sous-estime), pour que la séance suivante prescrive plus lourd.
+  // `max(old, …)` : une séance facile ne baisse jamais le plafond.
+  const tooEasy = reliable.every((f) => f.rpe_perceived <= RPE_RESERVE_FLOOR);
+  const next = tooEasy
+    ? Math.max(old, e1rmAgg)
+    : alpha * e1rmAgg + (1 - alpha) * old;
   state.e1rm[exercise.id] = next;
   return [old, next] as const;
 }
