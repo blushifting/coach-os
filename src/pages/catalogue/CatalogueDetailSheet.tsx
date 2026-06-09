@@ -4,7 +4,7 @@ import { Button } from '@/components/Button';
 import { Concept } from '@/components/Concept';
 import { Dialog } from '@/components/Dialog';
 import { AnatomicalSilhouette, type SilhouetteStatus } from '@/components/AnatomicalSilhouette';
-import { ChargeType, exercisePrimaires, exerciseSynergistes } from '@/engine/models';
+import { exercisePrimaires, exerciseSynergistes } from '@/engine/models';
 import type { Exercise } from '@/engine/models';
 import { useEngine } from '@/hooks/useEngine';
 import {
@@ -118,18 +118,6 @@ export function CatalogueDetailSheet({
         >
           {buildDescription(exercise)}
         </p>
-
-        {exercise.charge === ChargeType.BODYWEIGHT_ASSISTED && (
-          <p
-            data-testid="catalogue-detail-assisted-note"
-            className="rounded-lg border border-amber-700/40 bg-amber-900/20 px-3 py-2 text-xs leading-relaxed text-amber-200"
-          >
-            <strong className="text-amber-300">Charge d'assistance :</strong> le
-            poids saisi est la contre-charge qui t'aide — plus tu augmentes,
-            plus l'exercice devient facile. Kotsh déduit cette valeur de ton
-            poids de corps pour calculer ton Plafond.
-          </p>
-        )}
 
         {e1rm !== null && e1rm > 0 ? (
           <div

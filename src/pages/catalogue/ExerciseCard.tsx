@@ -15,11 +15,9 @@ interface ExerciseCardProps {
   readonly onClick: () => void;
   /** Plafond mesuré pour cet exo (kg) — null si jamais mesuré (Conv #11g). */
   readonly e1rm?: number | null;
-  /** Exo présent dans le programme en cours. */
-  readonly isHabitual?: boolean;
 }
 
-export function ExerciseCard({ exercise, onClick, e1rm = null, isHabitual = false }: ExerciseCardProps) {
+export function ExerciseCard({ exercise, onClick, e1rm = null }: ExerciseCardProps) {
   const primaires = exercisePrimaires(exercise);
   const description = buildDescription(exercise);
   const isLengthened = exercise.tags.includes('lengthened_bias');
@@ -36,15 +34,6 @@ export function ExerciseCard({ exercise, onClick, e1rm = null, isHabitual = fals
         <div className="flex items-start justify-between gap-2">
           <ExerciseNameStack exercise={exercise} size="sm" className="flex-1" />
           <div className="flex shrink-0 items-center gap-1.5">
-            {isHabitual && (
-              <span
-                data-testid={`card-habitual-${exercise.id}`}
-                aria-label="Dans ton programme"
-                className="text-[11px] text-amber-400"
-              >
-                ★
-              </span>
-            )}
             {/* Conv #11h — plafond mis en évidence : chip distinct à droite
                 du nom, fond sang plein + font-display tabulaire pour
                 ressortir vs les tags neutres (polyarticulaire, barre…). */}

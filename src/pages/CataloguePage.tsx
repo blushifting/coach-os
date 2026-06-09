@@ -5,19 +5,13 @@ import {
   applyFilters,
   EMPTY_FILTERS,
   hasActiveFilters,
-  FILTER_CHARGES,
-  CHARGE_LABEL_FR,
   type CatalogFilters,
 } from '@/lib/catalog-filter';
-import { cn } from '@/lib/cn';
 import { useCoachOsStore } from '@/store';
 import { CatalogueDetailSheet } from './catalogue/CatalogueDetailSheet';
 import { CustomExerciseSheet } from './catalogue/CustomExerciseSheet';
 import { ExerciseCard } from './catalogue/ExerciseCard';
 import { FiltersSheet } from './catalogue/FiltersSheet';
-
-/** Filtres persistants en mémoire pour la durée de la session (survit à la navigation). */
-let _sessionFilters: CatalogFilters = EMPTY_FILTERS;
 
 /**
  * Onglet Catalogue (Conv #6b).
@@ -29,13 +23,8 @@ let _sessionFilters: CatalogFilters = EMPTY_FILTERS;
 export default function CataloguePage() {
   const catalog = useCoachOsStore((s) => s.catalog);
   const userState = useCoachOsStore((s) => s.userState);
-  const [filters, setFilters] = useState<CatalogFilters>(_sessionFilters);
+  const [filters, setFilters] = useState<CatalogFilters>(EMPTY_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
-
-  function updateFilters(next: CatalogFilters) {
-    _sessionFilters = next;
-    setFilters(next);
-  }
   const [customOpen, setCustomOpen] = useState(false);
   const [selected, setSelected] = useState<Exercise | null>(null);
 
@@ -62,16 +51,7 @@ export default function CataloguePage() {
 
   const results = useMemo(() => {
     if (catalog === null) return [];
-    const filtered = applyFilters(catalog, filters, { habitualIds, e1rmMap });
-    // Habituals en tête quand pas de recherche texte active.
-    if (filters.text.trim() === '') {
-      return [...filtered].sort((a, b) => {
-        const aH = habitualIds.has(a.id) ? 0 : 1;
-        const bH = habitualIds.has(b.id) ? 0 : 1;
-        return aH - bH;
-      });
-    }
-    return filtered;
+    return applyFilters(catalog, filters, { habitualIds, e1rmMap });
   }, [catalog, filters, habitualIds, e1rmMap]);
 
   if (catalog === null) {
@@ -98,43 +78,12 @@ export default function CataloguePage() {
           id="catalogue-search"
           type="search"
           value={filters.text}
-          onChange={(e) => updateFilters({ ...filters, text: e.target.value })}
+          onChange={(e) => setFilters({ ...filters, text: e.target.value })}
           placeholder="Rechercher (ex. développé, soulevé, squat…)"
           autoComplete="off"
           data-testid="catalogue-search"
           className="w-full rounded-xl border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-sm text-white placeholder:text-anthracite-300 focus:border-sang-700 focus:outline-none"
         />
-
-        {/* Chips équipement rapides — filtre inline sans ouvrir le sheet. */}
-        <div
-          className="flex gap-1.5 overflow-x-auto pb-0.5"
-          data-testid="catalogue-equip-chips"
-        >
-          {FILTER_CHARGES.map((c) => (
-            <button
-              key={c}
-              type="button"
-              data-testid={`equip-chip-${c}`}
-              onClick={() => {
-                const active = filters.charges.includes(c);
-                updateFilters({
-                  ...filters,
-                  charges: active
-                    ? filters.charges.filter((x) => x !== c)
-                    : [...filters.charges, c],
-                });
-              }}
-              className={cn(
-                'shrink-0 rounded-full border px-3 py-1 text-xs transition',
-                filters.charges.includes(c)
-                  ? 'border-sang-700 bg-sang-900/40 text-white'
-                  : 'border-anthracite-700 bg-anthracite-900 text-anthracite-300 hover:text-white',
-              )}
-            >
-              {CHARGE_LABEL_FR[c]}
-            </button>
-          ))}
-        </div>
 
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -154,6 +103,9 @@ export default function CataloguePage() {
                 </span>
               )}
             </button>
+            {/* Conv #21b — Création d'un exo custom. Bouton secondaire à côté
+                des filtres pour rester discret (action peu fréquente, mais
+                accessible). */}
             <button
               type="button"
               onClick={() => setCustomOpen(true)}
@@ -168,7 +120,7 @@ export default function CataloguePage() {
             {active && (
               <button
                 type="button"
-                onClick={() => updateFilters(EMPTY_FILTERS)}
+                onClick={() => setFilters(EMPTY_FILTERS)}
                 data-testid="catalogue-clear"
                 className="underline hover:text-white"
               >
@@ -194,7 +146,6 @@ export default function CataloguePage() {
                 exercise={ex}
                 onClick={() => setSelected(ex)}
                 e1rm={e1rmMap[ex.id] ?? null}
-                isHabitual={habitualIds.has(ex.id)}
               />
             </li>
           ))}
@@ -204,7 +155,7 @@ export default function CataloguePage() {
       <FiltersSheet
         open={filtersOpen}
         filters={filters}
-        onChange={updateFilters}
+        onChange={setFilters}
         onClose={() => setFiltersOpen(false)}
       />
       <CatalogueDetailSheet
