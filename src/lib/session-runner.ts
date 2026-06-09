@@ -76,6 +76,15 @@ export interface SetEntry {
   readonly rpe: number | null;
   /** L'user a marqué cette série comme "faite" (= elle ira au feedback). */
   readonly done: boolean;
+  /**
+   * 1.17 (D9) — `true` quand la `load_kg` courante a été posée par le
+   * recalibrage intra-séance (algo), pas par l'user. Permet à un recalibrage
+   * ultérieur (ex. après décoche/recoche corrigée d'une série) de re-piloter
+   * cette charge, alors que l'heuristique « load == prescription » la voyait
+   * comme « touchée par l'user » dès le 1er ajustement et la figeait. Une
+   * édition manuelle de la charge (via le stepper) repasse ce flag à `false`.
+   */
+  readonly loadAuto?: boolean;
 }
 
 export type SessionEntries = ReadonlyArray<ReadonlyArray<SetEntry>>;
@@ -117,9 +126,15 @@ export function updateSetEntry(
   setIdx: number,
   patch: Partial<SetEntry>,
 ): SessionEntries {
+  // 1.17 (D9) — une édition explicite de la charge (sans flag explicite) est
+  // forcément le fait de l'user → on coupe le pilotage algo de cette série.
+  const effectivePatch =
+    'load_kg' in patch && !('loadAuto' in patch)
+      ? { ...patch, loadAuto: false }
+      : patch;
   return entries.map((sets, i) => {
     if (i !== itemIdx) return sets;
-    return sets.map((s, j) => (j === setIdx ? { ...s, ...patch } : s));
+    return sets.map((s, j) => (j === setIdx ? { ...s, ...effectivePatch } : s));
   });
 }
 
@@ -253,20 +268,35 @@ export function recalibrateUpcomingSets(args: {
       const planLoad = item.sets[j]?.load_kg ?? null;
       const planReps = item.sets[j]?.reps ?? null;
 
+      // 1.17 (D9) — on ajuste une série non cochée si sa charge est encore la
+      // prescription d'origine OU si elle est déjà pilotée par l'algo
+      // (`loadAuto`). Sans le 2e cas, un 1er recalibrage (ex. sur une coche
+      // erronée) figeait la charge : au recalibrage suivant `load != planLoad`
+      // la faisait passer pour « touchée par l'user ». La cible se recalcule
+      // toujours depuis `planLoad` (pas depuis la charge ajustée précédente).
       let nextLoad = s.load_kg;
-      if (significant && planLoad !== null && s.load_kg === planLoad) {
+      let nextLoadAuto = s.loadAuto ?? false;
+      const algoOwned = s.load_kg === planLoad || s.loadAuto === true;
+      if (significant && planLoad !== null && algoOwned) {
         const adjusted = Math.max(
           0,
           Math.round((planLoad * ratio) / inc) * inc,
         );
-        if (adjusted !== planLoad) nextLoad = adjusted;
+        nextLoad = adjusted;
+        nextLoadAuto = true;
       }
       // Pré-remplissage reps : on n'écrit que sur les séries où l'user n'a
       // pas encore touché (reps null).
       const nextReps = s.reps === null && planReps !== null ? planReps : s.reps;
 
-      if (nextLoad === s.load_kg && nextReps === s.reps) return s;
-      return { ...s, load_kg: nextLoad, reps: nextReps };
+      if (
+        nextLoad === s.load_kg &&
+        nextReps === s.reps &&
+        nextLoadAuto === (s.loadAuto ?? false)
+      ) {
+        return s;
+      }
+      return { ...s, load_kg: nextLoad, reps: nextReps, loadAuto: nextLoadAuto };
     });
   });
 }

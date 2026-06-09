@@ -109,6 +109,15 @@ describe('updateSetEntry', () => {
     expect(e1[1]).toEqual(e0[1]);
     expect(e1).not.toBe(e0);
   });
+
+  it('1.17 (D9) — éditer la charge coupe le pilotage algo (loadAuto=false)', () => {
+    const e0: SessionEntries = [
+      [{ reps: 8, load_kg: 60, rpe: null, done: false, loadAuto: true }],
+    ];
+    const e1 = updateSetEntry(e0, 0, 0, { load_kg: 65 });
+    expect(e1[0]![0]!.load_kg).toBe(65);
+    expect(e1[0]![0]!.loadAuto).toBe(false);
+  });
 });
 
 describe('countDoneSets / countPlannedSets', () => {
@@ -487,5 +496,29 @@ describe('recalibrateUpcomingSets', () => {
     expect(next[0]![1]!.load_kg).toBe(50);
     // Pré-remplissage des reps reste actif même si charge inchangée.
     expect(next[0]![1]!.reps).toBe(8);
+  });
+
+  it('1.17 (D9) — re-pilote une série déjà ajustée par l’algo (recoche corrigée)', () => {
+    const plan = makeCalibPlan();
+    // Série 2 déjà posée par un précédent recalibrage : charge 60 ≠ prescription
+    // (50) mais `loadAuto: true`. Une nouvelle mesure fiable doit la RE-ajuster
+    // depuis la prescription (50 × ratio), pas la figer comme « touchée user ».
+    const entries: SessionEntries = [
+      [
+        { reps: 10, load_kg: 80, rpe: 7, done: true },
+        { reps: 8, load_kg: 60, rpe: null, done: false, loadAuto: true },
+      ],
+    ];
+    const next = recalibrateUpcomingSets({
+      entries,
+      plan,
+      catalog,
+      bodyweightKg: 75,
+      e1rmInitial: { leg_press_45: 75 },
+      itemIdx: 0,
+    });
+    // ratio ≈ 1.5 → 50 × 1.5 ≈ 75 (recalculé depuis 50, pas depuis 60).
+    expect(next[0]![1]!.load_kg).toBeGreaterThan(60);
+    expect(next[0]![1]!.loadAuto).toBe(true);
   });
 });
