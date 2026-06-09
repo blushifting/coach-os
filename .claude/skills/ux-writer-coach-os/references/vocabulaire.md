@@ -21,8 +21,7 @@ Chaque concept technique a **un seul** mot d'interface. On l'emploie partout par
 | `volume` (séries × …) | **Volume hebdo** / **Séries par semaine** | « Le nombre de séries que tu fais par muscle et par semaine. » À NE PAS confondre avec « volume musculaire ». |
 | `mésocycle` | **Cycle** (ou **Bloc**) | « Un bloc de 4 semaines de progression + 1 semaine plus légère. » |
 | `déload` | **Récupération** (terme « Déload » toléré + infobulle) | « Une semaine allégée pour faire redescendre la fatigue. » |
-| `RPE` (effort perçu) | **Effort** | « À quel point la série était dure, de 6 à 10. Effort 8 = 2 reps en réserve. » Le sigle **RPE** ne sert plus de label UI : on l'emploie seulement dans l'aide / « En savoir plus » comme ancrage scientifique (« aussi appelé RPE »). |
-| `RIR` (reps in reserve) | **reps en réserve** | « Combien de reps tu aurais encore pu faire avant l'échec. » (n'expose pas le sigle RIR à l'utilisateur) |
+| `RPE` / `RIR` (effort perçu / reps en réserve) | **Réserve** (« reps en réserve ») | ⚠️ **Conv #26 — « Effort » est RETIRÉ de l'UI.** On saisit les **reps en réserve** : « combien de reps tu aurais encore pu faire avant l'échec ». Curseur de **« 4+ »** (gauche, beaucoup en réserve = trop facile) à **« échec »** (droite, 0 en réserve). PAS de cible affichée. Les sigles **RPE/RIR** ne servent qu'en aide/« En savoir plus » comme ancrage (« aussi appelé RPE »). Conversion interne : réserve = 10 − RPE (le moteur garde le RPE). |
 | `lengthened bias` | **Étiré** | « Travaille le muscle en position allongée — meilleur pour l'hypertrophie. » |
 | `ROM complet` | **Amplitude complète** | « Le mouvement parcouru sur toute son étendue. » |
 | `V_min` / `V_max` | (jargon, graphes seulement) | « Le plancher et le plafond de séries hebdo appris pour toi. » Exposé seulement dans les graphes, avec infobulle. |
@@ -49,8 +48,7 @@ Si l'un de ces termes apparaît dans une chaîne visible par l'utilisateur, c'es
 | lengthened bias | Étiré |
 | ROM | Amplitude (complète) |
 | Volume musculaire (comme objectif) | Hypertrophie |
-| RIR | reps en réserve |
-| RPE (comme label / titre UI) | Effort (RPE admis seulement dans l'aide, glosé « aussi appelé RPE ») |
+| RIR / RPE / **Effort** (comme label UI) | **Réserve** (reps en réserve) — RPE admis seulement dans l'aide, glosé « aussi appelé RPE » |
 | set (français) | série |
 | split (brut) | répartition |
 | 1RM (sans glose, pour un débutant) | Max / 1 rép max, avec glose |

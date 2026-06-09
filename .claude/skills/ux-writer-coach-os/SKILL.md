@@ -60,9 +60,9 @@ Naming verrouillé, non négociable (table complète + glose dans `references/vo
 - mésocycle → **Cycle** (ou Bloc) · déload → **Récupération** (terme « Déload » toléré avec infobulle)
 - lengthened bias → **Étiré** · ROM complet → **Amplitude complète**
 - objectif hypertrophie → **Hypertrophie** (jamais « Volume musculaire » : collision avec Volume hebdo)
-- volume technique → **Séries / semaine** ou **Volume hebdo** · RPE → **Effort** (label UI ; « RPE » réservé à l'aide comme ancrage scientifique)
+- volume technique → **Séries / semaine** ou **Volume hebdo** · RPE / effort perçu → **Réserve** (reps en réserve ; ⚠️ Conv #26 : « Effort » RETIRÉ de l'UI, curseur **4+ → échec**, pas de cible affichée ; « RPE » réservé à l'aide comme ancrage)
 
-Si tu vois « e1RM », « compound », « mésocycle », « lengthened bias », « Volume musculaire » ou « RPE » employé comme **label / titre d'interface** dans du texte utilisateur, c'est un bug de wording à corriger. Le sigle « RPE » n'est admis que dans l'aide / « En savoir plus », glosé « aussi appelé RPE » — partout ailleurs c'est **Effort**.
+Si tu vois « e1RM », « compound », « mésocycle », « lengthened bias », « Volume musculaire », « RPE » **ou « Effort »** employé comme **label / titre d'interface** dans du texte utilisateur, c'est un bug de wording à corriger. La saisie d'intensité = **Réserve** (reps en réserve). Le sigle « RPE » n'est admis que dans l'aide / « En savoir plus », glosé « aussi appelé RPE ».
 
 ## Les fichiers de référence du skill
 
