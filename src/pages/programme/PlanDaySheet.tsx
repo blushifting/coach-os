@@ -10,6 +10,10 @@ import type { SessionRow } from '@/db/schema';
 import { dateKey, type CalendarDay } from '@/lib/dashboard';
 import { muscleLabel } from '@/lib/progress';
 import { cn } from '@/lib/cn';
+import {
+  formatSessionLabel,
+  formatSessionLabelShort,
+} from '@/lib/session-label';
 import { useCoachOsStore } from '@/store';
 import {
   detectPeriodicity,
@@ -334,7 +338,7 @@ function PlannedSessionBlock({
   return (
     <div className="flex flex-col gap-3" data-testid="day-status-text">
       <p className="text-sm text-anthracite-100">
-        Séance <strong className="text-white">{plan.label}</strong> programmée
+        <strong className="text-white">{formatSessionLabel(plan.label)}</strong> programmée
         {isFuture && ' pour ce jour'}
         {isToday && " aujourd'hui"}
         {isPast && ' (non faite)'}.
@@ -475,20 +479,28 @@ function FreeFutureBlock({
           {suggestion.reason === 'skipped' ? (
             <>
               Tu as sauté{' '}
-              <strong className="text-white">{suggestion.previousLabel}</strong>{' '}
+              <strong className="text-white">
+                {formatSessionLabel(suggestion.previousLabel)}
+              </strong>{' '}
               récemment. Rattrape-la :{' '}
               <strong className="text-sang-300">
-                {cyclePlan.days[suggestion.suggestedDayIndex]?.label}
+                {formatSessionLabel(
+                  cyclePlan.days[suggestion.suggestedDayIndex]?.label ?? '',
+                )}
               </strong>
               .
             </>
           ) : (
             <>
               Tu as fait{' '}
-              <strong className="text-white">{suggestion.previousLabel}</strong>{' '}
+              <strong className="text-white">
+                {formatSessionLabel(suggestion.previousLabel)}
+              </strong>{' '}
               récemment. Pour varier, essaie :{' '}
               <strong className="text-sang-300">
-                {cyclePlan.days[suggestion.suggestedDayIndex]?.label}
+                {formatSessionLabel(
+                  cyclePlan.days[suggestion.suggestedDayIndex]?.label ?? '',
+                )}
               </strong>
               .
             </>
@@ -515,7 +527,7 @@ function FreeFutureBlock({
                 className="!h-auto !min-h-[2.75rem] flex-col gap-0.5 py-2"
               >
                 <span className="font-medium">
-                  {pending === i ? '…' : d.label}
+                  {pending === i ? '…' : formatSessionLabelShort(d.label)}
                   {isPinned ? ' 📌' : isSuggested ? ' ★' : ''}
                 </span>
                 <span className="text-[11px] font-normal opacity-75 tabular-nums">
@@ -528,7 +540,7 @@ function FreeFutureBlock({
                 aria-label={
                   isPinned
                     ? `Retirer la routine fixe du ${dayOfWeekLabel(dayOfWeek)}`
-                    : `Fixer ${d.label} le ${dayOfWeekLabel(dayOfWeek)}`
+                    : `Fixer ${formatSessionLabel(d.label)} le ${dayOfWeekLabel(dayOfWeek)}`
                 }
                 disabled={pending !== null || pinning !== null}
                 onClick={() => pinSlot(i)}
@@ -649,7 +661,7 @@ function FixedRoutineBlock({
     >
       <p className="text-sm text-anthracite-100">
         Routine fixée le {dayOfWeekLabel(dayOfWeek)} :{' '}
-        <strong className="text-white">{day.label}</strong>
+        <strong className="text-white">{formatSessionLabel(day.label)}</strong>
       </p>
       <button
         type="button"
@@ -729,7 +741,12 @@ function CompletedSessionBlock({
   if (feedback === null) {
     return (
       <p className="text-sm text-anthracite-300" data-testid="day-status-text">
-        Séance <strong className="text-white">{day.sessionLabel}</strong> faite.{' '}
+        <strong className="text-white">
+          {day.sessionLabel !== null
+            ? formatSessionLabel(day.sessionLabel)
+            : 'Séance'}
+        </strong>{' '}
+        faite.{' '}
         {day.isDeload && (
           <span className="text-sang-500">
             (<Concept topic="deload">Déload</Concept>)
@@ -744,7 +761,7 @@ function CompletedSessionBlock({
   return (
     <div className="flex flex-col gap-3" data-testid="day-status-text">
       <p className="text-sm text-anthracite-100">
-        Séance <strong className="text-white">{feedback.label}</strong> faite
+        <strong className="text-white">{formatSessionLabel(feedback.label)}</strong> faite
         {day.isDeload && (
           <span className="text-sang-500">
             {' '}
@@ -810,7 +827,7 @@ function PeriodicityNudge({
     >
       <p className="text-sm text-anthracite-100">
         Tu fais souvent{' '}
-        <strong className="text-white">{suggestion.label}</strong> le{' '}
+        <strong className="text-white">{formatSessionLabel(suggestion.label)}</strong> le{' '}
         <strong className="text-white">{dayOfWeekLabel(suggestion.dayOfWeek)}</strong>
         {' '}({suggestion.occurrences} fois sur les {suggestion.totalInWindow}{' '}
         dernières). C'est peut-être le bon créneau pour la (re)programmer.

@@ -1,11 +1,12 @@
 import { expect, type Page } from '@playwright/test';
 
 /**
- * Onboarding minimal — 5 étapes unifiées (Conv #22.2).
+ * Onboarding minimal — 4 étapes unifiées (Conv #28).
  *
- * Path : Profil → Muscles → Équilibre → Programme → Récap.
- * Le mode custom auto-fill les exos via la préférence équipement
- * (NO_PREFERENCE par défaut → convention salle).
+ * Path : Profil → Muscles → Programme → Récap. Le préset full-body couvre
+ * tous les muscles → pas de popin d'équilibre sur ce chemin. Le mode custom
+ * auto-fill les exos via la préférence équipement (NO_PREFERENCE par défaut
+ * → convention salle).
  *
  * Conv #15-7 : l'auto-lancement de la démo en fin d'onboarding est désactivé
  * en e2e via le flag LS `coach-os.skip-auto-demo` posé par
@@ -19,14 +20,12 @@ export async function runOnboardingMinimal(page: Page): Promise<void> {
   await page.goto('onboarding');
   // Step1 — défauts (sexe homme, âge 30, poids 75 kg).
   await page.getByTestId('btn-next').click();
-  // Step2 — préset par défaut.
+  // Step2 — préset par défaut (couverture intégrale, pas de popin).
   await page.getByTestId('preset-default').click();
   await page.getByTestId('btn-next').click();
-  // Step3 — suggestions toutes pré-cochées.
+  // Step3 — Programme : custom + MEDIUM + NO_PREFERENCE par défaut.
   await page.getByTestId('btn-next').click();
-  // Step4 — custom + MEDIUM + NO_PREFERENCE par défaut.
-  await page.getByTestId('btn-next').click();
-  // Step5 — Récap, on finalise.
+  // Step4 — Récap, on finalise.
   await page.getByTestId('btn-finish').click();
   await expect(page).toHaveURL(/\/programme$/);
 }
@@ -39,7 +38,6 @@ export async function runOnboardingMinimalWithAutoDemo(page: Page): Promise<void
   await page.goto('onboarding');
   await page.getByTestId('btn-next').click();
   await page.getByTestId('preset-default').click();
-  await page.getByTestId('btn-next').click();
   await page.getByTestId('btn-next').click();
   await page.getByTestId('btn-next').click();
   await page.getByTestId('btn-finish').click();

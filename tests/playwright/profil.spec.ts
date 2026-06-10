@@ -135,7 +135,7 @@ test('profil : réinitialisation + dialog → /welcome → /onboarding', async (
   await expect(page).toHaveURL(/\/onboarding$/);
 });
 
-test('profil : sheet Aide affiche les 14 entrées du glossaire', async ({
+test('profil : sheet Aide affiche les 15 entrées du glossaire', async ({
   page,
 }) => {
   await runOnboardingMinimal(page);
@@ -144,9 +144,10 @@ test('profil : sheet Aide affiche les 14 entrées du glossaire', async ({
   await page.getByTestId('profil-open-aide').click();
   await expect(page.getByTestId('aide-tutos')).toBeVisible();
   await expect(page.getByTestId('aide-glossaire')).toBeVisible();
+  // Conv #26 : 'rpe' → 'reserve' dans l'UI ; Conv #27 (Bloc H) : + 'adherence'.
   const topics = [
     'plafond',
-    'rpe',
+    'reserve',
     'cycle',
     'deload',
     'poly',
@@ -156,6 +157,7 @@ test('profil : sheet Aide affiche les 14 entrées du glossaire', async ({
     'vminmax',
     'amplitude',
     'hypertrophie',
+    'adherence',
     'vsSem1',
     'prDuJour',
     'deltoides',
@@ -172,19 +174,18 @@ test('profil : édition priorités via onboarding partiel persistée', async ({
   await goToProfil(page);
 
   // Conv #18 — "Modifier" sur la Card Priorités & programme lance
-  // l'onboarding partiel (Step2→5) qui à la fin termine le cycle en cours
+  // l'onboarding partiel (Step2→4) qui à la fin termine le cycle en cours
   // et démarre un nouveau cycle avec les nouvelles priorités.
   await page.getByTestId('profil-edit-priorities-programme').click();
   await expect(page).toHaveURL(/onboarding\?restart=1/);
   await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-restart', '1');
 
   // On entre directement sur Step2 (Muscles).
-  await expect(page.getByTestId('priorities-list')).toBeVisible();
-  await page.getByTestId('remove-fessiers').click();
+  await expect(page.getByTestId('muscles-list')).toBeVisible();
+  await page.getByTestId('obj-fessiers-none').click();
   await page.getByTestId('obj-pectoraux-force').click();
 
-  // Step 2 → 3 (Équilibre) → 4 (Programme) → 5 (Aperçu)
-  await page.getByTestId('btn-next').click();
+  // Step 2 → 3 (Programme) → 4 (Aperçu)
   await page.getByTestId('btn-next').click();
   await page.getByTestId('btn-next').click();
   await page.getByTestId('btn-finish').click();

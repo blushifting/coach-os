@@ -56,10 +56,10 @@ test('seance : depuis programme → runner → terminer → bilan → retour', a
   await page.getByTestId('btn-finish-session').click();
   await page.getByTestId('dialog-confirm').click();
 
-  // État C : bilan
+  // État C : bilan (Conv #2x : la section PR a laissé place aux Plafonds).
   await expect(page.getByTestId('session-summary')).toBeVisible();
   await expect(page.getByTestId('summary-volume')).toBeVisible();
-  await expect(page.getByTestId('summary-prs')).toBeVisible();
+  await expect(page.getByTestId('summary-plafonds')).toBeVisible();
 
   // Retour programme
   await page.getByTestId('btn-back-programme').click();
@@ -77,26 +77,8 @@ test('seance : détail exo affiche le nom + muscles', async ({ page }) => {
   await expect(page.getByTestId('exercise-detail-content')).toBeVisible();
 });
 
-test('seance : bouton "Sauter cette séance" marque skipped et rentre au programme', async ({ page }) => {
-  await runOnboardingMinimal(page);
-
-  const future = page.locator('[data-testid^="day-"][data-status="free-future"]').first();
-  const todayDate = await future.getAttribute('data-testid'); // day-YYYY-MM-DD
-  await future.click();
-  await page.getByTestId('plan-slot-0').click();
-  await expect(page).toHaveURL(/\/seance\/runner$/);
-
-  // Sauter avec confirmation
-  await page.getByTestId('btn-skip-session').click();
-  await page.getByRole('button', { name: 'Sauter', exact: true }).click();
-  await expect(page).toHaveURL(/\/programme$/);
-
-  // Le jour est désormais marqué skipped
-  await expect(page.locator(`[data-testid="${todayDate}"]`)).toHaveAttribute(
-    'data-status',
-    'skipped',
-  );
-});
+// Conv #27 (1.17.8) : le bouton « Sauter cette séance » a été retiré de
+// l'UI — le test correspondant est supprimé.
 
 test('seance : /seance ne reste pas /seance (redirect compat)', async ({ page }) => {
   await runOnboardingMinimal(page);

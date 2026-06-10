@@ -12,6 +12,7 @@ import { useEngine } from '@/hooks/useEngine';
 import { useCoachOsStore } from '@/store';
 import { useDemoMode, useGymBrand } from '@/store/selectors';
 import { displayExerciseName } from '@/lib/catalog-filter';
+import { formatSessionLabelShort } from '@/lib/session-label';
 import {
   countDoneSets,
   countPlannedSets,
@@ -234,7 +235,7 @@ export function SessionRunner({
             Séance
           </span>
           <span className="font-display text-2xl leading-none tracking-wide text-white">
-            {plan.label}
+            {formatSessionLabelShort(plan.label)}
           </span>
           <span className="flex items-center gap-1.5 text-xs text-anthracite-300">
             Cycle {plan.cycle_index} · S{plan.week_in_cycle}

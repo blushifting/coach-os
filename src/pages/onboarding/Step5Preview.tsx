@@ -40,6 +40,7 @@ import { displayExerciseName } from '@/lib/catalog-filter';
 import { useGymBrand } from '@/store/selectors';
 import { cn } from '@/lib/cn';
 import { muscleLabel } from '@/lib/progress';
+import { formatSessionLabel } from '@/lib/session-label';
 import { ExercisePhotoPopin } from '@/pages/catalogue/ExercisePhotoPopin';
 import { photosFor } from '@/data/exercise-photos';
 import { ChargeBadge } from '@/pages/catalogue/ChargeBadge';
@@ -195,7 +196,9 @@ export function Step5Preview({
           return (
           <Card key={di} className="flex flex-col gap-2" data-testid={`day-card-${di}`}>
             <header className="flex items-baseline justify-between">
-              <h2 className="text-sm font-semibold text-white">{day.label}</h2>
+              <h2 className="text-sm font-semibold text-white">
+                {formatSessionLabel(day.label)}
+              </h2>
               <span
                 className="text-[11px] text-anthracite-300"
                 data-testid={`day-duration-${di}`}

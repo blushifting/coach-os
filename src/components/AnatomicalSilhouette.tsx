@@ -41,8 +41,14 @@ export type SilhouetteStatus =
  *  - `priority` — palette amber/or pour la sélection des muscles
  *     prioritaires en onboarding. Top 3 "brille" en amber-400, autres en
  *     amber-700.
+ *  - `objective` (Conv #28) — onboarding Step2 « pinceau » : une teinte par
+ *     objectif. Mapping statut→objectif : `highlight`=Hypertrophie (or),
+ *     `high`=Force (sang), `low`=Endurance (cyan), `ok`=Maintien (orange
+ *     sombre). Rampe chaude = intensité de charge décroissante (sang > or >
+ *     orange sombre) ; le cyan, seule teinte froide, marque la rupture
+ *     qualitative de l'endurance (charges légères, longues séries).
  */
-export type SilhouettePalette = 'legacy' | 'volume' | 'priority';
+export type SilhouettePalette = 'legacy' | 'volume' | 'priority' | 'objective';
 
 export interface AnatomicalSilhouetteProps {
   /** Mapping `muscle_id` Coach OS → statut. Muscle absent = `off`. */
@@ -111,10 +117,22 @@ const TONE_FILL_PRIORITY: Record<SilhouetteStatus, string> = {
   synergist: 'fill-amber-700',
 };
 
+// Conv #28 — Onboarding Step2 pinceau : une teinte par objectif (cf. doc du
+// type SilhouettePalette). `synergist` inutilisé dans ce contexte.
+const TONE_FILL_OBJECTIVE: Record<SilhouetteStatus, string> = {
+  off: 'fill-anthracite-500',
+  low: 'fill-cyan-500',
+  ok: 'fill-amber-700',
+  high: 'fill-sang-500',
+  highlight: 'fill-amber-400',
+  synergist: 'fill-anthracite-500',
+};
+
 const PALETTES: Record<SilhouettePalette, Record<SilhouetteStatus, string>> = {
   legacy: TONE_FILL_LEGACY,
   volume: TONE_FILL_VOLUME,
   priority: TONE_FILL_PRIORITY,
+  objective: TONE_FILL_OBJECTIVE,
 };
 
 const NEUTRAL_FILL = 'fill-anthracite-600';

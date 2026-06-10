@@ -1,20 +1,20 @@
 /**
- * Orchestrateur du wizard d'onboarding (refonte Conv #22.2).
+ * Orchestrateur du wizard d'onboarding (refonte Conv #28).
  *
- * Flow unifié 5 étapes pour les deux modes :
+ * Flow unifié 4 étapes pour les deux modes :
  *   1. Profil (sexe / âge / poids)
- *   2. Muscles prioritaires + ranking
- *   3. Équilibre R1-R4 (suggestions pré-cochées)
- *   4. Programme (nb séances + durée max + préférence équipement +
- *      choix custom / programme guidé)
- *   5. Récap : programme déjà construit (custom = squelette V2 auto-fill
+ *   2. Muscles + objectif par muscle (pinceau) — l'ancienne étape Équilibre
+ *      R1-R4 est remplacée par une popin au passage à l'étape suivante :
+ *      « Ajouter ces muscles » (défaut) / « Continuer sans » (refusable).
+ *   3. Programme (nb séances + durée max + préférence équipement +
+ *      sur-mesure mis en avant / programmes guidés en tableau)
+ *   4. Récap : programme déjà construit (custom = squelette V2 auto-fill
  *      basé sur la préférence ; guidé = fitGuidedProgram). L'user peut
  *      swap des exos via la VariantPickerSheet existante.
  *
- * En mode `restart`, on saute Step1 (4 étapes restantes affichées comme
- * 1/4..4/4 dans la barre).
+ * En mode `restart`, on saute Step1 (3 étapes affichées dans le stepper).
  *
- * Barre de progression continue, longueur fixe.
+ * Stepper numéroté à étapes nommées (Conv #28).
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -57,13 +57,17 @@ import {
   isSkeletonFullyFilled,
 } from '@/lib/skeleton-onboarding';
 import { useCoachOsStore } from '@/store';
+import type { MuscleGoal } from '@/engine/models';
+import { explainSuggestion, muscleLabel } from '@/lib/balance-reasons';
 import { Step1Profile } from './Step1Profile';
 import { Step2Muscles } from './Step2Muscles';
-import { Step3Balance } from './Step3Balance';
 import { Step4Program } from './Step4Program';
 import { Step5Preview } from './Step5Preview';
 
-const LAST_STEP = 5;
+const LAST_STEP = 4;
+
+/** Étapes nommées du stepper (Conv #28). Index = step - 1. */
+const STEP_LABELS = ['Profil', 'Muscles', 'Programme', 'Récap'] as const;
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
@@ -88,6 +92,16 @@ export default function OnboardingPage() {
   const [variantReplacements, setVariantReplacements] = useState<
     ReadonlyArray<VariantReplacement>
   >([]);
+  // Conv #28 — popin d'équilibre R1-R4 au « Suivant » de l'étape 2.
+  // `balancePopin` = suggestions affichées ; `declinedBalanceKey` mémorise la
+  // sélection pour laquelle l'user a refusé (pas de re-popin tant qu'elle ne
+  // change pas).
+  const [balancePopin, setBalancePopin] = useState<readonly MuscleGoal[] | null>(
+    null,
+  );
+  const [declinedBalanceKey, setDeclinedBalanceKey] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     void bootstrap();
@@ -107,7 +121,10 @@ export default function OnboardingPage() {
     try {
       const globalObjective = deriveGlobalObjective(draft);
       const profile = buildProfile(draft, globalObjective);
-      const suggestions = computeBalanceSuggestions(draft.priorities);
+      const suggestions = computeBalanceSuggestions(
+        draft.priorities,
+        draft.maintenance,
+      );
       const muscleGoals = buildMuscleGoals(draft, suggestions);
       return buildOnboardingSkeleton(
         profile,
@@ -190,7 +207,10 @@ export default function OnboardingPage() {
       const objectiveOverride = guided?.objectifs_principaux[0];
       const globalObjective = deriveGlobalObjective(draft, objectiveOverride);
       const profile = buildProfile(draft, globalObjective);
-      const suggestions = computeBalanceSuggestions(draft.priorities);
+      const suggestions = computeBalanceSuggestions(
+        draft.priorities,
+        draft.maintenance,
+      );
       const muscleGoals = buildMuscleGoals(draft, suggestions);
       return buildPreviewTemplate(profile, muscleGoals, draft.programmeId, catalog);
     } catch (e) {
@@ -206,7 +226,7 @@ export default function OnboardingPage() {
     () =>
       JSON.stringify({
         prios: draft.priorities.map((p) => `${p.muscle}:${p.objective}`),
-        accepted: [...draft.acceptedSuggestions].sort(),
+        maintenance: [...draft.maintenance].sort(),
         sessions: draft.sessionsPerWeek,
         duration: draft.durationCategory,
         equipPref: draft.equipmentPreference,
@@ -214,7 +234,7 @@ export default function OnboardingPage() {
       }),
     [
       draft.priorities,
-      draft.acceptedSuggestions,
+      draft.maintenance,
       draft.sessionsPerWeek,
       draft.durationCategory,
       draft.equipmentPreference,
@@ -244,26 +264,62 @@ export default function OnboardingPage() {
     setStep((s) => s - 1);
   }
 
+  // Clé de la sélection muscles courante — sert à ne pas re-proposer la
+  // popin d'équilibre tant que l'user n'a rien changé après un refus.
+  const balanceKey = useMemo(
+    () =>
+      JSON.stringify({
+        prios: draft.priorities.map((p) => `${p.muscle}:${p.objective}`),
+        maintenance: [...draft.maintenance].sort(),
+      }),
+    [draft.priorities, draft.maintenance],
+  );
+
   function goNext() {
     setError(null);
     if (step === 2 && !canAdvanceFromStep2) {
-      setError('Sélectionne au moins un muscle ou utilise la sélection par défaut.');
+      setError(
+        'Sélectionne au moins un muscle à développer (Hypertrophie, Force ou Endurance), ou utilise la sélection par défaut.',
+      );
       return;
     }
-    if (step === 2) {
-      if (!isRestart) {
-        const suggestions = computeBalanceSuggestions(draft.priorities);
-        setDraft((d) => ({
-          ...d,
-          acceptedSuggestions: new Set(suggestions.map((s) => s.muscle)),
-        }));
+    // Conv #28 — popin d'équilibre : si R1-R4 détecte des trous et que
+    // l'user n'a pas déjà refusé pour cette sélection exacte, on propose
+    // d'ajouter les muscles manquants en maintien avant d'avancer.
+    if (step === 2 && declinedBalanceKey !== balanceKey) {
+      const suggestions = computeBalanceSuggestions(
+        draft.priorities,
+        draft.maintenance,
+      );
+      if (suggestions.length > 0) {
+        setBalancePopin(suggestions);
+        return;
       }
     }
-    if (step === 4) {
+    advance();
+  }
+
+  function advance() {
+    if (step === 3) {
       setVariantReplacements([]);
     }
     if (step >= LAST_STEP) return;
     setStep((s) => s + 1);
+  }
+
+  function acceptBalanceSuggestions() {
+    if (balancePopin === null) return;
+    const maintenance = new Set(draft.maintenance);
+    for (const sg of balancePopin) maintenance.add(sg.muscle);
+    setDraft((d) => ({ ...d, maintenance }));
+    setBalancePopin(null);
+    advance();
+  }
+
+  function declineBalanceSuggestions() {
+    setDeclinedBalanceKey(balanceKey);
+    setBalancePopin(null);
+    advance();
   }
 
   function handleCancelRestart() {
@@ -291,7 +347,10 @@ export default function OnboardingPage() {
       const objectiveOverride = guided?.objectifs_principaux[0];
       const globalObjective = deriveGlobalObjective(draft, objectiveOverride);
       const profile = buildProfile(draft, globalObjective);
-      const suggestions = computeBalanceSuggestions(draft.priorities);
+      const suggestions = computeBalanceSuggestions(
+        draft.priorities,
+        draft.maintenance,
+      );
       const muscleGoals = buildMuscleGoals(draft, suggestions);
 
       if (isRestart && userState !== null) {
@@ -396,10 +455,9 @@ export default function OnboardingPage() {
   }
 
   const isLastStep = step === LAST_STEP;
-  // Barre de progression : même longueur pour les deux modes. En restart
-  // on saute Step1 donc on décale d'un cran.
-  const stepUiIndex = step - (isRestart ? 1 : 0);
-  const totalUi = LAST_STEP - (isRestart ? 1 : 0);
+  // Stepper : en restart on saute Step1, donc 3 étapes affichées.
+  const stepperLabels = isRestart ? STEP_LABELS.slice(1) : STEP_LABELS;
+  const stepperCurrent = step - (isRestart ? 2 : 1); // index 0-based
 
   const stepContent = useMemo(() => {
     switch (step) {
@@ -408,10 +466,8 @@ export default function OnboardingPage() {
       case 2:
         return <Step2Muscles draft={draft} onChange={patchDraft} />;
       case 3:
-        return <Step3Balance draft={draft} onChange={patchDraft} />;
-      case 4:
         return <Step4Program draft={draft} onChange={patchDraft} />;
-      case 5:
+      case 4:
         return (
           <Step5Preview
             template={preview.template}
@@ -439,7 +495,7 @@ export default function OnboardingPage() {
         className="flex items-center gap-3 border-b border-anthracite-800 pl-12 pr-3 py-3"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <ProgressBar current={stepUiIndex} total={totalUi} />
+        <StepperBar labels={stepperLabels} current={stepperCurrent} />
         {isRestart && (
           <Button
             variant="ghost"
@@ -518,34 +574,156 @@ export default function OnboardingPage() {
           onCancel={() => setConfirmCancel(false)}
         />
       )}
+
+      {balancePopin !== null && (
+        <BalanceDialog
+          suggestions={balancePopin}
+          priorities={draft.priorities}
+          onAccept={acceptBalanceSuggestions}
+          onDecline={declineBalanceSuggestions}
+        />
+      )}
     </div>
   );
 }
 
 /**
- * Conv #22 — barre de progression continue, longueur fixe.
+ * Conv #28 — stepper numéroté à étapes nommées (remplace la barre continue).
  */
-function ProgressBar({
+function StepperBar({
+  labels,
   current,
-  total,
 }: {
+  readonly labels: readonly string[];
   readonly current: number;
-  readonly total: number;
 }) {
-  const pct = total > 0 ? Math.min(100, Math.max(0, (current / total) * 100)) : 0;
   return (
-    <div
-      className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-anthracite-800"
+    <ol
+      className="flex flex-1 items-center gap-1"
       role="progressbar"
       aria-valuemin={1}
-      aria-valuemax={total}
-      aria-valuenow={current}
+      aria-valuemax={labels.length}
+      aria-valuenow={current + 1}
       data-testid="onboarding-progress"
     >
-      <div
-        className="absolute inset-y-0 left-0 rounded-full bg-sang-500 transition-[width] duration-300 ease-out"
-        style={{ width: `${pct}%` }}
-      />
+      {labels.map((label, i) => {
+        const done = i < current;
+        const active = i === current;
+        return (
+          <li key={label} className="flex min-w-0 flex-1 items-center gap-1">
+            <div className="flex min-w-0 flex-1 flex-col items-center gap-0.5">
+              <span
+                aria-hidden="true"
+                className={cnStep(
+                  'flex h-5 w-5 items-center justify-center rounded-full border text-[10px] font-semibold tabular-nums transition',
+                  done && 'border-sang-600 bg-sang-600 text-white',
+                  active && 'border-sang-500 bg-sang-900/40 text-white',
+                  !done && !active && 'border-anthracite-600 text-anthracite-400',
+                )}
+              >
+                {done ? '✓' : i + 1}
+              </span>
+              <span
+                className={cnStep(
+                  'max-w-full truncate text-[9px] leading-none',
+                  active ? 'text-white' : 'text-anthracite-400',
+                )}
+              >
+                {label}
+              </span>
+            </div>
+            {i < labels.length - 1 && (
+              <span
+                aria-hidden="true"
+                className={cnStep(
+                  'mb-3 h-px w-3 shrink-0',
+                  i < current ? 'bg-sang-600' : 'bg-anthracite-700',
+                )}
+              />
+            )}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+/** Mini-helper local : concatène les classes truthy (évite d'importer cn). */
+function cnStep(...classes: ReadonlyArray<string | false>): string {
+  return classes.filter(Boolean).join(' ');
+}
+
+/**
+ * Conv #28 — popin d'équilibre R1-R4 (remplace l'ancienne étape 3).
+ * Le choix par défaut suggéré = ajouter les muscles en maintien ;
+ * « Continuer sans » reste possible (refusable).
+ */
+function BalanceDialog({
+  suggestions,
+  priorities,
+  onAccept,
+  onDecline,
+}: {
+  readonly suggestions: readonly MuscleGoal[];
+  readonly priorities: OnboardingDraft['priorities'];
+  readonly onAccept: () => void;
+  readonly onDecline: () => void;
+}) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Équilibre musculaire"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
+      data-testid="balance-dialog"
+    >
+      <div className="max-h-[80vh] w-full max-w-sm overflow-y-auto rounded-2xl border border-anthracite-700 bg-anthracite-900 p-5">
+        <h3 className="text-lg font-semibold text-white">
+          Un peu d'équilibre ?
+        </h3>
+        <p className="mt-2 text-sm leading-relaxed text-anthracite-300">
+          Avec ta sélection, ces muscles resteraient sans volume. Kotsh te
+          conseille de les garder en{' '}
+          <strong className="text-white">maintien</strong> (un peu de volume
+          pour ne pas perdre) — un déséquilibre prolongé augmente le risque de
+          blessure et de mauvaise posture.
+        </p>
+        <ul className="mt-3 flex flex-col gap-2" data-testid="balance-suggestions">
+          {suggestions.map((sg) => {
+            const reason = explainSuggestion(sg.muscle, priorities);
+            return (
+              <li
+                key={sg.muscle}
+                data-testid={`balance-suggestion-${sg.muscle}`}
+                className="rounded-xl border border-anthracite-700 bg-anthracite-950/60 px-3 py-2"
+              >
+                <span className="text-sm font-medium text-white">
+                  {muscleLabel(sg.muscle)}
+                </span>
+                <p className="mt-0.5 text-xs text-anthracite-300">{reason.text}</p>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="mt-5 flex flex-col gap-2">
+          <Button
+            variant="primary"
+            fullWidth
+            onClick={onAccept}
+            data-testid="balance-accept"
+          >
+            Ajouter ces muscles
+          </Button>
+          <Button
+            variant="ghost"
+            fullWidth
+            onClick={onDecline}
+            data-testid="balance-decline"
+          >
+            Continuer sans
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

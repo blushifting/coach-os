@@ -1,15 +1,20 @@
 /**
- * Étape 2 de l'onboarding : muscles prioritaires + ranking (drag&drop) +
- * objectif par muscle.
+ * Étape 2 de l'onboarding (refonte Conv #28) : muscles + objectif par muscle.
  *
- * - Pool des 15 muscles canoniques (cf. `MUSCLES` dans `engine/models`).
- * - Ajout par tap → entre dans la liste prioritaire en bas du ranking.
- * - Drag&drop pour réordonner (`priority_rank` = position).
- * - Sélecteur d'objectif (Force/Hypertrophie/Endurance/Maintien) par item.
- * - Bouton "Préset par défaut" (full-body Hypertrophie) — utile en garde-fou.
+ * Modèle « pinceau » : un sélecteur d'objectif (Hypertrophie / Force /
+ * Endurance / Maintien) au-dessus de la silhouette ; taper un muscle lui
+ * applique l'objectif courant, retaper avec le même pinceau le retire.
+ *
+ * Le ranking drag&drop disparaît de l'UI mais `priority_rank` reste
+ * alimenté : rang = ordre de sélection, visible (numéro) et réordonnable
+ * (poignée de drag) dans la liste sous la silhouette.
+ *
+ * La liste des 15 muscles est l'autre vue du même état : prioritaires en
+ * tête (ordre de rang), maintiens ensuite, non-sélectionnés en ordre
+ * anatomique. Chaque ligne porte un contrôle 5 positions (– / H / F / E / M).
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   DndContext,
   KeyboardSensor,
@@ -36,8 +41,9 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { HelpButton } from '@/components/HelpButton';
 import { cn } from '@/lib/cn';
-import { muscleLabel, objectiveLabel } from '@/lib/balance-reasons';
+import { muscleLabel } from '@/lib/balance-reasons';
 import {
+  PRESET_DEFAULT_MAINTENANCE,
   PRESET_DEFAULT_PRIORITIES,
   type OnboardingDraft,
   type RankedPriority,
@@ -49,58 +55,111 @@ interface Step2Props {
   readonly stepLabel?: string;
 }
 
-const OBJECTIVES: readonly MuscleObjective[] = [
-  MuscleObjective.FORCE,
+/** Style par objectif — voir la doc palette `objective` de la silhouette. */
+const OBJECTIVE_UI: Record<
+  MuscleObjective,
+  {
+    readonly label: string;
+    readonly letter: string;
+    readonly dot: string;
+    readonly chipActive: string;
+    readonly silhouette: SilhouetteStatus;
+  }
+> = {
+  [MuscleObjective.HYPERTROPHIE]: {
+    label: 'Hypertrophie',
+    letter: 'H',
+    dot: 'bg-amber-400',
+    chipActive: 'border-amber-400 bg-amber-400/15 text-amber-300',
+    silhouette: 'highlight',
+  },
+  [MuscleObjective.FORCE]: {
+    label: 'Force',
+    letter: 'F',
+    dot: 'bg-sang-500',
+    chipActive: 'border-sang-500 bg-sang-900/40 text-sang-400',
+    silhouette: 'high',
+  },
+  [MuscleObjective.ENDURANCE]: {
+    label: 'Endurance',
+    letter: 'E',
+    dot: 'bg-cyan-500',
+    chipActive: 'border-cyan-500 bg-cyan-500/15 text-cyan-300',
+    silhouette: 'low',
+  },
+  [MuscleObjective.MAINTIEN]: {
+    label: 'Maintien',
+    letter: 'M',
+    dot: 'bg-amber-700',
+    chipActive: 'border-amber-700 bg-amber-700/20 text-amber-600',
+    silhouette: 'ok',
+  },
+};
+
+const BRUSHES: readonly MuscleObjective[] = [
   MuscleObjective.HYPERTROPHIE,
+  MuscleObjective.FORCE,
   MuscleObjective.ENDURANCE,
   MuscleObjective.MAINTIEN,
 ];
 
+/** Objectif courant d'un muscle dans le draft, ou `null` si non sélectionné. */
+function muscleObjective(
+  draft: OnboardingDraft,
+  m: string,
+): MuscleObjective | null {
+  const prio = draft.priorities.find((p) => p.muscle === m);
+  if (prio !== undefined) return prio.objective;
+  if (draft.maintenance.has(m)) return MuscleObjective.MAINTIEN;
+  return null;
+}
+
 export function Step2Muscles({ draft, onChange }: Step2Props) {
-  const selectedSet = useMemo(
-    () => new Set(draft.priorities.map((p) => p.muscle)),
-    [draft.priorities],
+  const [brush, setBrush] = useState<MuscleObjective>(
+    MuscleObjective.HYPERTROPHIE,
   );
 
-  const available = useMemo(
-    () => MUSCLES.filter((m) => !selectedSet.has(m)),
-    [selectedSet],
-  );
-
-  // Conv #15 — surlignage silhouette : le top-3 prioritaire est en `highlight`
-  // (rouge plein), les suivants en `ok` (vert atténué) pour différencier
-  // poids relatif sans surcharger. Hors pool = neutre.
   const silhouetteHighlights = useMemo(() => {
     const out: Record<string, SilhouetteStatus> = {};
-    draft.priorities.forEach((p, i) => {
-      out[p.muscle] = i < 3 ? 'highlight' : 'ok';
-    });
+    for (const p of draft.priorities) {
+      out[p.muscle] = OBJECTIVE_UI[p.objective].silhouette;
+    }
+    for (const m of draft.maintenance) {
+      out[m] = OBJECTIVE_UI[MuscleObjective.MAINTIEN].silhouette;
+    }
     return out;
-  }, [draft.priorities]);
+  }, [draft.priorities, draft.maintenance]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  function addMuscle(m: Muscle) {
-    const next: readonly RankedPriority[] = [
-      ...draft.priorities,
-      { muscle: m, objective: MuscleObjective.HYPERTROPHIE },
-    ];
-    onChange({ priorities: next });
-  }
+  /**
+   * Applique `obj` au muscle `m` (ou le retire si `obj` est déjà son état,
+   * ou si `obj` est null). Un prio qui change d'objectif H/F/E garde son rang.
+   */
+  function setMuscle(m: string, obj: MuscleObjective | null) {
+    const current = muscleObjective(draft, m);
+    const target = current === obj ? null : obj;
 
-  function removeMuscle(m: string) {
-    onChange({ priorities: draft.priorities.filter((p) => p.muscle !== m) });
-  }
+    const maintenance = new Set(draft.maintenance);
+    maintenance.delete(m);
+    let priorities: readonly RankedPriority[] = draft.priorities;
 
-  function setObjective(m: string, obj: MuscleObjective) {
-    onChange({
-      priorities: draft.priorities.map((p) =>
-        p.muscle === m ? { muscle: p.muscle, objective: obj } : p,
-      ),
-    });
+    if (target === null) {
+      priorities = priorities.filter((p) => p.muscle !== m);
+    } else if (target === MuscleObjective.MAINTIEN) {
+      priorities = priorities.filter((p) => p.muscle !== m);
+      maintenance.add(m);
+    } else if (priorities.some((p) => p.muscle === m)) {
+      priorities = priorities.map((p) =>
+        p.muscle === m ? { muscle: m, objective: target } : p,
+      );
+    } else {
+      priorities = [...priorities, { muscle: m, objective: target }];
+    }
+    onChange({ priorities, maintenance });
   }
 
   function onDragEnd(ev: DragEndEvent) {
@@ -113,8 +172,21 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
   }
 
   function applyPreset() {
-    onChange({ priorities: [...PRESET_DEFAULT_PRIORITIES] });
+    onChange({
+      priorities: [...PRESET_DEFAULT_PRIORITIES],
+      maintenance: new Set(PRESET_DEFAULT_MAINTENANCE),
+    });
   }
+
+  // Liste : prios (ordre de rang), puis maintiens et non-sélectionnés en
+  // ordre anatomique (MUSCLES). Ordre stable → pas de lignes qui sautent
+  // de façon imprévisible, mais le changement de section reste un feedback.
+  const maintenanceRows = MUSCLES.filter((m) => draft.maintenance.has(m));
+  const unselectedRows = MUSCLES.filter(
+    (m) => muscleObjective(draft, m) === null,
+  );
+  const hasSelection =
+    draft.priorities.length > 0 || draft.maintenance.size > 0;
 
   return (
     <div className="flex flex-col gap-3 p-3">
@@ -123,57 +195,33 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
           Tes muscles cibles
           <HelpButton topic="deltoides" label="Aide : deltoïdes" />
         </h1>
-        <div className="space-y-2 text-[12px] leading-relaxed text-anthracite-200">
-          <p>
-            Choisis les muscles que tu veux développer en priorité, puis
-            glisse-les pour les classer du plus prioritaire au moins.
-            3 à 5 prios suffisent.
-          </p>
-          <p className="text-anthracite-300">
-            <strong className="text-anthracite-100">Prioritaire</strong> = un
-            muscle sur lequel Kotsh va concentrer du volume pour qu'il
-            progresse. <strong className="text-anthracite-100">Maintien</strong>{' '}
-            (les autres muscles) = volume minimum pour ne pas perdre, sans
-            chercher la croissance — utile pour rester équilibré sans
-            disperser ton énergie.
-          </p>
-        </div>
+        <p className="text-[12px] leading-relaxed text-anthracite-200">
+          Choisis un objectif ci-dessous, puis touche les muscles sur la
+          silhouette. Le premier muscle choisi compte le plus.
+        </p>
         <details className="rounded-xl border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-[12px] leading-relaxed text-anthracite-200">
           <summary className="cursor-pointer text-white">
-            Quel objectif choisir pour chaque muscle ?
+            Quel objectif choisir ?
           </summary>
-          <div className="mt-3 space-y-2 text-anthracite-300">
-            <p>
-              Quand tu ajoutes un muscle, tu peux préciser ce que tu cherches.
-              Si tu ne sais pas : <strong className="text-anthracite-100">Hypertrophie</strong>{' '}
-              est le choix le plus courant.
-            </p>
-            <ul className="space-y-1.5 pl-1">
-              <li>
-                <strong className="text-white">Hypertrophie</strong> — faire
-                grossir le muscle (volume visible). Reps moyennes (6-12),
-                charges modérées, séries proches de l'échec. Le but de la
-                majorité des gens qui vont à la salle.
-              </li>
-              <li>
-                <strong className="text-white">Force</strong> — soulever lourd.
-                Reps basses (3-6), charges lourdes, repos longs entre séries.
-                Le muscle grossit aussi, mais moins que sur l'hypertrophie. Pour
-                ceux qui veulent battre des records de charge.
-              </li>
-              <li>
-                <strong className="text-white">Endurance</strong> — tenir long
-                sans fatigue. Reps hautes (12-25), charges légères, repos courts.
-                Utile en complément cardio / sport d'endurance.
-              </li>
-              <li>
-                <strong className="text-white">Maintien</strong> — entretenir
-                un muscle sans le développer. Très peu de volume, juste de quoi
-                ne pas perdre. À choisir si tu as un muscle déjà bien développé
-                et que tu veux libérer du temps pour d'autres.
-              </li>
-            </ul>
-          </div>
+          <ul className="mt-3 space-y-1.5 pl-1 text-anthracite-300">
+            <li>
+              <strong className="text-white">Hypertrophie</strong> — faire
+              grossir le muscle. Le choix le plus courant : si tu hésites,
+              prends ça.
+            </li>
+            <li>
+              <strong className="text-white">Force</strong> — soulever lourd
+              (reps basses, repos longs). Le muscle grossit aussi, mais moins.
+            </li>
+            <li>
+              <strong className="text-white">Endurance</strong> — tenir long
+              sans fatigue (reps hautes, charges légères).
+            </li>
+            <li>
+              <strong className="text-white">Maintien</strong> — entretenir
+              sans développer : juste assez de volume pour ne pas perdre.
+            </li>
+          </ul>
         </details>
       </header>
 
@@ -186,11 +234,13 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
         >
           Sélection par défaut (full-body)
         </Button>
-        {draft.priorities.length > 0 && (
+        {hasSelection && (
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onChange({ priorities: [] })}
+            onClick={() =>
+              onChange({ priorities: [], maintenance: new Set<string>() })
+            }
             data-testid="priorities-clear"
           >
             Tout retirer
@@ -198,118 +248,198 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
         )}
       </div>
 
-      {/* Conv #17 — refonte : silhouette **cliquable** grande en haut. Tap
-          un muscle = toggle (ajoute s'il est absent, retire s'il est déjà
-          dans le ranking). Liste priorités full-width dessous. Le panneau
-          "Ajouter manuellement" reste en bas pour les muscles qui ne sont
-          pas accessibles via la silhouette (mappage RBH limité). */}
       <Card
         className="flex flex-col items-center gap-2 p-3"
         data-testid="step2-silhouette"
       >
+        {/* Pinceau : objectif appliqué au prochain tap sur la silhouette. */}
+        <div
+          className="flex w-full gap-1"
+          role="radiogroup"
+          aria-label="Objectif à appliquer"
+          data-testid="brush-selector"
+        >
+          {BRUSHES.map((obj) => {
+            const ui = OBJECTIVE_UI[obj];
+            const selected = brush === obj;
+            return (
+              <button
+                key={obj}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => setBrush(obj)}
+                data-testid={`brush-${obj}`}
+                className={cn(
+                  'flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-1 py-1.5',
+                  'text-[11px] font-medium transition',
+                  selected
+                    ? ui.chipActive
+                    : 'border-anthracite-700 bg-anthracite-900 text-anthracite-300 hover:text-white',
+                )}
+              >
+                <span
+                  className={cn('h-2 w-2 shrink-0 rounded-full', ui.dot)}
+                  aria-hidden="true"
+                />
+                {ui.label}
+              </button>
+            );
+          })}
+        </div>
+
         <AnatomicalSilhouette
           view="both"
           highlights={silhouetteHighlights}
-          palette="priority"
-          onMuscleClick={(m) =>
-            selectedSet.has(m) ? removeMuscle(m) : addMuscle(m as Muscle)
-          }
+          palette="objective"
+          onMuscleClick={(m) => setMuscle(m, brush)}
           className="h-56"
           testId="onboarding-silhouette"
         />
         <p className="text-center text-[10px] leading-tight text-anthracite-300">
-          Touche un muscle pour l'ajouter ou le retirer.{' '}
-          {draft.priorities.length > 0 && (
-            <>
-              <span className="text-amber-400">●</span> top 3{' '}
-              <span className="text-amber-700">●</span> autres
-            </>
-          )}
+          Touche un muscle pour lui appliquer l'objectif choisi ; retouche-le
+          pour le retirer.
         </p>
       </Card>
 
       <Card className="min-w-0">
         <div className="mb-2 flex items-center justify-between">
-          <span className="text-sm font-medium text-white">Tes priorités</span>
+          <span className="text-sm font-medium text-white">Tous les muscles</span>
           <span className="text-xs text-anthracite-300 tabular-nums">
-            {draft.priorities.length}
+            {draft.priorities.length + draft.maintenance.size} / {MUSCLES.length}
           </span>
         </div>
 
-        {draft.priorities.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-anthracite-700 px-2 py-4 text-center text-[11px] text-anthracite-300">
-            Aucun muscle pour l'instant. Touche la silhouette ci-dessus.
-          </div>
-        ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={onDragEnd}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={onDragEnd}
+        >
+          <SortableContext
+            items={draft.priorities.map((p) => p.muscle)}
+            strategy={verticalListSortingStrategy}
           >
-            <SortableContext
-              items={draft.priorities.map((p) => p.muscle)}
-              strategy={verticalListSortingStrategy}
-            >
-              <ul className="flex flex-col gap-1.5" data-testid="priorities-list">
-                {draft.priorities.map((p, i) => (
-                  <SortablePriorityRow
-                    key={p.muscle}
-                    rank={i + 1}
-                    priority={p}
-                    onSetObjective={(obj) => setObjective(p.muscle, obj)}
-                    onRemove={() => removeMuscle(p.muscle)}
-                  />
-                ))}
-              </ul>
-            </SortableContext>
-          </DndContext>
-        )}
-      </Card>
-
-      <Card>
-        <div className="mb-3 text-sm font-medium text-white">
-          Ajouter manuellement
-        </div>
-        {available.length === 0 ? (
-          <div className="text-xs text-anthracite-300">
-            Tous les muscles sont déjà sélectionnés.
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {available.map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => addMuscle(m)}
-                data-testid={`add-${m}`}
-                className={cn(
-                  'rounded-full border border-anthracite-700 bg-anthracite-900 px-3 py-1.5',
-                  'text-xs font-medium text-anthracite-300 transition hover:text-white',
-                )}
-              >
-                + {muscleLabel(m)}
-              </button>
-            ))}
-          </div>
-        )}
+            <ul className="flex flex-col gap-1.5" data-testid="muscles-list">
+              {draft.priorities.map((p, i) => (
+                <SortableMuscleRow
+                  key={p.muscle}
+                  rank={i + 1}
+                  muscle={p.muscle}
+                  objective={p.objective}
+                  onSet={(obj) => setMuscle(p.muscle, obj)}
+                />
+              ))}
+              {maintenanceRows.map((m) => (
+                <MuscleRow
+                  key={m}
+                  muscle={m}
+                  objective={MuscleObjective.MAINTIEN}
+                  onSet={(obj) => setMuscle(m, obj)}
+                />
+              ))}
+              {unselectedRows.map((m) => (
+                <MuscleRow
+                  key={m}
+                  muscle={m}
+                  objective={null}
+                  onSet={(obj) => setMuscle(m, obj)}
+                />
+              ))}
+            </ul>
+          </SortableContext>
+        </DndContext>
       </Card>
     </div>
   );
 }
 
-interface SortablePriorityRowProps {
-  readonly rank: number;
-  readonly priority: RankedPriority;
-  readonly onSetObjective: (obj: MuscleObjective) => void;
-  readonly onRemove: () => void;
+interface MuscleRowProps {
+  readonly muscle: Muscle | string;
+  readonly objective: MuscleObjective | null;
+  readonly onSet: (obj: MuscleObjective | null) => void;
+  /** Rang affiché (prioritaires uniquement). */
+  readonly rank?: number;
 }
 
-function SortablePriorityRow({
-  rank,
-  priority,
-  onSetObjective,
-  onRemove,
-}: SortablePriorityRowProps) {
+/** Contrôle 5 positions (– / H / F / E / M) d'une ligne muscle. */
+function ObjectiveControl({
+  muscle,
+  objective,
+  onSet,
+}: Omit<MuscleRowProps, 'rank'>) {
+  return (
+    <div className="flex shrink-0 gap-1" role="radiogroup" aria-label={`Objectif ${muscleLabel(muscle)}`}>
+      <button
+        type="button"
+        role="radio"
+        aria-checked={objective === null}
+        aria-label="Aucun"
+        onClick={() => onSet(null)}
+        data-testid={`obj-${muscle}-none`}
+        className={cn(
+          'h-7 w-7 rounded border text-[11px] font-semibold transition',
+          objective === null
+            ? 'border-anthracite-500 bg-anthracite-700 text-white'
+            : 'border-anthracite-700 bg-anthracite-800 text-anthracite-400 hover:text-white',
+        )}
+      >
+        –
+      </button>
+      {BRUSHES.map((obj) => {
+        const ui = OBJECTIVE_UI[obj];
+        const active = objective === obj;
+        return (
+          <button
+            key={obj}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            aria-label={ui.label}
+            onClick={() => onSet(obj)}
+            data-testid={`obj-${muscle}-${obj}`}
+            className={cn(
+              'h-7 w-7 rounded border text-[11px] font-semibold transition',
+              active
+                ? ui.chipActive
+                : 'border-anthracite-700 bg-anthracite-800 text-anthracite-400 hover:text-white',
+            )}
+          >
+            {ui.letter}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Ligne non-prioritaire (maintien ou non sélectionné) — pas de drag. */
+function MuscleRow({ muscle, objective, onSet }: MuscleRowProps) {
+  const ui = objective !== null ? OBJECTIVE_UI[objective] : null;
+  return (
+    <li
+      data-testid={`muscle-row-${muscle}`}
+      className={cn(
+        'flex items-center gap-2 rounded-lg border bg-anthracite-900 p-1.5',
+        objective !== null ? 'border-anthracite-600' : 'border-anthracite-700',
+      )}
+    >
+      <span className="w-7 shrink-0" aria-hidden="true" />
+      <span className="flex min-w-0 flex-1 items-center gap-1.5 truncate text-xs text-white">
+        {ui !== null && (
+          <span
+            className={cn('h-2 w-2 shrink-0 rounded-full', ui.dot)}
+            aria-hidden="true"
+          />
+        )}
+        {muscleLabel(muscle)}
+      </span>
+      <ObjectiveControl muscle={muscle} objective={objective} onSet={onSet} />
+    </li>
+  );
+}
+
+/** Ligne prioritaire : rang visible + poignée de drag pour réordonner. */
+function SortableMuscleRow({ rank, muscle, objective, onSet }: MuscleRowProps) {
   const {
     attributes,
     listeners,
@@ -317,7 +447,7 @@ function SortablePriorityRow({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: priority.muscle });
+  } = useSortable({ id: muscle });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -325,60 +455,40 @@ function SortablePriorityRow({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const ui = objective !== null ? OBJECTIVE_UI[objective] : null;
+
   return (
     <li
       ref={setNodeRef}
       style={style}
-      data-testid={`priority-${priority.muscle}`}
-      className="rounded-lg border border-anthracite-700 bg-anthracite-900 p-1.5"
+      data-testid={`muscle-row-${muscle}`}
+      className="flex items-center gap-2 rounded-lg border border-anthracite-600 bg-anthracite-900 p-1.5"
     >
-      <div className="flex items-center gap-1">
-        <button
-          type="button"
-          {...attributes}
-          {...listeners}
-          aria-label="Déplacer"
-          data-testid={`drag-${priority.muscle}`}
-          // touch-none indispensable : sans ça, le navigateur traite le touch
-          // comme un scroll et le PointerSensor ne reçoit pas l'événement.
-          className="flex h-7 w-7 shrink-0 cursor-grab touch-none items-center justify-center rounded text-anthracite-300 hover:text-white active:cursor-grabbing"
-        >
-          ⋮⋮
-        </button>
-        <span className="w-4 shrink-0 text-center text-xs font-semibold text-sang-500 tabular-nums">
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        aria-label="Déplacer"
+        data-testid={`drag-${muscle}`}
+        // touch-none indispensable : sans ça, le navigateur traite le touch
+        // comme un scroll et le PointerSensor ne reçoit pas l'événement.
+        className="flex h-7 w-7 shrink-0 cursor-grab touch-none items-center justify-center rounded text-anthracite-300 hover:text-white active:cursor-grabbing"
+      >
+        ⋮⋮
+      </button>
+      <span className="flex min-w-0 flex-1 items-center gap-1.5 truncate text-xs text-white">
+        <span className="shrink-0 text-xs font-semibold text-sang-500 tabular-nums">
           {rank}
         </span>
-        <span className="min-w-0 flex-1 truncate text-xs text-white">
-          {muscleLabel(priority.muscle)}
-        </span>
-        <button
-          type="button"
-          onClick={onRemove}
-          aria-label="Retirer"
-          data-testid={`remove-${priority.muscle}`}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-anthracite-300 hover:text-sang-500"
-        >
-          ✕
-        </button>
-      </div>
-      <div className="mt-1 flex gap-1 pl-8">
-        {OBJECTIVES.map((obj) => (
-          <button
-            key={obj}
-            type="button"
-            onClick={() => onSetObjective(obj)}
-            data-testid={`obj-${priority.muscle}-${obj}`}
-            className={cn(
-              'flex-1 truncate rounded border px-1 py-0.5 text-[10px] font-medium transition',
-              priority.objective === obj
-                ? 'border-sang-600 bg-sang-900/30 text-white'
-                : 'border-anthracite-700 bg-anthracite-800 text-anthracite-300 hover:text-white',
-            )}
-          >
-            {objectiveLabel(obj)}
-          </button>
-        ))}
-      </div>
+        {ui !== null && (
+          <span
+            className={cn('h-2 w-2 shrink-0 rounded-full', ui.dot)}
+            aria-hidden="true"
+          />
+        )}
+        {muscleLabel(muscle)}
+      </span>
+      <ObjectiveControl muscle={muscle} objective={objective} onSet={onSet} />
     </li>
   );
 }

@@ -1,29 +1,24 @@
 /**
- * Étape 4 de l'onboarding : choix d'un programme guidé ou du mode custom.
+ * Étape 3 de l'onboarding (refonte Conv #28) : paramètres + choix programme.
  *
- * Pour chaque programme guidé, on indique :
- *  - nom + auteur,
- *  - séances/sem (avec warning si ≠ choix profil),
- *  - public cible,
- *  - objectif principal.
- *
- * Le mode "custom" ne sélectionne aucun programmeId : le moteur génère un
- * programme à partir des `muscle_goals` via split + cycle_planner.
+ * - Le sur-mesure est le choix prioritaire, mis en avant en grande carte.
+ * - Les programmes guidés sont relégués dessous, en **tableau comparatif**
+ *   (1 ligne = 1 programme ; colonnes courtes : séances/sem, niveau,
+ *   objectif). Taper une ligne = la sélectionner ET déplier ses
+ *   avantages / inconvénients — pas de cliquable dans cliquable.
  */
 
-import { useState } from 'react';
 import { ALL_GUIDED_PROGRAMS } from '@/engine/guided_programs';
 import {
   DurationCategory,
   EquipmentPreference,
   Level,
+  MuscleObjective,
   type GuidedProgram,
-  type MuscleObjective,
 } from '@/engine/models';
 import { Card } from '@/components/Card';
 import { Stepper } from '@/components/Stepper';
 import { cn } from '@/lib/cn';
-import { objectiveLabel } from '@/lib/balance-reasons';
 import type { OnboardingDraft } from '@/lib/onboarding-state';
 
 interface Step4Props {
@@ -32,18 +27,27 @@ interface Step4Props {
   readonly stepLabel?: string;
 }
 
-const LEVEL_LABEL_FR: Record<Level, string> = {
-  [Level.DEBUTANT]: 'Débutant',
-  [Level.INTERMEDIAIRE]: 'Intermédiaire',
-  [Level.AVANCE]: 'Avancé',
+const LEVEL_SHORT_FR: Record<Level, string> = {
+  [Level.DEBUTANT]: 'Déb',
+  [Level.INTERMEDIAIRE]: 'Int',
+  [Level.AVANCE]: 'Av',
 };
 
-function levelsToFr(levels: readonly Level[]): string {
-  return levels.map((l) => LEVEL_LABEL_FR[l]).join(' / ');
+function levelsShort(levels: readonly Level[]): string {
+  if (levels.length === 0) return '—';
+  if (levels.length === 1) return LEVEL_SHORT_FR[levels[0]!];
+  return `${LEVEL_SHORT_FR[levels[0]!]}–${LEVEL_SHORT_FR[levels[levels.length - 1]!]}`;
 }
 
-function objectivesToFr(objs: readonly MuscleObjective[]): string {
-  return objs.map(objectiveLabel).join(' + ');
+const OBJECTIVE_SHORT_FR: Record<MuscleObjective, string> = {
+  [MuscleObjective.FORCE]: 'Force',
+  [MuscleObjective.HYPERTROPHIE]: 'Hyper',
+  [MuscleObjective.ENDURANCE]: 'Endu',
+  [MuscleObjective.MAINTIEN]: 'Maintien',
+};
+
+function objectivesShort(objs: readonly MuscleObjective[]): string {
+  return objs.map((o) => OBJECTIVE_SHORT_FR[o]).join(' + ');
 }
 
 export function Step4Program({ draft, onChange }: Step4Props) {
@@ -53,14 +57,10 @@ export function Step4Program({ draft, onChange }: Step4Props) {
         <h1 className="font-display text-3xl leading-tight tracking-wide text-white">
           Ton programme
         </h1>
-        <div className="space-y-2 text-sm leading-relaxed text-anthracite-300">
-          <p>
-            Tu peux <strong className="text-white">construire ton programme</strong>{' '}
-            avec Kotsh (sur mesure) ou prendre un <strong className="text-white">programme tout fait</strong>{' '}
-            d'un coach reconnu. Dans les deux cas, Kotsh suit tes performances
-            séance après séance et ajuste les charges.
-          </p>
-        </div>
+        <p className="text-sm leading-relaxed text-anthracite-300">
+          Quelques réglages, puis le choix du programme. Dans tous les cas,
+          Kotsh suit tes performances séance après séance et ajuste les charges.
+        </p>
       </header>
 
       <Card>
@@ -68,9 +68,8 @@ export function Step4Program({ draft, onChange }: Step4Props) {
           Combien de séances par semaine ?
         </div>
         <p className="mb-3 text-[12px] leading-relaxed text-anthracite-300">
-          Plus tu en fais, plus tu peux étaler du volume sur la semaine et
-          progresser vite — mais il faut récupérer entre les séances. 3 à 4
-          est un bon point d'équilibre pour la plupart.
+          3 à 4 est un bon point d'équilibre pour la plupart : assez pour
+          étaler du volume, assez de repos pour récupérer.
         </p>
         <Stepper
           value={draft.sessionsPerWeek}
@@ -79,10 +78,6 @@ export function Step4Program({ draft, onChange }: Step4Props) {
           max={6}
           suffix=" / sem"
         />
-        <p className="mt-2 text-[11px] text-anthracite-400">
-          Les programmes guidés ont leur propre fréquence ; un avertissement
-          s'affiche si elle ne correspond pas à ton choix.
-        </p>
       </Card>
 
       {/* Conv #22 — Préférence d'équipement : oriente le choix auto des exos. */}
@@ -91,25 +86,20 @@ export function Step4Program({ draft, onChange }: Step4Props) {
           Tes préférences d'équipement
         </div>
         <p className="mb-3 text-[12px] leading-relaxed text-anthracite-300">
-          On choisit tes exercices à ta place pour démarrer. Tu pourras tout
-          modifier au récap final.{' '}
-          <strong className="text-anthracite-100">Machines guidées</strong> =
-          plus accessible (trajectoire fixe, idéal débutants).{' '}
-          <strong className="text-anthracite-100">Poids libres</strong> =
-          haltères / barre / poids du corps (meilleur transfert sportif,
-          plus technique).
+          On choisit tes exercices à ta place pour démarrer ; tu pourras tout
+          modifier au récap final.
         </p>
         <div className="flex flex-col gap-2">
           {[
             {
               v: EquipmentPreference.MACHINES,
               label: 'Machines guidées',
-              sub: 'Trajectoire fixe, contrôle facile',
+              sub: 'Trajectoire fixe, contrôle facile — idéal débutants',
             },
             {
               v: EquipmentPreference.FREE_WEIGHTS,
               label: 'Poids libres',
-              sub: 'Haltères, barre, poids du corps',
+              sub: 'Haltères, barre, poids du corps — meilleur transfert, plus technique',
             },
             {
               v: EquipmentPreference.NO_PREFERENCE,
@@ -147,10 +137,8 @@ export function Step4Program({ draft, onChange }: Step4Props) {
           Combien de temps maximum par séance ?
         </div>
         <p className="mb-3 text-[12px] leading-relaxed text-anthracite-300">
-          C'est ta <strong className="text-white">limite haute</strong> : Kotsh
-          dimensionne ton programme en dessous, selon tes priorités. Si tes
-          prios tiennent en moins de temps, tes séances seront plus courtes
-          que ta limite — Kotsh te le dira.
+          C'est ta <strong className="text-white">limite haute</strong> :
+          Kotsh dimensionne en dessous, selon tes priorités.
         </p>
         <div className="grid grid-cols-3 gap-2">
           {[
@@ -182,171 +170,180 @@ export function Step4Program({ draft, onChange }: Step4Props) {
         </div>
       </Card>
 
-      <ProgramRow
-        id={null}
-        title="Programme sur mesure"
-        subtitle="Généré à partir de tes muscles cibles + objectifs"
-        meta={`${draft.sessionsPerWeek} séances / sem`}
-        selected={draft.programmeId === null}
-        onSelect={() => onChange({ programmeId: null })}
-      />
+      {/* Conv #28 — sur-mesure mis en avant, choix prioritaire. */}
+      <Card
+        className={cn(
+          'cursor-pointer transition',
+          draft.programmeId === null
+            ? 'border-sang-500 bg-sang-900/20'
+            : 'hover:border-anthracite-500',
+        )}
+        onClick={() => onChange({ programmeId: null })}
+        data-testid="program-custom"
+        role="radio"
+        aria-checked={draft.programmeId === null}
+      >
+        <div className="flex items-start gap-3">
+          <RadioDot selected={draft.programmeId === null} />
+          <div className="flex-1">
+            <div className="text-base font-semibold text-white">
+              Programme sur mesure
+            </div>
+            <p className="mt-1 text-xs leading-snug text-anthracite-200">
+              Kotsh construit ton programme à partir de tes muscles cibles,
+              de tes objectifs et de ton temps. Le choix recommandé.
+            </p>
+            <div className="mt-1 text-[11px] text-anthracite-300">
+              {draft.sessionsPerWeek} séances / sem
+            </div>
+          </div>
+        </div>
+      </Card>
 
-      <div className="mt-2 text-xs uppercase tracking-wider text-anthracite-300">
-        Programmes guidés
+      <div>
+        <div className="mb-2 text-xs uppercase tracking-wider text-anthracite-300">
+          Ou un programme tout fait d'un coach reconnu
+        </div>
+
+        {/* Tableau comparatif : 1 ligne = 1 programme. Taper une ligne la
+            sélectionne ET déplie ses détails (pour / contre). */}
+        <div
+          className="overflow-hidden rounded-xl border border-anthracite-700"
+          role="radiogroup"
+          aria-label="Programmes guidés"
+          data-testid="guided-programs-table"
+        >
+          <div
+            className="grid grid-cols-[1fr_3.2rem_3.4rem_3.6rem] items-center gap-x-2 border-b border-anthracite-700 bg-anthracite-900 px-3 py-1.5 text-[10px] uppercase tracking-wider text-anthracite-400"
+            aria-hidden="true"
+          >
+            <span>Programme</span>
+            <span className="text-center">Séances</span>
+            <span className="text-center">Niveau</span>
+            <span className="text-center">Objectif</span>
+          </div>
+
+          {ALL_GUIDED_PROGRAMS.map((p: GuidedProgram, idx) => {
+            const selected = draft.programmeId === p.id;
+            const mismatch = p.sessions_per_week !== draft.sessionsPerWeek;
+            return (
+              <div
+                key={p.id}
+                role="radio"
+                aria-checked={selected}
+                tabIndex={0}
+                onClick={() => onChange({ programmeId: p.id })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onChange({ programmeId: p.id });
+                  }
+                }}
+                data-testid={`program-${p.id}`}
+                className={cn(
+                  'cursor-pointer transition',
+                  idx > 0 && 'border-t border-anthracite-700/70',
+                  selected
+                    ? 'bg-sang-900/20'
+                    : 'bg-anthracite-950 hover:bg-anthracite-900',
+                )}
+              >
+                <div className="grid grid-cols-[1fr_3.2rem_3.4rem_3.6rem] items-center gap-x-2 px-3 py-2.5">
+                  <div className="min-w-0">
+                    <div
+                      className={cn(
+                        'truncate text-sm font-semibold',
+                        selected ? 'text-white' : 'text-anthracite-100',
+                      )}
+                    >
+                      {p.name}
+                    </div>
+                    <div className="truncate text-[11px] text-anthracite-400">
+                      {p.author}
+                    </div>
+                  </div>
+                  <span className="text-center text-xs text-anthracite-200 tabular-nums">
+                    {p.sessions_per_week}/sem
+                  </span>
+                  <span className="text-center text-xs text-anthracite-200">
+                    {levelsShort(p.public_cible)}
+                  </span>
+                  <span className="text-center text-xs text-anthracite-200">
+                    {objectivesShort(p.objectifs_principaux)}
+                  </span>
+                </div>
+
+                {/* Détails dépliés de la ligne sélectionnée. */}
+                {selected && (
+                  <div
+                    className="border-t border-anthracite-800 px-3 py-2.5"
+                    data-testid={`program-details-${p.id}`}
+                  >
+                    {p.short_pitch ? (
+                      <p className="text-xs leading-snug text-anthracite-100">
+                        {p.short_pitch}
+                      </p>
+                    ) : null}
+                    {mismatch ? (
+                      <div className="mt-2 rounded-lg border border-amber-700/60 bg-amber-900/20 px-2 py-1 text-[11px] text-amber-500">
+                        ⚠ Ce programme demande {p.sessions_per_week} séances/sem
+                        (tu as choisi {draft.sessionsPerWeek}).
+                      </div>
+                    ) : null}
+                    <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {p.pour && p.pour.length > 0 ? (
+                        <div>
+                          <div className="text-[10px] uppercase tracking-wider text-anthracite-300">
+                            À choisir si
+                          </div>
+                          <ul className="mt-1 space-y-0.5 text-[12px] leading-snug text-anthracite-100">
+                            {p.pour.map((s, i) => (
+                              <li key={i} className="flex gap-1.5">
+                                <span className="text-sang-500">•</span>
+                                <span>{s}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+                      {p.contre && p.contre.length > 0 ? (
+                        <div>
+                          <div className="text-[10px] uppercase tracking-wider text-anthracite-300">
+                            À éviter si
+                          </div>
+                          <ul className="mt-1 space-y-0.5 text-[12px] leading-snug text-anthracite-100">
+                            {p.contre.map((s, i) => (
+                              <li key={i} className="flex gap-1.5">
+                                <span className="text-anthracite-400">•</span>
+                                <span>{s}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
-
-      {ALL_GUIDED_PROGRAMS.map((p: GuidedProgram) => {
-        const mismatch = p.sessions_per_week !== draft.sessionsPerWeek;
-        return (
-          <ProgramRow
-            key={p.id}
-            id={p.id}
-            title={p.name}
-            subtitle={`${p.author} — ${levelsToFr(p.public_cible)}`}
-            meta={`${p.sessions_per_week} séances / sem · ${objectivesToFr(p.objectifs_principaux)}`}
-            warning={
-              mismatch
-                ? `Ce programme demande ${p.sessions_per_week} séances/sem (tu as choisi ${draft.sessionsPerWeek}).`
-                : null
-            }
-            shortPitch={p.short_pitch ?? null}
-            pour={p.pour ?? null}
-            contre={p.contre ?? null}
-            selected={draft.programmeId === p.id}
-            onSelect={() => onChange({ programmeId: p.id })}
-          />
-        );
-      })}
     </div>
   );
 }
 
-interface ProgramRowProps {
-  readonly id: string | null;
-  readonly title: string;
-  readonly subtitle: string;
-  readonly meta: string;
-  readonly warning?: string | null;
-  readonly shortPitch?: string | null;
-  readonly pour?: readonly string[] | null;
-  readonly contre?: readonly string[] | null;
-  readonly selected: boolean;
-  readonly onSelect: () => void;
-}
-
-function ProgramRow({
-  id,
-  title,
-  subtitle,
-  meta,
-  warning,
-  shortPitch,
-  pour,
-  contre,
-  selected,
-  onSelect,
-}: ProgramRowProps) {
-  const testId = id === null ? 'program-custom' : `program-${id}`;
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const hasDetails =
-    (pour && pour.length > 0) || (contre && contre.length > 0);
+function RadioDot({ selected }: { readonly selected: boolean }) {
   return (
-    <Card
+    <div
       className={cn(
-        'cursor-pointer transition',
+        'mt-0.5 h-5 w-5 flex-shrink-0 rounded-full border-2 transition',
         selected
-          ? 'border-sang-600 bg-sang-900/20'
-          : 'hover:border-anthracite-600',
+          ? 'border-sang-500 bg-sang-600'
+          : 'border-anthracite-600 bg-anthracite-900',
       )}
-      onClick={onSelect}
-      data-testid={testId}
-      role="radio"
-      aria-checked={selected}
     >
-      <div className="flex items-start gap-3">
-        <div
-          className={cn(
-            'mt-0.5 h-5 w-5 flex-shrink-0 rounded-full border-2 transition',
-            selected
-              ? 'border-sang-500 bg-sang-600'
-              : 'border-anthracite-600 bg-anthracite-900',
-          )}
-        >
-          {selected ? (
-            <div className="m-1 h-2 w-2 rounded-full bg-white" />
-          ) : null}
-        </div>
-        <div className="flex-1">
-          <div className="text-sm font-semibold text-white">{title}</div>
-          <div className="text-xs text-anthracite-300">{subtitle}</div>
-          {shortPitch ? (
-            <p className="mt-1 text-xs leading-snug text-anthracite-100">
-              {shortPitch}
-            </p>
-          ) : null}
-          <div className="mt-1 text-[11px] text-anthracite-300">{meta}</div>
-          {warning ? (
-            <div className="mt-2 rounded-lg border border-sang-700/60 bg-sang-900/20 px-2 py-1 text-[11px] text-sang-500">
-              ⚠ {warning}
-            </div>
-          ) : null}
-          {hasDetails ? (
-            <>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setDetailsOpen((v) => !v);
-                }}
-                data-testid={`program-details-toggle-${id ?? 'custom'}`}
-                className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-anthracite-200 underline decoration-dotted decoration-anthracite-500 underline-offset-4 transition-colors hover:text-white"
-              >
-                <span aria-hidden="true" className="text-[10px]">
-                  {detailsOpen ? '▾' : '▸'}
-                </span>
-                {detailsOpen ? 'Masquer les détails' : 'Pour qui c\'est fait ?'}
-              </button>
-              {detailsOpen ? (
-                <div
-                  className="mt-2 space-y-2"
-                  data-testid={`program-details-${id ?? 'custom'}`}
-                >
-                  {pour && pour.length > 0 ? (
-                    <div>
-                      <div className="text-[10px] uppercase tracking-wider text-anthracite-300">
-                        À choisir si
-                      </div>
-                      <ul className="mt-1 space-y-0.5 text-[12px] leading-snug text-anthracite-100">
-                        {pour.map((s, i) => (
-                          <li key={i} className="flex gap-1.5">
-                            <span className="text-sang-500">•</span>
-                            <span>{s}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : null}
-                  {contre && contre.length > 0 ? (
-                    <div>
-                      <div className="text-[10px] uppercase tracking-wider text-anthracite-300">
-                        À éviter si
-                      </div>
-                      <ul className="mt-1 space-y-0.5 text-[12px] leading-snug text-anthracite-100">
-                        {contre.map((s, i) => (
-                          <li key={i} className="flex gap-1.5">
-                            <span className="text-anthracite-400">•</span>
-                            <span>{s}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-            </>
-          ) : null}
-        </div>
-      </div>
-    </Card>
+      {selected ? <div className="m-1 h-2 w-2 rounded-full bg-white" /> : null}
+    </div>
   );
 }
