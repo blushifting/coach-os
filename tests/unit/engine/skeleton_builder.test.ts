@@ -476,15 +476,15 @@ describe('Conv #22.5 — buildSessionLabel simplifié', () => {
       }),
     ).toBe('Full Body C');
   });
-  it('"Spec" renommé "Bonus"', () => {
+  it('"Spec" renommé "Focus" (Conv #28)', () => {
     expect(
       buildSessionLabel({
         day_index: 4,
-        split_label: 'Bonus',
+        split_label: 'Spec',
         focus_muscles: [],
         cells: [],
       }),
-    ).toBe('Bonus');
+    ).toBe('Focus');
   });
 });
 

@@ -7,7 +7,7 @@
 - [Méthode : les 3 niveaux](#méthode--les-3-niveaux)
 - [Comment écrire une bonne infobulle](#comment-écrire-une-bonne-infobulle)
 - [Banque d'analogies](#banque-danalogies)
-- [Glossaire vulgarisé](#glossaire-vulgarisé) : Effort (ex-RPE) · Plafond · reps en réserve · Polyarticulaire/Isolation · Hypertrophie/Force/Endurance · Volume hebdo · Cycle · Récupération/Déload · Étiré · Amplitude · Plateau · V_min/V_max · Série/rep · PR · Calibration
+- [Glossaire vulgarisé](#glossaire-vulgarisé) : Réserve (ex-RPE) · Plafond · reps en réserve · Polyarticulaire/Isolation · Hypertrophie/Force/Endurance · Volume hebdo · Cycle · Récupération/Déload · Étiré · Amplitude · Plateau · V_min/V_max · Série/rep · PR · Calibration
 
 ## Méthode : les 3 niveaux
 
@@ -32,7 +32,7 @@ L'idée directrice : *« essaie d'expliquer vite et simple ; si le concept rési
 Des images du quotidien pour ancrer les concepts les plus abstraits. À utiliser avec parcimonie (une analogie de trop noie le propos), surtout dans les « En savoir plus ».
 
 - **Plafond / e1RM** → l'estimation, comme une jauge d'essence qui déduit l'autonomie sans vider le réservoir : on estime ton max sans te faire forcer jusqu'à la limite.
-- **Effort (ex-RPE)** → la jauge d'effort, comme tes vitesses en vélo : à 6 tu pédales tranquille, à 10 tu es à fond, plus rien dans les jambes.
+- **Réserve (ex-RPE)** → le réservoir en fin de série : combien de reps il te restait dans le moteur quand tu as posé la charge. « 2 en réserve » = tu aurais pu en faire 2 de plus.
 - **Volume hebdo** → la dose hebdomadaire : comme un traitement, trop peu n'agit pas, trop d'un coup épuise.
 - **Cycle 4+1** → un marathon, pas un sprint : 4 semaines où on pousse, 1 semaine où on souffle pour repartir plus fort.
 - **Récupération / déload** → la jachère d'un champ : on lève le pied une semaine pour que le terrain redonne mieux ensuite.
@@ -43,10 +43,10 @@ Des images du quotidien pour ancrer les concepts les plus abstraits. À utiliser
 
 ## Glossaire vulgarisé
 
-### Effort (anciennement RPE)
-- **Mot UI :** Effort
-- **Infobulle :** « Effort = à quel point ta série était dure, sur une échelle de 6 à 10. Effort 8, ça veut dire : à la fin, tu aurais pu faire encore 2 reps, pas plus. »
-- **En savoir plus :** « C'est la façon dont Coach OS lit ton effort réel du jour (les sportifs appellent ça le RPE). Tu as mal dormi ? Ta série de 8 reps va te sembler plus dure (effort plus haut), et l'app allège la suite automatiquement. Pas besoin de te tester à fond à chaque fois : noter ton effort laisse une marge de sécurité tout en faisant progresser. »
+### Réserve (anciennement « Effort » / RPE — ⚠️ retiré de l'UI en Conv #26)
+- **Mot UI :** Réserve (curseur de « 4+ » à « échec », pas de cible affichée)
+- **Infobulle :** « La Réserve, c'est combien de reps tu aurais encore pu faire à la fin de la série. 2 en réserve = tu aurais pu en faire 2 de plus. À l'échec = plus rien dans le réservoir. »
+- **En savoir plus :** « C'est la façon dont Kotsh lit ta forme réelle du jour (les sportifs appellent ça le RPE). Tu as mal dormi ? Ta série habituelle te laissera moins de réserve, et l'app allège la suite automatiquement. Pas besoin de te tester à fond à chaque fois : t'arrêter avec un peu de réserve laisse une marge de sécurité tout en faisant progresser. »
 
 ### Plafond
 - **Mot UI :** Plafond

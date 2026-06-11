@@ -9,10 +9,13 @@
  *
  * Règles :
  *  - « Full Body A » (préfixe + lettre A-F finale) → « Séance A — Full Body »
+ *    Depuis Conv #28, `renumberSessionLabels` lettre TOUTES les séances
+ *    custom avec une lettre globale unique (« Upper A / Lower B / Focus E ») ;
+ *    ce cas couvre donc tous les plans custom.
  *  - « A » / « A2 » (lettre seule ± chiffre, programmes guidés GreySkull)
  *    → « Séance A » / « Séance A2 »
- *  - tout le reste (« Push », « Bonus », « Press Day », « Upper A (force) »)
- *    → « Séance Push », « Séance Bonus »… (préfixe simple)
+ *  - tout le reste (labels d'auteur guidés : « Press Day »,
+ *    « Upper A (force) ») → « Séance Press Day »… (préfixe simple)
  */
 
 const TRAILING_LETTER = /^(.+\S) ([A-F])$/;

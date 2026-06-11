@@ -906,34 +906,30 @@ export function orderDaysByNeuralCost(
 }
 
 /**
- * Conv #23 — Renomme les suffixes A/B/C des labels de séances selon
- * leur position dans `template.days[]`, regroupés par préfixe.
+ * Conv #23, refonte Conv #28 — Assigne une lettre **globale** par séance
+ * (A, B, C… dans l'ordre de `template.days[]`, donc l'ordre du tri neuro),
+ * au lieu de l'ancienne numérotation par préfixe.
  *
- * Pourquoi : `orderDaysByNeuralCost` réordonne les days par coût neuro
- * décroissant mais conserve `day_index` (id stable pour le lookup
- * historique). Les labels générés par `buildSessionLabel` ou les
- * splits eux-mêmes dépendaient de cet index ; après tri on pouvait
- * obtenir « Full Body B » → « Full Body A » → « Full Body C », ce qui
- * cassait la lecture user (« mon programme commence par B ?! »).
+ * Pourquoi : la lettre IDENTIFIE la séance, le préfixe décrit son contenu.
+ * Avec une numérotation par préfixe, un Upper/Lower 4× donnait « Upper A /
+ * Lower A / Upper B / Lower B » → deux « Séance A » à l'affichage
+ * (`formatSessionLabel`), confusant. Désormais : « Upper A / Lower B /
+ * Upper C / Lower D ».
  *
  * Comportement :
- *  - Pour chaque day, on détecte un suffixe `\s+[A-F]$`.
- *  - On regroupe les days par leur préfixe (« Full Body », « Upper »,
- *    « Push »…).
- *  - Au sein de chaque groupe, on réassigne A, B, C… dans l'ordre du
- *    tableau (= ordre du tri neuro).
- *  - Les labels sans suffixe lettre (« Bonus », labels guidés du genre
- *    « Workout A2 ») sont laissés intacts.
+ *  - Un éventuel suffixe lettre existant (`\s+[A-F]$`) est retiré, puis la
+ *    lettre globale (position dans le tableau) est apposée.
+ *  - Les labels SANS suffixe (« Push », « Focus ») reçoivent aussi leur
+ *    lettre — toute séance custom est donc identifiable par sa lettre.
+ *  - Cette passe ne s'applique qu'aux plans custom : les programmes guidés
+ *    (`fitGuidedProgram`) n'y transitent pas et gardent leurs labels
+ *    d'auteur (« Workout A2 », « Press Day »…).
  */
 export function renumberSessionLabels(template: WeeklyTemplate): void {
   const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
-  const counters: Record<string, number> = {};
-  for (const day of template.days) {
+  template.days.forEach((day, i) => {
     const m = day.label.match(/^(.+?)\s+[A-F]$/);
-    if (m === null) continue;
-    const prefix = m[1]!;
-    const idx = counters[prefix] ?? 0;
-    counters[prefix] = idx + 1;
-    day.label = `${prefix} ${LETTERS[idx] ?? String(idx + 1)}`;
-  }
+    const prefix = m !== null ? m[1]! : day.label;
+    day.label = `${prefix} ${LETTERS[i] ?? String(i + 1)}`;
+  });
 }

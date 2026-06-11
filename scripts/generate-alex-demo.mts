@@ -181,7 +181,9 @@ function buildCyclePlan(cycleIdx: number, swapped: boolean): WeeklyTemplate {
       },
       {
         day_index: 1,
-        label: 'Lower A',
+        // Conv #28 — lettre GLOBALE par séance (Upper A / Lower B / Upper C /
+        // Lower D) : la lettre identifie la séance, le préfixe le contenu.
+        label: 'Lower B',
         target_muscles_focus: ['quadriceps', 'fessiers', 'ischios'],
         exercises: [
           makePE({ id: squatId, base: 4, prog: PROG_MAIN, role: 'main_squat', intensity: 'force', rule: ProgressionRule.DOUBLE_PROGRESSION }),
@@ -190,7 +192,7 @@ function buildCyclePlan(cycleIdx: number, swapped: boolean): WeeklyTemplate {
       },
       {
         day_index: 2,
-        label: 'Upper B',
+        label: 'Upper C',
         target_muscles_focus: ['dos_largeur', 'dos_epaisseur', 'biceps'],
         exercises: [
           makePE({ id: 'bb_row', base: 4, prog: PROG_MAIN, role: 'main_pull_h', intensity: 'force', rule: ProgressionRule.DOUBLE_PROGRESSION }),
@@ -201,7 +203,7 @@ function buildCyclePlan(cycleIdx: number, swapped: boolean): WeeklyTemplate {
       },
       {
         day_index: 3,
-        label: 'Lower B',
+        label: 'Lower D',
         target_muscles_focus: ['ischios', 'fessiers', 'quadriceps'],
         exercises: [
           makePE({ id: 'deadlift_conv', base: 4, prog: PROG_MAIN, role: 'main_hinge', intensity: 'force', rule: ProgressionRule.DOUBLE_PROGRESSION }),
@@ -721,8 +723,8 @@ function main(): void {
   // montrait uniquement les séances passées + celle du jour, l'utilisateur
   // ne voyait jamais une case "planned" (bleu) dans le calendrier.
   const PLANNED_OFFSETS: Array<{ dayIdx: 0 | 1 | 2 | 3; offset: number }> = [
-    { dayIdx: 2, offset: 2 }, // jeudi (Upper B)
-    { dayIdx: 3, offset: 4 }, // samedi (Lower B)
+    { dayIdx: 2, offset: 2 }, // jeudi (Upper C)
+    { dayIdx: 3, offset: 4 }, // samedi (Lower D)
   ];
   for (const p of PLANNED_OFFSETS) {
     const date = addDays(DEMO_TODAY, p.offset);

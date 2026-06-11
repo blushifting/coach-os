@@ -33,9 +33,9 @@ Sur un lien d'aide, mets ce qu'on va apprendre : « Comment on calcule ton Plafo
 
 - Label : « Charge utilisée » · Placeholder : « ex. 60 » · Aide : « En kg, barre comprise. »
 - Label : « Reps réalisées » · Placeholder : « ex. 8 »
-- Label : « Effort ressenti » · Aide : « Difficulté de la série, 6 à 10. » + « ? » vers l'infobulle
+- Label : « Réserve » · Aide : « Combien de reps tu aurais encore pu faire. » + « ? » vers l'infobulle (curseur de « 4+ » à « échec », pas de cible affichée)
 
-Saisie de feedback entre séries : vise **moins de 5 secondes** pour le cas normal. Pré-remplis avec la cible (reps et effort prévus) ; la personne corrige seulement si ça a différé.
+Saisie de feedback entre séries : vise **moins de 5 secondes** pour le cas normal. Pré-remplis avec les reps prévues ; la personne corrige seulement si ça a différé.
 
 ## Messages d'erreur
 
@@ -121,7 +121,7 @@ Le ton : un coach qui prend tes mesures avant de bâtir ton programme.
 
 ## Infobulles & bottom sheets
 
-**Principe :** déclenchées par le « ? », jamais imposées. 1 à 2 phrases + un exemple concret chiffré. Le détail scientifique va derrière un « En savoir plus » optionnel. Voir `glossaire-vulgarisation.md` pour le contenu rédigé de chaque terme. Couvre au minimum : Plafond, Effort, Cycle, Récupération, Polyarticulaire, Isolation, Étiré, Volume hebdo, V_min/V_max, Amplitude, Hypertrophie.
+**Principe :** déclenchées par le « ? », jamais imposées. 1 à 2 phrases + un exemple concret chiffré. Le détail scientifique va derrière un « En savoir plus » optionnel. Voir `glossaire-vulgarisation.md` pour le contenu rédigé de chaque terme. Couvre au minimum : Plafond, Réserve, Cycle, Récupération, Polyarticulaire, Isolation, Étiré, Volume hebdo, V_min/V_max, Amplitude, Hypertrophie.
 
 ## Aide contextuelle vs Aide / FAQ
 
@@ -130,4 +130,4 @@ Deux familles d'aide, à ne pas mélanger — elles ne vivent pas au même endro
 - **Aide contextuelle** : laissée **au moment de l'action**, quand elle aide à **faire un choix** (choisir une variante, doser son effort, comprendre une suggestion). Forme : « ? », infobulle, une ligne sous un champ. Courte, ciblée, jetable. Elle reste près de la décision.
 - **Aide générale / vocabulaire** : tout ce qui **n'est pas nécessaire pour agir maintenant** (définitions de fond, « pourquoi le modèle fait ça », sources scientifiques). Ça **ne s'impose pas dans le flux** : ça va dans une **section Aide / FAQ** dédiée, atteignable à la demande. Les « ? » contextuels peuvent y **renvoyer** vers l'entrée pertinente.
 
-Règle de tri : *est-ce que cette explication change ce que la personne fait à la seconde où elle la lit ?* Oui → aide contextuelle. Non → Aide / FAQ. Quelques notions-clés mises en avant dans l'app (Plafond, Effort) gardent une aide contextuelle ; le reste du vocabulaire est rangé dans l'Aide.
+Règle de tri : *est-ce que cette explication change ce que la personne fait à la seconde où elle la lit ?* Oui → aide contextuelle. Non → Aide / FAQ. Quelques notions-clés mises en avant dans l'app (Plafond, Réserve) gardent une aide contextuelle ; le reste du vocabulaire est rangé dans l'Aide.

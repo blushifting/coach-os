@@ -116,7 +116,8 @@ describe('enterDemoMode / exitDemoMode', () => {
     await enterDemoMode(snap);
     const s = useCoachOsStore.getState();
     expect(s.currentSessionPlan).not.toBeNull();
-    expect(s.currentSessionPlan!.label).toBe('Lower A');
+    // Conv #28 — lettre globale par séance : le jour 1 (Lower) porte « B ».
+    expect(s.currentSessionPlan!.label).toBe('Lower B');
     expect(s.currentSessionPlan!.seance_date).toBe('2026-05-19');
     expect(s.currentSessionId).toBe(-1);
   });

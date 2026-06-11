@@ -89,29 +89,34 @@ export const SPLIT_PPL_3X: SplitTemplate = {
   ],
 };
 
+// Conv #28 — lettre GLOBALE par séance dans toute la semaine (la lettre
+// identifie la séance, le préfixe décrit le contenu). Les seeds ci-dessous
+// suivent la convention ; `renumberSessionLabels` réassigne de toute façon
+// les lettres dans l'ordre final après le tri neuro.
 export const SPLIT_UL_4X: SplitTemplate = {
   id: 'ul_4x',
   name: 'Upper/Lower 4×',
   sessions_per_week: 4,
   slots: [
     makeSlot('Upper A', SlotKind.UPPER),
-    makeSlot('Lower A', SlotKind.LOWER),
-    makeSlot('Upper B', SlotKind.UPPER),
     makeSlot('Lower B', SlotKind.LOWER),
+    makeSlot('Upper C', SlotKind.UPPER),
+    makeSlot('Lower D', SlotKind.LOWER),
   ],
 };
 
 export const SPLIT_UL_5X_SPEC: SplitTemplate = {
   id: 'ul_5x_spec',
-  name: 'U/L 5× + bonus',
+  name: 'U/L 5× + focus',
   sessions_per_week: 5,
   slots: [
     makeSlot('Upper A', SlotKind.UPPER),
-    makeSlot('Lower A', SlotKind.LOWER),
-    makeSlot('Upper B', SlotKind.UPPER),
     makeSlot('Lower B', SlotKind.LOWER),
-    // Conv #22.5 — "Spec" renommé "Bonus" (terminologie user-friendly).
-    makeSlot('Bonus', SlotKind.FULL),
+    makeSlot('Upper C', SlotKind.UPPER),
+    makeSlot('Lower D', SlotKind.LOWER),
+    // Conv #22.5 "Spec" → "Bonus" ; Conv #28 → "Focus" (la séance qui
+    // re-cible les muscles prioritaires — lisible après « Séance E — »).
+    makeSlot('Focus', SlotKind.FULL),
   ],
 };
 
@@ -121,11 +126,11 @@ export const SPLIT_PPL_6X: SplitTemplate = {
   sessions_per_week: 6,
   slots: [
     makeSlot('Push A', SlotKind.PUSH),
-    makeSlot('Pull A', SlotKind.PULL),
-    makeSlot('Legs A', SlotKind.LEGS),
-    makeSlot('Push B', SlotKind.PUSH),
     makeSlot('Pull B', SlotKind.PULL),
-    makeSlot('Legs B', SlotKind.LEGS),
+    makeSlot('Legs C', SlotKind.LEGS),
+    makeSlot('Push D', SlotKind.PUSH),
+    makeSlot('Pull E', SlotKind.PULL),
+    makeSlot('Legs F', SlotKind.LEGS),
   ],
 };
 

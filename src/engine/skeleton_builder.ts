@@ -394,16 +394,16 @@ export function buildSkeleton(
  *  - U/L : "Upper A" / "Lower B"…           (label split déjà OK).
  *  - Full Body : "Full Body A" / "Full Body B" / "Full Body C"…
  *    (on rajoute "Body" + lettre par day_index pour homogénéité).
- *  - "Spec" (U/L 5x spec) → renommé "Bonus" (terme plus parlant pour
- *    un user qui n'a jamais été à la salle).
+ *  - "Spec" (U/L 5x spec) → renommé "Focus" (Conv #28 ; la séance qui
+ *    re-cible les prios — lisible après « Séance E — »).
  */
 export function buildSessionLabel(day: SkeletonDay): string {
   const split = day.split_label;
   const split_lower = split.toLowerCase();
 
-  // "Spec" → "Bonus" (terminologie user-friendly).
+  // "Spec" → "Focus" (terminologie user-friendly).
   if (/^spec$/i.test(split.trim()) || /\bspec\b/i.test(split_lower)) {
-    return split.replace(/\bspec\b/gi, 'Bonus');
+    return split.replace(/\bspec\b/gi, 'Focus');
   }
 
   if (/full/i.test(split_lower)) {

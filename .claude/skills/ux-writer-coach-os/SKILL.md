@@ -3,8 +3,8 @@ name: ux-writer-coach-os
 description: >
   Rédige et révise tout le texte visible par l'utilisateur de l'app Coach OS (microcopy, onboarding,
   infobulles, messages d'erreur, états vides, confirmations, notifications). Sa spécialité : vulgariser
-  les concepts de musculation (RPE, Plafond/e1RM, déload, polyarticulaire, hypertrophie, volume hebdo…)
-  pour un débutant total qui n'a jamais soulevé une barre, sans trahir la rigueur scientifique du moteur.
+  les concepts de musculation (Réserve/RPE, Plafond/e1RM, déload, polyarticulaire, hypertrophie, volume
+  hebdo…) pour un débutant total qui n'a jamais soulevé une barre, sans trahir la rigueur scientifique du moteur.
   Déclenche ce skill dès qu'il faut écrire, réécrire, traduire en clair ou auditer du texte d'interface :
   libellés de boutons, titres d'écran, placeholders, textes d'aide, tooltips, wording d'onboarding ou de
   séance 0, messages d'erreur/succès, notifications — même quand l'utilisateur dit juste « le texte est
@@ -29,9 +29,11 @@ Dès qu'une chaîne de caractères sera lue par un utilisateur final. En pratiqu
 
 3. **Pas de jargon nu.** Un terme technique n'apparaît **jamais seul** la première fois. Soit tu le remplaces par le mot grand public verrouillé (voir `references/vocabulaire.md`), soit tu l'accompagnes immédiatement de sa glose courte ou d'une infobulle « ? ». Règle du test : *est-ce qu'une personne qui n'a jamais soulevé une barre comprend, sans aller chercher sur Google ?* Si non, réécris.
 
-4. **Divulgation progressive.** N'explique pas tout d'un coup au début. Introduis chaque notion **au moment précis où elle devient utile** : le RPE quand on saisit son premier feedback, le déload quand il arrive dans le calendrier. L'onboarding doit faire avancer, pas faire un cours. Le « pourquoi scientifique » va dans un « En savoir plus » optionnel, jamais imposé.
+4. **Divulgation progressive.** N'explique pas tout d'un coup au début. Introduis chaque notion **au moment précis où elle devient utile** : la Réserve quand on saisit son premier feedback, le déload quand il arrive dans le calendrier. L'onboarding doit faire avancer, pas faire un cours. Le « pourquoi scientifique » va dans un « En savoir plus » optionnel, jamais imposé.
 
 5. **Aide, ne juge pas.** Coach OS est un coach, pas un prof qui corrige. Le ton encourage et oriente vers la prochaine action. Aucun message ne culpabilise (« tu as raté », « série perdue »), aucun ne se moque, aucun ne fait du bruit pour rien. Quand quelque chose échoue, on dit ce qui se passe **et** quoi faire ensuite.
+
+6. **Chaque mot paie sa place.** (Conv #28) Raccourcis les paragraphes : 2-3 phrases courtes maximum par bloc de texte d'interface. Supprime toute information **non essentielle** (qui ne change pas ce que la personne fait là, maintenant) ou **redondante** (déjà dite ailleurs sur l'écran, ou déductible du contexte). Quand tu audites un écran existant, propose activement des coupes, pas seulement des reformulations — le détail pédagogique migre vers un « En savoir plus », ou disparaît.
 
 ## Le ton en une phrase
 
@@ -61,6 +63,7 @@ Naming verrouillé, non négociable (table complète + glose dans `references/vo
 - lengthened bias → **Étiré** · ROM complet → **Amplitude complète**
 - objectif hypertrophie → **Hypertrophie** (jamais « Volume musculaire » : collision avec Volume hebdo)
 - volume technique → **Séries / semaine** ou **Volume hebdo** · RPE / effort perçu → **Réserve** (reps en réserve ; ⚠️ Conv #26 : « Effort » RETIRÉ de l'UI, curseur **4+ → échec**, pas de cible affichée ; « RPE » réservé à l'aide comme ancrage)
+- noms de séances → **« Séance A — Upper »** : lettre **globale unique** par séance dans la semaine (Conv #28 — la lettre identifie, le type décrit ; jamais deux « Séance A »). Jour spé du U/L 5× = **Focus**. Format produit par `lib/session-label.ts`, ne pas le recomposer à la main.
 
 Si tu vois « e1RM », « compound », « mésocycle », « lengthened bias », « Volume musculaire », « RPE » **ou « Effort »** employé comme **label / titre d'interface** dans du texte utilisateur, c'est un bug de wording à corriger. La saisie d'intensité = **Réserve** (reps en réserve). Le sigle « RPE » n'est admis que dans l'aide / « En savoir plus », glosé « aussi appelé RPE ».
 
