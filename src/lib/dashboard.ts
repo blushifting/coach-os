@@ -231,12 +231,36 @@ export type DayStatus =
   | 'completed'
   /** Jour avec session générée mais pas encore de feedback (à venir). */
   | 'planned'
-  /** Jour avec session marquée skipped. */
-  | 'skipped'
-  /** Jour passé sans séance prévue ni faite. */
+  /** Jour passé sans séance honorée (repos ou séance non faite — sans distinction). */
   | 'rest-past'
   /** Jour à venir sans séance encore planifiée (slot libre). */
   | 'free-future';
+
+/**
+ * Conv #29 — Rythme d'entraînement hebdo selon la fréquence : pour chaque
+ * position de jour (0 = jour d'ancrage du cycle … 6), `true` = jour
+ * d'entraînement suggéré, `false` = repos. On respecte des pauses régulières
+ * façon programme préfait (3j = 1 jour sur 2 ; 4j = 2 + repos + 2 ; etc.).
+ * Sert à suggérer repos vs séance suivante sur les jours libres à venir.
+ */
+const TRAINING_RHYTHM: Record<number, readonly boolean[]> = {
+  1: [true, false, false, false, false, false, false],
+  2: [true, false, false, true, false, false, false],
+  3: [true, false, true, false, true, false, false],
+  4: [true, true, false, true, true, false, false],
+  5: [true, true, true, false, true, true, false],
+  6: [true, true, true, false, true, true, true],
+};
+
+const ALL_TRAINING: readonly boolean[] = [true, true, true, true, true, true, true];
+
+export function weeklyTrainingPattern(sessionsPerWeek: number): readonly boolean[] {
+  const n = Math.round(sessionsPerWeek);
+  if (n >= 7) return ALL_TRAINING;
+  // Fréquence inconnue/invalide (NaN, 0…) → aucun repos suggéré (pas de faux
+  // positif tant qu'on ne connaît pas le rythme).
+  return TRAINING_RHYTHM[n] ?? ALL_TRAINING;
+}
 
 export interface CalendarDay {
   readonly date: string; // YYYY-MM-DD
@@ -248,11 +272,11 @@ export interface CalendarDay {
   readonly sessionLabel: string | null;
   readonly sessionId: number | null;
   /**
-   * `true` si la veille (J-1) contient une séance planifiée ou faite. Sert
-   * d'indicateur "repos recommandé" sur la vue semainière (Conv #10d). Seuls
-   * les jours `free-future` exposent cet indicateur visuellement.
+   * Conv #29 — `true` si, selon le rythme de la fréquence hebdo
+   * (`weeklyTrainingPattern`), ce jour libre à venir devrait être un repos.
+   * Les jours `free-future` non-repos sont des créneaux de séance suggérée.
    */
-  readonly restSuggested: boolean;
+  readonly suggestedRest: boolean;
   /**
    * Muscles primaires travaillés la veille (J-1), si une séance y existe et
    * que le catalog est fourni à `buildCalendarMatrix`. Vide sinon. Permet à
@@ -278,7 +302,7 @@ export interface CalendarMatrix {
  * juste après onboarding, le moteur n'a pas encore créé la ligne cycle).
  */
 export function buildCalendarMatrix(
-  state: Pick<UserState, 'cycle_index'>,
+  state: Pick<UserState, 'cycle_index' | 'profile'>,
   cycles: ReadonlyArray<Pick<CycleRow, 'cycle_index' | 'start_date'>>,
   sessions: ReadonlyArray<Pick<SessionRow, 'seance_date' | 'status' | 'plan' | 'id'>>,
   feedbacks: ReadonlyArray<Pick<FeedbackRow, 'seance_date' | 'feedback'>>,
@@ -297,6 +321,9 @@ export function buildCalendarMatrix(
   // démarrage hors lundi).
   const anchor = parseDateKey(cycle.start_date);
   const todayKey = dateKey(now);
+  // Conv #29 — rythme repos/entraînement selon la fréquence hebdo, indexé sur
+  // la position du jour depuis l'ancre du cycle (d = 0..6).
+  const pattern = weeklyTrainingPattern(state.profile.sessions_per_week);
 
   const feedbackDates = new Set<string>();
   for (const f of feedbacks) {
@@ -340,49 +367,41 @@ export function buildCalendarMatrix(
       const hasFeedback = feedbackDates.has(key);
       const isPast = key < todayKey;
 
+      // Conv #29 — concept de « séance sautée » retiré : une séance `skipped`
+      // (statut hérité) ou une séance `planned` dont la date est révolue sans
+      // feedback ne sont plus distinguées d'un simple jour passé (`rest-past`).
       let status: DayStatus;
       let sessionLabel: string | null = null;
       let sessionId: number | null = null;
-      if (sess !== undefined) {
+      const honored =
+        sess !== undefined &&
+        sess.status !== 'skipped' &&
+        (sess.status === 'completed' ||
+          hasFeedback ||
+          (sess.status === 'planned' && !isPast));
+      if (honored && sess !== undefined) {
         sessionLabel = sess.label;
         sessionId = sess.id;
-        if (sess.status === 'completed' || hasFeedback) status = 'completed';
-        else if (sess.status === 'skipped') status = 'skipped';
-        // Conv #17b — séance `planned` dont la date est révolue sans
-        // feedback enregistré = sautée de fait. Visuellement on l'affiche
-        // comme `skipped` (au lieu de l'ancien `rest-past` qui prétendait
-        // que ce jour était un jour de repos — faux, c'était une séance
-        // prévue non honorée). Le user peut toujours cliquer dessus pour
-        // l'ouvrir / la sauter formellement / la marquer faite.
-        else if (sess.status === 'planned' && isPast) status = 'skipped';
-        else status = isPast ? 'rest-past' : 'planned';
+        status = sess.status === 'completed' || hasFeedback ? 'completed' : 'planned';
       } else {
         status = isPast ? 'rest-past' : 'free-future';
       }
 
-      // Repos recommandé : si la veille a une séance prévue ou faite.
-      // Conv #15 vague 3 — une séance `skipped` (sautée) ne crée PAS de
-      // fatigue à reposer le lendemain : on filtre explicitement. Même
-      // chose pour les muscles "récents" du sheet d'avertissement.
-      // Conv #17b — une séance `planned` dont la date est révolue sans
-      // feedback ne compte pas non plus comme "active" pour le calcul
-      // restSuggested du lendemain (sinon le jour actuel s'affiche en
-      // "repos" alors que la séance d'hier n'a juste pas été faite).
+      // Conv #29 — repos suggéré : selon le rythme de la fréquence hebdo, pas
+      // selon la fatigue de la veille (ancien `restSuggested`, retiré).
+      const suggestedRest = status === 'free-future' && !pattern[d];
+
+      // Muscles travaillés la veille (si séance honorée), pour l'avertissement
+      // "tu as travaillé X hier" dans le sheet.
       const prevDate = dateKey(addDays(date, -1));
       const prevSess = sessionByDate.get(prevDate);
       const prevHasFeedback = feedbackDates.has(prevDate);
-      const prevIsPast = prevDate < todayKey;
-      const prevWasSkipped = prevSess?.status === 'skipped';
-      const prevIsPlannedOverdue =
-        prevSess?.status === 'planned' && prevIsPast && !prevHasFeedback;
       const prevIsActive =
-        !prevWasSkipped &&
-        !prevIsPlannedOverdue &&
         prevSess !== undefined &&
+        prevSess.status !== 'skipped' &&
         (prevSess.status === 'planned' ||
           prevSess.status === 'completed' ||
           prevHasFeedback);
-      const restSuggested = prevIsActive && status === 'free-future';
       const recentMuscles =
         prevIsActive && prevSess !== undefined ? musclesOfSession(prevSess.plan) : [];
 
@@ -397,7 +416,7 @@ export function buildCalendarMatrix(
         isDeload: w + 1 === DELOAD_WEEK_INDEX,
         sessionLabel,
         sessionId,
-        restSuggested,
+        suggestedRest,
         recentMuscles,
       });
     }

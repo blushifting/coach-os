@@ -30,6 +30,7 @@ import {
   ExType,
   MuscleObjective,
   MuscleStatus,
+  objectiveToMuscleObjective,
 } from './models';
 
 // Constante d'Epley standard (LeSuer 1997, Wood 2002).
@@ -190,30 +191,37 @@ export function targetRepsForPdc(
 // 4. Reps cibles, repos, RPE par phase — voie legacy (Profile.objective)
 // =============================================================================
 
-// Reps cibles selon objectif et type d'exercice (cf. §8.4).
-// Puissance retirée en V1 (cf. 09_programmation.md §3.5).
-const REPS_DEFAULT: Record<Objective, Record<'compound' | 'isolation', readonly [number, number]>> = {
-  [Objective.HYPERTROPHIE]: { compound: [6, 10], isolation: [10, 15] },
-  [Objective.FORCE]: { compound: [3, 5], isolation: [6, 10] },
-  [Objective.ENDURANCE]: { compound: [12, 20], isolation: [15, 25] },
+// Reps cibles FIXES par objectif × type d'exo (Conv #29 — décision Azur).
+//
+// Une valeur RONDE, facile à suivre en salle, dans la partie HAUTE de la
+// fourchette classique (plus de reps = plus de volume/stimulus), mais
+// PLAFONNÉE pour rester exploitable par Epley : on veut garder
+//   n_équiv = reps + (10 − RPE) ≤ 15   (cf. `measurementIsReliable`),
+// soit reps ≲ 12 aux RPE de travail (7-9). Au-delà, l'e1RM dérivé est trop
+// bruité pour recalibrer.
+//
+//   - FORCE : volontairement BAS (spécificité force, charges lourdes) ;
+//     Epley très fiable. On ne « monte » donc PAS en haut de fourchette ici.
+//   - HYPERTROPHIE : 10 (poly) / 12 (iso) — haut de fourchette, rond, Epley OK.
+//   - ENDURANCE : haut assumé, hors zone Epley fiable (le recalibrage e1RM est
+//     de toute façon filtré par `measurementIsReliable` — attendu pour ce public).
+//   - MAINTIEN : modéré, dans la zone Epley fiable → lecture de progrès propre.
+const TARGET_REPS: Record<MuscleObjective, { compound: number; isolation: number }> = {
+  [MuscleObjective.FORCE]: { compound: 5, isolation: 8 },
+  [MuscleObjective.HYPERTROPHIE]: { compound: 10, isolation: 12 },
+  [MuscleObjective.ENDURANCE]: { compound: 15, isolation: 20 },
+  [MuscleObjective.MAINTIEN]: { compound: 8, isolation: 10 },
 };
+
+/** Reps cibles fixes pour cet objectif de muscle et ce type d'exo. */
+export function fixedReps(objective: MuscleObjective, exType: ExType): number {
+  const t = TARGET_REPS[objective];
+  return exType === ExType.ISOLATION ? t.isolation : t.compound;
+}
 
 /** Reps cibles pour cet exo (voie legacy : Profile.objective global). */
 export function targetReps(profile: Profile, exercise: Exercise): number {
-  const objDefault = REPS_DEFAULT[profile.objective][exercise.type];
-  let lo: number;
-  let hi: number;
-  if (profile.objective === Objective.FORCE && exercise.reps_force) {
-    [lo, hi] = exercise.reps_force;
-  } else {
-    [lo, hi] = exercise.reps_hyp;
-  }
-  lo = Math.max(lo, objDefault[0]);
-  hi = Math.min(hi, objDefault[1]);
-  if (lo > hi) {
-    [lo, hi] = exercise.reps_hyp;
-  }
-  return Math.floor((lo + hi) / 2);
+  return fixedReps(objectiveToMuscleObjective(profile.objective), exercise.type);
 }
 
 // Table RPE cible par semaine du cycle et objectif (legacy, cf. 03_§8.3).
@@ -264,29 +272,6 @@ const BASE_RPE_CURVES: Record<MuscleObjective, readonly number[]> = {
 };
 export const DELOAD_RPE = 6.0;
 export const RECOVERY_RPE_CAP = 7.0; // cf. 09 §8.6
-
-// Fourchettes reps : [poly/compound, isolation]. Cf. 09 §3.3.
-const REPS_RANGES_MUSCLE: Record<
-  MuscleObjective,
-  readonly [readonly [number, number], readonly [number, number]]
-> = {
-  [MuscleObjective.FORCE]: [
-    [3, 6],
-    [5, 8],
-  ],
-  [MuscleObjective.HYPERTROPHIE]: [
-    [6, 12],
-    [8, 15],
-  ],
-  [MuscleObjective.ENDURANCE]: [
-    [12, 20],
-    [12, 25],
-  ],
-  [MuscleObjective.MAINTIEN]: [
-    [6, 10],
-    [8, 15],
-  ],
-};
 
 /**
  * Retourne le MuscleGoal du muscle PRIMAIRE de plus haut rang.
@@ -357,7 +342,7 @@ export function targetRpeForExercise(
 }
 
 /**
- * Reps cibles pour cet exo (médiane de la fourchette MuscleObjective).
+ * Reps cibles pour cet exo (valeur fixe selon l'objectif du muscle primaire).
  * Si aucun muscle primaire n'est dans muscle_goals → fallback Hypertrophie.
  */
 export function targetRepsForExercise(
@@ -366,10 +351,7 @@ export function targetRepsForExercise(
 ): number {
   const goal = primaryMuscleGoal(exercise, muscleGoals);
   const objective = goal ? goal.objective : MuscleObjective.HYPERTROPHIE;
-  const isIso = exercise.type === ExType.ISOLATION;
-  const [polyRange, isoRange] = REPS_RANGES_MUSCLE[objective];
-  const [lo, hi] = isIso ? isoRange : polyRange;
-  return Math.floor((lo + hi) / 2);
+  return fixedReps(objective, exercise.type);
 }
 
 // =============================================================================

@@ -9,7 +9,6 @@ import { getDb } from '@/db';
 import type { SessionRow } from '@/db/schema';
 import { dateKey, type CalendarDay } from '@/lib/dashboard';
 import { muscleLabel } from '@/lib/progress';
-import { cn } from '@/lib/cn';
 import {
   formatSessionLabel,
   formatSessionLabelShort,
@@ -19,7 +18,6 @@ import {
   detectPeriodicity,
   dayOfWeekLabel,
   suggestionForDay,
-  type DayOfWeek,
   type PeriodicitySuggestion,
 } from '@/lib/periodicity';
 import type { Catalog } from '@/engine/catalog';
@@ -90,44 +88,13 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
   // pas encore faite) : si tu planifies Full B mardi puis tu vas regarder
   // jeudi, on doit te suggérer Full C, pas Full B encore une fois.
   //
-  // Conv #21b (G) — Priorité aux séances sautées : si une séance
-  // `status='skipped'` existe dans la fenêtre 7 jours, on suggère SON label
-  // plutôt que le label "suivant" du cycle. Logique : une séance sautée
-  // est une perte de stimulation pour le muscle concerné — la rattraper
-  // dès que possible (même slot) prime sur la rotation.
   const variationSuggestion = useMemo(() => {
     const cyclePlan = userState?.current_cycle_plan ?? null;
     if (cyclePlan === null || day === null) return null;
     const dayDate = new Date(day.date + 'T00:00:00');
 
-    // Étape 1 : chercher une séance sautée récente. Si trouvée, on suggère
-    // directement son label (pas le suivant).
-    let skipped: { date: string; label: string } | null = null;
-    for (const s of sessions) {
-      if (s.status !== 'skipped') continue;
-      if (s.seance_date >= day.date) continue;
-      const diffDays =
-        (dayDate.getTime() - new Date(s.seance_date + 'T00:00:00').getTime()) /
-        (1000 * 60 * 60 * 24);
-      if (diffDays > 7) continue;
-      if (skipped === null || s.seance_date > skipped.date) {
-        skipped = { date: s.seance_date, label: s.plan.label };
-      }
-    }
-    if (skipped !== null) {
-      const skippedTyped = skipped as { date: string; label: string };
-      const idx = cyclePlan.days.findIndex((d) => d.label === skippedTyped.label);
-      if (idx >= 0) {
-        return {
-          suggestedDayIndex: idx,
-          previousLabel: skippedTyped.label,
-          reason: 'skipped' as const,
-        };
-      }
-    }
-
-    // Étape 2 (existant) : sinon, on regarde la dernière séance complétée
-    // ou planifiée pour suggérer le label suivant.
+    // On regarde la dernière séance complétée ou planifiée pour suggérer le
+    // label qui enchaîne bien (rotation du split : pull après push, etc.).
     let latest: { date: string; label: string } | null = null;
     function consider(date: string, label: string) {
       if (date >= day!.date) return;
@@ -156,7 +123,6 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
     return {
       suggestedDayIndex: nextIdx,
       previousLabel: (latest as { label: string }).label,
-      reason: 'rotation' as const,
     };
   }, [day, feedbacks, sessions, userState]);
 
@@ -240,15 +206,9 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
           />
         )}
 
-        {day.status === 'skipped' && (
-          <p className="text-sm text-anthracite-300" data-testid="day-status-text">
-            Séance sautée. Rien à faire ici.
-          </p>
-        )}
-
         {day.status === 'rest-past' && (
           <p className="text-sm text-anthracite-300" data-testid="day-status-text">
-            Jour de repos passé. Aucune séance enregistrée.
+            Jour passé. Aucune séance enregistrée.
           </p>
         )}
 
@@ -268,13 +228,12 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
 
         {day.status === 'free-future' && (
           <>
-            {day.restSuggested && (
+            {day.suggestedRest && (
               <RestWarning recentMuscles={day.recentMuscles} />
             )}
             {periodicitySuggestion !== null && (
               <PeriodicityNudge suggestion={periodicitySuggestion} />
             )}
-            <FixedRoutineBlock dayOfWeek={day.dayOfWeek as DayOfWeek} cyclePlan={cyclePlan} />
             <FreeFutureBlock
               cyclePlan={cyclePlan}
               catalog={catalog}
@@ -282,7 +241,6 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
               isDeload={day.isDeload}
               pending={pending}
               suggestion={variationSuggestion}
-              dayOfWeek={day.dayOfWeek as DayOfWeek}
               onPick={(dayIndex) => planSession(dayIndex, isToday)}
             />
           </>
@@ -414,7 +372,6 @@ function FreeFutureBlock({
   isDeload,
   pending,
   suggestion,
-  dayOfWeek,
   onPick,
 }: {
   readonly cyclePlan: WeeklyTemplate | null;
@@ -425,30 +382,9 @@ function FreeFutureBlock({
   readonly suggestion: {
     suggestedDayIndex: number;
     previousLabel: string;
-    reason: 'skipped' | 'rotation';
   } | null;
-  readonly dayOfWeek: DayOfWeek;
   readonly onPick: (dayIndex: number) => void;
 }) {
-  // Conv #18 — bouton "📌 Fixer ce jour" sur chaque slot pour persister la
-  // routine. La routine actuelle pour ce dayOfWeek est lue depuis le store
-  // (pour styler le slot fixé).
-  const engine = useEngine();
-  const fixedRoutine = useCoachOsStore((s) => s.userState?.fixed_routine ?? {});
-  const fixedDayIndex = fixedRoutine[String(dayOfWeek)];
-  const [pinning, setPinning] = useState<number | null>(null);
-
-  async function pinSlot(dayIndex: number) {
-    setPinning(dayIndex);
-    try {
-      // Toggle : si déjà fixé sur ce slot → retire ; sinon pose.
-      const target = fixedDayIndex === dayIndex ? null : dayIndex;
-      await engine.setFixedRoutine(dayOfWeek, target);
-    } finally {
-      setPinning(null);
-    }
-  }
-
   if (cyclePlan === null || cyclePlan.days.length === 0) {
     return (
       <p className="text-sm text-anthracite-300" data-testid="day-status-text">
@@ -474,43 +410,23 @@ function FreeFutureBlock({
         <p
           className="rounded-lg border border-sang-800/50 bg-sang-900/15 px-3 py-2 text-xs leading-relaxed text-anthracite-100"
           data-testid="variation-suggestion"
-          data-reason={suggestion.reason}
         >
-          {suggestion.reason === 'skipped' ? (
-            <>
-              Tu as sauté{' '}
-              <strong className="text-white">
-                {formatSessionLabel(suggestion.previousLabel)}
-              </strong>{' '}
-              récemment. Rattrape-la :{' '}
-              <strong className="text-sang-300">
-                {formatSessionLabel(
-                  cyclePlan.days[suggestion.suggestedDayIndex]?.label ?? '',
-                )}
-              </strong>
-              .
-            </>
-          ) : (
-            <>
-              Tu as fait{' '}
-              <strong className="text-white">
-                {formatSessionLabel(suggestion.previousLabel)}
-              </strong>{' '}
-              récemment. Pour varier, essaie :{' '}
-              <strong className="text-sang-300">
-                {formatSessionLabel(
-                  cyclePlan.days[suggestion.suggestedDayIndex]?.label ?? '',
-                )}
-              </strong>
-              .
-            </>
-          )}
+          Tu as fait{' '}
+          <strong className="text-white">
+            {formatSessionLabel(suggestion.previousLabel)}
+          </strong>{' '}
+          récemment. Pour enchaîner, essaie :{' '}
+          <strong className="text-sang-300">
+            {formatSessionLabel(
+              cyclePlan.days[suggestion.suggestedDayIndex]?.label ?? '',
+            )}
+          </strong>
+          .
         </p>
       )}
       <ul className="flex flex-col gap-2">
         {cyclePlan.days.map((d, i) => {
           const isSuggested = suggestion?.suggestedDayIndex === i;
-          const isPinned = fixedDayIndex === i;
           const nExos = d.exercises.length;
           const nSets = d.exercises.reduce((acc, e) => acc + e.base_sets, 0);
           const durationMin =
@@ -518,43 +434,23 @@ function FreeFutureBlock({
           return (
             <li key={i} className="flex items-stretch gap-2">
               <Button
-                variant={isPinned ? 'primary' : isSuggested ? 'primary' : 'secondary'}
+                variant={isSuggested ? 'primary' : 'secondary'}
                 size="md"
                 fullWidth
-                disabled={pending !== null || pinning !== null}
+                disabled={pending !== null}
                 onClick={() => onPick(i)}
                 data-testid={`plan-slot-${i}`}
                 className="!h-auto !min-h-[2.75rem] flex-col gap-0.5 py-2"
               >
                 <span className="font-medium">
                   {pending === i ? '…' : formatSessionLabelShort(d.label)}
-                  {isPinned ? ' 📌' : isSuggested ? ' ★' : ''}
+                  {isSuggested ? ' ★' : ''}
                 </span>
                 <span className="text-[11px] font-normal opacity-75 tabular-nums">
                   {nExos} exos · {nSets} séries
                   {durationMin > 0 ? ` · ~${durationMin} min` : ''}
                 </span>
               </Button>
-              <button
-                type="button"
-                aria-label={
-                  isPinned
-                    ? `Retirer la routine fixe du ${dayOfWeekLabel(dayOfWeek)}`
-                    : `Fixer ${formatSessionLabel(d.label)} le ${dayOfWeekLabel(dayOfWeek)}`
-                }
-                disabled={pending !== null || pinning !== null}
-                onClick={() => pinSlot(i)}
-                data-testid={`pin-slot-${i}`}
-                className={cn(
-                  'flex w-10 shrink-0 items-center justify-center rounded-xl border text-base transition',
-                  isPinned
-                    ? 'border-sang-600 bg-sang-900/40 text-sang-300 hover:text-white'
-                    : 'border-anthracite-700 bg-anthracite-900 text-anthracite-400 hover:border-anthracite-500 hover:text-white',
-                  (pending !== null || pinning !== null) && 'opacity-60',
-                )}
-              >
-                {pinning === i ? '…' : '📌'}
-              </button>
             </li>
           );
         })}
@@ -620,59 +516,6 @@ function FreeSessionButton({
         </p>
       ) : null}
     </>
-  );
-}
-
-/**
- * Bandeau "Routine fixée pour ce jour-of-week" — Conv #18.
- *
- * Affiché en haut du free-future si une routine est posée. Le slot
- * correspondant porte aussi le badge 📌 (cf. FreeFutureBlock). Si l'index
- * pointe sur un day inexistant (cycle plan régénéré), on n'affiche rien.
- */
-function FixedRoutineBlock({
-  dayOfWeek,
-  cyclePlan,
-}: {
-  readonly dayOfWeek: DayOfWeek;
-  readonly cyclePlan: WeeklyTemplate | null;
-}) {
-  const engine = useEngine();
-  const fixedRoutine = useCoachOsStore((s) => s.userState?.fixed_routine ?? {});
-  const idx = fixedRoutine[String(dayOfWeek)];
-  const [busy, setBusy] = useState(false);
-  if (cyclePlan === null || idx === undefined) return null;
-  const day = cyclePlan.days[idx];
-  if (day === undefined) return null;
-
-  async function unpin() {
-    setBusy(true);
-    try {
-      await engine.setFixedRoutine(dayOfWeek, null);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <Card
-      className="flex items-center justify-between gap-2 border-sang-700/40 bg-sang-900/15"
-      data-testid="fixed-routine-banner"
-    >
-      <p className="text-sm text-anthracite-100">
-        Routine fixée le {dayOfWeekLabel(dayOfWeek)} :{' '}
-        <strong className="text-white">{formatSessionLabel(day.label)}</strong>
-      </p>
-      <button
-        type="button"
-        onClick={unpin}
-        disabled={busy}
-        data-testid="unpin-routine"
-        className="text-xs text-anthracite-300 underline hover:text-white disabled:opacity-50"
-      >
-        {busy ? '…' : 'Retirer'}
-      </button>
-    </Card>
   );
 }
 
@@ -839,16 +682,16 @@ function PeriodicityNudge({
 function RestWarning({ recentMuscles }: { readonly recentMuscles: readonly string[] }) {
   return (
     <Card
-      className="border-amber-800/60 bg-amber-900/20"
+      className="border-anthracite-700 bg-anthracite-900/60"
       data-testid="rest-warning"
     >
-      <p className="text-sm text-amber-100">
-        <strong>Repos recommandé :</strong> tu as une séance la veille.
+      <p className="text-sm text-anthracite-100">
+        <strong>Repos conseillé.</strong> D'après ton rythme, ce jour est plutôt
+        une pause — tu peux quand même lancer une séance si tu veux.
       </p>
       {recentMuscles.length > 0 && (
-        <p className="mt-1 text-xs text-amber-100/80">
-          Muscles travaillés hier : {recentMuscles.map(muscleLabel).join(', ')}.
-          Privilégie une séance ciblant d'autres muscles si tu enchaînes.
+        <p className="mt-1 text-xs text-anthracite-300">
+          Muscles travaillés la veille : {recentMuscles.map(muscleLabel).join(', ')}.
         </p>
       )}
     </Card>

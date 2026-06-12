@@ -497,73 +497,69 @@ describe('buildCalendarMatrix', () => {
     expect(todays[0]!.date).toBe('2026-05-13');
   });
 
-  // Conv #10d — restSuggested
-  it('restSuggested=true sur un jour libre futur dont la veille est planifiée', () => {
-    const state = makeState({ cycle_index: 1 });
+  // Conv #29 — suggestedRest basé sur le rythme de la fréquence hebdo.
+  // 2026-05-11 = lundi (ancre). À 3 séances/sem, rythme = [L✓, M_, M✓, J_,
+  // V✓, S_, D_] : les jours libres futurs tombant sur un creux du rythme
+  // sont marqués repos conseillé.
+  it('suggestedRest=true sur un jour libre futur que le rythme place en repos (3j)', () => {
+    const state = makeState({
+      cycle_index: 1,
+      profile: { sessions_per_week: 3 } as UserState['profile'],
+    });
     const cycles: CycleRow[] = [
       { cycle_index: 1, start_date: '2026-05-11', end_date: null, programme_id: null, review: null },
     ];
-    const sessions = [makeSession('2026-05-15', 'planned', 'Tirer')];
-    const m = buildCalendarMatrix(state, cycles, sessions, [], parseDateKey('2026-05-13'));
-    // 2026-05-16 = samedi (jour suivant le vendredi planifié)
-    const cell = m!.weeks[0]![5]!;
-    expect(cell.date).toBe('2026-05-16');
-    expect(cell.status).toBe('free-future');
-    expect(cell.restSuggested).toBe(true);
+    const m = buildCalendarMatrix(state, cycles, [], [], parseDateKey('2026-05-13'));
+    // 2026-05-16 = samedi, d=5 → rythme[5]=false (repos). Jour libre futur.
+    const rest = m!.weeks[0]![5]!;
+    expect(rest.date).toBe('2026-05-16');
+    expect(rest.status).toBe('free-future');
+    expect(rest.suggestedRest).toBe(true);
+    // 2026-05-15 = vendredi, d=4 → rythme[4]=true (entraînement) → pas repos.
+    const train = m!.weeks[0]![4]!;
+    expect(train.date).toBe('2026-05-15');
+    expect(train.suggestedRest).toBe(false);
   });
 
-  it('restSuggested=false si la veille n\'a pas de séance', () => {
+  it('suggestedRest=false partout si la fréquence est inconnue', () => {
     const state = makeState({ cycle_index: 1 });
     const cycles: CycleRow[] = [
       { cycle_index: 1, start_date: '2026-05-11', end_date: null, programme_id: null, review: null },
     ];
     const m = buildCalendarMatrix(state, cycles, [], [], parseDateKey('2026-05-13'));
     for (const cell of m!.weeks.flat()) {
-      expect(cell.restSuggested).toBe(false);
+      expect(cell.suggestedRest).toBe(false);
     }
   });
 
-  it('restSuggested=false si le jour est lui-même planned ou completed', () => {
-    const state = makeState({ cycle_index: 1 });
+  it('suggestedRest=false si le jour est planned ou completed', () => {
+    const state = makeState({
+      cycle_index: 1,
+      profile: { sessions_per_week: 3 } as UserState['profile'],
+    });
     const cycles: CycleRow[] = [
       { cycle_index: 1, start_date: '2026-05-11', end_date: null, programme_id: null, review: null },
     ];
-    const sessions = [
-      makeSession('2026-05-15', 'planned', 'Tirer'),
-      makeSession('2026-05-16', 'planned', 'Pousser', 2),
-    ];
+    // 2026-05-16 = samedi (d=5, creux du rythme) MAIS une séance y est prévue.
+    const sessions = [makeSession('2026-05-16', 'planned', 'Pousser')];
     const m = buildCalendarMatrix(state, cycles, sessions, [], parseDateKey('2026-05-13'));
-    const cell = m!.weeks[0]![5]!; // 2026-05-16
+    const cell = m!.weeks[0]![5]!;
     expect(cell.status).toBe('planned');
-    expect(cell.restSuggested).toBe(false); // déjà planifié → pas de suggestion
+    expect(cell.suggestedRest).toBe(false); // pas free-future → pas de repos suggéré
   });
 
-  // Conv #17b — séance planifiée d'hier non terminée
-  it('séance planned dans le passé sans feedback → status=skipped (visuel)', () => {
+  // Conv #29 — concept de « séance sautée » retiré : une séance planifiée
+  // passée sans feedback redevient un simple jour passé (rest-past).
+  it('séance planned dans le passé sans feedback → status=rest-past', () => {
     const state = makeState({ cycle_index: 1 });
     const cycles: CycleRow[] = [
       { cycle_index: 1, start_date: '2026-05-11', end_date: null, programme_id: null, review: null },
     ];
-    // Séance prévue le 2026-05-12, "aujourd'hui" = 2026-05-13. La session est
-    // restée en `planned` (l'utilisateur l'a lancée mais pas terminée hier).
     const sessions = [makeSession('2026-05-12', 'planned', 'Tirer')];
     const m = buildCalendarMatrix(state, cycles, sessions, [], parseDateKey('2026-05-13'));
     // 2026-05-12 = mardi → semaine 1, jour index 1 (lundi=0).
     const cellYesterday = m!.weeks[0]![1]!;
     expect(cellYesterday.date).toBe('2026-05-12');
-    expect(cellYesterday.status).toBe('skipped');
-  });
-
-  it('séance planned-overdue hier ne déclenche pas restSuggested aujourd\'hui', () => {
-    const state = makeState({ cycle_index: 1 });
-    const cycles: CycleRow[] = [
-      { cycle_index: 1, start_date: '2026-05-11', end_date: null, programme_id: null, review: null },
-    ];
-    const sessions = [makeSession('2026-05-12', 'planned', 'Tirer')];
-    const m = buildCalendarMatrix(state, cycles, sessions, [], parseDateKey('2026-05-13'));
-    // 2026-05-13 = mercredi → semaine 1, jour index 2.
-    const cellToday = m!.weeks[0]![2]!;
-    expect(cellToday.date).toBe('2026-05-13');
-    expect(cellToday.restSuggested).toBe(false);
+    expect(cellYesterday.status).toBe('rest-past');
   });
 });

@@ -296,20 +296,21 @@ describe('targetRpeForExercise', () => {
 // =============================================================================
 
 describe('targetRepsForExercise', () => {
-  it('Force compound = (3, 6) → 4', () => {
+  // Conv #29 — reps FIXES par objectif × type (cf. TARGET_REPS).
+  it('Force compound → 5', () => {
     const bench = catalog.get('bench_bb');
     expect(bench.type).toBe(ExType.COMPOUND);
     const goals = { pectoraux: prio('pectoraux', MuscleObjective.FORCE, 1) };
-    expect(targetRepsForExercise(bench, goals)).toBe(4);
+    expect(targetRepsForExercise(bench, goals)).toBe(5);
   });
 
-  it('Hypertrophie compound = (6, 12) → 9', () => {
+  it('Hypertrophie compound → 10', () => {
     const bench = catalog.get('bench_bb');
     const goals = { pectoraux: prio('pectoraux', MuscleObjective.HYPERTROPHIE, 1) };
-    expect(targetRepsForExercise(bench, goals)).toBe(9);
+    expect(targetRepsForExercise(bench, goals)).toBe(10);
   });
 
-  it('Hypertrophie isolation = (8, 15) → 11', () => {
+  it('Hypertrophie isolation → 12', () => {
     const isoBiceps = [...catalog].find(
       (e) =>
         e.type === ExType.ISOLATION &&
@@ -317,7 +318,7 @@ describe('targetRepsForExercise', () => {
     );
     expect(isoBiceps).toBeDefined();
     const goals = { biceps: prio('biceps', MuscleObjective.HYPERTROPHIE, 1) };
-    expect(targetRepsForExercise(isoBiceps!, goals)).toBe(11);
+    expect(targetRepsForExercise(isoBiceps!, goals)).toBe(12);
   });
 });
 
@@ -363,14 +364,14 @@ describe('buildPrescription', () => {
     expect(pres.rpe_target).toBe(7.0);
   });
 
-  it('avec muscle_goals (Force pec rank 1) : RPE 7.0, reps 4', () => {
+  it('avec muscle_goals (Force pec rank 1) : RPE 7.0, reps 5', () => {
     const bench = catalog.get('bench_bb');
     const p = profile();
     const state = makeUserState(p);
     const goals = { pectoraux: prio('pectoraux', MuscleObjective.FORCE, 1) };
     const pres = buildPrescription(bench, 100, p, 1, { muscleGoals: goals, state });
     expect(pres.rpe_target).toBe(7.0);
-    expect(pres.reps).toBe(4);
+    expect(pres.reps).toBe(5);
   });
 
   it('recovery_mode plafonne RPE à 7 même via muscle_goals', () => {

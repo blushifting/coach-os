@@ -1501,7 +1501,7 @@
     "uni": false,
     "muscles": {
       "quadriceps": 1,
-      "fessiers": 1,
+      "fessiers": 0.5,
       "ischios": 0.5,
       "lombaires": 0.5
     },
@@ -1535,7 +1535,7 @@
     "uni": false,
     "muscles": {
       "quadriceps": 1,
-      "fessiers": 1,
+      "fessiers": 0.5,
       "ischios": 0.5,
       "lombaires": 0.5
     },
@@ -1637,7 +1637,7 @@
     "uni": false,
     "muscles": {
       "quadriceps": 1,
-      "fessiers": 1,
+      "fessiers": 0.5,
       "ischios": 0.5
     },
     "subst": "squat_bb",
@@ -1706,7 +1706,7 @@
     "uni": false,
     "muscles": {
       "quadriceps": 1,
-      "fessiers": 1,
+      "fessiers": 0.5,
       "ischios": 0.5
     },
     "subst": "squat_machine",
@@ -1740,7 +1740,7 @@
     "uni": false,
     "muscles": {
       "quadriceps": 1,
-      "fessiers": 1,
+      "fessiers": 0.5,
       "ischios": 0.5
     },
     "subst": "squat_machine",
@@ -1775,7 +1775,7 @@
     "uni": true,
     "muscles": {
       "quadriceps": 1,
-      "fessiers": 1,
+      "fessiers": 0.5,
       "ischios": 0.5
     },
     "subst": "lunge_pattern",
@@ -1809,7 +1809,7 @@
     "uni": true,
     "muscles": {
       "quadriceps": 1,
-      "fessiers": 1,
+      "fessiers": 0.5,
       "ischios": 0.5
     },
     "subst": "lunge_pattern",
@@ -1838,7 +1838,7 @@
     "uni": true,
     "muscles": {
       "quadriceps": 1,
-      "fessiers": 1
+      "fessiers": 0.5
     },
     "subst": "lunge_pattern",
     "inc_kg": 2,
@@ -1866,7 +1866,7 @@
     "uni": true,
     "muscles": {
       "quadriceps": 1,
-      "fessiers": 1
+      "fessiers": 0.5
     },
     "subst": "lunge_pattern",
     "inc_kg": 2,

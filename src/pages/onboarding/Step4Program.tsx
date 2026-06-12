@@ -93,17 +93,22 @@ export function Step4Program({ draft, onChange }: Step4Props) {
           {[
             {
               v: EquipmentPreference.MACHINES,
-              label: 'Machines guidées',
-              sub: 'Trajectoire fixe, contrôle facile — idéal débutants',
+              label: 'Machines uniquement',
+              sub: 'Guidées et poulies — trajectoire fixe, contrôle facile',
             },
             {
               v: EquipmentPreference.FREE_WEIGHTS,
-              label: 'Poids libres',
-              sub: 'Haltères, barre, poids du corps — meilleur transfert, plus technique',
+              label: 'Poids libres uniquement',
+              sub: 'Haltères et barre — meilleur transfert, plus technique',
+            },
+            {
+              v: EquipmentPreference.BODYWEIGHT,
+              label: 'Poids du corps uniquement',
+              sub: 'Aucun matériel — partout, sans charges',
             },
             {
               v: EquipmentPreference.NO_PREFERENCE,
-              label: 'Aucune préférence',
+              label: 'Pas de préférence',
               sub: 'Kotsh choisit la convention salle (polyarticulaires en libre, isolations en machine)',
             },
           ].map((opt) => {

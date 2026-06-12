@@ -108,11 +108,16 @@ describe('effectiveVolumeBounds', () => {
     expect(effectiveVolumeBounds(state, 'pectoraux')).toEqual([0, 0]);
   });
 
-  it('SUGGERE → V_min == V_max et ≥ 2', () => {
+  // Conv #29 — maintien = bande [MV, MEV] = [0.4×Vmin (plancher 2), Vmin].
+  // Le plafond V_max = MEV (= baseMin) pour une lecture de progrès uniforme.
+  it('SUGGERE (maintien) → bande [MV, MEV], V_min < V_max', () => {
     const state = stateInterH4x();
     state.muscle_goals.abdos = suggested('abdos');
+    const baseMin = state.volume_min.abdos!;
     const [vMin, vMax] = effectiveVolumeBounds(state, 'abdos');
-    expect(vMin).toBe(vMax);
+    expect(vMin).toBeCloseTo(Math.max(2, baseMin * 0.4), 6);
+    expect(vMax).toBe(baseMin);
+    expect(vMin).toBeLessThan(vMax);
     expect(vMin).toBeGreaterThanOrEqual(2);
   });
 

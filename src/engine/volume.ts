@@ -155,8 +155,23 @@ export const SHORTENED_DELOAD_FACTOR = 0.7;
 /**
  * V_min/V_max effectifs pour ce muscle, pondérés par MuscleGoal.
  *   - NON_COUVERT ou absent → (0, 0)
- *   - SUGGERE → (V_maintien, V_maintien) — fixe, pas de progression hebdo
- *   - PRIORITAIRE → (base_min × factor, base_max × factor) selon objectif
+ *   - MAINTIEN (SUGGERE, ou PRIORITAIRE hérité) → bande [MV, MEV] (cf. infra)
+ *   - PRIORITAIRE non-maintien → (base_min × factor, base_max × factor)
+ *
+ * Maintien — bande de lecture uniforme (Conv #29) :
+ *   `state.volume_min[muscle]` joue le rôle de **MEV** (Minimum Effective
+ *   Volume, seuil de croissance). Un muscle « en maintien » se prescrit au bas
+ *   de la bande (V_min = MV ≈ 0,4×MEV, Bickel 2011) mais reçoit un **plafond
+ *   explicite V_max = MEV** : au-delà, ce n'est plus du maintien mais de la
+ *   prise. La bande maintien [MV, MEV] se loge ainsi juste sous la bande
+ *   hypertrophie [MEV, V_max_hyp] — la lecture des courbes de progrès est
+ *   identique pour tous les muscles, seules les bornes changent.
+ *
+ *   La borne BASSE est INCHANGÉE : le volume *prescrit*
+ *   (`effectiveCycleTargetVolume` = borne basse) reste le même, seul le plafond
+ *   d'affichage/dépassement s'ouvre. Aucun impact sur l'allocation de séries —
+ *   les muscles SUGGERE sont des priorityTargets, et `sets_allocator` ne
+ *   consomme jamais ce V_max maintien comme cap (il saute les priorityTargets).
  */
 export function effectiveVolumeBounds(
   state: UserState,
@@ -172,14 +187,17 @@ export function effectiveVolumeBounds(
   if (!goal || goal.status === MuscleStatus.NON_COUVERT) {
     return [0, 0];
   }
-  if (goal.status === MuscleStatus.SUGGERE) {
-    const v = Math.max(
+  if (
+    goal.status === MuscleStatus.SUGGERE ||
+    goal.objective === MuscleObjective.MAINTIEN
+  ) {
+    const vMin = Math.max(
       MAINTENANCE_MIN_SETS,
       baseMin * OBJECTIVE_VOLUME_FACTOR[MuscleObjective.MAINTIEN],
     );
-    return [v, v];
+    return [vMin, baseMin];
   }
-  // PRIORITAIRE
+  // PRIORITAIRE non-maintien
   const factor = OBJECTIVE_VOLUME_FACTOR[goal.objective];
   return [baseMin * factor, baseMax * factor];
 }

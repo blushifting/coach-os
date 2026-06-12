@@ -61,21 +61,23 @@ export const MAX_PATTERNS_PER_SESSION: Record<DurationCategory, number> = {
 };
 
 /**
- * Conv #22 — Préférence d'équipement de l'utilisateur, sert à orienter le
- * choix automatique des exercices à l'onboarding.
+ * Conv #22 / #29 — Préférence d'équipement de l'utilisateur. Les trois
+ * premières valeurs sont des contraintes STRICTES (« uniquement ») : à
+ * l'auto-sélection des exos, on ne pioche QUE dans le type de charge demandé
+ * (cf. `chargesForPreference`). L'user reste libre de swap manuellement ensuite.
  *
- *   MACHINES        → favoriser machines guidées + câbles (trajectoire
- *                     fixe, idéal débutants ou récupération sécurisée).
- *   FREE_WEIGHTS    → favoriser haltères / barre / poids du corps
- *                     (transfert maximal, sport / force).
- *   NO_PREFERENCE   → l'app choisit la convention salle classique :
- *                     poids libres sur les compounds (barre/haltères pour
- *                     squat, bench, rowing), machines/câbles sur les
- *                     isolations (pec deck, leg curl, lateral raise).
+ *   MACHINES        → machines guidées + poulies (câbles) uniquement.
+ *   FREE_WEIGHTS    → haltères + barre uniquement.
+ *   BODYWEIGHT      → poids du corps strict : aucun matériel (donc pas de
+ *                     lesté/assisté qui requièrent barre/ceinture/machine).
+ *   NO_PREFERENCE   → défaut, aucune restriction : l'app choisit la convention
+ *                     salle classique (poids libres sur les compounds,
+ *                     machines/câbles sur les isolations).
  */
 export enum EquipmentPreference {
   MACHINES = 'machines',
   FREE_WEIGHTS = 'free_weights',
+  BODYWEIGHT = 'bodyweight',
   NO_PREFERENCE = 'no_preference',
 }
 
@@ -185,6 +187,27 @@ export enum E1RMApp {
   FULL = 'full',
   PARTIAL = 'partial',
   NON = 'non',
+}
+
+/**
+ * Conv #29 — Types de charge autorisés pour une préférence STRICTE.
+ * Renvoie `null` pour NO_PREFERENCE/undefined (= aucune restriction).
+ * Le poids du corps lesté/assisté (BODYWEIGHT_LOADED/ASSISTED) n'entre dans
+ * aucune catégorie stricte : il requiert barre/ceinture/machine d'assistance.
+ */
+export function chargesForPreference(
+  pref: EquipmentPreference | undefined,
+): ReadonlySet<ChargeType> | null {
+  switch (pref) {
+    case EquipmentPreference.MACHINES:
+      return new Set([ChargeType.MACHINE_STACK, ChargeType.CABLE]);
+    case EquipmentPreference.FREE_WEIGHTS:
+      return new Set([ChargeType.BARBELL, ChargeType.DUMBBELL]);
+    case EquipmentPreference.BODYWEIGHT:
+      return new Set([ChargeType.BODYWEIGHT]);
+    default:
+      return null;
+  }
 }
 
 // Mapping legacy Objective → MuscleObjective (cf. 09 §2.7).

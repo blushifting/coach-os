@@ -27,11 +27,13 @@ import type {
   WeeklyTemplate,
 } from './models';
 import {
+  EquipmentPreference,
   ExType,
   Level,
   MuscleObjective,
   MuscleStatus,
   ProgressionRule,
+  chargesForPreference,
   exercisePrimaires,
   makePlannedExercise,
   makeWeeklyTemplate,
@@ -855,10 +857,21 @@ export function autoGenerateCyclePlanV2(
           if (c2.chosen_exercise_id) sameSeen.add(c2.chosen_exercise_id);
         }
       }
-      const fit = cands.find(
-        (c) => c.pattern === cell.pattern && !sameSeen.has(c.id),
-      );
-      cell.chosen_exercise_id = fit?.id ?? cands[0]?.id ?? null;
+      // Conv #29 — respecte la préférence d'équipement stricte (cf.
+      // chargesForPreference). Fallback inPattern pour machines/poids libres ;
+      // pas de fallback pour BODYWEIGHT (PdC strict).
+      const allowed = chargesForPreference(state.profile.equipment_preference);
+      const inPattern = cands.filter((c) => c.pattern === cell.pattern);
+      const pool = allowed
+        ? inPattern.filter((c) => allowed.has(c.charge))
+        : inPattern;
+      const usable =
+        pool.length === 0 &&
+        state.profile.equipment_preference !== EquipmentPreference.BODYWEIGHT
+          ? inPattern
+          : pool;
+      const fit = usable.find((c) => !sameSeen.has(c.id)) ?? usable[0];
+      cell.chosen_exercise_id = fit?.id ?? null;
     }
   }
   return generateCyclePlanV2(skeleton, state, catalog);

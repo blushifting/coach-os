@@ -276,7 +276,12 @@ export function buildProfile(
     objective: globalObjective,
     sessions_per_week: draft.sessionsPerWeek,
     bodyweight_kg: draft.bodyweightKg,
-    available_equip: draft.equipment,
+    // Conv #29 — PdC strict : aucun matériel disponible, pour que TOUTES les
+    // voies (génération, swap, ajout d'exo) restent en poids du corps pur.
+    available_equip:
+      draft.equipmentPreference === EquipmentPreference.BODYWEIGHT
+        ? new Set<string>()
+        : draft.equipment,
     duration_category: draft.durationCategory,
     equipment_preference: draft.equipmentPreference,
     gym_brand: draft.gymBrand,

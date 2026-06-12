@@ -23,6 +23,7 @@ import {
   EquipmentPreference,
   ExType,
   Pattern,
+  chargesForPreference,
   exercisePrimaires,
 } from './models';
 
@@ -261,6 +262,22 @@ export function candidatesForCell(
   // remplir (cf. retour Conv #22 d'Azur : "case non remplissable").
   if (filtered.length === 0) {
     filtered = all.filter(matchPatternMuscle);
+  }
+
+  // Conv #29 — Préférence d'équipement STRICTE (« uniquement ») : filtre dur
+  // par type de charge. Pour MACHINES / FREE_WEIGHTS (user en salle), on
+  // retombe sur l'ensemble non filtré si la case devient vide — mieux qu'une
+  // case impossible. Pour BODYWEIGHT (PdC strict, aucun matériel), pas de
+  // fallback : on laisse la case vide plutôt que d'imposer du matériel.
+  const allowedCharges = chargesForPreference(options.equipmentPreference);
+  if (allowedCharges) {
+    const strict = filtered.filter((ex) => allowedCharges.has(ex.charge));
+    if (
+      strict.length > 0 ||
+      options.equipmentPreference === EquipmentPreference.BODYWEIGHT
+    ) {
+      filtered = strict;
+    }
   }
 
   filtered.sort((a, b) => {
