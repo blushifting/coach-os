@@ -21,11 +21,11 @@ const TABS: readonly TabDef[] = [
 export function TabBar() {
   return (
     <nav
-      className="sticky bottom-0 z-10 border-t border-sang-700/30 bg-graphite-950/95 backdrop-blur"
+      className="sticky bottom-0 z-10 border-t border-sang-700/30 bg-graphite-950"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       aria-label="Navigation principale"
     >
-      <ul className="flex h-14">
+      <ul className="flex h-12">
         {TABS.map((t) => (
           <li key={t.to} className="flex-1">
             <NavLink

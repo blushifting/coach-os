@@ -1,6 +1,5 @@
 /**
  * Règles d'équilibre R1-R4 pour la sélection des muscles cibles.
- * Port 1:1 de prototype/coach_os/balance.py.
  *
  * Référence : recherche/09_programmation.md §4.
  *

@@ -1,7 +1,6 @@
 /**
  * Lifecycle de cycle : bilan, suggestion d'action, ajustement V, recovery mode.
  *
- * Port 1:1 de prototype/coach_os/lifecycle.py (cf. 09_programmation.md §8).
  *
  * Pipeline en fin de cycle (semaine 5 = déload terminée) :
  *   1. generateCycleReview → CycleReview (progression, plateaux, adhérence, PRs)

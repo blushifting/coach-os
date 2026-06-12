@@ -99,7 +99,7 @@ export function Step4Program({ draft, onChange }: Step4Props) {
             {
               v: EquipmentPreference.FREE_WEIGHTS,
               label: 'Poids libres uniquement',
-              sub: 'Haltères et barre — meilleur transfert, plus technique',
+              sub: 'Haltères et barre — mouvement plus naturel, un peu plus technique',
             },
             {
               v: EquipmentPreference.BODYWEIGHT,
@@ -109,7 +109,7 @@ export function Step4Program({ draft, onChange }: Step4Props) {
             {
               v: EquipmentPreference.NO_PREFERENCE,
               label: 'Pas de préférence',
-              sub: 'Kotsh choisit la convention salle (polyarticulaires en libre, isolations en machine)',
+              sub: 'Kotsh choisit le plus adapté à chaque exercice',
             },
           ].map((opt) => {
             const selected = draft.equipmentPreference === opt.v;

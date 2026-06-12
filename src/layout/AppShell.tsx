@@ -22,7 +22,11 @@ export function AppShell() {
           partout). `fixed inset-0` remplit l'écran physique bord à bord ; seul
           <main> scrolle à l'intérieur. Identique sur desktop/Android. Sert aussi
           de bloc conteneur pour le BrandWatermark passé en `absolute`. */}
-      <div className="fixed inset-0 flex flex-col overflow-hidden bg-anthracite-950 text-white">
+      {/* Conv #29 — fond du shell aligné sur le body (graphite-950, chaud) au
+          lieu d'anthracite-950 (froid, plus sombre). Évite qu'une bande du
+          shell apparaisse « plus sombre » sous la TabBar en PWA iOS, et donne
+          le contraste fond chaud / cards froides voulu par le design. */}
+      <div className="fixed inset-0 flex flex-col overflow-hidden bg-graphite-950 text-white">
         {bootstrapped ? <Outlet /> : <SplashScreen />}
         <BrandWatermark />
         <UpdatePrompt />

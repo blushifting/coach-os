@@ -1,6 +1,5 @@
 /**
  * Mise à jour de l'e1RM par filtre exponentiel pondéré (EMA).
- * Port 1:1 de prototype/coach_os/feedback.py.
  *
  * Référence : recherche/03_modele_mathematique.md, §6.
  * Une mesure trop longue (n_équiv > 15) est ignorée.

@@ -1,6 +1,5 @@
 /**
  * Moteur de prescription : e1RM, charge cible, RPE→%1RM, arrondi.
- * Port 1:1 de prototype/coach_os/prescription.py.
  *
  * Référence :
  *   - recherche/03_modele_mathematique.md, §3, §4, §8 (formules e1RM legacy)

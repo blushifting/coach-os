@@ -1,6 +1,5 @@
 /**
  * Sélection et substitution d'exercices.
- * Port 1:1 de prototype/coach_os/selection.py.
  *
  * Référence :
  *   - 05_exercices_selection.md (compound/iso, ordre, lengthened bias, caps)

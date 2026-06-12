@@ -53,7 +53,7 @@ function Legend() {
         <LegendDot color="bg-emerald-700/70 border-emerald-500" label="Séance faite" />
         <LegendDot color="bg-blue-800/60 border-blue-500" label="Séance prévue" />
         <LegendDot color="bg-anthracite-900/40 border-dashed border-anthracite-700" label="Jour libre" />
-        <LegendDot color="bg-anthracite-900/60 border-anthracite-700" label="Repos conseillé (Z)" />
+        <LegendDot color="bg-anthracite-900/60 border-anthracite-700" label="Repos conseillé (marqué Z)" />
         <LegendDot
           color="ring-2 ring-sang-500 bg-anthracite-800"
           label="Aujourd'hui"

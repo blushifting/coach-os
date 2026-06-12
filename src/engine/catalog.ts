@@ -1,6 +1,5 @@
 /**
  * Chargement et requêtes sur le catalogue d'exercices.
- * Port 1:1 de prototype/coach_os/catalog.py.
  */
 
 import type { Exercise, ExerciseDict } from './models';

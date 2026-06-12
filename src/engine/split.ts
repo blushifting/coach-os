@@ -1,6 +1,5 @@
 /**
  * Splits canoniques, fréquence par muscle, placement des jours.
- * Port 1:1 de prototype/coach_os/split.py.
  *
  * Référence : recherche/09_programmation.md §5.
  *

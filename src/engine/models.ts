@@ -1,5 +1,5 @@
 /**
- * Types du domaine Coach OS — port 1:1 de prototype/coach_os/models.py.
+ * Types du domaine Coach OS.
  *
  * Tous les types métier sont ici. Les modules suivants (prescription, feedback,
  * volume, selection, engine, balance, split, cycle_planner, lifecycle,
@@ -840,14 +840,6 @@ export interface UserState {
   // --- override équipement par exo ---
   equipment_overrides: Record<string, EquipmentOverride>;
   /**
-   * Conv #18 — routine fixée par jour de la semaine (UI only, pas dans la
-   * source Python). Clé = `dayOfWeek` 0..6 (lundi=0), valeur = index du
-   * day_template dans `current_cycle_plan.days`. Si un jour-of-week pointe
-   * sur un dayIndex hors bornes (ex: cycle plan régénéré plus court), on
-   * ignore proprement côté UI.
-   */
-  fixed_routine: Record<string, number>;
-  /**
    * Dette de volume non réalisée sur la semaine en cours (Conv #11a).
    *
    * Mis à jour à chaque `recordFeedback` : pour chaque exo de la séance dont
@@ -901,7 +893,6 @@ export function makeUserState(profile: Profile): UserState {
     recovery_weeks_remaining: 0,
     equipment_overrides: {},
     weekly_volume_debt: {},
-    fixed_routine: {},
     current_skeleton: null,
     favorite_exercise_per_pattern: {},
     deload_strategy: null,

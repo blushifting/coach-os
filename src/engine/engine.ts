@@ -1,7 +1,6 @@
 /**
  * Orchestrateur Coach OS — API stable.
  *
- * Port 1:1 de prototype/coach_os/engine.py.
  *
  * Deux voies de generateSession :
  * - Voie nouvelle (recommandée) : `generateSession(state, catalog, day_index, date)`

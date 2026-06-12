@@ -1,6 +1,5 @@
 /**
  * Planification du cycle (custom) : génère un WeeklyTemplate à partir des MuscleGoals.
- * Port 1:1 de prototype/coach_os/cycle_planner.py.
  *
  * Référence : recherche/09_programmation.md §5, §6, §9.
  *

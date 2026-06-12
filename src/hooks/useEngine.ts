@@ -954,35 +954,6 @@ export async function clearEquipmentOverride(exerciseId: string): Promise<UserSt
 }
 
 // =============================================================================
-// Routine fixée par jour de la semaine (Conv #18)
-// =============================================================================
-
-/**
- * Pose ou retire une routine fixée pour un jour-of-week donné (lundi=0,
- * dimanche=6). `dayIndex` est l'index du day_template dans
- * `current_cycle_plan.days` ; `null` retire la routine pour ce jour.
- *
- * La routine persiste à travers les cycles : si un nouveau cycle plan est
- * généré, l'index peut pointer sur un jour qui n'existe plus — l'UI
- * ignore proprement (cf. `fixed_routine` dans `models.ts`).
- */
-export async function setFixedRoutine(
-  dayOfWeek: number,
-  dayIndex: number | null,
-): Promise<UserState> {
-  const next = requireUserState();
-  const key = String(dayOfWeek);
-  if (dayIndex === null) {
-    delete next.fixed_routine[key];
-  } else {
-    next.fixed_routine[key] = dayIndex;
-  }
-  await txSaveUserStateOnly(next);
-  useCoachOsStore.setState({ userState: next });
-  return next;
-}
-
-// =============================================================================
 // Reset complet (Conv #6c — bouton "Réinitialiser l'app")
 // =============================================================================
 
@@ -1185,7 +1156,6 @@ export interface EngineApi {
   updateMuscleGoals: typeof updateMuscleGoals;
   setEquipmentOverride: typeof setEquipmentOverride;
   clearEquipmentOverride: typeof clearEquipmentOverride;
-  setFixedRoutine: typeof setFixedRoutine;
   resetApp: typeof resetApp;
   importDataFromJson: typeof importDataFromJson;
   /** Conv #21b — gestion des exos custom (table userAddedExercises). */
@@ -1221,7 +1191,6 @@ export function useEngine(): EngineApi {
       updateMuscleGoals,
       setEquipmentOverride,
       clearEquipmentOverride,
-      setFixedRoutine,
       resetApp,
       importDataFromJson,
       addCustomExercise,

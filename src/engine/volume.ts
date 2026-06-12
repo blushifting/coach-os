@@ -1,6 +1,5 @@
 /**
  * Modèle de volume Israetel simplifié, détection de plateau et déload.
- * Port 1:1 de prototype/coach_os/volume.py.
  *
  * Référence :
  *   - recherche/03_modele_mathematique.md, §5, §7, §8.1 (legacy)
@@ -469,5 +468,5 @@ export function computeCycleAdherence(state: UserState): number {
   return done / planned;
 }
 
-// Re-export pour parité d'API avec le module Python (Muscle est dans models).
+// Re-export (Muscle est défini dans models).
 export type { Muscle };

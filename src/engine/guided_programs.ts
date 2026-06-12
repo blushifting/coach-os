@@ -1,7 +1,6 @@
 /**
  * Programmes guidés (prefab) — bibliothèque V1.
  *
- * Port 1:1 de prototype/coach_os/guided_programs.py (cf. 09_programmation.md §7).
  *
  * 5 programmes V1 :
  * 1. Starting Strength (Rippetoe) — débutant pur, 3×/sem, FORCE

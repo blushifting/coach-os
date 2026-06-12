@@ -1,0 +1,17 @@
+Reliquats Bloc E : suppression fixed_routine + en-tetes Python + fix couleur barre du bas (1.19.1)
+
+- Suppression du champ d'etat `fixed_routine` (routines punaise, devenu code
+  mort apres le retrait de l'UI) : models, useEngine (setFixedRoutine),
+  db/schema, db/serialize, io/schema + 2 fixtures de test. Retrocompat : les
+  vieux blobs gardant la cle sont ignores (Zod la strip).
+- Retrait de 11 en-tetes « Port 1:1 de prototype/coach_os/*.py » (le prototype
+  Python n'existe plus dans le repo) + mention « module Python » dans volume.ts.
+- Fix barre du bas (PWA iOS) : fond du shell anthracite-950 -> graphite-950
+  (aligne sur body + theme-color #16110f) pour supprimer la bande « plus
+  sombre » sous la TabBar ; TabBar opaque (sans transparence/blur) + hauteur
+  h-14 -> h-12. A confirmer sur iPhone.
+- Passe ux-writer sur les libelles Bloc E (preference equipement, legende).
+
+573 Vitest + 25 e2e verts.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
