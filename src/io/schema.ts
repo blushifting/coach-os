@@ -88,6 +88,8 @@ const userStateSchema = z
     // Conv #22 — optionnels pour rétrocompat exports antérieurs.
     current_skeleton: z.union([z.null(), z.object({}).passthrough()]).optional(),
     favorite_exercise_per_pattern: recordOfString.optional(),
+    favorite_exercise_ids: z.array(z.string()).optional(),
+    exercise_pick_counts: recordOfNumber.optional(),
     deload_strategy: z.union([z.null(), z.string()]).optional(),
   })
   .strict();

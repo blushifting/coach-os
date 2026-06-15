@@ -91,6 +91,8 @@ export function serializeUserState(state: UserState): SerializedUserState {
         ? null
         : structuredClone(state.current_skeleton),
     favorite_exercise_per_pattern: { ...(state.favorite_exercise_per_pattern ?? {}) },
+    favorite_exercise_ids: [...(state.favorite_exercise_ids ?? [])],
+    exercise_pick_counts: { ...(state.exercise_pick_counts ?? {}) },
     deload_strategy: state.deload_strategy ?? null,
   };
 }
@@ -141,6 +143,14 @@ export function deserializeUserState(s: SerializedUserState): UserState {
     // Conv #22 — Rétrocompat : blobs antérieurs n'ont pas ces champs.
     current_skeleton: s.current_skeleton ?? null,
     favorite_exercise_per_pattern: { ...(s.favorite_exercise_per_pattern ?? {}) },
+    // Bloc F (Conv #31) — migration : si le set unifié est absent (blob
+    // antérieur), on le reconstruit depuis les favoris par-pattern existants
+    // (valeurs dédupliquées). Les nouveaux blobs portent directement le set.
+    favorite_exercise_ids:
+      s.favorite_exercise_ids !== undefined
+        ? [...s.favorite_exercise_ids]
+        : Array.from(new Set(Object.values(s.favorite_exercise_per_pattern ?? {}))),
+    exercise_pick_counts: { ...(s.exercise_pick_counts ?? {}) },
     deload_strategy: s.deload_strategy ?? null,
   };
 }

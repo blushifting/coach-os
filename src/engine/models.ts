@@ -864,6 +864,22 @@ export interface UserState {
    */
   favorite_exercise_per_pattern?: Record<string, string>;
   /**
+   * Bloc F (Conv #31) — favoris **unifiés** de l'utilisateur (LA notion
+   * « favori » visible dans l'UI). Alimenté par l'étoile du Catalogue ET la
+   * prédilection choisie à l'onboarding. `favorite_exercise_per_pattern`
+   * devient un cache de seeding interne au moteur (1 favori/pattern) ; ce set
+   * plat est la source de vérité côté utilisateur. Absent sur anciens blobs
+   * (migration depuis `favorite_exercise_per_pattern` à la désérialisation).
+   */
+  favorite_exercise_ids?: string[];
+  /**
+   * Bloc F (Conv #31) — nombre de fois où l'utilisateur a choisi un exo en
+   * ajout ad-hoc / variante de remplacement en séance. Sert à proposer de
+   * l'ajouter aux favoris à la 3ᵉ utilisation (s'il ne l'est pas déjà).
+   * Clé = exercise_id. Absent sur anciens blobs.
+   */
+  exercise_pick_counts?: Record<string, number>;
+  /**
    * Conv #22 — Stratégie de déload pour la semaine 5 du cycle courant
    * (item H, calculée à l'entrée en sem 5 selon l'adhérence sem 1-4).
    * Valeur typée `string` ici pour découpler `models.ts` de `volume.ts`
@@ -895,6 +911,8 @@ export function makeUserState(profile: Profile): UserState {
     weekly_volume_debt: {},
     current_skeleton: null,
     favorite_exercise_per_pattern: {},
+    favorite_exercise_ids: [],
+    exercise_pick_counts: {},
     deload_strategy: null,
   };
 }

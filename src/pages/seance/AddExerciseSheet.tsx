@@ -32,6 +32,7 @@ import {
 import { useCoachOsStore } from '@/store';
 import { useGymBrand } from '@/store/selectors';
 import { cn } from '@/lib/cn';
+import { ExerciseEyeButton } from '@/pages/catalogue/ExerciseEyeButton';
 
 /** Normalisation simple (lowercase + retire accents) pour le search inline. */
 function normalize(s: string): string {
@@ -180,20 +181,20 @@ export function AddExerciseSheet({
                 results.map((ex) => {
                   const already = existingExerciseIds.has(ex.id);
                   return (
-                    <li key={ex.id}>
+                    <li key={ex.id} className="flex items-stretch gap-2">
                       <button
                         type="button"
                         data-testid={`add-exo-pick-${ex.id}`}
                         disabled={already}
                         onClick={() => setPicked(ex)}
                         className={cn(
-                          'w-full rounded-lg border px-3 py-2 text-left text-sm transition',
+                          'flex min-w-0 flex-1 rounded-lg border px-3 py-2 text-left text-sm transition',
                           already
                             ? 'cursor-not-allowed border-anthracite-800 bg-anthracite-900/40 text-anthracite-500'
                             : 'border-anthracite-700 bg-anthracite-900 text-white hover:border-sang-700/50',
                         )}
                       >
-                        <div className="flex items-center justify-between gap-2">
+                        <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
                           <span className="truncate">{displayExerciseName(ex, brand)}</span>
                           {already ? (
                             <span className="shrink-0 text-[10px] uppercase tracking-wide text-anthracite-400">
@@ -202,6 +203,8 @@ export function AddExerciseSheet({
                           ) : null}
                         </div>
                       </button>
+                      {/* Bloc F (Conv #31) — œil de visu, zone sœur (pas imbriqué). */}
+                      <ExerciseEyeButton exercise={ex} brand={brand} />
                     </li>
                   );
                 })
@@ -211,10 +214,16 @@ export function AddExerciseSheet({
         ) : (
           <div className="flex flex-col gap-3">
             <div data-testid="add-exo-preview" className="rounded-lg border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-sm">
-              <div className="font-semibold text-white">{displayExerciseName(picked, brand)}</div>
-              <div className="mt-1 text-xs text-anthracite-300">
-                {patternLabel(picked.pattern)} · {chargeLabel(picked.charge)} ·{' '}
-                {extypeLabel(picked.type)}
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-white">{displayExerciseName(picked, brand)}</div>
+                  <div className="mt-1 text-xs text-anthracite-300">
+                    {patternLabel(picked.pattern)} · {chargeLabel(picked.charge)} ·{' '}
+                    {extypeLabel(picked.type)}
+                  </div>
+                </div>
+                {/* Bloc F (Conv #31) — œil de visu sur l'exo choisi. */}
+                <ExerciseEyeButton exercise={picked} brand={brand} />
               </div>
             </div>
             <div className="flex items-center gap-3">

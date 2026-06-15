@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { ChargeMechanicNote } from '@/components/ChargeMechanicNote';
 import { Dialog } from '@/components/Dialog';
 import { ProgressRing } from '@/components/ProgressRing';
 import { cn } from '@/lib/cn';
@@ -79,6 +80,9 @@ export function SessionRunner({
   // Conv #21b — ajout/retrait d'exo en cours de séance.
   const [addOpen, setAddOpen] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState<number | null>(null);
+  // Bloc F (Conv #31) — proposition d'ajout aux favoris à la 3ᵉ utilisation
+  // (ajout ad-hoc ou variante). Contient l'exercise_id à proposer, ou null.
+  const [suggestFav, setSuggestFav] = useState<string | null>(null);
   // 1.16 — repli (collapse) des cartes d'exo. Par défaut un exo se replie tout
   // seul quand toutes ses séries sont faites. `collapsedOverrides[i]` (1.16.2)
   // = choix manuel de l'user via le chevron : `true` replie même avant la fin,
@@ -416,6 +420,11 @@ export function SessionRunner({
                       />
                     ) : null}
 
+                    {/* Bloc F (Conv #31) — clarifie les charges contre-intuitives
+                        (assisté = poids retiré, lesté = poids ajouté) là où on
+                        règle la charge. Rien pour les charges normales. */}
+                    {ex !== null && <ChargeMechanicNote charge={ex.charge} />}
+
                     <div className="flex flex-col gap-1.5">
                       {entrySets.map((entry, j) => (
                         <SetInput
@@ -537,6 +546,7 @@ export function SessionRunner({
                   itemIndex: detail.itemIndex,
                   newExerciseId: newExId,
                 });
+                if (engine.shouldSuggestFavorite(newExId)) setSuggestFav(newExId);
               }
         }
       />
@@ -549,6 +559,34 @@ export function SessionRunner({
           new Set(plan.items.map((it) => it.exercise_id))
         }
         onClose={() => setAddOpen(false)}
+        onAdded={(id) => {
+          if (engine.shouldSuggestFavorite(id)) setSuggestFav(id);
+        }}
+      />
+
+      {/* Bloc F (Conv #31) — proposer l'ajout aux favoris à la 3ᵉ utilisation. */}
+      <Dialog
+        open={suggestFav !== null}
+        title="Ajouter aux favoris ?"
+        description={(() => {
+          if (suggestFav === null) return null;
+          const ex = safeGet(catalog, suggestFav);
+          const name = ex ? displayExerciseName(ex, brand ?? undefined) : suggestFav;
+          return (
+            <>
+              Tu utilises souvent <strong>{name}</strong>. En favori, tu le
+              retrouves en tête du Catalogue.
+            </>
+          );
+        })()}
+        confirmLabel="Ajouter aux favoris"
+        cancelLabel="Non merci"
+        onConfirm={() => {
+          const id = suggestFav;
+          setSuggestFav(null);
+          if (id !== null) void engine.toggleFavorite(id);
+        }}
+        onCancel={() => setSuggestFav(null)}
       />
 
       {/* Conv #21b — Confirmation systématique avant retrait d'un exo. Texte

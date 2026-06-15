@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Sheet } from '@/components/Sheet';
 import { Button } from '@/components/Button';
+import { ChargeMechanicNote } from '@/components/ChargeMechanicNote';
 import { AnatomicalSilhouette, type SilhouetteStatus } from '@/components/AnatomicalSilhouette';
 import type { Catalog } from '@/engine/catalog';
 import { exercisePrimaires, exerciseSynergistes } from '@/engine/models';
@@ -136,6 +137,9 @@ export function ExerciseDetailSheet({
           <p className="text-sm leading-relaxed text-anthracite-100">
             {buildDescription(exercise)}
           </p>
+
+          {/* Bloc F (Conv #31) — mécanique de charge (assisté/lesté/PdC). */}
+          <ChargeMechanicNote charge={exercise.charge} />
 
           {primaires.length > 0 && (
             <SectionBlock label="Muscles principaux">

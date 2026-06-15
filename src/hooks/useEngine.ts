@@ -371,9 +371,60 @@ export async function addFavoriteForPattern(
     ...(next.favorite_exercise_per_pattern ?? {}),
     [pattern]: exerciseId,
   };
+  // Bloc F (Conv #31) — la prédilection onboarding alimente aussi le set
+  // unifié, pour qu'elle apparaisse comme favori dans le Catalogue.
+  const ids = next.favorite_exercise_ids ?? [];
+  if (!ids.includes(exerciseId)) {
+    next.favorite_exercise_ids = [...ids, exerciseId];
+  }
   await txSaveUserStateOnly(next);
   useCoachOsStore.setState({ userState: next });
   return next;
+}
+
+/**
+ * Bloc F (Conv #31) — Bascule un exo dans/hors des favoris unifiés
+ * (`favorite_exercise_ids`). Source : l'étoile du Catalogue / de la fiche exo.
+ * N'altère PAS `favorite_exercise_per_pattern` (cache de seeding moteur) :
+ * l'influence des favoris catalogue sur l'auto-génération est un chantier F2
+ * séparé.
+ */
+export async function toggleFavorite(exerciseId: string): Promise<UserState> {
+  const next = requireUserState();
+  const ids = next.favorite_exercise_ids ?? [];
+  next.favorite_exercise_ids = ids.includes(exerciseId)
+    ? ids.filter((id) => id !== exerciseId)
+    : [...ids, exerciseId];
+  await txSaveUserStateOnly(next);
+  useCoachOsStore.setState({ userState: next });
+  return next;
+}
+
+/**
+ * Bloc F (Conv #31) — seuil d'ajouts ad-hoc/variante au-delà duquel on propose
+ * d'ajouter l'exo aux favoris.
+ */
+export const FAVORITE_SUGGEST_THRESHOLD = 3;
+
+/** Incrémente le compteur d'utilisations ad-hoc/variante d'un exo (mute `next`). */
+function bumpExercisePickCount(next: UserState, exerciseId: string): void {
+  const counts = next.exercise_pick_counts ?? {};
+  next.exercise_pick_counts = {
+    ...counts,
+    [exerciseId]: (counts[exerciseId] ?? 0) + 1,
+  };
+}
+
+/**
+ * Bloc F (Conv #31) — l'exo vient-il d'atteindre le seuil de propositions
+ * favoris (et n'est pas déjà favori) ? À appeler côté UI APRÈS l'ajout/variante
+ * (le store est déjà à jour). `=== seuil` ⇒ on ne propose qu'une seule fois.
+ */
+export function shouldSuggestFavorite(exerciseId: string): boolean {
+  const s = useCoachOsStore.getState().userState;
+  if (s === null) return false;
+  if ((s.favorite_exercise_ids ?? []).includes(exerciseId)) return false;
+  return (s.exercise_pick_counts?.[exerciseId] ?? 0) === FAVORITE_SUGGEST_THRESHOLD;
 }
 
 export interface VariantReplacementInput {
@@ -527,6 +578,8 @@ export async function replaceSessionExercise(
     next,
     catalog,
   );
+  // Bloc F (Conv #31) — la variante choisie compte pour le prompt favoris (3×).
+  bumpExercisePickCount(next, args.newExerciseId);
   if (sessionId !== null) {
     await txUpdateSessionPlan(sessionId, newPlan, next);
   } else {
@@ -637,6 +690,8 @@ export async function addExerciseToCurrentSession(
   }));
   const newEntries =
     entries === null ? null : [...entries, newRow];
+  // Bloc F (Conv #31) — compteur d'utilisations (prompt favoris à la 3ᵉ fois).
+  bumpExercisePickCount(next, exerciseId);
   await txUpdateSessionPlan(sessionId, newPlan, next);
   useCoachOsStore.setState({
     userState: next,
@@ -1160,6 +1215,10 @@ export interface EngineApi {
   generateInitialCyclePlanFromSkeleton: typeof generateInitialCyclePlanFromSkeleton;
   /** Conv #22 — mémorise l'exo préféré user pour un pattern. */
   addFavoriteForPattern: typeof addFavoriteForPattern;
+  /** Bloc F (Conv #31) — bascule un favori unifié (étoile catalogue/fiche). */
+  toggleFavorite: typeof toggleFavorite;
+  /** Bloc F (Conv #31) — l'exo atteint-il le seuil de proposition favoris ? */
+  shouldSuggestFavorite: typeof shouldSuggestFavorite;
   applyVariantReplacements: typeof applyVariantReplacements;
   setManualE1rm: typeof setManualE1rm;
   generateAndStoreSession: typeof generateAndStoreSession;
@@ -1195,6 +1254,8 @@ export function useEngine(): EngineApi {
       generateInitialCyclePlan,
       generateInitialCyclePlanFromSkeleton,
       addFavoriteForPattern,
+      toggleFavorite,
+      shouldSuggestFavorite,
       applyVariantReplacements,
       setManualE1rm,
       generateAndStoreSession,

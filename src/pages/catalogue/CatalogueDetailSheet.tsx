@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Sheet } from '@/components/Sheet';
 import { Button } from '@/components/Button';
+import { ChargeMechanicNote } from '@/components/ChargeMechanicNote';
 import { Concept } from '@/components/Concept';
 import { Dialog } from '@/components/Dialog';
 import { AnatomicalSilhouette, type SilhouetteStatus } from '@/components/AnatomicalSilhouette';
@@ -16,6 +17,7 @@ import {
   patternLabel,
   tagLabel,
 } from '@/lib/catalog-filter';
+import { cn } from '@/lib/cn';
 import { muscleLabel } from '@/lib/progress';
 import { formatRest } from '@/lib/session-runner';
 import { useCoachOsStore } from '@/store';
@@ -24,6 +26,7 @@ import { ManualE1rmSheet } from '@/pages/seance/ManualE1rmSheet';
 import { ChargeBadge } from './ChargeBadge';
 import { ExercisePhoto } from './ExercisePhoto';
 import { EquipmentOverrideSheet } from './EquipmentOverrideSheet';
+import { FavoriteStar } from './FavoriteStar';
 
 interface CatalogueDetailSheetProps {
   readonly open: boolean;
@@ -69,6 +72,12 @@ export function CatalogueDetailSheet({
   const engine = useEngine();
   const demoActive = useDemoMode();
   const brand = useGymBrand();
+  // Bloc F (Conv #31) — état favori unifié (étoile catalogue/fiche).
+  const isFavorite = useCoachOsStore(
+    (s) =>
+      exercise !== null &&
+      (s.userState?.favorite_exercise_ids ?? []).includes(exercise.id),
+  );
 
   if (exercise === null) return null;
   const displayName = displayExerciseName(exercise, brand ?? undefined);
@@ -112,12 +121,34 @@ export function CatalogueDetailSheet({
           </span>
         </div>
 
+        {/* Bloc F (Conv #31) — bascule favori. Désactivée en démo (pas
+            d'écriture DB). */}
+        <button
+          type="button"
+          onClick={() => void engine.toggleFavorite(exercise.id)}
+          disabled={demoActive}
+          aria-pressed={isFavorite}
+          data-testid={`catalogue-detail-fav-${exercise.id}`}
+          className={cn(
+            'mx-auto flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm transition disabled:opacity-50',
+            isFavorite
+              ? 'border-amber-400/40 bg-amber-400/10 text-amber-300'
+              : 'border-anthracite-700 text-anthracite-200 hover:border-anthracite-500',
+          )}
+        >
+          <FavoriteStar filled={isFavorite} size={18} />
+          {isFavorite ? 'Dans tes favoris' : 'Ajouter aux favoris'}
+        </button>
+
         <p
           className="text-sm leading-relaxed text-anthracite-100"
           data-testid="catalogue-detail-description"
         >
           {buildDescription(exercise)}
         </p>
+
+        {/* Bloc F (Conv #31) — mécanique de charge (assisté = poids retiré…). */}
+        <ChargeMechanicNote charge={exercise.charge} />
 
         {e1rm !== null && e1rm > 0 ? (
           <div

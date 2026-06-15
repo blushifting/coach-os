@@ -76,6 +76,10 @@ export interface SerializedUserState {
   current_skeleton?: import('@/engine/models').SkeletonTemplate | null;
   /** Conv #22 — exos préférés par pattern. Absent sur anciens blobs. */
   favorite_exercise_per_pattern?: Record<string, string>;
+  /** Bloc F (Conv #31) — favoris unifiés (étoile catalogue + onboarding). Absent sur anciens blobs (migré depuis le par-pattern). */
+  favorite_exercise_ids?: string[];
+  /** Bloc F (Conv #31) — compteur d'ajouts ad-hoc/variante par exo (prompt favoris à 3). Absent sur anciens blobs. */
+  exercise_pick_counts?: Record<string, number>;
   /** Conv #22 (H) — stratégie de déload pour la sem 5. Absent sur anciens blobs. */
   deload_strategy?: string | null;
 }

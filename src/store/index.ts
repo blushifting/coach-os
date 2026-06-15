@@ -22,6 +22,7 @@ import type {
   SessionPlan,
   UserState,
 } from '@/engine/models';
+import { EMPTY_FILTERS, type CatalogFilters } from '@/lib/catalog-filter';
 import type { SessionEntries } from '@/lib/session-runner';
 import type {
   CycleRow,
@@ -61,6 +62,13 @@ export interface CoachOsState {
   // --- history : vues lues depuis la DB pour l'UI Progrès ---
   history: HistorySnapshot;
 
+  /**
+   * Bloc F (Conv #31) — filtres du Catalogue. Slice store (non persisté en DB)
+   * pour survivre à la navigation entre onglets pendant une même session d'app,
+   * et se réinitialiser au relancement (le store repart de `initialState`).
+   */
+  catalogFilters: CatalogFilters;
+
   // --- catalog : référence statique chargée une fois ---
   catalog: Catalog | null;
   /**
@@ -97,6 +105,7 @@ export interface CoachOsActions {
   setCurrentSession: (plan: SessionPlan | null, id: number | null) => void;
   setCurrentSessionEntries: (entries: SessionEntries | null) => void;
   setHistory: (h: HistorySnapshot) => void;
+  setCatalogFilters: (f: CatalogFilters) => void;
   setLastEndOfWeek: (r: { event: string; cycle_index: number } | null) => void;
   setLastCycleReview: (r: CycleReview | null) => void;
   /** Reset complet — utilisé après import ou reset de profil. */
@@ -116,6 +125,7 @@ const initialState: CoachOsState = {
   currentSessionId: null,
   currentSessionEntries: null,
   history: initialHistory,
+  catalogFilters: EMPTY_FILTERS,
   catalog: null,
   customExerciseIds: new Set<string>(),
   bootstrapped: false,
@@ -137,6 +147,7 @@ export const useCoachOsStore = create<CoachOsState & CoachOsActions>((set) => ({
   setCurrentSessionEntries: (currentSessionEntries) =>
     set({ currentSessionEntries }),
   setHistory: (history) => set({ history }),
+  setCatalogFilters: (catalogFilters) => set({ catalogFilters }),
   setLastEndOfWeek: (lastEndOfWeekReview) => set({ lastEndOfWeekReview }),
   setLastCycleReview: (lastCycleReview) => set({ lastCycleReview }),
   resetAll: () => set({ ...initialState }),
