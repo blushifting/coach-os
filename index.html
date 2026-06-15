@@ -16,7 +16,13 @@
     <link rel="apple-touch-icon" href="/coach-os/apple-touch-icon.png" />
     <title>Kotsh</title>
   </head>
-  <body class="bg-anthracite-950 text-white">
+  <!-- Conv #30 — fond du body aligné sur graphite-950 (= shell AppShell, TabBar
+       et theme-color #16110f). Avant, `bg-anthracite-950` (gris froid) écrasait
+       le graphite du CSS de base et apparaissait sous le shell dans la zone
+       home-indicator iOS → bande « zone morte » visible sous la barre du bas.
+       Tout est désormais le même graphite : plus de bande, quel que soit le
+       calcul de safe-area. -->
+  <body class="bg-graphite-950 text-white">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

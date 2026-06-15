@@ -203,6 +203,15 @@ export async function tickWeekIfNeeded(now: Date = new Date()): Promise<void> {
     (c) => c.cycle_index === state.cycle_index,
   );
   if (cycle === undefined) return;
+  // Conv #30 — tant qu'aucune séance n'a été faite dans ce cycle, la grille
+  // n'a pas vraiment démarré : on n'avance pas les semaines (start_date est
+  // encore le placeholder onboarding/bilan, ré-ancré sur la 1re séance via
+  // `recordFeedbackAndCommit`). Évite de « perdre » des jours si l'utilisateur
+  // lance l'app plusieurs jours avant sa 1re séance.
+  const cycleStarted = store.history.feedbacks.some(
+    (f) => f.cycle_index === state.cycle_index,
+  );
+  if (!cycleStarted) return;
   const start = new Date(cycle.start_date + 'T00:00:00');
   const today = new Date(
     now.getFullYear(),
@@ -822,12 +831,22 @@ export async function recordFeedbackAndCommit(
   // de "séances suivantes" (EMA standard).
   const snapshots = useCoachOsStore.getState().history.e1rmSnapshots;
   const calibratedExoIds = new Set(snapshots.map((s) => s.exercise_id));
+  // Conv #30 — 1re séance réelle du cycle ? (avant commit, l'historique reflète
+  // encore l'état pré-feedback). Si oui, on (ré)ancre cycle.start_date dessus.
+  const isFirstFeedbackOfCycle = !useCoachOsStore
+    .getState()
+    .history.feedbacks.some((f) => f.cycle_index === feedback.cycle_index);
   const summary = engine.recordFeedback(next, catalog, feedback, {
     plan,
     calibratedExoIds,
   });
   const sessionId = useCoachOsStore.getState().currentSessionId;
-  await txCommitSessionFeedback({ feedback, state: next, sessionId });
+  await txCommitSessionFeedback({
+    feedback,
+    state: next,
+    sessionId,
+    anchorStartDate: isFirstFeedbackOfCycle,
+  });
   useCoachOsStore.setState({
     userState: next,
     currentSessionPlan: null,

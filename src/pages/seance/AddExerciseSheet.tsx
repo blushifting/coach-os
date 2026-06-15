@@ -23,6 +23,13 @@ import {
   extypeLabel,
   patternLabel,
 } from '@/lib/catalog-filter';
+import {
+  addedVolumeOvershoot,
+  buildMusclesOf,
+  computeCoverageThisWeek,
+  muscleLabel,
+} from '@/lib/progress';
+import { useCoachOsStore } from '@/store';
 import { useGymBrand } from '@/store/selectors';
 import { cn } from '@/lib/cn';
 
@@ -56,11 +63,50 @@ export function AddExerciseSheet({
 }: AddExerciseSheetProps) {
   const engine = useEngine();
   const brand = useGymBrand() ?? undefined;
+  const userState = useCoachOsStore((s) => s.userState);
+  const feedbacks = useCoachOsStore((s) => s.history.feedbacks);
+  const cycles = useCoachOsStore((s) => s.history.cycles);
+  const currentSessionPlan = useCoachOsStore((s) => s.currentSessionPlan);
   const [query, setQuery] = useState('');
   const [picked, setPicked] = useState<Exercise | null>(null);
   const [nSets, setNSets] = useState(DEFAULT_SETS);
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+
+  const musclesOf = useMemo(
+    () => (catalog ? buildMusclesOf(catalog) : null),
+    [catalog],
+  );
+
+  // Conv #30 — mise en garde volume : l'exo ajouté (nSets séries) ferait-il
+  // dépasser le plafond hebdo (V_max/MRV) d'un de ses muscles ? Base = séries
+  // pondérées déjà engagées cette semaine (séances faites + séance en cours).
+  const overshoot = useMemo(() => {
+    if (picked === null || userState === null || musclesOf === null) return [];
+    const cycleStart =
+      cycles.find((c) => c.cycle_index === userState.cycle_index)?.start_date ??
+      null;
+    const weekly: Record<string, number> = {};
+    for (const cov of computeCoverageThisWeek(
+      userState,
+      feedbacks,
+      musclesOf,
+      new Date(),
+      cycleStart,
+    )) {
+      weekly[cov.muscle] = cov.sets;
+    }
+    if (currentSessionPlan !== null) {
+      for (const item of currentSessionPlan.items) {
+        const mm = musclesOf[item.exercise_id] ?? {};
+        const n = item.sets.length;
+        for (const [m, c] of Object.entries(mm)) {
+          weekly[m] = (weekly[m] ?? 0) + c * n;
+        }
+      }
+    }
+    return addedVolumeOvershoot(picked.muscles, nSets, weekly, userState);
+  }, [picked, nSets, userState, feedbacks, cycles, currentSessionPlan, musclesOf]);
 
   const results = useMemo<readonly Exercise[]>(() => {
     if (catalog === null) return [];
@@ -205,6 +251,18 @@ export function AddExerciseSheet({
               Plafond connu (ou d'une estimation si tu n'as jamais fait cet
               exercice). Tu peux les ajuster avant de cocher chaque série.
             </p>
+            {overshoot.length > 0 ? (
+              <p
+                data-testid="add-exo-volume-warning"
+                className="rounded-lg border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-xs leading-snug text-amber-200"
+              >
+                <strong className="text-amber-100">Volume élevé.</strong> Ces{' '}
+                {nSets} séries poussent{' '}
+                {overshoot.map((o) => muscleLabel(o.muscle)).join(', ')} au-dessus
+                du volume conseillé cette semaine. Tu peux quand même l'ajouter,
+                pense à bien récupérer.
+              </p>
+            ) : null}
             {serverError !== null ? (
               <p data-testid="add-exo-error" className="text-sm text-sang-400">
                 {serverError}

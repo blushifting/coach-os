@@ -15,8 +15,6 @@
  */
 
 import type { UserState, WeeklyTemplate } from '@/engine/models';
-import { exercisePrimaires } from '@/engine/models';
-import type { Catalog } from '@/engine/catalog';
 import type { CycleRow, FeedbackRow, SessionRow } from '@/db/schema';
 
 export const CYCLE_LENGTH_WEEKS = 5;
@@ -236,32 +234,6 @@ export type DayStatus =
   /** Jour à venir sans séance encore planifiée (slot libre). */
   | 'free-future';
 
-/**
- * Conv #29 — Rythme d'entraînement hebdo selon la fréquence : pour chaque
- * position de jour (0 = jour d'ancrage du cycle … 6), `true` = jour
- * d'entraînement suggéré, `false` = repos. On respecte des pauses régulières
- * façon programme préfait (3j = 1 jour sur 2 ; 4j = 2 + repos + 2 ; etc.).
- * Sert à suggérer repos vs séance suivante sur les jours libres à venir.
- */
-const TRAINING_RHYTHM: Record<number, readonly boolean[]> = {
-  1: [true, false, false, false, false, false, false],
-  2: [true, false, false, true, false, false, false],
-  3: [true, false, true, false, true, false, false],
-  4: [true, true, false, true, true, false, false],
-  5: [true, true, true, false, true, true, false],
-  6: [true, true, true, false, true, true, true],
-};
-
-const ALL_TRAINING: readonly boolean[] = [true, true, true, true, true, true, true];
-
-export function weeklyTrainingPattern(sessionsPerWeek: number): readonly boolean[] {
-  const n = Math.round(sessionsPerWeek);
-  if (n >= 7) return ALL_TRAINING;
-  // Fréquence inconnue/invalide (NaN, 0…) → aucun repos suggéré (pas de faux
-  // positif tant qu'on ne connaît pas le rythme).
-  return TRAINING_RHYTHM[n] ?? ALL_TRAINING;
-}
-
 export interface CalendarDay {
   readonly date: string; // YYYY-MM-DD
   readonly weekInCycle: number; // 1..5
@@ -271,19 +243,6 @@ export interface CalendarDay {
   readonly isDeload: boolean;
   readonly sessionLabel: string | null;
   readonly sessionId: number | null;
-  /**
-   * Conv #29 — `true` si, selon le rythme de la fréquence hebdo
-   * (`weeklyTrainingPattern`), ce jour libre à venir devrait être un repos.
-   * Les jours `free-future` non-repos sont des créneaux de séance suggérée.
-   */
-  readonly suggestedRest: boolean;
-  /**
-   * Muscles primaires travaillés la veille (J-1), si une séance y existe et
-   * que le catalog est fourni à `buildCalendarMatrix`. Vide sinon. Permet à
-   * `PlanDaySheet` d'afficher un avertissement "tu as travaillé X hier" et
-   * de suggérer une séance ciblant d'autres muscles.
-   */
-  readonly recentMuscles: readonly string[];
 }
 
 export interface CalendarMatrix {
@@ -302,12 +261,11 @@ export interface CalendarMatrix {
  * juste après onboarding, le moteur n'a pas encore créé la ligne cycle).
  */
 export function buildCalendarMatrix(
-  state: Pick<UserState, 'cycle_index' | 'profile'>,
+  state: Pick<UserState, 'cycle_index'>,
   cycles: ReadonlyArray<Pick<CycleRow, 'cycle_index' | 'start_date'>>,
   sessions: ReadonlyArray<Pick<SessionRow, 'seance_date' | 'status' | 'plan' | 'id'>>,
   feedbacks: ReadonlyArray<Pick<FeedbackRow, 'seance_date' | 'feedback'>>,
   now: Date = new Date(),
-  catalog: Catalog | null = null,
 ): CalendarMatrix | null {
   const cycle = cycles.find((c) => c.cycle_index === state.cycle_index);
   if (cycle === undefined) return null;
@@ -321,9 +279,6 @@ export function buildCalendarMatrix(
   // démarrage hors lundi).
   const anchor = parseDateKey(cycle.start_date);
   const todayKey = dateKey(now);
-  // Conv #29 — rythme repos/entraînement selon la fréquence hebdo, indexé sur
-  // la position du jour depuis l'ancre du cycle (d = 0..6).
-  const pattern = weeklyTrainingPattern(state.profile.sessions_per_week);
 
   const feedbackDates = new Set<string>();
   for (const f of feedbacks) {
@@ -331,30 +286,14 @@ export function buildCalendarMatrix(
   }
   const sessionByDate = new Map<
     string,
-    { status: string; label: string; id: number | null; plan: SessionRow['plan'] }
+    { status: string; label: string; id: number | null }
   >();
   for (const s of sessions) {
     sessionByDate.set(s.seance_date, {
       status: s.status,
       label: s.plan.label,
       id: s.id ?? null,
-      plan: s.plan,
     });
-  }
-
-  function musclesOfSession(plan: SessionRow['plan']): string[] {
-    if (catalog === null) return [];
-    const seen = new Set<string>();
-    const out: string[] = [];
-    for (const item of plan.items) {
-      if (!catalog.has(item.exercise_id)) continue;
-      for (const m of exercisePrimaires(catalog.get(item.exercise_id))) {
-        if (seen.has(m)) continue;
-        seen.add(m);
-        out.push(m);
-      }
-    }
-    return out;
   }
 
   const weeks: CalendarDay[][] = [];
@@ -387,24 +326,6 @@ export function buildCalendarMatrix(
         status = isPast ? 'rest-past' : 'free-future';
       }
 
-      // Conv #29 — repos suggéré : selon le rythme de la fréquence hebdo, pas
-      // selon la fatigue de la veille (ancien `restSuggested`, retiré).
-      const suggestedRest = status === 'free-future' && !pattern[d];
-
-      // Muscles travaillés la veille (si séance honorée), pour l'avertissement
-      // "tu as travaillé X hier" dans le sheet.
-      const prevDate = dateKey(addDays(date, -1));
-      const prevSess = sessionByDate.get(prevDate);
-      const prevHasFeedback = feedbackDates.has(prevDate);
-      const prevIsActive =
-        prevSess !== undefined &&
-        prevSess.status !== 'skipped' &&
-        (prevSess.status === 'planned' ||
-          prevSess.status === 'completed' ||
-          prevHasFeedback);
-      const recentMuscles =
-        prevIsActive && prevSess !== undefined ? musclesOfSession(prevSess.plan) : [];
-
       row.push({
         date: key,
         weekInCycle: w + 1,
@@ -416,8 +337,6 @@ export function buildCalendarMatrix(
         isDeload: w + 1 === DELOAD_WEEK_INDEX,
         sessionLabel,
         sessionId,
-        suggestedRest,
-        recentMuscles,
       });
     }
     weeks.push(row);

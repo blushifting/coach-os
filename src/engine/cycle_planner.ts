@@ -22,6 +22,7 @@ import type {
   Exercise,
   MuscleGoal,
   PlannedExercise,
+  SkeletonTemplate,
   UserState,
   WeeklyTemplate,
 } from './models';
@@ -740,6 +741,75 @@ import { allocateSets } from './sets_allocator';
 import { DurationCategory } from './models';
 
 /**
+ * Conv #30 — Passe « préférence d'équipement stricte » sur le plan final.
+ *
+ * Le filtre par charge à l'auto-fill (candidatesForCell / autoGenerateCyclePlanV2)
+ * est limité au PATTERN de la case : si aucune machine/poulie n'existe pour ce
+ * pattern précis, il retombe sur une charge non voulue. Et les post-passes
+ * (`enforceLengthenedBias` notamment) ré-injectent ensuite des variantes étirées
+ * souvent en poids libre. Cette passe, lancée **en dernier** sur le
+ * `WeeklyTemplate`, remplace tout exo dont la charge n'est pas autorisée par une
+ * variante de la charge demandée (machine/poulie, poids libre, ou PdC) ciblant
+ * un même muscle primaire, recherche élargie à tous les patterns.
+ *
+ * Si aucune variante autorisée n'existe pour le muscle, on garde l'exo tel quel
+ * (mieux qu'un muscle privé de volume). NO_PREFERENCE → no-op. Mute en place,
+ * en conservant séries / progression. Respecte les choix manuels : en préférence
+ * stricte, la feuille de variantes ne propose que la charge voulue.
+ */
+export function enforceEquipmentPreference(
+  weekly: WeeklyTemplate,
+  state: UserState,
+  catalog: Catalog,
+): void {
+  const allowed = chargesForPreference(state.profile.equipment_preference);
+  if (allowed === null) return; // NO_PREFERENCE / undefined
+
+  const used = new Set<string>();
+  for (const day of weekly.days) {
+    for (const ex of day.exercises) used.add(ex.exercise_id);
+  }
+
+  for (const day of weekly.days) {
+    for (let pi = 0; pi < day.exercises.length; pi += 1) {
+      const planned = day.exercises[pi]!;
+      if (!catalog.has(planned.exercise_id)) continue;
+      const meta = catalog.get(planned.exercise_id);
+      if (allowed.has(meta.charge)) continue; // déjà conforme
+
+      // Recherche : exo de charge autorisée partageant un muscle primaire, libre.
+      let pick: Exercise | null = null;
+      for (const muscle of exercisePrimaires(meta)) {
+        const cands = catalog
+          .filter({ muscle_primary: muscle })
+          .filter((c) => allowed.has(c.charge) && !used.has(c.id));
+        if (cands.length === 0) continue;
+        // Priorité au même pattern, sinon ordre du catalogue.
+        cands.sort((a, b) => {
+          const aP = a.pattern === meta.pattern ? 0 : 1;
+          const bP = b.pattern === meta.pattern ? 0 : 1;
+          return aP - bP;
+        });
+        pick = cands[0]!;
+        break;
+      }
+      if (pick === null) continue; // aucune variante → on garde
+
+      used.delete(planned.exercise_id);
+      used.add(pick.id);
+      day.exercises[pi] = makePlannedExercise({
+        exercise_id: pick.id,
+        base_sets: planned.base_sets,
+        progression: planned.progression,
+        progression_rule: planned.progression_rule,
+        role: planned.role,
+        intensity_scheme: planned.intensity_scheme,
+      });
+    }
+  }
+}
+
+/**
  * Conv #22 — Génère un cycle via le nouveau path en 2 temps :
  *  1. `buildSkeleton(state, durationCategory)` → grille (pattern × séance)
  *     vide, présentée à l'user à l'étape D.
@@ -754,7 +824,7 @@ import { DurationCategory } from './models';
  *   les cases (sinon les cases vides sont signalées en warnings).
  */
 export function generateCyclePlanV2(
-  filledSkeleton: import('./models').SkeletonTemplate,
+  filledSkeleton: SkeletonTemplate,
   state: UserState,
   catalog: Catalog,
 ): WeeklyTemplate {
@@ -792,6 +862,10 @@ export function generateCyclePlanV2(
   }
   orderDaysByNeuralCost(weekly, catalog);
   renumberSessionLabels(weekly);
+  // Conv #30 — en DERNIER : la préférence d'équipement stricte prime sur les
+  // swaps précédents (lengthened bias en poids libre, etc.). Corrige les fuites
+  // de charge dans le plan final.
+  enforceEquipmentPreference(weekly, state, catalog);
   return weekly;
 }
 

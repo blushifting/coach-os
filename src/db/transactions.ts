@@ -143,14 +143,21 @@ export interface CommitSessionFeedbackArgs {
   feedback: SessionFeedback;
   state: UserState;
   sessionId: number | null;
+  /**
+   * Conv #30 — si `true`, (ré)ancre `cycle.start_date` sur la date de ce
+   * feedback : la grille du cycle démarre à la **1re séance réellement faite**,
+   * pas à la date d'onboarding/bilan (calendrier glissant). Passé uniquement
+   * pour le tout 1er feedback du cycle (cf. `recordFeedbackAndCommit`).
+   */
+  anchorStartDate?: boolean;
 }
 
 export async function txCommitSessionFeedback(args: CommitSessionFeedbackArgs): Promise<void> {
-  const { feedback, state, sessionId } = args;
+  const { feedback, state, sessionId, anchorStartDate = false } = args;
   const db = getDb();
   await db.transaction(
     'rw',
-    [db.userState, db.sessions, db.feedbacks, db.e1rmSnapshots],
+    [db.userState, db.sessions, db.feedbacks, db.e1rmSnapshots, db.cycles],
     async () => {
       await putUserStateInTx(state);
       await db.feedbacks.add({
@@ -161,6 +168,14 @@ export async function txCommitSessionFeedback(args: CommitSessionFeedbackArgs): 
         feedback,
         created_at: nowIso(),
       });
+      if (anchorStartDate) {
+        const cycle = await db.cycles.get(feedback.cycle_index);
+        if (cycle !== undefined) {
+          await db.cycles.update(feedback.cycle_index, {
+            start_date: feedback.seance_date,
+          });
+        }
+      }
       if (sessionId !== null) {
         await db.sessions.update(sessionId, { status: 'completed' });
       }

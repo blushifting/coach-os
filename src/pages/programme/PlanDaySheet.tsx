@@ -8,18 +8,15 @@ import { useEngine } from '@/hooks/useEngine';
 import { getDb } from '@/db';
 import type { SessionRow } from '@/db/schema';
 import { dateKey, type CalendarDay } from '@/lib/dashboard';
-import { muscleLabel } from '@/lib/progress';
 import {
   formatSessionLabel,
   formatSessionLabelShort,
 } from '@/lib/session-label';
 import { useCoachOsStore } from '@/store';
 import {
-  detectPeriodicity,
-  dayOfWeekLabel,
-  suggestionForDay,
-  type PeriodicitySuggestion,
-} from '@/lib/periodicity';
+  suggestNextSession,
+  type SessionSuggestion,
+} from '@/lib/session-suggestion';
 import type { Catalog } from '@/engine/catalog';
 import type {
   SessionFeedback,
@@ -70,60 +67,32 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
     return feedbacks.find((f) => f.feedback.seance_date === day.date) ?? null;
   }, [day, feedbacks]);
 
-  // Conv #14b-4 — suggestion de périodicité (jour dominant pour une séance
-  // récurrente). Ne s'affiche que sur les cases `free-future`.
-  const periodicitySuggestion = useMemo(() => {
-    if (day === null) return null;
-    const suggestions = detectPeriodicity(feedbacks);
-    return suggestionForDay(day, suggestions);
-  }, [day, feedbacks]);
-
-  // Conv #15 vague 2 — suggestion de variation de séance : si Alex a fait
-  // "Full A" hier, on suggère "Full B" puis "Full C" plutôt qu'un nouveau
-  // "Full A". Logic : prend le label de la dernière séance dans les 7j,
-  // trouve son index dans `current_cycle_plan.days`, suggère le day suivant
-  // (cyclique).
-  //
-  // Conv #18 — on inclut aussi les sessions `planned` (séance prévue mais
-  // pas encore faite) : si tu planifies Full B mardi puis tu vas regarder
-  // jeudi, on doit te suggérer Full C, pas Full B encore une fois.
-  //
-  const variationSuggestion = useMemo(() => {
-    const cyclePlan = userState?.current_cycle_plan ?? null;
-    if (cyclePlan === null || day === null) return null;
-    const dayDate = new Date(day.date + 'T00:00:00');
-
-    // On regarde la dernière séance complétée ou planifiée pour suggérer le
-    // label qui enchaîne bien (rotation du split : pull après push, etc.).
-    let latest: { date: string; label: string } | null = null;
-    function consider(date: string, label: string) {
-      if (date >= day!.date) return;
-      const diffDays =
-        (dayDate.getTime() - new Date(date + 'T00:00:00').getTime()) /
-        (1000 * 60 * 60 * 24);
-      if (diffDays > 7) return;
-      if (latest === null || date > latest.date) {
-        latest = { date, label };
-      }
-    }
+  // Conv #30 — suggestion prédictive de séance / repos au planning. Rotation
+  // stricte (A→B→C…) + cadence de repos selon la fréquence hebdo (cf.
+  // `lib/session-suggestion`). Remplace l'ancien rythme imposé du calendrier,
+  // la rotation par muscles et le nudge de périodicité. On n'alimente que les
+  // séances faites + planifiées (date + label) ; la fonction ignore tout ce qui
+  // est daté après le jour visé.
+  const suggestion = useMemo<SessionSuggestion>(() => {
+    if (day === null || userState === null) return null;
+    const cyclePlan = userState.current_cycle_plan;
+    if (cyclePlan === null) return null;
+    if (day.status !== 'free-future') return null;
+    const dayLabels = cyclePlan.days.map((d) => d.label);
+    const recent: { date: string; label: string }[] = [];
     for (const fb of feedbacks) {
-      consider(fb.feedback.seance_date, fb.feedback.label);
+      recent.push({ date: fb.feedback.seance_date, label: fb.feedback.label });
     }
     for (const s of sessions) {
-      if (s.status === 'planned') {
-        consider(s.seance_date, s.plan.label);
-      }
+      if (s.status !== 'planned') continue;
+      recent.push({ date: s.seance_date, label: s.plan.label });
     }
-    if (latest === null) return null;
-    const idx = cyclePlan.days.findIndex(
-      (d) => d.label === (latest as { label: string }).label,
+    return suggestNextSession(
+      day.date,
+      dayLabels,
+      recent,
+      userState.profile.sessions_per_week,
     );
-    if (idx < 0) return null;
-    const nextIdx = (idx + 1) % cyclePlan.days.length;
-    return {
-      suggestedDayIndex: nextIdx,
-      previousLabel: (latest as { label: string }).label,
-    };
   }, [day, feedbacks, sessions, userState]);
 
   // Charge la session planifiée correspondant à ce jour (si statut planned).
@@ -228,11 +197,8 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
 
         {day.status === 'free-future' && (
           <>
-            {day.suggestedRest && (
-              <RestWarning recentMuscles={day.recentMuscles} />
-            )}
-            {periodicitySuggestion !== null && (
-              <PeriodicityNudge suggestion={periodicitySuggestion} />
+            {suggestion?.kind === 'rest' && (
+              <RestSuggestion recentLabels={suggestion.recentLabels} />
             )}
             <FreeFutureBlock
               cyclePlan={cyclePlan}
@@ -240,7 +206,7 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
               isToday={isToday}
               isDeload={day.isDeload}
               pending={pending}
-              suggestion={variationSuggestion}
+              suggestion={suggestion?.kind === 'session' ? suggestion : null}
               onPick={(dayIndex) => planSession(dayIndex, isToday)}
             />
           </>
@@ -380,8 +346,8 @@ function FreeFutureBlock({
   readonly isDeload: boolean;
   readonly pending: number | null;
   readonly suggestion: {
-    suggestedDayIndex: number;
-    previousLabel: string;
+    readonly dayIndex: number;
+    readonly previousLabel: string | null;
   } | null;
   readonly onPick: (dayIndex: number) => void;
 }) {
@@ -406,19 +372,19 @@ function FreeFutureBlock({
         )}
         .
       </p>
-      {suggestion !== null && (
+      {suggestion !== null && suggestion.previousLabel !== null && (
         <p
           className="rounded-lg border border-sang-800/50 bg-sang-900/15 px-3 py-2 text-xs leading-relaxed text-anthracite-100"
-          data-testid="variation-suggestion"
+          data-testid="session-suggestion"
         >
           Tu as fait{' '}
           <strong className="text-white">
             {formatSessionLabel(suggestion.previousLabel)}
           </strong>{' '}
-          récemment. Pour enchaîner, essaie :{' '}
+          récemment. Pour varier les muscles, passe sur{' '}
           <strong className="text-sang-300">
             {formatSessionLabel(
-              cyclePlan.days[suggestion.suggestedDayIndex]?.label ?? '',
+              cyclePlan.days[suggestion.dayIndex]?.label ?? '',
             )}
           </strong>
           .
@@ -426,7 +392,7 @@ function FreeFutureBlock({
       )}
       <ul className="flex flex-col gap-2">
         {cyclePlan.days.map((d, i) => {
-          const isSuggested = suggestion?.suggestedDayIndex === i;
+          const isSuggested = suggestion?.dayIndex === i;
           const nExos = d.exercises.length;
           const nSets = d.exercises.reduce((acc, e) => acc + e.base_sets, 0);
           const durationMin =
@@ -658,42 +624,28 @@ function CompletedSessionBlock({
   );
 }
 
-function PeriodicityNudge({
-  suggestion,
-}: {
-  readonly suggestion: PeriodicitySuggestion;
-}) {
-  return (
-    <Card
-      className="border-sang-700/40 bg-sang-900/15"
-      data-testid="periodicity-nudge"
-    >
-      <p className="text-sm text-anthracite-100">
-        Tu fais souvent{' '}
-        <strong className="text-white">{formatSessionLabel(suggestion.label)}</strong> le{' '}
-        <strong className="text-white">{dayOfWeekLabel(suggestion.dayOfWeek)}</strong>
-        {' '}({suggestion.occurrences} fois sur les {suggestion.totalInWindow}{' '}
-        dernières). C'est peut-être le bon créneau pour la (re)programmer.
-      </p>
-    </Card>
-  );
-}
-
-function RestWarning({ recentMuscles }: { readonly recentMuscles: readonly string[] }) {
+/**
+ * Conv #30 — suggestion de repos quand les dernières séances consécutives ont
+ * déjà couvert les muscles à venir. Ton calme (conseil, pas alerte) ; l'user
+ * reste libre de lancer une séance via les boutons en dessous.
+ */
+function RestSuggestion({ recentLabels }: { readonly recentLabels: readonly string[] }) {
+  const labels = recentLabels.map((l) => formatSessionLabelShort(l));
+  const multiple = labels.length >= 2;
+  const enchaine = multiple
+    ? `${labels.slice(0, -1).join(', ')} puis ${labels[labels.length - 1]}`
+    : labels[0] ?? '';
   return (
     <Card
       className="border-anthracite-700 bg-anthracite-900/60"
-      data-testid="rest-warning"
+      data-testid="rest-suggestion"
     >
       <p className="text-sm text-anthracite-100">
-        <strong>Repos conseillé.</strong> D'après ton rythme, ce jour est plutôt
-        une pause — tu peux quand même lancer une séance si tu veux.
+        <strong>Repos conseillé.</strong> {multiple ? 'Tu as enchaîné' : 'Tu viens de faire'}{' '}
+        <strong className="text-white">{enchaine}</strong> : une pause aiderait
+        tes muscles à récupérer. Tu peux quand même lancer une séance si tu te
+        sens en forme.
       </p>
-      {recentMuscles.length > 0 && (
-        <p className="mt-1 text-xs text-anthracite-300">
-          Muscles travaillés la veille : {recentMuscles.map(muscleLabel).join(', ')}.
-        </p>
-      )}
     </Card>
   );
 }

@@ -101,6 +101,45 @@ describe('transactions.ts — atomicité blob ↔ tables dérivées', () => {
     expect(snaps[0]?.e1rm).toBe(100);
   });
 
+  it('txCommitSessionFeedback ré-ancre start_date sur la date du feedback si anchorStartDate', async () => {
+    const state = startUser(makeTestProfile(), new Catalog());
+    await txInitUser(state, null);
+    // start_date placeholder (onboarding) distinct de la 1re séance.
+    await getDb().cycles.update(1, { start_date: '2026-05-01' });
+
+    const feedback: SessionFeedback = {
+      seance_date: '2026-05-06',
+      week_in_cycle: 1,
+      cycle_index: 1,
+      rpe_target: 7,
+      label: 'A',
+      sets: [],
+    };
+    await txCommitSessionFeedback({ feedback, state, sessionId: null, anchorStartDate: true });
+
+    const cycles = await listAllCycles();
+    expect(cycles[0]?.start_date).toBe('2026-05-06');
+  });
+
+  it('txCommitSessionFeedback ne touche pas start_date sans anchorStartDate', async () => {
+    const state = startUser(makeTestProfile(), new Catalog());
+    await txInitUser(state, null);
+    await getDb().cycles.update(1, { start_date: '2026-05-01' });
+
+    const feedback: SessionFeedback = {
+      seance_date: '2026-05-06',
+      week_in_cycle: 1,
+      cycle_index: 1,
+      rpe_target: 7,
+      label: 'A',
+      sets: [],
+    };
+    await txCommitSessionFeedback({ feedback, state, sessionId: null });
+
+    const cycles = await listAllCycles();
+    expect(cycles[0]?.start_date).toBe('2026-05-01');
+  });
+
   it('txEndOfWeek met à jour uniquement userState', async () => {
     const state = startUser(makeTestProfile(), new Catalog());
     await txInitUser(state, null);

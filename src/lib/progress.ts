@@ -159,6 +159,46 @@ export function computeCoverageThisWeek(
   return out;
 }
 
+export interface AddedVolumeOvershoot {
+  readonly muscle: string;
+  /** Séries pondérées projetées après ajout. */
+  readonly projected: number;
+  /** Plafond hebdo effectif (V_max / MRV). */
+  readonly vMax: number;
+}
+
+/**
+ * Conv #30 — Muscles qu'un exercice ajouté en séance (`addedSets` séries)
+ * ferait passer **au-dessus de leur plafond de volume hebdo** (V_max / MRV).
+ *
+ * `weeklyWeightedSets` = séries pondérées déjà engagées cette semaine (séances
+ * faites + séance en cours), par muscle. On y ajoute la contribution pondérée
+ * de l'exo candidat (coef × séries) et on compare à V_max. Sert à la mise en
+ * garde « volume élevé » de `AddExerciseSheet` (pas de série bonus, juste un
+ * avertissement non bloquant). Pur. Trié du dépassement le plus fort au plus
+ * faible.
+ */
+export function addedVolumeOvershoot(
+  exoMuscles: Readonly<Record<string, number>>,
+  addedSets: number,
+  weeklyWeightedSets: Readonly<Record<string, number>>,
+  state: Pick<UserState, 'volume_min' | 'volume_max' | 'muscle_goals'>,
+): AddedVolumeOvershoot[] {
+  const out: AddedVolumeOvershoot[] = [];
+  for (const [muscle, coef] of Object.entries(exoMuscles)) {
+    if (coef <= 0) continue;
+    const [, vMax] = effectiveVolumeBounds(state as UserState, muscle);
+    if (vMax <= 0) continue; // muscle hors scope (pas de plafond)
+    const projected = (weeklyWeightedSets[muscle] ?? 0) + addedSets * coef;
+    // Epsilon : évite de crier au dépassement sur un arrondi flottant pile au cap.
+    if (projected > vMax + 0.05) {
+      out.push({ muscle, projected, vMax });
+    }
+  }
+  out.sort((a, b) => b.projected / b.vMax - a.projected / a.vMax);
+  return out;
+}
+
 // =============================================================================
 // 2. Volume hebdo par muscle (N dernières semaines)
 // =============================================================================

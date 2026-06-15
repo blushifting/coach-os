@@ -20,6 +20,7 @@ import {
 import { fitGuidedProgram, getGuidedProgram } from '@/engine/guided_programs';
 import { useCoachOsStore } from '@/store';
 import { resetDbInstance } from '@/db/schema';
+import { dateKey } from '@/lib/dashboard';
 import {
   makeTestMuscleGoals,
   makeTestProfile,
@@ -73,9 +74,13 @@ describe('e2e — persistance complète (critère de fin Conv #3)', () => {
     useCoachOsStore.setState({ userState: stateAvecPlan });
 
     // --- 3. Génère une séance et commit un feedback ---
+    // Conv #30 — la séance est datée du JOUR : le 1er feedback d'un cycle
+    // ré-ancre `cycle.start_date` sur cette date (calendrier glissant). Une date
+    // backdatée ferait avancer `current_week_in_cycle` au re-bootstrap (tick),
+    // ce qui est le comportement voulu mais casserait l'invariant de ce test.
     const { plan, sessionId } = await generateAndStoreSession({
       dayIndex: 0,
-      seanceDate: '2026-05-10',
+      seanceDate: dateKey(new Date()),
     });
     expect(sessionId).toBeGreaterThan(0);
     expect(plan.items.length).toBeGreaterThan(0);

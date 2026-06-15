@@ -54,7 +54,6 @@ export default function ProgrammePage() {
     setOpenDay(day);
   }
 
-  const catalog = useCoachOsStore((s) => s.catalog);
   const dashboard = useMemo(() => {
     if (userState === null) return null;
     // Conv #16 — en mode démo, on ancre "now" sur la date de la séance du
@@ -84,10 +83,9 @@ export default function ProgrammePage() {
         history.sessions,
         history.feedbacks,
         now,
-        catalog,
       ),
     };
-  }, [userState, history, catalog, demoActive, currentSessionPlan]);
+  }, [userState, history, demoActive, currentSessionPlan]);
 
   if (userState === null) {
     return <Navigate to="/welcome" replace />;
