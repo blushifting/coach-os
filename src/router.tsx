@@ -4,6 +4,7 @@ import { TabbedLayout } from '@/layout/TabbedLayout';
 import WelcomeScreen from '@/pages/WelcomeScreen';
 import OnboardingPage from '@/pages/OnboardingPage';
 import ProgrammePage from '@/pages/programme/ProgrammePage';
+import EditCyclePage from '@/pages/programme/EditCyclePage';
 import CycleBilanPage from '@/pages/cycle-bilan/CycleBilanPage';
 import SeancePage from '@/pages/seance/SeancePage';
 import ProgresPage from '@/pages/ProgresPage';
@@ -37,6 +38,8 @@ export const router = createBrowserRouter(
         // redirige vers `/programme` pour compat des liens externes.
         { path: 'seance', element: <Navigate to="/programme" replace /> },
         { path: 'seance/runner', element: <SeancePage /> },
+        // Bloc G (Conv #32) — éditeur du cycle en cours (plein écran).
+        { path: 'programme/modifier', element: <EditCyclePage /> },
         ...(isDev
           ? [
               { path: 'dev', element: <DevPage /> },

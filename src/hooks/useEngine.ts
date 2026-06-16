@@ -13,7 +13,13 @@
 
 import { useMemo } from 'react';
 import { Catalog, loadExercises } from '@/engine/catalog';
-import { exerciseFromDict, type ExerciseDict, type Exercise } from '@/engine/models';
+import {
+  exerciseFromDict,
+  makePlannedExercise,
+  type ExerciseDict,
+  type Exercise,
+} from '@/engine/models';
+import { defaultProgressionForDay } from '@/lib/custom-session';
 import {
   addUserExercise as dbAddUserExercise,
   deleteUserExercise as dbDeleteUserExercise,
@@ -39,6 +45,7 @@ import type {
   SessionPlan,
   SkeletonTemplate,
   UserState,
+  WeeklyTemplate,
 } from '@/engine/models';
 import {
   deleteOverride as dbDeleteOverride,
@@ -764,6 +771,171 @@ export async function startFreeSession(
 }
 
 // =============================================================================
+// Bloc G (Conv #32) — Séance custom (hors-programme, assistée par presets)
+// =============================================================================
+
+export interface CustomSessionArgs {
+  readonly seanceDate: string;
+  /** Slots finaux (base preset + ajouts/retraits faits dans l'UI). */
+  readonly slots: readonly { readonly exerciseId: string; readonly nSets: number }[];
+  readonly displayName?: string | null;
+}
+
+/** Construit les `currentSessionEntries` (coches) à la bonne forme depuis un plan. */
+function entriesFromPlan(plan: SessionPlan) {
+  return plan.items.map((it) =>
+    it.sets.map((s) => ({ reps: s.reps, load_kg: s.load_kg, rpe: null, done: false })),
+  );
+}
+
+/**
+ * Démarre une séance custom **aujourd'hui** : construit le plan (base + édits),
+ * le persiste (`planned`) et le monte directement dans le runner. Pendant de
+ * `generateAndStoreSession`, mais hors-rotation (cf. `engine.buildCustomSessionPlan`).
+ */
+export async function startCustomSession(
+  args: CustomSessionArgs,
+): Promise<{ plan: SessionPlan; sessionId: number }> {
+  const catalog = requireCatalog();
+  const next = requireUserState();
+  const plan = engine.buildCustomSessionPlan(next, catalog, args);
+  const sessionId = await txSaveSessionPlan(plan, next);
+  useCoachOsStore.setState({
+    userState: next,
+    currentSessionPlan: plan,
+    currentSessionId: sessionId,
+    currentSessionEntries: entriesFromPlan(plan),
+  });
+  await refreshHistory();
+  return { plan, sessionId };
+}
+
+/**
+ * Planifie une séance custom pour un **jour futur** (status `planned`), sans la
+ * charger dans le runner. Démarrable seulement le jour J — le verrou de date de
+ * `loadPlannedSessionForRunner` s'en charge déjà.
+ */
+export async function planCustomSessionForDay(
+  args: CustomSessionArgs,
+): Promise<{ plan: SessionPlan; sessionId: number }> {
+  const catalog = requireCatalog();
+  const next = requireUserState();
+  const plan = engine.buildCustomSessionPlan(next, catalog, args);
+  const sessionId = await txSaveSessionPlan(plan, next);
+  useCoachOsStore.setState({ userState: next });
+  await refreshHistory();
+  return { plan, sessionId };
+}
+
+/**
+ * Bloc G (Conv #32) — Renomme la séance en cours (nom affiché). N'altère PAS
+ * `label` (identité de rotation A/B/C) ni les exos/coches. Nom vide ⇒ retour au
+ * libellé par défaut.
+ */
+export async function renameCurrentSession(name: string): Promise<void> {
+  const store = useCoachOsStore.getState();
+  const plan = store.currentSessionPlan;
+  const sessionId = store.currentSessionId;
+  if (plan === null || sessionId === null) {
+    throw new Error('Pas de séance en cours à renommer.');
+  }
+  const next = requireUserState();
+  const trimmed = name.trim();
+  const newPlan: SessionPlan = {
+    ...plan,
+    custom_name: trimmed.length > 0 ? trimmed : null,
+  };
+  await txUpdateSessionPlan(sessionId, newPlan, next);
+  useCoachOsStore.setState({ currentSessionPlan: newPlan });
+}
+
+// =============================================================================
+// Bloc G (Conv #32) — Édition chirurgicale du cycle EN COURS (juste les exos /
+// le nom, JAMAIS la progression). On patche `current_cycle_plan` en place et on
+// persiste, sans rappeler `generateCyclePlan` : e1RM / historique intacts.
+// =============================================================================
+
+/** Renomme un jour du cycle en cours (nom affiché). `label` (rotation) inchangé. */
+export async function renameCycleDay(dayIndex: number, name: string): Promise<UserState> {
+  const next = requireUserState();
+  const plan = next.current_cycle_plan;
+  if (plan === null) throw new Error('Aucun programme en cours.');
+  const day = plan.days[dayIndex];
+  if (day === undefined) throw new Error(`Jour ${dayIndex} introuvable.`);
+  const trimmed = name.trim();
+  day.custom_name = trimmed.length > 0 ? trimmed : null;
+  await txSaveUserStateOnly(next);
+  useCoachOsStore.setState({ userState: next });
+  return next;
+}
+
+/**
+ * Ajoute un exo à un jour du cycle en cours. Pose une `progression` par défaut
+ * (calquée sur les voisins), puis fusionne d'éventuels doublons équivalents
+ * (Conv #19). Avertit-mais-ne-contraint-pas : aucune validation d'équilibre ici.
+ */
+export async function addExerciseToCycleDay(
+  dayIndex: number,
+  exerciseId: string,
+  nSets = 3,
+): Promise<UserState> {
+  const catalog = requireCatalog();
+  const next = requireUserState();
+  const plan = next.current_cycle_plan;
+  if (plan === null) throw new Error('Aucun programme en cours.');
+  const day = plan.days[dayIndex];
+  if (day === undefined) throw new Error(`Jour ${dayIndex} introuvable.`);
+  const n = Math.max(1, Math.min(10, Math.round(nSets)));
+  day.exercises.push(
+    makePlannedExercise({
+      exercise_id: exerciseId,
+      base_sets: n,
+      progression: defaultProgressionForDay(day, n),
+    }),
+  );
+  mergeEquivalentExercisesInPlan(plan, catalog);
+  await txSaveUserStateOnly(next);
+  useCoachOsStore.setState({ userState: next });
+  return next;
+}
+
+/** Retire un exo d'un jour du cycle en cours (par index de slot). */
+export async function removeExerciseFromCycleDay(
+  dayIndex: number,
+  slotIndex: number,
+): Promise<UserState> {
+  const next = requireUserState();
+  const plan = next.current_cycle_plan;
+  if (plan === null) throw new Error('Aucun programme en cours.');
+  const day = plan.days[dayIndex];
+  if (day === undefined) throw new Error(`Jour ${dayIndex} introuvable.`);
+  if (slotIndex < 0 || slotIndex >= day.exercises.length) {
+    throw new Error(`Slot ${slotIndex} hors plage (${day.exercises.length}).`);
+  }
+  day.exercises.splice(slotIndex, 1);
+  await txSaveUserStateOnly(next);
+  useCoachOsStore.setState({ userState: next });
+  return next;
+}
+
+/**
+ * Bloc G (Conv #32) — Remplace `current_cycle_plan` par un template déjà édité
+ * (récap d'onboarding : swaps + ajouts/retraits + renommages appliqués sur un
+ * snapshot). Fusionne les doublons équivalents avant de persister, pour qu'on
+ * enregistre exactement ce que l'utilisateur a vu et validé.
+ */
+export async function setCurrentCyclePlan(template: WeeklyTemplate): Promise<UserState> {
+  const catalog = requireCatalog();
+  const next = requireUserState();
+  const plan = structuredClone(template);
+  mergeEquivalentExercisesInPlan(plan, catalog);
+  next.current_cycle_plan = plan;
+  await txSaveUserStateOnly(next);
+  useCoachOsStore.setState({ userState: next });
+  return next;
+}
+
+// =============================================================================
 // Saisie manuelle d'un plafond (Conv #12b)
 // =============================================================================
 
@@ -1243,6 +1415,17 @@ export interface EngineApi {
   addExerciseToCurrentSession: typeof addExerciseToCurrentSession;
   removeExerciseFromCurrentSession: typeof removeExerciseFromCurrentSession;
   startFreeSession: typeof startFreeSession;
+  /** Bloc G (Conv #32) — séance custom assistée (presets → moteur). */
+  startCustomSession: typeof startCustomSession;
+  planCustomSessionForDay: typeof planCustomSessionForDay;
+  /** Bloc G (Conv #32) — renomme la séance en cours (nom affiché). */
+  renameCurrentSession: typeof renameCurrentSession;
+  /** Bloc G (Conv #32) — édition chirurgicale du cycle en cours (exos / nom). */
+  renameCycleDay: typeof renameCycleDay;
+  addExerciseToCycleDay: typeof addExerciseToCycleDay;
+  removeExerciseFromCycleDay: typeof removeExerciseFromCycleDay;
+  /** Bloc G (Conv #32) — persiste le template édité du récap d'onboarding. */
+  setCurrentCyclePlan: typeof setCurrentCyclePlan;
 }
 
 export function useEngine(): EngineApi {
@@ -1278,6 +1461,13 @@ export function useEngine(): EngineApi {
       addExerciseToCurrentSession,
       removeExerciseFromCurrentSession,
       startFreeSession,
+      startCustomSession,
+      planCustomSessionForDay,
+      renameCurrentSession,
+      renameCycleDay,
+      addExerciseToCycleDay,
+      removeExerciseFromCycleDay,
+      setCurrentCyclePlan,
     }),
     [],
   );

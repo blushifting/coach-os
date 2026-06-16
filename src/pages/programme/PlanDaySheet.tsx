@@ -11,7 +11,10 @@ import { dateKey, type CalendarDay } from '@/lib/dashboard';
 import {
   formatSessionLabel,
   formatSessionLabelShort,
+  sessionDisplayName,
+  sessionDisplayNameShort,
 } from '@/lib/session-label';
+import { CreateSessionButton } from './CreateSessionSheet';
 import { useCoachOsStore } from '@/store';
 import {
   suggestNextSession,
@@ -204,10 +207,12 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
               cyclePlan={cyclePlan}
               catalog={catalog}
               isToday={isToday}
+              seanceDate={day.date}
               isDeload={day.isDeload}
               pending={pending}
               suggestion={suggestion?.kind === 'session' ? suggestion : null}
               onPick={(dayIndex) => planSession(dayIndex, isToday)}
+              onClose={onClose}
             />
           </>
         )}
@@ -262,7 +267,7 @@ function PlannedSessionBlock({
   return (
     <div className="flex flex-col gap-3" data-testid="day-status-text">
       <p className="text-sm text-anthracite-100">
-        <strong className="text-white">{formatSessionLabel(plan.label)}</strong> programmée
+        <strong className="text-white">{sessionDisplayName(plan)}</strong> programmée
         {isFuture && ' pour ce jour'}
         {isToday && " aujourd'hui"}
         {isPast && ' (non faite)'}.
@@ -335,14 +340,17 @@ function FreeFutureBlock({
   cyclePlan,
   catalog,
   isToday,
+  seanceDate,
   isDeload,
   pending,
   suggestion,
   onPick,
+  onClose,
 }: {
   readonly cyclePlan: WeeklyTemplate | null;
   readonly catalog: Catalog | null;
   readonly isToday: boolean;
+  readonly seanceDate: string;
   readonly isDeload: boolean;
   readonly pending: number | null;
   readonly suggestion: {
@@ -350,6 +358,7 @@ function FreeFutureBlock({
     readonly previousLabel: string | null;
   } | null;
   readonly onPick: (dayIndex: number) => void;
+  readonly onClose: () => void;
 }) {
   if (cyclePlan === null || cyclePlan.days.length === 0) {
     return (
@@ -383,9 +392,7 @@ function FreeFutureBlock({
           </strong>{' '}
           récemment. Pour varier les muscles, passe sur{' '}
           <strong className="text-sang-300">
-            {formatSessionLabel(
-              cyclePlan.days[suggestion.dayIndex]?.label ?? '',
-            )}
+            {sessionDisplayName(cyclePlan.days[suggestion.dayIndex] ?? { label: '' })}
           </strong>
           .
         </p>
@@ -409,7 +416,7 @@ function FreeFutureBlock({
                 className="!h-auto !min-h-[2.75rem] flex-col gap-0.5 py-2"
               >
                 <span className="font-medium">
-                  {pending === i ? '…' : formatSessionLabelShort(d.label)}
+                  {pending === i ? '…' : sessionDisplayNameShort(d)}
                   {isSuggested ? ' ★' : ''}
                 </span>
                 <span className="text-[11px] font-normal opacity-75 tabular-nums">
@@ -421,67 +428,13 @@ function FreeFutureBlock({
           );
         })}
       </ul>
-      <FreeSessionButton isToday={isToday} onStart={onPick === undefined ? undefined : undefined} />
+      <CreateSessionButton
+        isToday={isToday}
+        seanceDate={seanceDate}
+        catalog={catalog}
+        onPlanned={onClose}
+      />
     </div>
-  );
-}
-
-/**
- * Conv #21b — Bouton "Séance libre" (= hors programme, exos choisis à la
- * volée). Crée un `SessionPlan` vide via `engine.startFreeSession` puis,
- * si on est sur `isToday`, navigue directement vers le runner pour
- * commencer à peupler.
- *
- * Distinct des slots `plan-slot-N` ci-dessus qui partent d'un day-template
- * du cycle. Ici on a un blanc-seing : aucune contrainte de label, l'user
- * décide quoi faire.
- */
-function FreeSessionButton({
-  isToday,
-}: {
-  readonly isToday: boolean;
-  readonly onStart?: () => void;
-}) {
-  const engine = useEngine();
-  const navigate = useNavigate();
-  const [starting, setStarting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function start() {
-    if (!isToday) return; // Pour V1, séance libre = aujourd'hui seulement.
-    setStarting(true);
-    setError(null);
-    try {
-      const date = dateKey(new Date());
-      await engine.startFreeSession(date);
-      navigate('/seance/runner');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setStarting(false);
-    }
-  }
-
-  if (!isToday) return null;
-  return (
-    <>
-      <Button
-        variant="ghost"
-        size="md"
-        fullWidth
-        data-testid="btn-free-session"
-        onClick={() => void start()}
-        disabled={starting}
-        className="mt-1"
-      >
-        {starting ? '…' : '+ Séance libre (hors programme)'}
-      </Button>
-      {error !== null ? (
-        <p className="text-xs text-sang-400" role="alert">
-          {error}
-        </p>
-      ) : null}
-    </>
   );
 }
 
@@ -570,7 +523,7 @@ function CompletedSessionBlock({
   return (
     <div className="flex flex-col gap-3" data-testid="day-status-text">
       <p className="text-sm text-anthracite-100">
-        <strong className="text-white">{formatSessionLabel(feedback.label)}</strong> faite
+        <strong className="text-white">{sessionDisplayName(feedback)}</strong> faite
         {day.isDeload && (
           <span className="text-sang-500">
             {' '}

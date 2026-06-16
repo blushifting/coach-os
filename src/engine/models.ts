@@ -450,6 +450,12 @@ export interface SessionPlan {
   rpe_target: number;
   items: SessionItem[];
   label: string;
+  /**
+   * Bloc G (Conv #32) — nom affiché choisi par l'utilisateur. Découplé du
+   * `label` (qui porte l'identité de rotation A/B/C). Si présent, il prime sur
+   * `formatSessionLabel(label)` à l'affichage. Absent sur les anciens blobs.
+   */
+  custom_name?: string | null;
 }
 
 // =============================================================================
@@ -470,6 +476,11 @@ export interface SessionFeedback {
   rpe_target: number;
   sets: SetFeedback[];
   label: string;
+  /**
+   * Bloc G (Conv #32) — nom affiché choisi, recopié du `SessionPlan` au commit,
+   * pour que le bilan/calendrier gardent le nom custom. Absent sur anciens blobs.
+   */
+  custom_name?: string | null;
 }
 
 // =============================================================================
@@ -548,6 +559,12 @@ export interface DayTemplate {
   label: string;
   target_muscles_focus: string[];
   exercises: PlannedExercise[];
+  /**
+   * Bloc G (Conv #32) — nom affiché choisi par l'utilisateur pour ce jour de
+   * cycle. `label` garde l'identité de rotation A/B/C ; `custom_name` prime à
+   * l'affichage (cf. `sessionDisplayName`). Absent sur anciens blobs.
+   */
+  custom_name?: string | null;
 }
 
 /** Structure figée pour 1 cycle (4 progression + 1 déload) — cf. 09 §1.1. */

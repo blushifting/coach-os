@@ -13,7 +13,7 @@ import { useEngine } from '@/hooks/useEngine';
 import { useCoachOsStore } from '@/store';
 import { useDemoMode, useGymBrand } from '@/store/selectors';
 import { displayExerciseName } from '@/lib/catalog-filter';
-import { formatSessionLabelShort } from '@/lib/session-label';
+import { sessionDisplayNameShort } from '@/lib/session-label';
 import {
   countDoneSets,
   countPlannedSets,
@@ -83,6 +83,9 @@ export function SessionRunner({
   // Bloc F (Conv #31) — proposition d'ajout aux favoris à la 3ᵉ utilisation
   // (ajout ad-hoc ou variante). Contient l'exercise_id à proposer, ou null.
   const [suggestFav, setSuggestFav] = useState<string | null>(null);
+  // Bloc G (Conv #32) — renommage de la séance en cours (nom affiché).
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
   // 1.16 — repli (collapse) des cartes d'exo. Par défaut un exo se replie tout
   // seul quand toutes ses séries sont faites. `collapsedOverrides[i]` (1.16.2)
   // = choix manuel de l'user via le chevron : `true` replie même avant la fin,
@@ -106,6 +109,16 @@ export function SessionRunner({
       navigate('/programme');
     } finally {
       setCancelling(false);
+    }
+  }
+
+  // Bloc G (Conv #32) — valide le renommage de la séance en cours.
+  async function commitName() {
+    setEditingName(false);
+    try {
+      await engine.renameCurrentSession(nameDraft);
+    } catch {
+      /* erreur non bloquante : on garde l'ancien nom */
     }
   }
 
@@ -238,9 +251,41 @@ export function SessionRunner({
           <span className="text-[10px] uppercase tracking-[0.18em] text-sang-400/90">
             Séance
           </span>
-          <span className="font-display text-2xl leading-none tracking-wide text-white">
-            {formatSessionLabelShort(plan.label)}
-          </span>
+          {editingName ? (
+            <input
+              data-testid="session-rename-input"
+              autoFocus
+              value={nameDraft}
+              placeholder={sessionDisplayNameShort(plan)}
+              onChange={(e) => setNameDraft(e.target.value)}
+              onBlur={() => void commitName()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void commitName();
+                if (e.key === 'Escape') setEditingName(false);
+              }}
+              className="w-full rounded-lg border border-anthracite-700 bg-anthracite-900 px-2 py-1 font-display text-2xl leading-none tracking-wide text-white outline-none focus:border-sang-700/60"
+            />
+          ) : (
+            <span className="flex items-center gap-2 font-display text-2xl leading-none tracking-wide text-white">
+              {sessionDisplayNameShort(plan)}
+              {!demoActive && (
+                <button
+                  type="button"
+                  data-testid="btn-rename-session"
+                  aria-label="Renommer la séance"
+                  onClick={() => {
+                    setNameDraft(plan.custom_name ?? '');
+                    setEditingName(true);
+                  }}
+                  className="text-anthracite-400 transition hover:text-white"
+                >
+                  <span aria-hidden className="text-base">
+                    ✎
+                  </span>
+                </button>
+              )}
+            </span>
+          )}
           <span className="flex items-center gap-1.5 text-xs text-anthracite-300">
             Cycle {plan.cycle_index} · S{plan.week_in_cycle}
           </span>

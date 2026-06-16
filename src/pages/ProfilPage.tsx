@@ -196,7 +196,7 @@ export default function ProfilPage() {
       <Card>
         <div className="mb-3 flex items-center justify-between">
           <span className="text-sm font-semibold text-white">
-            Priorités &amp; programme
+            Objectifs musculaires
           </span>
           <Button
             variant="ghost"
@@ -208,22 +208,10 @@ export default function ProfilPage() {
             Modifier
           </Button>
         </div>
-        {/* Conv #18 — Card combinée : priorités musculaires + programme actif
-            + séances/sem. "Modifier" relance l'onboarding partiel (Step2→5)
-            qui à la fin termine le cycle en cours et démarre un nouveau cycle
-            avec les nouveaux paramètres. */}
-        <div
-          className="mb-3 flex items-baseline justify-between rounded-lg bg-anthracite-900 px-3 py-2 text-sm"
-          data-testid="profil-programme-summary"
-        >
-          <span className="text-anthracite-300">Programme</span>
-          <span className="text-right font-medium text-white">
-            {activeProgramme !== null ? activeProgramme.name : 'Sur mesure'} ·{' '}
-            <span className="tabular-nums text-anthracite-300">
-              {userState.profile.sessions_per_week} séances/sem
-            </span>
-          </span>
-        </div>
+        <p className="mb-3 text-xs leading-relaxed text-anthracite-400">
+          Changer tes priorités ou ton rythme recompose ton programme et démarre
+          un nouveau cycle.
+        </p>
         {goalsDraft.priorities.length === 0 ? (
           <p className="text-sm text-anthracite-300">
             Aucun muscle prioritaire pour l'instant.
@@ -260,6 +248,42 @@ export default function ProfilPage() {
             Équilibre : {[...goalsDraft.acceptedSuggestions].map(muscleLabel).join(', ')}.
           </div>
         )}
+      </Card>
+
+      {/* Bloc G (Conv #32) — édition des exos du cycle EN COURS, séparée des
+          objectifs : ne touche que les exercices, garde la progression. */}
+      <Card>
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-sm font-semibold text-white">
+            Exercices du programme
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/programme/modifier')}
+            disabled={demoActive}
+            data-testid="profil-edit-programme"
+          >
+            Modifier
+          </Button>
+        </div>
+        <div
+          className="mb-3 flex items-baseline justify-between rounded-lg bg-anthracite-900 px-3 py-2 text-sm"
+          data-testid="profil-programme-summary"
+        >
+          <span className="text-anthracite-300">Programme</span>
+          <span className="text-right font-medium text-white">
+            {activeProgramme !== null ? activeProgramme.name : 'Sur mesure'} ·{' '}
+            <span className="tabular-nums text-anthracite-300">
+              {userState.profile.sessions_per_week} séances/sem
+            </span>
+          </span>
+        </div>
+        <p className="text-xs leading-relaxed text-anthracite-400">
+          Ajoute ou retire des exercices de ton cycle en cours (les 5 semaines
+          actives). Ta progression (charges, Plafonds, historique) est conservée —
+          pas de nouveau cycle.
+        </p>
       </Card>
 
       {/* Conv #17 — Card "Aide / Ouvrir" peu ergonomique → gros bouton

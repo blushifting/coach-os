@@ -1,49 +1,44 @@
 /**
- * Étape 5 de l'onboarding : aperçu du programme + personnalisation des variantes
- * (Conv #11b).
+ * Étape 5 de l'onboarding : aperçu **éditable** du programme (Conv #11b, refondu
+ * Bloc G Conv #32).
  *
- * À ce stade :
- * - L'utilisateur a choisi profil + muscles + équilibre + programme (Step 1–4).
- * - On a généré en mémoire la `WeeklyTemplate` (via `buildPreviewTemplate`).
- * - Aucune écriture en DB pour l'instant.
+ * Composant **contrôlé** : il affiche le `template` (déjà effectif) et remonte
+ * chaque édition au parent via callbacks (`onSwap`/`onAdd`/`onRemove`/
+ * `onRename`). Le parent (`OnboardingPage`) tient un snapshot éditable unique et
+ * le persiste tel quel à la finalisation — plus de réconciliation d'index
+ * fragile entre swaps et ajouts/retraits.
  *
- * Le but : laisser l'utilisateur voir le contenu de chaque séance et swap des
- * exos par des variantes qui matchent son équipement / ses préférences. Les
- * swaps sont conservés dans `variantReplacements` (état remonté à
- * `OnboardingPage`) et appliqués à la fin de l'onboarding.
- *
- * Transparence :
- * - (a) Panneau "Volume hebdo par muscle" — chiffres bruts, pas d'algo expliqué.
- * - (b) Panneau dépliable "Comment ça marche" — court rappel RPE/autorégulation.
- *
- * Si un swap change le profil musculaire primaire (ex : traction → tirage
- * vertical perd les biceps), on affiche un avertissement non-bloquant.
+ * L'utilisateur peut : remplacer un exo par une variante, **ajouter** un exo
+ * (assistant favoris d'abord), **retirer** un exo, **renommer** la séance.
+ * Le panneau Volume hebdo et la durée estimée se recalculent en direct et font
+ * office de garde-fou (un retrait fait baisser le volume du muscle, visible).
  */
 
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { Sheet } from '@/components/Sheet';
 import type { Catalog } from '@/engine/catalog';
-import { exercisePrimaires, type WeeklyTemplate } from '@/engine/models';
+import { exercisePrimaires, type Exercise, type WeeklyTemplate } from '@/engine/models';
 import {
   analyzeProgramTension,
-  applyVariantsToTemplate,
   estimateDayDurationMinutes,
-  muscleDeltaForSwap,
   SESSION_DURATION_WARN_MIN,
   weeklyVolumeByMuscle,
   type ProgramTension,
-  type VariantReplacement,
 } from '@/lib/onboarding-preview';
 import { alternativeVariantsFor } from '@/lib/calibration';
 import { displayExerciseName } from '@/lib/catalog-filter';
+import { favoritesFirst } from '@/lib/custom-session';
+import { useCoachOsStore } from '@/store';
 import { useGymBrand } from '@/store/selectors';
 import { cn } from '@/lib/cn';
 import { muscleLabel } from '@/lib/progress';
-import { formatSessionLabel } from '@/lib/session-label';
+import { sessionDisplayName } from '@/lib/session-label';
 import { ExercisePhotoPopin } from '@/pages/catalogue/ExercisePhotoPopin';
 import { photosFor } from '@/data/exercise-photos';
 import { ChargeBadge } from '@/pages/catalogue/ChargeBadge';
+import { ExerciseEyeButton } from '@/pages/catalogue/ExerciseEyeButton';
 import { VariantPickerSheet } from '@/components/VariantPickerSheet';
 
 interface Step5Props {
@@ -51,16 +46,12 @@ interface Step5Props {
   readonly blocking: readonly string[];
   readonly catalog: Catalog | null;
   readonly equipment: ReadonlySet<string>;
-  readonly replacements: ReadonlyArray<VariantReplacement>;
-  readonly onChangeReplacements: (next: ReadonlyArray<VariantReplacement>) => void;
-  readonly stepLabel?: string;
-  /**
-   * Conv #23 — marque déclarée dans le draft d'onboarding. Step5
-   * affiche les noms d'exos en utilisant cette marque, avant que la
-   * marque ne soit persistée dans `state.profile.gym_brand` à la
-   * finalisation.
-   */
+  /** Conv #23 — marque déclarée dans le draft (avant persistance du profil). */
   readonly gymBrand?: import('@/engine/models').GymBrand;
+  readonly onSwap: (dayIndex: number, slotIndex: number, newExerciseId: string) => void;
+  readonly onAdd: (dayIndex: number, exerciseId: string) => void;
+  readonly onRemove: (dayIndex: number, slotIndex: number) => void;
+  readonly onRename: (dayIndex: number, name: string) => void;
 }
 
 interface SlotPickerState {
@@ -69,47 +60,51 @@ interface SlotPickerState {
   readonly currentExerciseId: string;
 }
 
+function normalize(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
 export function Step5Preview({
   template,
   blocking,
   catalog,
   equipment,
-  replacements,
-  onChangeReplacements,
   gymBrand,
+  onSwap,
+  onAdd,
+  onRemove,
+  onRename,
 }: Step5Props) {
   const [picker, setPicker] = useState<SlotPickerState | null>(null);
   const [expanded, setExpanded] = useState(true);
   const [pedagogyOpen, setPedagogyOpen] = useState(false);
   const [preview, setPreview] = useState<{ id: string; title: string } | null>(null);
+  const [addDay, setAddDay] = useState<number | null>(null);
+  const [addQuery, setAddQuery] = useState('');
+  const [editingDay, setEditingDay] = useState<number | null>(null);
+  const [nameDraft, setNameDraft] = useState('');
   const storeBrand = useGymBrand();
-  // Conv #23 — prop `gymBrand` (draft onboarding) prime sur le store
-  // (qui ne contient pas encore la marque tant que l'user n'a pas
-  // finalisé). En restart, draft.gymBrand est déjà hydraté depuis le
-  // state.
+  const favoriteIds = useMemo(
+    () => new Set(useCoachOsStore.getState().userState?.favorite_exercise_ids ?? []),
+    [],
+  );
   const brand = gymBrand ?? storeBrand ?? undefined;
-
-  // Le plan effectivement affiché (avec variantes appliquées).
-  const effectiveTemplate = useMemo<WeeklyTemplate | null>(() => {
-    if (template === null) return null;
-    return applyVariantsToTemplate(template, replacements);
-  }, [template, replacements]);
 
   // Récap volume hebdo par muscle primaire — calculé sur le plan effectif.
   const volumeByMuscle = useMemo<Record<string, number>>(() => {
-    if (effectiveTemplate === null || catalog === null) return {};
-    return weeklyVolumeByMuscle(effectiveTemplate, catalog);
-  }, [effectiveTemplate, catalog]);
+    if (template === null || catalog === null) return {};
+    return weeklyVolumeByMuscle(template, catalog);
+  }, [template, catalog]);
 
-  // Conv #11h — durée estimée par séance + détection de tension (séance >
-  // 75 min). Sert à proposer des arbitrages transparents si le programme
-  // est trop chargé pour le nb de séances choisi.
   const tension = useMemo<ProgramTension | null>(() => {
-    if (effectiveTemplate === null || catalog === null) return null;
-    return analyzeProgramTension(effectiveTemplate, catalog);
-  }, [effectiveTemplate, catalog]);
+    if (template === null || catalog === null) return null;
+    return analyzeProgramTension(template, catalog);
+  }, [template, catalog]);
 
-  // Alternatives proposées pour le slot ouvert dans le picker.
   const pickerAlternatives = useMemo(() => {
     if (picker === null || catalog === null) return [];
     return alternativeVariantsFor(picker.currentExerciseId, equipment, catalog, {
@@ -117,12 +112,29 @@ export function Step5Preview({
     });
   }, [picker, catalog, equipment, expanded]);
 
+  const addResults = useMemo<readonly Exercise[]>(() => {
+    if (catalog === null || addDay === null || template === null) return [];
+    const existing = new Set(
+      template.days[addDay]?.exercises.map((e) => e.exercise_id) ?? [],
+    );
+    const q = normalize(addQuery);
+    const all = catalog.all().filter((ex) => !existing.has(ex.id));
+    const matched =
+      q.length === 0
+        ? [...all].sort((a, b) => a.nom_fr.localeCompare(b.nom_fr))
+        : all.filter((ex) => {
+            if (normalize(ex.nom_fr).includes(q)) return true;
+            return ex.synonymes.some((syn) => normalize(syn).includes(q));
+          });
+    return favoritesFirst(matched, favoriteIds);
+  }, [catalog, addDay, addQuery, template, favoriteIds]);
+
   if (blocking.length > 0) {
     return (
       <div className="flex flex-col gap-3 p-4" data-testid="step5-blocking">
-        <h1 className="text-xl font-semibold text-white">Programme indisponible</h1>
+        <h1 className="text-xl font-semibold text-white">Programme non compatible</h1>
         <p className="text-sm text-anthracite-300">
-          Ton équipement ne permet pas ce programme guidé :
+          Ton équipement ne couvre pas tous les exercices de ce programme :
         </p>
         <Card className="border-sang-700/60 bg-sang-900/20">
           <ul className="flex flex-col gap-1 text-sm text-sang-500">
@@ -132,14 +144,14 @@ export function Step5Preview({
           </ul>
         </Card>
         <p className="text-xs text-anthracite-300">
-          Reviens à l'étape précédente pour choisir un programme sur mesure ou
-          un autre programme guidé.
+          Reviens à l'étape précédente pour choisir un autre programme ou
+          une sélection d'exercices sur mesure.
         </p>
       </div>
     );
   }
 
-  if (effectiveTemplate === null || catalog === null) {
+  if (template === null || catalog === null) {
     return (
       <div className="p-4" data-testid="step5-loading">
         <p className="text-sm text-anthracite-300">Génération du programme…</p>
@@ -153,21 +165,15 @@ export function Step5Preview({
 
   function handlePick(newExerciseId: string) {
     if (picker === null) return;
-    const next: VariantReplacement[] = replacements.filter(
-      (r) => !(r.dayIndex === picker.dayIndex && r.slotIndex === picker.slotIndex),
-    );
-    // Si l'utilisateur re-sélectionne l'exo d'origine, on retire son override.
-    const originalId =
-      template?.days[picker.dayIndex]?.exercises[picker.slotIndex]?.exercise_id ?? null;
-    if (originalId !== null && newExerciseId !== originalId) {
-      next.push({
-        dayIndex: picker.dayIndex,
-        slotIndex: picker.slotIndex,
-        newExerciseId,
-      });
-    }
-    onChangeReplacements(next);
+    onSwap(picker.dayIndex, picker.slotIndex, newExerciseId);
     setPicker(null);
+  }
+
+  function handleAdd(ex: Exercise) {
+    if (addDay === null) return;
+    onAdd(addDay, ex.id);
+    setAddDay(null);
+    setAddQuery('');
   }
 
   return (
@@ -178,8 +184,7 @@ export function Step5Preview({
         </h1>
         <p className="text-sm leading-relaxed text-anthracite-300">
           Voici les séances générées d'après tes choix. Touche un exercice pour
-          le remplacer par une variante. Tu pourras toujours modifier
-          ponctuellement pendant une séance.
+          le remplacer, retire ou ajoute ce que tu veux, renomme une séance.
         </p>
       </header>
 
@@ -190,131 +195,156 @@ export function Step5Preview({
       <PedagogyPanel open={pedagogyOpen} onToggle={() => setPedagogyOpen((v) => !v)} />
 
       <div className="flex flex-col gap-3">
-        {effectiveTemplate.days.map((day, di) => {
-          const dayMin = catalog === null ? 0 : estimateDayDurationMinutes(day, catalog);
+        {template.days.map((day, di) => {
+          const dayMin = estimateDayDurationMinutes(day, catalog);
           const nSets = day.exercises.reduce((acc, e) => acc + e.base_sets, 0);
           return (
-          <Card key={di} className="flex flex-col gap-2" data-testid={`day-card-${di}`}>
-            <header className="flex items-baseline justify-between">
-              <h2 className="text-sm font-semibold text-white">
-                {formatSessionLabel(day.label)}
-              </h2>
-              <span
-                className="text-[11px] text-anthracite-300"
-                data-testid={`day-duration-${di}`}
-              >
-                {day.exercises.length} exercices · {nSets} séries · ~{Math.round(dayMin)} min
-              </span>
-            </header>
-            {day.target_muscles_focus.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {day.target_muscles_focus.map((m) => (
-                  <span
-                    key={m}
-                    className="rounded bg-anthracite-700 px-2 py-0.5 text-[10px] text-anthracite-100"
+            <Card key={di} className="flex flex-col gap-2" data-testid={`day-card-${di}`}>
+              <header className="flex items-center justify-between gap-2">
+                {editingDay === di ? (
+                  <input
+                    data-testid={`step5-rename-${di}`}
+                    autoFocus
+                    value={nameDraft}
+                    placeholder={sessionDisplayName(day)}
+                    onChange={(e) => setNameDraft(e.target.value)}
+                    onBlur={() => {
+                      onRename(di, nameDraft);
+                      setEditingDay(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        onRename(di, nameDraft);
+                        setEditingDay(null);
+                      }
+                      if (e.key === 'Escape') setEditingDay(null);
+                    }}
+                    className="min-w-0 flex-1 rounded-lg border border-anthracite-700 bg-anthracite-900 px-2 py-1 text-sm font-semibold text-white outline-none focus:border-sang-700/60"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    data-testid={`btn-rename-${di}`}
+                    onClick={() => {
+                      setNameDraft(day.custom_name ?? '');
+                      setEditingDay(di);
+                    }}
+                    className="flex items-center gap-2 text-sm font-semibold text-white"
                   >
-                    {muscleLabel(m)}
-                  </span>
-                ))}
-              </div>
-            )}
-            <ul className="flex flex-col gap-2">
-              {day.exercises.map((planned, pi) => {
-                const original = template?.days[di]?.exercises[pi]?.exercise_id ?? null;
-                const swapped = original !== null && original !== planned.exercise_id;
-                let exNomFr = planned.exercise_id;
-                let charge: import('@/engine/models').ChargeType | null = null;
-                let primaires: readonly string[] = [];
-                try {
-                  const ex = catalog!.get(planned.exercise_id);
-                  exNomFr = displayExerciseName(ex, brand);
-                  charge = ex.charge;
-                  primaires = exercisePrimaires(ex);
-                } catch {
-                  /* exo inconnu — on garde l'id brut */
-                }
-                const delta =
-                  swapped && original !== null
-                    ? muscleDeltaForSwap(original, planned.exercise_id, catalog!)
-                    : null;
-                return (
-                  <li
-                    key={`${di}-${pi}-${planned.exercise_id}`}
-                    data-testid={`slot-${di}-${pi}`}
-                    data-swapped={swapped ? 'true' : 'false'}
-                  >
-                    <div className="flex items-center gap-2.5 rounded-lg border border-anthracite-700 bg-anthracite-900 p-2">
-                      {charge !== null && <ChargeBadge charge={charge} size={24} />}
-                      <div className="flex flex-1 flex-col">
-                        <span className="text-sm font-medium text-white">
-                          {exNomFr}
-                          {swapped && (
-                            <span className="ml-1 text-[10px] uppercase tracking-wide text-sang-400">
-                              · modifié
-                            </span>
-                          )}
-                        </span>
-                        <span className="text-[11px] text-anthracite-300">
-                          {planned.base_sets} séries ·{' '}
-                          {primaires.length > 0
-                            ? primaires.map(muscleLabel).join(', ')
-                            : '—'}
-                        </span>
-                      </div>
-                      {photosFor(planned.exercise_id) !== null && (
+                    {sessionDisplayName(day)}
+                    <span aria-hidden className="text-anthracite-400">
+                      ✎
+                    </span>
+                  </button>
+                )}
+                <span
+                  className="shrink-0 text-[11px] text-anthracite-300"
+                  data-testid={`day-duration-${di}`}
+                >
+                  {day.exercises.length} exos · {nSets} séries · ~{Math.round(dayMin)} min
+                </span>
+              </header>
+
+              {day.target_muscles_focus.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {day.target_muscles_focus.map((m) => (
+                    <span
+                      key={m}
+                      className="rounded bg-anthracite-700 px-2 py-0.5 text-[10px] text-anthracite-100"
+                    >
+                      {muscleLabel(m)}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <ul className="flex flex-col gap-2">
+                {day.exercises.map((planned, pi) => {
+                  let exNomFr = planned.exercise_id;
+                  let charge: import('@/engine/models').ChargeType | null = null;
+                  let primaires: readonly string[] = [];
+                  try {
+                    const ex = catalog!.get(planned.exercise_id);
+                    exNomFr = displayExerciseName(ex, brand);
+                    charge = ex.charge;
+                    primaires = exercisePrimaires(ex);
+                  } catch {
+                    /* exo inconnu — on garde l'id brut */
+                  }
+                  return (
+                    <li key={`${di}-${pi}-${planned.exercise_id}`} data-testid={`slot-${di}-${pi}`}>
+                      <div className="flex items-center gap-2.5 rounded-lg border border-anthracite-700 bg-anthracite-900 p-2">
+                        {charge !== null && <ChargeBadge charge={charge} size={24} />}
+                        <div className="flex flex-1 flex-col">
+                          <span className="text-sm font-medium text-white">{exNomFr}</span>
+                          <span className="text-[11px] text-anthracite-300">
+                            {planned.base_sets} séries ·{' '}
+                            {primaires.length > 0
+                              ? primaires.map(muscleLabel).join(', ')
+                              : '—'}
+                          </span>
+                        </div>
+                        {photosFor(planned.exercise_id) !== null && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPreview({ id: planned.exercise_id, title: exNomFr })
+                            }
+                            aria-label="Voir le mouvement"
+                            data-testid={`btn-preview-${di}-${pi}`}
+                            title="Voir le mouvement"
+                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-anthracite-700 text-anthracite-300 transition hover:border-sang-700 hover:text-white"
+                          >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                              <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
+                              <circle cx="12" cy="12" r="3" />
+                            </svg>
+                          </button>
+                        )}
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => openPicker(di, pi, planned.exercise_id)}
+                          data-testid={`btn-variants-${di}-${pi}`}
+                        >
+                          Variantes
+                        </Button>
                         <button
                           type="button"
-                          onClick={() =>
-                            setPreview({ id: planned.exercise_id, title: exNomFr })
-                          }
-                          aria-label="Voir le mouvement"
-                          data-testid={`btn-preview-${di}-${pi}`}
-                          title="Voir le mouvement"
+                          data-testid={`btn-remove-${di}-${pi}`}
+                          onClick={() => onRemove(di, pi)}
+                          aria-label="Retirer cet exercice"
                           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-anthracite-700 text-anthracite-300 transition hover:border-sang-700 hover:text-white"
                         >
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
-                            <circle cx="12" cy="12" r="3" />
-                          </svg>
+                          ✕
                         </button>
-                      )}
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => openPicker(di, pi, planned.exercise_id)}
-                        data-testid={`btn-variants-${di}-${pi}`}
-                      >
-                        Variantes
-                      </Button>
-                    </div>
-                    {delta !== null && delta.lost.length > 0 && (
-                      <div
-                        className="mt-1 rounded-lg border border-amber-700/50 bg-amber-900/20 px-2 py-1 text-[11px] text-amber-300"
-                        data-testid={`delta-warning-${di}-${pi}`}
-                      >
-                        ⚠ Le nouveau choix ne stimule plus :{' '}
-                        <span className="font-medium">
-                          {delta.lost.map(muscleLabel).join(', ')}
-                        </span>
-                        . Tu peux ajuster un autre exercice sur ce muscle si tu
-                        veux compenser.
                       </div>
-                    )}
+                    </li>
+                  );
+                })}
+                {day.exercises.length === 0 && (
+                  <li className="rounded-lg border border-dashed border-anthracite-700 px-3 py-3 text-center text-xs text-anthracite-400">
+                    Aucun exercice — ajoute-en un.
                   </li>
-                );
-              })}
-            </ul>
-          </Card>
+                )}
+              </ul>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                fullWidth
+                data-testid={`btn-add-${di}`}
+                onClick={() => {
+                  setAddQuery('');
+                  setAddDay(di);
+                }}
+              >
+                + Ajouter un exercice
+              </Button>
+            </Card>
           );
         })}
       </div>
-
-      {replacements.length > 0 && (
-        <p className="text-xs text-anthracite-300" data-testid="step5-replacements-count">
-          {replacements.length} variante{replacements.length > 1 ? 's' : ''} appliquée
-          {replacements.length > 1 ? 's' : ''}.
-        </p>
-      )}
 
       {picker !== null && (
         <VariantPickerSheet
@@ -329,6 +359,47 @@ export function Step5Preview({
           brandOverride={brand}
         />
       )}
+
+      <Sheet open={addDay !== null} onClose={() => setAddDay(null)} title="Ajouter un exercice">
+        <div className="flex flex-col gap-3">
+          <input
+            data-testid="step5-add-search"
+            type="search"
+            autoFocus
+            placeholder="Rechercher un exercice…"
+            value={addQuery}
+            onChange={(e) => setAddQuery(e.target.value)}
+            className="w-full rounded-xl border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-sm text-white outline-none focus:border-sang-700/60"
+          />
+          <ul className="flex max-h-[55dvh] flex-col gap-1 overflow-y-auto pr-1">
+            {addResults.length === 0 ? (
+              <li className="px-2 py-4 text-center text-sm text-anthracite-400">
+                Aucun exercice trouvé.
+              </li>
+            ) : (
+              addResults.map((ex) => (
+                <li key={ex.id} className="flex items-stretch gap-2">
+                  <button
+                    type="button"
+                    data-testid={`step5-add-pick-${ex.id}`}
+                    onClick={() => handleAdd(ex)}
+                    className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-left text-sm text-white transition hover:border-sang-700/50"
+                  >
+                    {favoriteIds.has(ex.id) && (
+                      <span aria-hidden className="shrink-0" style={{ color: '#d4a052' }}>
+                        ★
+                      </span>
+                    )}
+                    <span className="truncate">{displayExerciseName(ex, brand)}</span>
+                  </button>
+                  <ExerciseEyeButton exercise={ex} brand={brand} />
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
+      </Sheet>
+
       {preview !== null && (
         <ExercisePhotoPopin
           exerciseId={preview.id}
@@ -346,9 +417,6 @@ export function Step5Preview({
 // =============================================================================
 
 function TensionPanel({ tension }: { readonly tension: ProgramTension }) {
-  // Pas d'affichage si tout va bien (durée moyenne et max raisonnables).
-  // On affiche un récap durée en encart bleu/neutre, et un bandeau sang
-  // d'arbitrage uniquement si tooLong.
   const avg = Math.round(tension.avgMin);
   const max = Math.round(tension.maxMin);
   return (
@@ -374,7 +442,7 @@ function TensionPanel({ tension }: { readonly tension: ProgramTension }) {
         <>
           <p className="text-xs leading-relaxed text-sang-200">
             Au moins une séance dépasse {SESSION_DURATION_WARN_MIN} min
-            (max ~{max} min). Pour respecter ton programme tu peux :
+            (max ~{max} min). Pour rester dans tes créneaux, tu peux :
           </p>
           <ul className="ml-4 flex list-disc flex-col gap-1 text-xs leading-relaxed text-anthracite-100">
             <li>
@@ -393,8 +461,8 @@ function TensionPanel({ tension }: { readonly tension: ProgramTension }) {
         </>
       ) : (
         <p className="text-xs leading-relaxed text-anthracite-300">
-          Tient en {max} min max sur la séance la plus chargée. Aligné avec
-          ton nombre de séances par semaine.
+          La séance la plus chargée tient en {max} min max. Cohérent avec
+          ton rythme de séances par semaine.
         </p>
       )}
     </Card>
@@ -409,7 +477,7 @@ function VolumeRecap({ volumeByMuscle }: { readonly volumeByMuscle: Record<strin
   return (
     <Card className="flex flex-col gap-2" data-testid="volume-recap">
       <header className="text-xs uppercase tracking-wide text-anthracite-300">
-        Volume hebdo par muscle (semaine 1)
+        Volume hebdomadaire par muscle (semaine 1)
       </header>
       <ul className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-anthracite-100">
         {entries.map(([muscle, n]) => (

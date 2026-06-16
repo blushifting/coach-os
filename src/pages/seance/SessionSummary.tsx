@@ -8,11 +8,13 @@ import { displayExerciseName, kgUnitLabel } from '@/lib/catalog-filter';
 import { useGymBrand } from '@/store/selectors';
 import { GymBrand } from '@/engine/models';
 import { cn } from '@/lib/cn';
-import { formatSessionLabelShort } from '@/lib/session-label';
+import { sessionDisplayNameShort } from '@/lib/session-label';
 import type { PlafondChange, SessionSummaryData } from '@/lib/session-runner';
 
 interface SessionSummaryProps {
   readonly label: string;
+  /** Bloc G (Conv #32) — nom custom de la séance, s'il y en a un. */
+  readonly customName?: string | null;
   readonly data: SessionSummaryData;
   readonly catalog: Catalog | null;
   readonly onClose: () => void;
@@ -22,14 +24,14 @@ interface SessionSummaryProps {
  * Écran "État C" — bilan post-séance (cf. 08 §199).
  * Volume du jour, comparaison à la semaine dernière (même `label`), PR.
  */
-export function SessionSummary({ label, data, catalog, onClose }: SessionSummaryProps) {
+export function SessionSummary({ label, customName, data, catalog, onClose }: SessionSummaryProps) {
   const brand = useGymBrand() ?? undefined;
   return (
     <div className="flex flex-col gap-3" data-testid="session-summary">
       <Card>
         <div className="flex flex-col gap-1">
           <span className="text-xs uppercase tracking-wide text-anthracite-300">
-            Bilan — {formatSessionLabelShort(label)}
+            Bilan — {sessionDisplayNameShort({ custom_name: customName, label })}
           </span>
           <span className="text-lg font-semibold text-white">
             Séance bouclée.

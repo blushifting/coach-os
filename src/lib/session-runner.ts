@@ -353,6 +353,7 @@ export function buildSessionFeedback(
     rpe_target: plan.rpe_target,
     sets,
     label: plan.label,
+    custom_name: plan.custom_name ?? null,
   };
 }
 

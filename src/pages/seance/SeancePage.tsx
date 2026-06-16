@@ -48,6 +48,7 @@ export default function SeancePage() {
   const [finishing, setFinishing] = useState(false);
   const [summary, setSummary] = useState<{
     label: string;
+    customName?: string | null;
     data: SessionSummaryData;
   } | null>(null);
 
@@ -208,6 +209,7 @@ export default function SeancePage() {
         >
           <SessionSummary
             label={summary.label}
+            customName={summary.customName}
             data={summary.data}
             catalog={catalog}
             onClose={() => setSummary(null)}
@@ -284,7 +286,7 @@ export default function SeancePage() {
                 previousFeedbacks,
                 previouslyCalibrated,
               );
-              setSummary({ label: fb.label, data });
+              setSummary({ label: fb.label, customName: fb.custom_name, data });
             } finally {
               setFinishing(false);
             }

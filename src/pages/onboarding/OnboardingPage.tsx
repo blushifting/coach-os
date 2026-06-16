@@ -22,14 +22,14 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { ChevronLeft, ChevronRight } from '@/components/icons';
 import { ALL_GUIDED_PROGRAMS } from '@/engine/guided_programs';
-import { SuggestedAction } from '@/engine/models';
+import { SuggestedAction, makePlannedExercise } from '@/engine/models';
 import {
   addFavoriteForPattern,
-  applyVariantReplacements,
   bootstrap,
   endOfCycle,
   generateInitialCyclePlan,
   generateInitialCyclePlanFromSkeleton,
+  setCurrentCyclePlan,
   startUser,
   updateProfile,
 } from '@/hooks/useEngine';
@@ -45,10 +45,8 @@ import {
   makeInitialDraft,
   type OnboardingDraft,
 } from '@/lib/onboarding-state';
-import {
-  buildPreviewTemplate,
-  type VariantReplacement,
-} from '@/lib/onboarding-preview';
+import { buildPreviewTemplate } from '@/lib/onboarding-preview';
+import { defaultProgressionForDay } from '@/lib/custom-session';
 import {
   applyChosenVariantsToSkeleton,
   autoFillSkeletonDefaults,
@@ -57,7 +55,7 @@ import {
   isSkeletonFullyFilled,
 } from '@/lib/skeleton-onboarding';
 import { useCoachOsStore } from '@/store';
-import type { MuscleGoal } from '@/engine/models';
+import type { MuscleGoal, WeeklyTemplate } from '@/engine/models';
 import { explainSuggestion, muscleLabel } from '@/lib/balance-reasons';
 import { Step1Profile } from './Step1Profile';
 import { Step2Muscles } from './Step2Muscles';
@@ -89,9 +87,12 @@ export default function OnboardingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
-  const [variantReplacements, setVariantReplacements] = useState<
-    ReadonlyArray<VariantReplacement>
-  >([]);
+  // Bloc G (Conv #32) — snapshot éditable du récap (swaps + ajouts/retraits +
+  // renommages). Réinitialisé dès que le template régénère (changement d'inputs
+  // / retour en arrière). Source unique de vérité : ce qu'on affiche = ce qu'on
+  // persiste au finalize.
+  const [edited, setEdited] = useState<WeeklyTemplate | null>(null);
+  const baseTemplateRef = useRef<WeeklyTemplate | null>(null);
   // Conv #28 — popin d'équilibre R1-R4 au « Suivant » de l'étape 2.
   // `balancePopin` = suggestions affichées ; `declinedBalanceKey` mémorise la
   // sélection pour laquelle l'user a refusé (pas de re-popin tant qu'elle ne
@@ -219,6 +220,27 @@ export default function OnboardingPage() {
     }
   }, [step, isCustom, skeleton, tmpState, draft, catalog, userState]);
 
+  // Bloc G (Conv #32) — synchronise le snapshot éditable avec le template
+  // régénéré : à chaque nouvelle identité de `preview.template` (régénération
+  // ou passage step<4 → null), on repart d'une copie fraîche (édits abandonnés).
+  useEffect(() => {
+    if (preview.template !== baseTemplateRef.current) {
+      baseTemplateRef.current = preview.template;
+      setEdited(preview.template !== null ? structuredClone(preview.template) : null);
+    }
+  }, [preview.template]);
+
+  /** Applique une mutation à un jour du snapshot éditable (clone immuable). */
+  function editDay(dayIndex: number, fn: (day: WeeklyTemplate['days'][number]) => void) {
+    setEdited((prev) => {
+      if (prev === null) return prev;
+      const next = structuredClone(prev);
+      const day = next.days[dayIndex];
+      if (day !== undefined) fn(day);
+      return next;
+    });
+  }
+
   // Conv #22 — Invalide chosenVariantsPerCell dès que la grille du
   // squelette change (prios, accepted suggestions, sessions, durée,
   // préférence équipement, programmeId).
@@ -300,9 +322,8 @@ export default function OnboardingPage() {
   }
 
   function advance() {
-    if (step === 3) {
-      setVariantReplacements([]);
-    }
+    // Bloc G — le snapshot éditable est (ré)initialisé par l'effet de sync dès
+    // que `preview.template` change (passage en step 4), pas besoin de le vider ici.
     if (step >= LAST_STEP) return;
     setStep((s) => s + 1);
   }
@@ -385,8 +406,8 @@ export default function OnboardingPage() {
           }
           await persistFavoritesFromSkeleton(fullyFilled);
         }
-        if (variantReplacements.length > 0) {
-          await applyVariantReplacements(variantReplacements);
+        if (edited !== null) {
+          await setCurrentCyclePlan(edited);
         }
         navigate('/programme', { replace: true });
         return;
@@ -416,8 +437,8 @@ export default function OnboardingPage() {
       } else {
         await generateInitialCyclePlan();
       }
-      if (variantReplacements.length > 0) {
-        await applyVariantReplacements(variantReplacements);
+      if (edited !== null) {
+        await setCurrentCyclePlan(edited);
       }
       navigate('/programme', { replace: true });
       try {
@@ -470,19 +491,45 @@ export default function OnboardingPage() {
       case 4:
         return (
           <Step5Preview
-            template={preview.template}
+            template={edited ?? preview.template}
             blocking={preview.blocking}
             catalog={catalog}
             equipment={draft.equipment}
-            replacements={variantReplacements}
-            onChangeReplacements={setVariantReplacements}
             gymBrand={draft.gymBrand}
+            onSwap={(di, si, newId) =>
+              editDay(di, (d) => {
+                const slot = d.exercises[si];
+                if (slot !== undefined) slot.exercise_id = newId;
+              })
+            }
+            onAdd={(di, exId) =>
+              editDay(di, (d) => {
+                d.exercises.push(
+                  makePlannedExercise({
+                    exercise_id: exId,
+                    base_sets: 3,
+                    progression: defaultProgressionForDay(d, 3),
+                  }),
+                );
+              })
+            }
+            onRemove={(di, si) =>
+              editDay(di, (d) => {
+                d.exercises.splice(si, 1);
+              })
+            }
+            onRename={(di, name) =>
+              editDay(di, (d) => {
+                const t = name.trim();
+                d.custom_name = t.length > 0 ? t : null;
+              })
+            }
           />
         );
       default:
         return null;
     }
-  }, [step, draft, preview, catalog, variantReplacements]);
+  }, [step, draft, preview, catalog, edited]);
 
   return (
     <div

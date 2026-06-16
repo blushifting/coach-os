@@ -48,3 +48,27 @@ export function formatSessionLabelShort(label: string): string {
   }
   return trimmed;
 }
+
+/**
+ * Bloc G (Conv #32) — nom affiché d'une séance / d'un jour de cycle.
+ *
+ * Le `custom_name` choisi par l'utilisateur prime sur le label moteur. Sinon on
+ * retombe sur la transformation d'affichage habituelle. L'identité de rotation
+ * (A/B/C) reste portée par `label` : on ne l'altère jamais ici.
+ */
+export function sessionDisplayName(s: {
+  readonly custom_name?: string | null;
+  readonly label: string;
+}): string {
+  const c = s.custom_name?.trim();
+  return c !== undefined && c.length > 0 ? c : formatSessionLabel(s.label);
+}
+
+/** Variante courte (sans le mot « Séance ») — cf. `formatSessionLabelShort`. */
+export function sessionDisplayNameShort(s: {
+  readonly custom_name?: string | null;
+  readonly label: string;
+}): string {
+  const c = s.custom_name?.trim();
+  return c !== undefined && c.length > 0 ? c : formatSessionLabelShort(s.label);
+}

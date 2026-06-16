@@ -349,6 +349,9 @@ export function generateSession(
     rpe_target: rpeAvg,
     items,
     label: day.label,
+    // Bloc G — la séance générée hérite du nom custom du jour de cycle (la
+    // rotation reste portée par `label`).
+    custom_name: day.custom_name ?? null,
   };
 
   // Conv #11a : injecte la dette de volume hebdo non réalisée. Mute `items[i].sets`
@@ -356,6 +359,62 @@ export function generateSession(
   consumeWeeklyDebt(planOut, state, catalog);
 
   return planOut;
+}
+
+export interface BuildCustomSessionArgs {
+  readonly seanceDate: string;
+  /** Slots (exo + nb de séries) déjà choisis par l'UI (base preset + édits). */
+  readonly slots: readonly { readonly exerciseId: string; readonly nSets: number }[];
+  /** Nom affiché choisi par l'user (sinon `null`). */
+  readonly displayName?: string | null;
+}
+
+/**
+ * Bloc G (Conv #32) — Construit le `SessionPlan` d'une séance custom
+ * (hors-rotation) à partir de slots déjà choisis. Pose une prescription par
+ * série via `buildPrescription` (+ bootstrap e1RM transitoire NON persisté,
+ * comme `generateSession`/`replaceSessionItem`).
+ *
+ * `label` reste `'Séance libre'` : une séance custom n'entre jamais dans la
+ * rotation A/B/C (cf. `suggestNextSession`). Le nom lisible vit dans
+ * `custom_name`.
+ */
+export function buildCustomSessionPlan(
+  state: UserState,
+  catalog: Catalog,
+  args: BuildCustomSessionArgs,
+): SessionPlan {
+  const items: SessionItem[] = [];
+  for (const slot of args.slots) {
+    const ex = catalog.get(slot.exerciseId);
+    const e1rmTotal = bootstrapE1rmIfMissing(state, ex);
+    const prescription = buildPrescription(
+      ex,
+      e1rmTotal,
+      state.profile,
+      state.current_week_in_cycle,
+      {
+        muscleGoals:
+          Object.keys(state.muscle_goals).length > 0 ? state.muscle_goals : null,
+        recoveryMode: state.recovery_mode,
+        state,
+      },
+    );
+    const n = Math.max(1, Math.min(10, Math.round(slot.nSets)));
+    const sets: SetPrescription[] = [];
+    for (let i = 0; i < n; i++) sets.push({ ...prescription });
+    items.push({ exercise_id: slot.exerciseId, sets });
+  }
+  const name = args.displayName?.trim();
+  return {
+    seance_date: args.seanceDate,
+    week_in_cycle: state.current_week_in_cycle,
+    cycle_index: state.cycle_index,
+    rpe_target: 8,
+    items,
+    label: 'Séance libre',
+    custom_name: name !== undefined && name.length > 0 ? name : null,
+  };
 }
 
 /**

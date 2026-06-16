@@ -32,6 +32,7 @@ import {
 import { useCoachOsStore } from '@/store';
 import { useGymBrand } from '@/store/selectors';
 import { cn } from '@/lib/cn';
+import { favoritesFirst } from '@/lib/custom-session';
 import { ExerciseEyeButton } from '@/pages/catalogue/ExerciseEyeButton';
 
 /** Normalisation simple (lowercase + retire accents) pour le search inline. */
@@ -111,22 +112,24 @@ export function AddExerciseSheet({
 
   const results = useMemo<readonly Exercise[]>(() => {
     if (catalog === null) return [];
+    // Bloc G (Conv #32) — favoris d'abord, par-dessus le tri/recherche habituel.
+    const favoriteIds = new Set(userState?.favorite_exercise_ids ?? []);
     const q = normalize(query);
     const all = catalog.all();
     if (q.length === 0) {
-      // Sans recherche, on remonte d'abord les customs (souvent rares, on
-      // veut qu'ils soient découvrables), puis le défaut. Tri stable par
-      // nom dans chaque groupe.
-      return [...all].sort((a, b) => a.nom_fr.localeCompare(b.nom_fr));
+      // Sans recherche, tri stable par nom puis favoris remontés en tête.
+      const sorted = [...all].sort((a, b) => a.nom_fr.localeCompare(b.nom_fr));
+      return favoritesFirst(sorted, favoriteIds);
     }
-    return all.filter((ex) => {
+    const matched = all.filter((ex) => {
       if (normalize(ex.nom_fr).includes(q)) return true;
       for (const syn of ex.synonymes) {
         if (normalize(syn).includes(q)) return true;
       }
       return false;
     });
-  }, [catalog, query]);
+    return favoritesFirst(matched, favoriteIds);
+  }, [catalog, query, userState]);
 
   function close() {
     setQuery('');
@@ -256,7 +259,7 @@ export function AddExerciseSheet({
               </div>
             </div>
             <p className="text-[11px] leading-snug text-anthracite-400">
-              Kotsh pose une charge et un nombre de reps à partir de ton
+              Kotsh propose une charge et un nombre de répétitions à partir de ton
               Plafond connu (ou d'une estimation si tu n'as jamais fait cet
               exercice). Tu peux les ajuster avant de cocher chaque série.
             </p>
