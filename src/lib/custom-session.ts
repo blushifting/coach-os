@@ -53,7 +53,7 @@ export const SESSION_PRESETS: readonly SessionPreset[] = [
     label: 'Full body',
     muscles: ['quadriceps', 'pectoraux', 'dos_largeur', 'ischios'],
   },
-  { id: 'vide', label: 'Ma séance', muscles: [] },
+  { id: 'vide', label: 'Libre', muscles: [] },
 ];
 
 export function presetById(id: string): SessionPreset | null {

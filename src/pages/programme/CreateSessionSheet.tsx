@@ -300,14 +300,17 @@ export function CreateSessionSheet({
           {presetId === null ? (
             <p className="text-sm leading-relaxed text-anthracite-400">
               Choisis un point de départ : un groupe musculaire, corps entier, ou une
-              séance vide à composer toi-même.
+              séance libre à composer toi-même.
             </p>
           ) : (
             <>
+              {/* Bloc K (Conv #36) — « Séance » est le préfixe UI incompressible ;
+                  le champ ne contient que le token (« Pecs », « Libre »…), pour se
+                  lire comme les autres noms de séance. */}
               <div className="flex items-center gap-2">
-                <i className="shrink-0 text-anthracite-400" aria-hidden>
-                  ✎
-                </i>
+                <span className="shrink-0 text-sm font-semibold text-anthracite-300">
+                  Séance
+                </span>
                 <input
                   data-testid="create-name"
                   value={name}
@@ -315,6 +318,9 @@ export function CreateSessionSheet({
                   aria-label="Nom de la séance"
                   className="min-w-0 flex-1 rounded-lg border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-sm font-semibold text-white outline-none focus:border-sang-700/60"
                 />
+                <i className="shrink-0 text-anthracite-400" aria-hidden>
+                  ✎
+                </i>
               </div>
               <p className="-mt-2 text-xs text-anthracite-400">
                 {slots.length === 0

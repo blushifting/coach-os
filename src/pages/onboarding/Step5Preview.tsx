@@ -202,25 +202,30 @@ export function Step5Preview({
             <Card key={di} className="flex flex-col gap-2" data-testid={`day-card-${di}`}>
               <header className="flex items-center justify-between gap-2">
                 {editingDay === di ? (
-                  <input
-                    data-testid={`step5-rename-${di}`}
-                    autoFocus
-                    value={nameDraft}
-                    placeholder={sessionDisplayName(day)}
-                    onChange={(e) => setNameDraft(e.target.value)}
-                    onBlur={() => {
-                      onRename(di, nameDraft);
-                      setEditingDay(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
+                  <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                    <span className="shrink-0 text-sm font-semibold text-anthracite-400">
+                      Séance
+                    </span>
+                    <input
+                      data-testid={`step5-rename-${di}`}
+                      autoFocus
+                      value={nameDraft}
+                      placeholder={sessionDisplayName(day)}
+                      onChange={(e) => setNameDraft(e.target.value)}
+                      onBlur={() => {
                         onRename(di, nameDraft);
                         setEditingDay(null);
-                      }
-                      if (e.key === 'Escape') setEditingDay(null);
-                    }}
-                    className="min-w-0 flex-1 rounded-lg border border-anthracite-700 bg-anthracite-900 px-2 py-1 text-sm font-semibold text-white outline-none focus:border-sang-700/60"
-                  />
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          onRename(di, nameDraft);
+                          setEditingDay(null);
+                        }
+                        if (e.key === 'Escape') setEditingDay(null);
+                      }}
+                      className="min-w-0 flex-1 rounded-lg border border-anthracite-700 bg-anthracite-900 px-2 py-1 text-sm font-semibold text-white outline-none focus:border-sang-700/60"
+                    />
+                  </div>
                 ) : (
                   <button
                     type="button"
@@ -229,10 +234,13 @@ export function Step5Preview({
                       setNameDraft(day.custom_name ?? '');
                       setEditingDay(di);
                     }}
-                    className="flex items-center gap-2 text-sm font-semibold text-white"
+                    className="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-white"
                   >
-                    {sessionDisplayName(day)}
-                    <span aria-hidden className="text-anthracite-400">
+                    {/* Bloc K (Conv #36) — « Séance » fixe (non éditable) devant le nom :
+                        signale le déroulé des séances. Seul le token suivant se modifie. */}
+                    <span className="shrink-0 font-normal text-anthracite-400">Séance</span>
+                    <span className="truncate">{sessionDisplayName(day)}</span>
+                    <span aria-hidden className="shrink-0 text-anthracite-400">
                       ✎
                     </span>
                   </button>

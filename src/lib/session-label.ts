@@ -1,46 +1,27 @@
 /**
- * Conv #28 — préfixe « Séance A/B/C » partout dans l'UI.
+ * Nom affiché d'une séance.
  *
- * Transformation **à l'affichage uniquement** : les labels stockés
- * (cycle_plan, feedbacks, démo Alex) gardent leur format moteur
- * (« Full Body A », « Push », « Workout A2 »…). Avantages : s'applique
- * immédiatement aux plans existants, aucune migration de données, pas de
- * parité Python à maintenir.
+ * Convention (Bloc K, Conv #36) : le mot « Séance » appartient à l'**UI**
+ * (étiquette de section, en-tête, mot de liaison dans une phrase), PAS au nom.
+ * Le nom affiché est donc « A — Full Body », « B — Lower », « Push »… — jamais
+ * « Séance A — Full Body ».
+ *
+ * Transformation **à l'affichage uniquement** : les labels stockés (cycle_plan,
+ * feedbacks, démo Alex) gardent leur format moteur (« Full Body A », « Push »,
+ * « Workout A2 »…). Avantages : s'applique immédiatement aux plans existants,
+ * aucune migration de données, pas de parité Python à maintenir.
  *
  * Règles :
- *  - « Full Body A » (préfixe + lettre A-F finale) → « Séance A — Full Body »
- *    Depuis Conv #28, `renumberSessionLabels` lettre TOUTES les séances
- *    custom avec une lettre globale unique (« Upper A / Lower B / Focus E ») ;
- *    ce cas couvre donc tous les plans custom.
- *  - « A » / « A2 » (lettre seule ± chiffre, programmes guidés GreySkull)
- *    → « Séance A » / « Séance A2 »
- *  - tout le reste (labels d'auteur guidés : « Press Day »,
- *    « Upper A (force) ») → « Séance Press Day »… (préfixe simple)
+ *  - « Full Body A » (préfixe + lettre A-F finale) → « A — Full Body ».
+ *    Depuis Conv #28, `renumberSessionLabels` lettre TOUTES les séances custom
+ *    avec une lettre globale unique (« Upper A / Lower B / Focus E ») ; ce cas
+ *    couvre donc tous les plans custom.
+ *  - tout le reste (« Push », « A2 », labels d'auteur guidés) → tel quel.
  */
 
 const TRAILING_LETTER = /^(.+\S) ([A-F])$/;
-const LETTER_ONLY = /^[A-F]\d*$/;
 
 export function formatSessionLabel(label: string): string {
-  const trimmed = label.trim();
-  if (trimmed === '') return trimmed;
-  const m = TRAILING_LETTER.exec(trimmed);
-  if (m !== null) {
-    return `Séance ${m[2]} — ${m[1]}`;
-  }
-  if (LETTER_ONLY.test(trimmed)) {
-    return `Séance ${trimmed}`;
-  }
-  return `Séance ${trimmed}`;
-}
-
-/**
- * Variante courte pour les espaces contraints (boutons de slots, chips) :
- * même format, sans le mot « Séance ».
- *  - « Full Body A » → « A — Full Body »
- *  - « Push » → « Push »
- */
-export function formatSessionLabelShort(label: string): string {
   const trimmed = label.trim();
   const m = TRAILING_LETTER.exec(trimmed);
   if (m !== null) {
@@ -50,7 +31,7 @@ export function formatSessionLabelShort(label: string): string {
 }
 
 /**
- * Bloc G (Conv #32) — nom affiché d'une séance / d'un jour de cycle.
+ * Nom affiché d'une séance / d'un jour de cycle.
  *
  * Le `custom_name` choisi par l'utilisateur prime sur le label moteur. Sinon on
  * retombe sur la transformation d'affichage habituelle. L'identité de rotation
@@ -62,13 +43,4 @@ export function sessionDisplayName(s: {
 }): string {
   const c = s.custom_name?.trim();
   return c !== undefined && c.length > 0 ? c : formatSessionLabel(s.label);
-}
-
-/** Variante courte (sans le mot « Séance ») — cf. `formatSessionLabelShort`. */
-export function sessionDisplayNameShort(s: {
-  readonly custom_name?: string | null;
-  readonly label: string;
-}): string {
-  const c = s.custom_name?.trim();
-  return c !== undefined && c.length > 0 ? c : formatSessionLabelShort(s.label);
 }

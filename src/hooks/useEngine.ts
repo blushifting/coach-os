@@ -827,28 +827,6 @@ export async function planCustomSessionForDay(
   return { plan, sessionId };
 }
 
-/**
- * Bloc G (Conv #32) — Renomme la séance en cours (nom affiché). N'altère PAS
- * `label` (identité de rotation A/B/C) ni les exos/coches. Nom vide ⇒ retour au
- * libellé par défaut.
- */
-export async function renameCurrentSession(name: string): Promise<void> {
-  const store = useCoachOsStore.getState();
-  const plan = store.currentSessionPlan;
-  const sessionId = store.currentSessionId;
-  if (plan === null || sessionId === null) {
-    throw new Error('Pas de séance en cours à renommer.');
-  }
-  const next = requireUserState();
-  const trimmed = name.trim();
-  const newPlan: SessionPlan = {
-    ...plan,
-    custom_name: trimmed.length > 0 ? trimmed : null,
-  };
-  await txUpdateSessionPlan(sessionId, newPlan, next);
-  useCoachOsStore.setState({ currentSessionPlan: newPlan });
-}
-
 // =============================================================================
 // Bloc G (Conv #32) — Édition chirurgicale du cycle EN COURS (juste les exos /
 // le nom, JAMAIS la progression). On patche `current_cycle_plan` en place et on
@@ -1445,8 +1423,6 @@ export interface EngineApi {
   /** Bloc G (Conv #32) — séance custom assistée (presets → moteur). */
   startCustomSession: typeof startCustomSession;
   planCustomSessionForDay: typeof planCustomSessionForDay;
-  /** Bloc G (Conv #32) — renomme la séance en cours (nom affiché). */
-  renameCurrentSession: typeof renameCurrentSession;
   /** Bloc G (Conv #32) — édition chirurgicale du cycle en cours (exos / nom). */
   renameCycleDay: typeof renameCycleDay;
   addExerciseToCycleDay: typeof addExerciseToCycleDay;
@@ -1492,7 +1468,6 @@ export function useEngine(): EngineApi {
       startFreeSession,
       startCustomSession,
       planCustomSessionForDay,
-      renameCurrentSession,
       renameCycleDay,
       addExerciseToCycleDay,
       removeExerciseFromCycleDay,

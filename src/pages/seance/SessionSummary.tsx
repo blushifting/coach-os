@@ -8,7 +8,7 @@ import { displayExerciseName, kgUnitLabel } from '@/lib/catalog-filter';
 import { useGymBrand } from '@/store/selectors';
 import { GymBrand } from '@/engine/models';
 import { cn } from '@/lib/cn';
-import { sessionDisplayNameShort } from '@/lib/session-label';
+import { sessionDisplayName } from '@/lib/session-label';
 import type { PlafondChange, SessionSummaryData } from '@/lib/session-runner';
 
 interface SessionSummaryProps {
@@ -31,7 +31,7 @@ export function SessionSummary({ label, customName, data, catalog, onClose }: Se
       <Card>
         <div className="flex flex-col gap-1">
           <span className="text-xs uppercase tracking-wide text-anthracite-300">
-            Bilan — {sessionDisplayNameShort({ custom_name: customName, label })}
+            Bilan — {sessionDisplayName({ custom_name: customName, label })}
           </span>
           <span className="text-lg font-semibold text-white">
             Séance bouclée.

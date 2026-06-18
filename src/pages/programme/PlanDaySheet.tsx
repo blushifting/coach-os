@@ -8,12 +8,7 @@ import { useEngine } from '@/hooks/useEngine';
 import { getDb } from '@/db';
 import type { SessionRow } from '@/db/schema';
 import { dateKey, type CalendarDay } from '@/lib/dashboard';
-import {
-  formatSessionLabel,
-  formatSessionLabelShort,
-  sessionDisplayName,
-  sessionDisplayNameShort,
-} from '@/lib/session-label';
+import { formatSessionLabel, sessionDisplayName } from '@/lib/session-label';
 import { CreateSessionButton } from './CreateSessionSheet';
 import { useCoachOsStore } from '@/store';
 import {
@@ -267,7 +262,8 @@ function PlannedSessionBlock({
   return (
     <div className="flex flex-col gap-3" data-testid="day-status-text">
       <p className="text-sm text-anthracite-100">
-        <strong className="text-white">{sessionDisplayName(plan)}</strong> programmée
+        La séance <strong className="text-white">{sessionDisplayName(plan)}</strong> est
+        programmée
         {isFuture && ' pour ce jour'}
         {isToday && " aujourd'hui"}
         {isPast && ' (non faite)'}.
@@ -386,11 +382,11 @@ function FreeFutureBlock({
           className="rounded-lg border border-sang-800/50 bg-sang-900/15 px-3 py-2 text-xs leading-relaxed text-anthracite-100"
           data-testid="session-suggestion"
         >
-          Tu as fait{' '}
+          Tu as fait la séance{' '}
           <strong className="text-white">
             {formatSessionLabel(suggestion.previousLabel)}
           </strong>{' '}
-          récemment. Pour varier les muscles, passe sur{' '}
+          récemment. Pour varier les muscles, passe sur la séance{' '}
           <strong className="text-sang-300">
             {sessionDisplayName(cyclePlan.days[suggestion.dayIndex] ?? { label: '' })}
           </strong>
@@ -416,7 +412,7 @@ function FreeFutureBlock({
                 className="!h-auto !min-h-[2.75rem] flex-col gap-0.5 py-2"
               >
                 <span className="font-medium">
-                  {pending === i ? '…' : sessionDisplayNameShort(d)}
+                  {pending === i ? '…' : sessionDisplayName(d)}
                   {isSuggested ? ' ★' : ''}
                 </span>
                 <span className="text-[11px] font-normal opacity-75 tabular-nums">
@@ -503,12 +499,13 @@ function CompletedSessionBlock({
   if (feedback === null) {
     return (
       <p className="text-sm text-anthracite-300" data-testid="day-status-text">
-        <strong className="text-white">
-          {day.sessionLabel !== null
-            ? formatSessionLabel(day.sessionLabel)
-            : 'Séance'}
-        </strong>{' '}
-        faite.{' '}
+        La séance{' '}
+        {day.sessionLabel !== null && (
+          <>
+            <strong className="text-white">{formatSessionLabel(day.sessionLabel)}</strong>{' '}
+          </>
+        )}
+        est faite.{' '}
         {day.isDeload && (
           <span className="text-sang-500">
             (<Concept topic="deload">Déload</Concept>)
@@ -523,7 +520,8 @@ function CompletedSessionBlock({
   return (
     <div className="flex flex-col gap-3" data-testid="day-status-text">
       <p className="text-sm text-anthracite-100">
-        <strong className="text-white">{sessionDisplayName(feedback)}</strong> faite
+        La séance <strong className="text-white">{sessionDisplayName(feedback)}</strong> est
+        faite
         {day.isDeload && (
           <span className="text-sang-500">
             {' '}
@@ -583,7 +581,7 @@ function CompletedSessionBlock({
  * reste libre de lancer une séance via les boutons en dessous.
  */
 function RestSuggestion({ recentLabels }: { readonly recentLabels: readonly string[] }) {
-  const labels = recentLabels.map((l) => formatSessionLabelShort(l));
+  const labels = recentLabels.map((l) => formatSessionLabel(l));
   const multiple = labels.length >= 2;
   const enchaine = multiple
     ? `${labels.slice(0, -1).join(', ')} puis ${labels[labels.length - 1]}`

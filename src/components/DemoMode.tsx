@@ -71,7 +71,7 @@ const TOUR_STEPS: readonly TourStep[] = [
     route: '/programme',
     title: "Le programme d'Alex",
     body:
-      "Alex est mardi de la semaine 4 de son 2ᵉ cycle (les cycles font 5 semaines : 4 d'entraînement + 1 de déload). Hier il a fait la Séance A (Upper), aujourd'hui c'est la Séance B (Lower). Le calendrier ci-dessous montre les semaines du cycle en cours, avec les séances faites en vert, prévues en bleu et le repos en grisé.",
+      "Alex est mardi de la semaine 4 de son 2ᵉ cycle (les cycles font 5 semaines : 4 d'entraînement + 1 de déload). Hier il a fait la séance A (Upper), aujourd'hui c'est la séance B (Lower). Le calendrier ci-dessous montre les semaines du cycle en cours, avec les séances faites en vert, prévues en bleu et le repos en grisé.",
     pointTo: '[data-testid="condensed-calendar"]',
     bannerSide: 'top',
   },
