@@ -8,7 +8,7 @@ import { ProgressRing } from '@/components/ProgressRing';
 import { cn } from '@/lib/cn';
 import { triggerHaptic } from '@/lib/haptics';
 import type { Catalog } from '@/engine/catalog';
-import { ChargeType, type SessionPlan } from '@/engine/models';
+import { ChargeType, E1RMApp, type SessionPlan } from '@/engine/models';
 import { useEngine } from '@/hooks/useEngine';
 import { useCoachOsStore } from '@/store';
 import { useDemoMode, useGymBrand } from '@/store/selectors';
@@ -23,7 +23,7 @@ import {
   type SetEntry,
   updateSetEntry,
 } from '@/lib/session-runner';
-import { e1rmConfidenceFor } from '@/lib/calibration-status';
+import { calibrationConfidenceFor, exercisesEverDone } from '@/lib/calibration-status';
 import { bootstrapE1rmIfMissing } from '@/engine/engine';
 import { measurementIsReliable } from '@/engine/prescription';
 import { ChargeBadge } from '@/pages/catalogue/ChargeBadge';
@@ -73,6 +73,7 @@ export function SessionRunner({
   const demoActive = useDemoMode();
   const brand = useGymBrand();
   const snapshots = useCoachOsStore((s) => s.history.e1rmSnapshots);
+  const feedbacks = useCoachOsStore((s) => s.history.feedbacks);
   const [detail, setDetail] = useState<{ exerciseId: string; itemIndex: number } | null>(null);
   const [confirmFinish, setConfirmFinish] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
@@ -87,12 +88,15 @@ export function SessionRunner({
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
   // 1.16 — repli (collapse) des cartes d'exo. Par défaut un exo se replie tout
-  // seul quand toutes ses séries sont faites. `collapsedOverrides[i]` (1.16.2)
-  // = choix manuel de l'user via le chevron : `true` replie même avant la fin,
-  // `false` garde ouvert un exo terminé. `undefined` = comportement auto.
-  const [collapsedOverrides, setCollapsedOverrides] = useState<
-    Record<number, boolean | undefined>
-  >({});
+  // seul quand toutes ses séries sont faites. Bloc I (Conv #34) — l'override
+  // manuel (chevron) est clé par `exercise_id` et vit dans le store
+  // (`currentSessionCollapsed`) pour survivre à la navigation : `true` = replié
+  // manuellement (même avant la fin), `false` = gardé ouvert (même terminé),
+  // absent = comportement auto.
+  const collapsedOverrides = useCoachOsStore((s) => s.currentSessionCollapsed);
+  const setCurrentSessionCollapsed = useCoachOsStore(
+    (s) => s.setCurrentSessionCollapsed,
+  );
   const sessionId = useCoachOsStore.getState().currentSessionId;
   const done = countDoneSets(entries);
   const total = countPlannedSets(entries);
@@ -128,17 +132,28 @@ export function SessionRunner({
   const confidenceByExo = useMemo(() => {
     const today = new Date();
     const e1rm = userState?.e1rm ?? {};
-    const out: Record<string, ReturnType<typeof e1rmConfidenceFor>> = {};
+    const everDone = exercisesEverDone(feedbacks);
+    const out: Record<string, ReturnType<typeof calibrationConfidenceFor>> = {};
     for (const item of plan.items) {
-      out[item.exercise_id] = e1rmConfidenceFor(
+      // Bloc I — les exos sans e1RM (`e1RM_app:'non'`) sont calibrés dès qu'ils
+      // ont été faits une fois (via l'historique), au lieu de rester en
+      // calibration perpétuelle. `e1RM_app` lu sur le catalog (fallback FULL si
+      // exo inconnu → délègue à la confidence par snapshots, comportement legacy).
+      const e1rmApp =
+        catalog?.has(item.exercise_id) === true
+          ? catalog.get(item.exercise_id).e1RM_app
+          : E1RMApp.FULL;
+      out[item.exercise_id] = calibrationConfidenceFor(
         item.exercise_id,
+        e1rmApp,
         e1rm,
         snapshots,
+        everDone,
         today,
       );
     }
     return out;
-  }, [plan.items, userState?.e1rm, snapshots]);
+  }, [plan.items, userState?.e1rm, snapshots, feedbacks, catalog]);
   const bodyweight = userState?.profile.bodyweight_kg ?? 75;
 
   // Conv #15 vague 2/3 — snapshot des e1RM au mount du runner (figé pour
@@ -224,24 +239,33 @@ export function SessionRunner({
       // On efface l'override sur la transition « pas-tout-fait → tout-fait » :
       // `collapsed` retombe alors sur le comportement auto (= replié). Un clic
       // ultérieur sur le chevron repose un override et permet de rouvrir.
-      setCollapsedOverrides((m) => {
-        let out: Record<number, boolean | undefined> | null = null;
-        for (let i = 0; i < next.length; i++) {
-          if (m[i] === undefined) continue;
-          const newRow = next[i] ?? [];
-          const oldRow = entries[i] ?? [];
-          const newAllDone = newRow.length > 0 && newRow.every((s) => s.done);
-          const oldAllDone = oldRow.length > 0 && oldRow.every((s) => s.done);
-          if (newAllDone && !oldAllDone) {
-            out ??= { ...m };
-            delete out[i];
-          }
+      // Bloc I — override clé par `exercise_id`, lu/écrit dans le store.
+      const prevCollapsed = useCoachOsStore.getState().currentSessionCollapsed;
+      let nextCollapsed: Record<string, boolean> | null = null;
+      for (let i = 0; i < next.length; i++) {
+        const exoId = plan.items[i]?.exercise_id;
+        if (exoId === undefined || prevCollapsed[exoId] === undefined) continue;
+        const newRow = next[i] ?? [];
+        const oldRow = entries[i] ?? [];
+        const newAllDone = newRow.length > 0 && newRow.every((s) => s.done);
+        const oldAllDone = oldRow.length > 0 && oldRow.every((s) => s.done);
+        if (newAllDone && !oldAllDone) {
+          nextCollapsed ??= { ...prevCollapsed };
+          delete nextCollapsed[exoId];
         }
-        return out ?? m;
-      });
+      }
+      if (nextCollapsed !== null) setCurrentSessionCollapsed(nextCollapsed);
       onEntriesChange(next);
     },
-    [catalog, entries, plan, bodyweight, onEntriesChange, confidenceByExo],
+    [
+      catalog,
+      entries,
+      plan,
+      bodyweight,
+      onEntriesChange,
+      confidenceByExo,
+      setCurrentSessionCollapsed,
+    ],
   );
 
   return (
@@ -321,7 +345,7 @@ export function SessionRunner({
           // 1.16 — exo entièrement validé → repli auto ; un choix manuel
           // (chevron) prime sur l'auto. 1.16.2 : repli possible avant la fin.
           const allDone = entrySets.length > 0 && doneCount === entrySets.length;
-          const collapsed = collapsedOverrides[i] ?? allDone;
+          const collapsed = collapsedOverrides[item.exercise_id] ?? allDone;
           // Conv #20 — l'exo est en mode "Poids du corps seulement" si l'user
           // a posé `pdc_only: true` dans son EquipmentOverride. SetInput
           // adapte alors le rendu de la charge (badge "Poids du corps"
@@ -423,7 +447,10 @@ export function SessionRunner({
                     aria-expanded={!collapsed}
                     data-testid={`btn-collapse-${i}`}
                     onClick={() =>
-                      setCollapsedOverrides((m) => ({ ...m, [i]: !collapsed }))
+                      setCurrentSessionCollapsed({
+                        ...collapsedOverrides,
+                        [item.exercise_id]: !collapsed,
+                      })
                     }
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-anthracite-700 text-anthracite-300 transition hover:bg-anthracite-600 hover:text-white"
                   >

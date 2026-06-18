@@ -58,6 +58,14 @@ export interface CoachOsState {
    * `currentSessionPlan` (nouvelle structure de plan).
    */
   currentSessionEntries: SessionEntries | null;
+  /**
+   * Bloc I (Conv #34) — état replié/déplié des cartes d'exo de la séance en
+   * cours, clé = `exercise_id`. Sorti du `useState` local de `SessionRunner`
+   * pour survivre à la navigation : quitter puis revenir en séance ne réinitialise
+   * plus tous les exos. Absence de clé = comportement auto (replié quand l'exo
+   * est entièrement coché). Reset au changement de `currentSessionPlan`.
+   */
+  currentSessionCollapsed: Record<string, boolean>;
 
   // --- history : vues lues depuis la DB pour l'UI Progrès ---
   history: HistorySnapshot;
@@ -104,6 +112,7 @@ export interface CoachOsActions {
   setBootstrapped: (b: boolean) => void;
   setCurrentSession: (plan: SessionPlan | null, id: number | null) => void;
   setCurrentSessionEntries: (entries: SessionEntries | null) => void;
+  setCurrentSessionCollapsed: (m: Record<string, boolean>) => void;
   setHistory: (h: HistorySnapshot) => void;
   setCatalogFilters: (f: CatalogFilters) => void;
   setLastEndOfWeek: (r: { event: string; cycle_index: number } | null) => void;
@@ -124,6 +133,7 @@ const initialState: CoachOsState = {
   currentSessionPlan: null,
   currentSessionId: null,
   currentSessionEntries: null,
+  currentSessionCollapsed: {},
   history: initialHistory,
   catalogFilters: EMPTY_FILTERS,
   catalog: null,
@@ -143,9 +153,17 @@ export const useCoachOsStore = create<CoachOsState & CoachOsActions>((set) => ({
   setCurrentSession: (currentSessionPlan, currentSessionId) =>
     // Conv #15 — changement de plan ⟹ reset des entries pour éviter d'hériter
     // de coches d'une session précédente (callers : start/skip/finish session).
-    set({ currentSessionPlan, currentSessionId, currentSessionEntries: null }),
+    // Bloc I — reset aussi l'état de repli (propre à la séance).
+    set({
+      currentSessionPlan,
+      currentSessionId,
+      currentSessionEntries: null,
+      currentSessionCollapsed: {},
+    }),
   setCurrentSessionEntries: (currentSessionEntries) =>
     set({ currentSessionEntries }),
+  setCurrentSessionCollapsed: (currentSessionCollapsed) =>
+    set({ currentSessionCollapsed }),
   setHistory: (history) => set({ history }),
   setCatalogFilters: (catalogFilters) => set({ catalogFilters }),
   setLastEndOfWeek: (lastEndOfWeekReview) => set({ lastEndOfWeekReview }),

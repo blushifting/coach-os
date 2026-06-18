@@ -14,6 +14,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { photosFor } from '@/data/exercise-photos';
 
 interface ExercisePhotoPopinProps {
@@ -55,7 +56,10 @@ export function ExercisePhotoPopin({
 
   if (!open) return null;
   if (photos === null) {
-    return (
+    // Bloc I (Conv #34) — portail vers `document.body` : ouvert depuis un Sheet
+    // dont le panneau porte `backdrop-blur`, le `position: fixed` serait sinon
+    // contenu par le Sheet (décalé en bas) au lieu d'être centré sur le viewport.
+    return createPortal(
       <div
         role="dialog"
         aria-modal="true"
@@ -76,11 +80,12 @@ export function ExercisePhotoPopin({
             Fermer
           </button>
         </div>
-      </div>
+      </div>,
+      document.body,
     );
   }
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -135,6 +140,7 @@ export function ExercisePhotoPopin({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

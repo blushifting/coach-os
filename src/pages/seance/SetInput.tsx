@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { cn } from '@/lib/cn';
 import { ChargeType } from '@/engine/models';
 import { kgUnitLabelShort } from '@/lib/catalog-filter';
 import { triggerHaptic } from '@/lib/haptics';
-import type { SetEntry } from '@/lib/session-runner';
+import { type SetEntry, DEFAULT_RPE } from '@/lib/session-runner';
 
 interface SetInputProps {
   readonly index: number;
@@ -41,7 +41,19 @@ interface SetInputProps {
 const RPE_MIN = 6;
 const RPE_MAX = 10;
 const RPE_STEP = 0.5;
-const RPE_DEFAULT = 8;
+
+/**
+ * Bloc I (Conv #34) — repères de l'échelle Réserve, positionnés en `%` dans le
+ * MÊME repère que le thumb (0 % = RPE 6 = « 4+ » … 100 % = RPE 10 = « échec »)
+ * pour que chaque cran tombe pile sous son libellé.
+ */
+const RESERVE_TICKS = [
+  { pct: 0, label: '4+' },
+  { pct: 25, label: '3' },
+  { pct: 50, label: '2' },
+  { pct: 75, label: '1' },
+  { pct: 100, label: 'échec' },
+] as const;
 
 /**
  * 1.17 — l'UI affiche les « reps en réserve » (Réserve), plus un effort. Le
@@ -446,28 +458,64 @@ interface RpeSliderProps {
 }
 
 function RpeSlider({ index, value, disabled, onChange }: RpeSliderProps) {
-  // Quand pas encore saisi : thumb visuellement positionné au défaut (8) mais
-  // atténué (data-unset='true'), label affiche "—" pour ne pas suggérer une
-  // valeur. La première interaction commit la valeur réelle.
-  const isUnset = value === null;
-  const visualValue = value ?? RPE_DEFAULT;
-  const pct = ((visualValue - RPE_MIN) / (RPE_MAX - RPE_MIN)) * 100;
+  // Bloc I (Conv #34) — curseur sur-mesure. L'`<input type=range>` natif est
+  // conservé caché (opacity-0, pointer-events:none) UNIQUEMENT pour
+  // l'accessibilité clavier (flèches) et le pilotage e2e (`fill`). Le clic/tap
+  // natif est ainsi neutralisé À LA RACINE (plus d'annulation visible
+  // « par-dessus », plus de flash). La track + le thumb sont des <div> placés en
+  // % et SEUL un glissement horizontal change la valeur : un tap pur ne fait
+  // rien, et le scroll vertical de la page passe via `touch-action: pan-y`.
+  // Thumb et libellés partagent le même repère → alignement exact des crans.
+  const rpe = value ?? DEFAULT_RPE;
+  const pct = ((rpe - RPE_MIN) / (RPE_MAX - RPE_MIN)) * 100;
 
-  const trackStyle = {
-    '--rpe-fill': isUnset ? '0%' : `${pct}%`,
-  } as CSSProperties;
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const dragRef = useRef<{ startX: number; engaged: boolean } | null>(null);
+  const DRAG_PX = 4;
 
-  // 1.17 (D2) — drag-only : on neutralise le tap-to-set natif du <input range>.
-  // `touch-action: pan-y` (index.css) laissait déjà passer le scroll vertical,
-  // mais un tap stationnaire sur la piste sautait quand même la valeur d'effort
-  // (cause des déplacements accidentels signalés). On enregistre la valeur au
-  // pointer-down ; si le pointeur se relève sans drag horizontal franc (tap),
-  // on la restaure. Un vrai drag (> seuil) commit normalement. Insensible au
-  // `fill` e2e (programmatique, sans événements pointer).
-  const dragRef = useRef<{ x: number; before: number | null; moved: boolean } | null>(
-    null,
-  );
-  const DRAG_PX = 6;
+  function valueFromClientX(clientX: number): number {
+    const el = trackRef.current;
+    if (el === null) return rpe;
+    const rect = el.getBoundingClientRect();
+    const ratio = rect.width > 0 ? (clientX - rect.left) / rect.width : 0;
+    const clamped = Math.min(1, Math.max(0, ratio));
+    const snapped =
+      Math.round((RPE_MIN + clamped * (RPE_MAX - RPE_MIN)) / RPE_STEP) * RPE_STEP;
+    return Math.min(RPE_MAX, Math.max(RPE_MIN, snapped));
+  }
+
+  function onTrackPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
+    if (disabled) return;
+    dragRef.current = { startX: e.clientX, engaged: false };
+  }
+  function onTrackPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
+    const d = dragRef.current;
+    if (d === null || disabled) return;
+    if (!d.engaged) {
+      // Tant que le déplacement horizontal n'est pas franc, on ne fait RIEN :
+      // un tap (≈ 0 px) ou un scroll vertical ne déplacent jamais le curseur.
+      if (Math.abs(e.clientX - d.startX) < DRAG_PX) return;
+      d.engaged = true;
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        /* capture best-effort */
+      }
+    }
+    const v = valueFromClientX(e.clientX);
+    if (v !== value) onChange(v);
+  }
+  function onTrackPointerEnd(e: ReactPointerEvent<HTMLDivElement>) {
+    const d = dragRef.current;
+    dragRef.current = null;
+    if (d?.engaged) {
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {
+        /* noop */
+      }
+    }
+  }
 
   return (
     <div className="mt-3 px-1">
@@ -477,57 +525,76 @@ function RpeSlider({ index, value, disabled, onChange }: RpeSliderProps) {
         </span>
         <span
           data-testid={`rpe-value-${index}`}
-          className={cn(
-            'font-display text-base leading-none tabular-nums tracking-wide',
-            isUnset ? 'text-anthracite-400' : 'text-white',
-          )}
+          className="font-display text-base leading-none tabular-nums tracking-wide text-white"
         >
-          {isUnset ? '—' : reserveLabel(value)}
+          {reserveLabel(rpe)}
         </span>
       </div>
-      <input
-        data-testid={`rpe-slider-${index}`}
-        data-rpe={isUnset ? undefined : value}
-        data-unset={isUnset ? 'true' : 'false'}
-        type="range"
-        min={RPE_MIN}
-        max={RPE_MAX}
-        step={RPE_STEP}
-        value={visualValue}
-        disabled={disabled}
-        onPointerDown={(e) => {
-          dragRef.current = { x: e.clientX, before: value, moved: false };
-        }}
-        onPointerMove={(e) => {
-          const d = dragRef.current;
-          if (d !== null && Math.abs(e.clientX - d.x) > DRAG_PX) d.moved = true;
-        }}
-        onPointerUp={() => {
-          const d = dragRef.current;
-          dragRef.current = null;
-          // Tap sans drag → on annule le saut tap-to-set (restaure l'avant).
-          if (d !== null && !d.moved) onChange(d.before);
-        }}
-        onPointerCancel={() => {
-          dragRef.current = null;
-        }}
-        onChange={(e) => {
-          const v = Number.parseFloat(e.target.value);
-          onChange(Number.isFinite(v) ? v : null);
-        }}
-        className="rpe-slider"
-        style={trackStyle}
-        aria-label={`Effort, de ${RPE_MIN} à ${RPE_MAX}`}
-      />
-      <div
-        aria-hidden="true"
-        className="mt-0.5 flex justify-between px-0.5 text-[9px] tabular-nums text-anthracite-500"
-      >
-        <span>4+</span>
-        <span>3</span>
-        <span>2</span>
-        <span>1</span>
-        <span>échec</span>
+
+      {/* px-2.5 = marge pour que le thumb et les libellés aux extrêmes (0 %/100 %)
+          ne soient pas rognés (le thumb déborde de sa moitié via -translate-x). */}
+      <div className={cn('relative px-2.5', disabled && 'opacity-50')}>
+        <div
+          ref={trackRef}
+          onPointerDown={onTrackPointerDown}
+          onPointerMove={onTrackPointerMove}
+          onPointerUp={onTrackPointerEnd}
+          onPointerCancel={onTrackPointerEnd}
+          style={{ touchAction: 'pan-y' }}
+          className={cn(
+            'relative h-3 w-full select-none rounded-full border border-anthracite-700',
+            disabled ? 'cursor-not-allowed' : 'cursor-pointer',
+          )}
+        >
+          {/* Dégradé plein : la couleur à une position donnée ne dépend pas du
+              remplissage (constante le long de la piste). */}
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-sang-900 to-sang-500" />
+          {/* Partie « non atteinte » (réserve plus grande) à droite du thumb. */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-y-0 right-0 rounded-r-full bg-anthracite-800"
+            style={{ left: `${pct}%` }}
+          />
+          {/* Thumb. */}
+          <div
+            aria-hidden="true"
+            className={cn(
+              'absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-sang-600 bg-white shadow-[0_1px_4px_rgba(0,0,0,0.5)]',
+              !disabled && 'transition-transform active:scale-110',
+            )}
+            style={{ left: `${pct}%` }}
+          />
+          {/* Input natif caché : a11y clavier + pilotage e2e (`fill`).
+              `pointer-events:none` → ne capte aucun tap/clic. */}
+          <input
+            data-testid={`rpe-slider-${index}`}
+            data-rpe={value ?? undefined}
+            type="range"
+            min={RPE_MIN}
+            max={RPE_MAX}
+            step={RPE_STEP}
+            value={rpe}
+            disabled={disabled}
+            onChange={(e) => {
+              const v = Number.parseFloat(e.target.value);
+              onChange(Number.isFinite(v) ? v : null);
+            }}
+            style={{ pointerEvents: 'none' }}
+            className="absolute inset-0 h-full w-full opacity-0"
+            aria-label="Réserve : de 4+ (facile) à échec"
+          />
+        </div>
+
+        <div
+          aria-hidden="true"
+          className="relative mt-1 h-3 text-[9px] tabular-nums text-anthracite-500"
+        >
+          {RESERVE_TICKS.map((t) => (
+            <span key={t.label} className="absolute -translate-x-1/2" style={{ left: `${t.pct}%` }}>
+              {t.label}
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   );

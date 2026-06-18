@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
+import { useKeyboardInset } from '@/lib/useKeyboardInset';
 
 // Durée de l'animation de fermeture (doit matcher `sheet-down` /
 // `backdrop-fade-out` dans tailwind.config.ts).
@@ -35,6 +36,8 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
   // démonte. `rendered` reste vrai pendant cette fenêtre.
   const [rendered, setRendered] = useState(open);
   const [closing, setClosing] = useState(false);
+  // Bloc I — remonte le volet au-dessus du clavier virtuel (iOS surtout).
+  const keyboardInset = useKeyboardInset();
 
   useEffect(() => {
     if (open) {
@@ -73,6 +76,8 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
           ? 'motion-safe:animate-backdrop-fade-out'
           : 'motion-safe:animate-backdrop-fade',
       )}
+      // Bloc I — pousse le volet au-dessus du clavier (items-end + padding bas).
+      style={{ paddingBottom: keyboardInset || undefined }}
       onClick={onClose}
     >
       <div
@@ -85,6 +90,13 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
           // à la fermeture (motion-safe).
           closing ? 'motion-safe:animate-sheet-down' : 'motion-safe:animate-sheet-up',
         )}
+        // Bloc I — quand le clavier est ouvert, on borne le volet à l'espace
+        // visible restant pour garder le header (croix) accessible.
+        style={
+          keyboardInset
+            ? { maxHeight: `calc(90dvh - ${keyboardInset}px)` }
+            : undefined
+        }
         onClick={(e) => e.stopPropagation()}
       >
         {title && (

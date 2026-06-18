@@ -80,23 +80,23 @@ function makeFeedbackRow(
 // =============================================================================
 
 describe('initEntries', () => {
-  it('mode normal : reps cibles pré-remplies, charge prescrite, effort vide', () => {
+  it('mode normal : reps cibles pré-remplies, charge prescrite, réserve 4+ par défaut', () => {
     const entries = initEntries(makePlan());
     expect(entries).toHaveLength(2);
     expect(entries[0]).toHaveLength(2);
     expect(entries[1]).toHaveLength(1);
-    // Conv #16 : rpe = null par défaut (pas de biais d'ancrage sur l'effort).
-    expect(entries[0]![0]).toEqual({ reps: 5, load_kg: 80, rpe: null, done: false });
+    // Bloc I : rpe présélectionné à 6 (« 4+ », DEFAULT_RPE) — plus de null.
+    expect(entries[0]![0]).toEqual({ reps: 5, load_kg: 80, rpe: 6, done: false });
   });
 
   it('mode calibration : reps vides pour les exos non calibrés', () => {
     const entries = initEntries(makePlan(), {
       calibrationExoIds: new Set(['bench_press']),
     });
-    // bench_press en calibration → reps null
-    expect(entries[0]![0]).toEqual({ reps: null, load_kg: 80, rpe: null, done: false });
+    // bench_press en calibration → reps null (mais réserve 4+ comme partout)
+    expect(entries[0]![0]).toEqual({ reps: null, load_kg: 80, rpe: 6, done: false });
     // shoulder_press en mode normal → reps pré-remplies
-    expect(entries[1]![0]).toEqual({ reps: 8, load_kg: 40, rpe: null, done: false });
+    expect(entries[1]![0]).toEqual({ reps: 8, load_kg: 40, rpe: 6, done: false });
   });
 });
 
@@ -104,7 +104,7 @@ describe('updateSetEntry', () => {
   it('mute uniquement la case ciblée, retourne une nouvelle matrice', () => {
     const e0 = initEntries(makePlan());
     const e1 = updateSetEntry(e0, 0, 1, { reps: 6, done: true });
-    expect(e1[0]![1]).toEqual({ reps: 6, load_kg: 80, rpe: null, done: true });
+    expect(e1[0]![1]).toEqual({ reps: 6, load_kg: 80, rpe: 6, done: true });
     expect(e1[0]![0]).toEqual(e0[0]![0]);
     expect(e1[1]).toEqual(e0[1]);
     expect(e1).not.toBe(e0);
@@ -189,9 +189,11 @@ describe('buildSessionFeedback', () => {
 
   // Conv #16 — rpe null = série non comptée pour le feedback (au même titre
   // que reps null), car l'effort est obligatoire pour calculer le plafond.
+  // Bloc I : le défaut est désormais 6 (« 4+ »), donc on vide explicitement le
+  // rpe pour vérifier que le skip-sur-null fonctionne toujours.
   it('skip un set done si rpe === null', () => {
     let e = initEntries(makePlan());
-    e = updateSetEntry(e, 0, 0, { done: true }); // rpe reste null par défaut
+    e = updateSetEntry(e, 0, 0, { done: true, rpe: null });
     e = updateSetEntry(e, 1, 0, { done: true, rpe: 8 });
     const fb = buildSessionFeedback(makePlan(), e);
     expect(fb).not.toBeNull();

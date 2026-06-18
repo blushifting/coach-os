@@ -39,6 +39,7 @@ import {
 } from '@/lib/custom-session';
 import { ChargeBadge } from '@/pages/catalogue/ChargeBadge';
 import { ExerciseEyeButton } from '@/pages/catalogue/ExerciseEyeButton';
+import { SetsStepper } from '@/components/SetsStepper';
 import { cn } from '@/lib/cn';
 
 const DEFAULT_ADDED_SETS = 3;
@@ -179,6 +180,9 @@ export function CreateSessionSheet({
 
   function removeSlot(index: number) {
     setSlots((prev) => prev.filter((_, i) => i !== index));
+  }
+  function setSlotSets(index: number, n: number) {
+    setSlots((prev) => prev.map((s, i) => (i === index ? { ...s, nSets: n } : s)));
   }
   function addExercise(ex: Exercise) {
     setSlots((prev) =>
@@ -361,7 +365,7 @@ export function CreateSessionSheet({
                         className="flex items-center gap-2.5 rounded-lg border border-anthracite-700 bg-anthracite-900 p-2"
                       >
                         <ChargeBadge charge={ex.charge} size={24} />
-                        <div className="flex min-w-0 flex-1 flex-col">
+                        <div className="flex min-w-0 flex-1 flex-col gap-1">
                           <span className="truncate text-sm font-medium text-white">
                             {displayExerciseName(ex, brand)}
                             {favoriteIds.has(ex.id) && (
@@ -370,9 +374,15 @@ export function CreateSessionSheet({
                               </span>
                             )}
                           </span>
-                          <span className="text-[11px] text-anthracite-300">
-                            {slot.nSets} séries · {primaires || '—'}
-                          </span>
+                          <div className="flex items-center gap-1.5 text-[11px] text-anthracite-300">
+                            <SetsStepper
+                              value={slot.nSets}
+                              onChange={(n) => setSlotSets(i, n)}
+                              testid={`create-sets-${slot.exerciseId}`}
+                              label={displayExerciseName(ex, brand)}
+                            />
+                            <span className="truncate">séries · {primaires || '—'}</span>
+                          </div>
                         </div>
                         <ExerciseEyeButton exercise={ex} brand={brand} />
                         <button

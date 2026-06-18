@@ -56,6 +56,16 @@ export function formatRest(seconds: number): string {
 // État local UI : saisie set par set
 // =============================================================================
 
+/**
+ * Bloc I (Conv #34) — réserve présélectionnée par défaut à **« 4+ »** (RPE 6, le
+ * plancher de l'échelle). Chaque série démarre « facile » et l'utilisateur ne
+ * fait que glisser vers plus d'effort — plus motivant et plus rapide que de
+ * partir d'un état vide qu'il fallait toucher pour valider. Remplace l'ancien
+ * `rpe = null` (Conv #16, biais d'ancrage) : la réserve n'étant pas une mesure
+ * de précision comme la charge, un défaut assumé sert mieux l'UX.
+ */
+export const DEFAULT_RPE = 6;
+
 export interface SetEntry {
   /**
    * `null` = champ vidé par l'utilisateur (input vide affiché tel quel).
@@ -69,9 +79,9 @@ export interface SetEntry {
   /** Idem `reps` : `null` = champ vidé. 0 reste une valeur valide (poids du corps). */
   readonly load_kg: number | null;
   /**
-   * `null` par défaut (Conv #16) : l'effort est une mesure subjective de
-   * l'user, pas une prescription. On ne pré-remplit pas pour éviter le biais
-   * d'ancrage. La cible RPE reste affichée à côté à titre indicatif.
+   * Réserve perçue (RPE interne). Bloc I (Conv #34) — présélectionnée à
+   * `DEFAULT_RPE` (« 4+ ») à l'init, plus `null`. Reste `number | null` pour
+   * tolérer d'anciennes séances persistées et le vidage explicite.
    */
   readonly rpe: number | null;
   /** L'user a marqué cette série comme "faite" (= elle ira au feedback). */
@@ -94,7 +104,8 @@ export interface InitEntriesOptions {
    * Ensemble des `exercise_id` à initialiser en mode calibration : `reps`
    * vide (sinon = cible programme), `load_kg` reste la prescription bootstrap.
    * En mode normal (hors de cet ensemble), `reps` est pré-remplie avec la
-   * cible programme. Dans tous les cas, `rpe` est vide (cf. SetEntry.rpe).
+   * cible programme. Dans tous les cas, `rpe` démarre à `DEFAULT_RPE` (« 4+ »,
+   * cf. SetEntry.rpe).
    */
   readonly calibrationExoIds?: ReadonlySet<string> | null;
 }
@@ -114,7 +125,7 @@ export function initEntries(
     return item.sets.map((s) => ({
       reps: isCalibration ? null : s.reps,
       load_kg: s.load_kg,
-      rpe: null,
+      rpe: DEFAULT_RPE,
       done: false,
     }));
   });

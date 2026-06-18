@@ -41,11 +41,11 @@ test('seance : depuis programme → runner → terminer → bilan → retour', a
   await expect(firstSet).toBeVisible();
 
   // Conv #16 : pour un fresh user post-onboarding, tous les exos sont en
-  // mode calibration → reps + effort sont vides à l'init. On doit les
-  // renseigner avant de pouvoir cocher la série.
+  // mode calibration → les reps sont vides à l'init (la réserve, elle, démarre
+  // à « 4+ » depuis le Bloc I). On renseigne les reps avant de cocher.
   await page.getByTestId('input-reps-0').first().fill('8');
-  // Conv #20 — RPE est devenu un slider (input type=range). Playwright fill
-  // supporte les range inputs et place la valeur directement.
+  // Bloc I — le RPE garde un <input type=range> caché (a11y + e2e) sous le
+  // curseur sur-mesure ; Playwright `fill` place la valeur directement.
   await page.getByTestId('rpe-slider-0').first().fill('7');
 
   // Valider la 1re série du 1er exo

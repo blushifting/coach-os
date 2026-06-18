@@ -24,6 +24,7 @@ import { sessionDisplayName } from '@/lib/session-label';
 import { favoritesFirst } from '@/lib/custom-session';
 import { ChargeBadge } from '@/pages/catalogue/ChargeBadge';
 import { ExerciseEyeButton } from '@/pages/catalogue/ExerciseEyeButton';
+import { SetsStepper } from '@/components/SetsStepper';
 
 function normalize(s: string): string {
   return s
@@ -83,6 +84,15 @@ export default function EditCyclePage() {
       await engine.addExerciseToCycleDay(pickerDay, ex.id);
       setPickerDay(null);
       setQuery('');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function setExoSets(dayIndex: number, slotIndex: number, n: number) {
+    setBusy(true);
+    try {
+      await engine.setCycleDayExerciseSets(dayIndex, slotIndex, n);
     } finally {
       setBusy(false);
     }
@@ -186,13 +196,20 @@ export default function EditCyclePage() {
                         className="flex items-center gap-2.5 rounded-lg border border-anthracite-700 bg-anthracite-900 p-2"
                       >
                         <ChargeBadge charge={ex.charge} size={24} />
-                        <div className="flex min-w-0 flex-1 flex-col">
+                        <div className="flex min-w-0 flex-1 flex-col gap-1">
                           <span className="truncate text-sm font-medium text-white">
                             {displayExerciseName(ex, brand)}
                           </span>
-                          <span className="text-[11px] text-anthracite-300">
-                            {planned.base_sets} séries · {primaires || '—'}
-                          </span>
+                          <div className="flex items-center gap-1.5 text-[11px] text-anthracite-300">
+                            <SetsStepper
+                              value={planned.base_sets}
+                              onChange={(n) => void setExoSets(di, pi, n)}
+                              disabled={busy}
+                              testid={`edit-sets-${di}-${pi}`}
+                              label={displayExerciseName(ex, brand)}
+                            />
+                            <span className="truncate">séries · {primaires || '—'}</span>
+                          </div>
                         </div>
                         <ExerciseEyeButton exercise={ex} brand={brand} />
                         <button

@@ -4,8 +4,12 @@
     <meta charset="UTF-8" />
     <!-- Bloc B 1.17 — zoom (pincement / double-tap) verrouillé : comportement
          d'app native, le geste parasitait la manip en salle. maximum-scale=1 +
-         user-scalable=no (respecté en PWA standalone) + touch-action côté CSS. -->
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+         user-scalable=no (respecté en PWA standalone) + touch-action côté CSS.
+         Bloc I (Conv #34) — interactive-widget=resizes-content : le clavier
+         virtuel réduit le viewport de mise en page (le shell `fixed inset-0`
+         rétrécit au-dessus du clavier) → la recherche d'exo et ses résultats
+         restent visibles au-dessus du clavier au lieu de passer dessous. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
     <meta name="theme-color" content="#16110f" />
     <meta name="description" content="Coach de musculation autorégulée par RPE — 100 % local, hors-ligne." />
     <meta name="apple-mobile-web-app-capable" content="yes" />

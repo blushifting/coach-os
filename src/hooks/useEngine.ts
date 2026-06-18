@@ -919,6 +919,33 @@ export async function removeExerciseFromCycleDay(
 }
 
 /**
+ * Bloc I (Conv #34) — change le nombre de séries d'un exo d'un jour du cycle en
+ * cours (édition chirurgicale ; progression hebdo recalculée, historique
+ * conservé). Bornes 1–10, identiques à l'ajout.
+ */
+export async function setCycleDayExerciseSets(
+  dayIndex: number,
+  slotIndex: number,
+  nSets: number,
+): Promise<UserState> {
+  const next = requireUserState();
+  const plan = next.current_cycle_plan;
+  if (plan === null) throw new Error('Aucun programme en cours.');
+  const day = plan.days[dayIndex];
+  if (day === undefined) throw new Error(`Jour ${dayIndex} introuvable.`);
+  const planned = day.exercises[slotIndex];
+  if (planned === undefined) {
+    throw new Error(`Slot ${slotIndex} hors plage (${day.exercises.length}).`);
+  }
+  const n = Math.max(1, Math.min(10, Math.round(nSets)));
+  planned.base_sets = n;
+  planned.progression = defaultProgressionForDay(day, n);
+  await txSaveUserStateOnly(next);
+  useCoachOsStore.setState({ userState: next });
+  return next;
+}
+
+/**
  * Bloc G (Conv #32) — Remplace `current_cycle_plan` par un template déjà édité
  * (récap d'onboarding : swaps + ajouts/retraits + renommages appliqués sur un
  * snapshot). Fusionne les doublons équivalents avant de persister, pour qu'on
@@ -1424,6 +1451,8 @@ export interface EngineApi {
   renameCycleDay: typeof renameCycleDay;
   addExerciseToCycleDay: typeof addExerciseToCycleDay;
   removeExerciseFromCycleDay: typeof removeExerciseFromCycleDay;
+  /** Bloc I (Conv #34) — change le nombre de séries d'un exo du cycle en cours. */
+  setCycleDayExerciseSets: typeof setCycleDayExerciseSets;
   /** Bloc G (Conv #32) — persiste le template édité du récap d'onboarding. */
   setCurrentCyclePlan: typeof setCurrentCyclePlan;
 }
@@ -1467,6 +1496,7 @@ export function useEngine(): EngineApi {
       renameCycleDay,
       addExerciseToCycleDay,
       removeExerciseFromCycleDay,
+      setCycleDayExerciseSets,
       setCurrentCyclePlan,
     }),
     [],

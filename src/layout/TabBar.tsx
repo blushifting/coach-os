@@ -17,12 +17,20 @@ const TABS: readonly TabDef[] = [
  * TabBar bas — Conv #11c : tab actif marqué par une barre haute en gradient
  * sang (3 px) + fond légèrement rouge + label en font-medium. Effet "ligne de
  * vie rouge" en bas d'écran pour identifier l'onglet courant au coup d'œil.
+ *
+ * Bloc I (Conv #34) — PLUS de `padding-bottom: env(safe-area-inset-bottom)`.
+ * Ce padding (ajouté Conv #29/#30) « remontait » la barre et laissait une bande
+ * de graphite vide de ~34 px sous les libellés sur iOS (la zone home-indicator),
+ * perçue comme une 2ᵉ barre. On colle désormais la barre (48 px) au bas physique
+ * de l'écran (`sticky bottom-0` dans le shell `fixed inset-0`) : son fond
+ * graphite va jusqu'au bord et le home indicator iOS flotte par-dessus, sous le
+ * texte — exactement comme la barre gestuelle Android (où `safe-area = 0`). Les
+ * libellés redeviennent les éléments les plus bas de l'écran.
  */
 export function TabBar() {
   return (
     <nav
       className="sticky bottom-0 z-10 border-t border-sang-700/30 bg-graphite-950"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       aria-label="Navigation principale"
     >
       <ul className="flex h-12">
