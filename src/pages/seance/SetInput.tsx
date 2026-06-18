@@ -52,7 +52,7 @@ const RESERVE_TICKS = [
   { pct: 25, label: '3' },
   { pct: 50, label: '2' },
   { pct: 75, label: '1' },
-  { pct: 100, label: 'échec' },
+  { pct: 100, label: 'ECHEC' },
 ] as const;
 
 /**
@@ -65,7 +65,7 @@ const RESERVE_TICKS = [
  */
 function reserveLabel(rpe: number): string {
   const rir = 10 - rpe;
-  if (rir <= 0) return 'échec';
+  if (rir <= 0) return 'ECHEC';
   if (rir >= 4) return '4+';
   return Number.isInteger(rir) ? String(rir) : String(rir).replace('.', ',');
 }
@@ -521,7 +521,7 @@ function RpeSlider({ index, value, disabled, onChange }: RpeSliderProps) {
     <div className="mt-3 px-1">
       <div className="mb-1 flex items-baseline justify-between gap-2">
         <span className="text-[10px] uppercase tracking-wide text-anthracite-300">
-          réserve
+          reps en réserve
         </span>
         <span
           data-testid={`rpe-value-${index}`}
@@ -581,7 +581,7 @@ function RpeSlider({ index, value, disabled, onChange }: RpeSliderProps) {
             }}
             style={{ pointerEvents: 'none' }}
             className="absolute inset-0 h-full w-full opacity-0"
-            aria-label="Réserve : de 4+ (facile) à échec"
+            aria-label="Reps en réserve : de 4+ (facile) à l'échec"
           />
         </div>
 

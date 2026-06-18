@@ -159,12 +159,17 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
     if (v > runningMax) runningMax = v;
   }
 
-  // Ticks Y : min, mid, max. Si min === max (courbe plate), on tasse les
-  // ticks à la valeur courante pour éviter d'afficher trois fois la même.
-  const flat = range === 1 && min === max;
-  const tickValues = flat
-    ? [min]
-    : [max, (min + max) / 2, min];
+  // Ticks Y : extrémités + milieu, puis déduplication par valeur ENTIÈRE
+  // affichée (extrémités prioritaires). Sans ça, une plage e1RM serrée
+  // (< ~1 kg) fait arrondir deux ticks au même entier → « 28, 28, 29 ».
+  const tickCandidates = min === max ? [min] : [max, min, (min + max) / 2];
+  const seenTickLabels = new Set<number>();
+  const tickValues = tickCandidates.filter((v) => {
+    const label = Math.round(v);
+    if (seenTickLabels.has(label)) return false;
+    seenTickLabels.add(label);
+    return true;
+  });
 
   const currentY = yOf(current);
 
@@ -199,7 +204,7 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
               fill="#9aa0aa"
               className="tabular-nums"
             >
-              {v.toFixed(0)} kg
+              {Math.round(v)} kg
             </text>
           </g>
         );

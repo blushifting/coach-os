@@ -11,13 +11,12 @@
  *    correctif + charge auto-suggérée pour la série suivante. L'user comprend
  *    pourquoi ça n'a pas calibré et a un point de départ pour la suivante.
  *  - Aucune série cochée encore : texte pédagogique appuyé sur l'importance
- *    d'aller chercher un effort 7-8/10. Lien discret "Je connais mon plafond".
+ *    d'aller chercher un effort 7-8/10.
  *
  * Bandeau invisible si `confidence === 'measured'` (mode normal, vue épurée).
  */
 
-import { useMemo, useState } from 'react';
-import { Button } from '@/components/Button';
+import { useMemo } from 'react';
 import { Concept } from '@/components/Concept';
 import type { Exercise } from '@/engine/models';
 import { kgUnitLabel } from '@/lib/catalog-filter';
@@ -28,7 +27,6 @@ import {
   type SetEntry,
 } from '@/lib/session-runner';
 import type { E1rmConfidence } from '@/lib/calibration-status';
-import { ManualE1rmSheet } from './ManualE1rmSheet';
 
 interface CalibrationBannerProps {
   readonly exercise: Exercise;
@@ -43,8 +41,6 @@ export function CalibrationBanner({
   confidence,
   entries,
 }: CalibrationBannerProps) {
-  const [sheetOpen, setSheetOpen] = useState(false);
-
   const liveE1rm = useMemo(
     () => computeLiveE1rmFromEntries(exercise, bodyweightKg, entries),
     [exercise, bodyweightKg, entries],
@@ -71,69 +67,47 @@ export function CalibrationBanner({
   const unit = kgUnitLabel(exercise.charge);
 
   return (
-    <>
-      <div
-        data-testid={`calibration-banner-${exercise.id}`}
-        data-confidence={confidence}
-        className="-mx-1 mb-1 flex flex-col gap-1.5 rounded-lg border border-blue-700/40 bg-blue-900/20 px-3 py-2 text-xs leading-relaxed text-anthracite-100"
-      >
-        {liveE1rm !== null ? (
-          <p className="text-blue-200">
-            <span className="font-semibold text-white">
-              <Concept topic="plafond">Plafond</Concept> appris :{' '}
-              {liveE1rm.toFixed(1)} {unit}
-            </span>{' '}
-            — les séries suivantes sont ajustées automatiquement.
-          </p>
-        ) : unreliable !== null ? (
-          <p>
-            <span className="font-semibold text-blue-300">
-              Trop facile pour mesurer ton Plafond
-            </span>{' '}
-            — garde 2 à 3 reps en réserve (arrête-toi avant l'échec).
-            {suggestedLoad !== null ? (
-              <>
-                {' '}
-                À la série suivante, essaie autour de{' '}
-                <span className="font-semibold text-white">
-                  {suggestedLoad} {unit}
-                </span>
-                .
-              </>
-            ) : null}
-          </p>
-        ) : (
-          <p>
-            <span className="font-semibold text-blue-300">
-              {isStale ? 'À recalibrer' : 'On apprend ta charge'}
-            </span>{' '}
-            —{' '}
-            {isStale
-              ? 'Plafond pas mesuré depuis 8 semaines, cette série va le rafraîchir.'
-              : "garde 2 à 3 reps en réserve (pousse vraiment). C'est cette intensité qui permet à Kotsh d'apprendre ton Plafond — fais 3-12 reps puis renseigne reps + réserve."}
-          </p>
-        )}
-
-        {!isStale && liveE1rm === null && unreliable === null ? (
-          <div className="flex">
-            <Button
-              variant="ghost"
-              size="sm"
-              data-testid={`btn-manual-e1rm-${exercise.id}`}
-              onClick={() => setSheetOpen(true)}
-            >
-              Je connais mon Plafond
-            </Button>
-          </div>
-        ) : null}
-      </div>
-
-      <ManualE1rmSheet
-        open={sheetOpen}
-        exercise={exercise}
-        bodyweightKg={bodyweightKg}
-        onClose={() => setSheetOpen(false)}
-      />
-    </>
+    <div
+      data-testid={`calibration-banner-${exercise.id}`}
+      data-confidence={confidence}
+      className="-mx-1 mb-1 flex flex-col gap-1.5 rounded-lg border border-blue-700/40 bg-blue-900/20 px-3 py-2 text-xs leading-relaxed text-anthracite-100"
+    >
+      {liveE1rm !== null ? (
+        <p className="text-blue-200">
+          <span className="font-semibold text-white">
+            <Concept topic="plafond">Plafond</Concept> appris :{' '}
+            {liveE1rm.toFixed(1)} {unit}
+          </span>{' '}
+          — les séries suivantes sont ajustées automatiquement.
+        </p>
+      ) : unreliable !== null ? (
+        <p>
+          <span className="font-semibold text-blue-300">
+            Trop facile pour mesurer ton Plafond
+          </span>{' '}
+          — garde 2 à 3 reps en réserve (arrête-toi avant l'échec).
+          {suggestedLoad !== null ? (
+            <>
+              {' '}
+              À la série suivante, essaie autour de{' '}
+              <span className="font-semibold text-white">
+                {suggestedLoad} {unit}
+              </span>
+              .
+            </>
+          ) : null}
+        </p>
+      ) : (
+        <p>
+          <span className="font-semibold text-blue-300">
+            {isStale ? 'À recalibrer' : 'On apprend ta charge'}
+          </span>{' '}
+          —{' '}
+          {isStale
+            ? 'Plafond pas mesuré depuis 8 semaines, cette série va le rafraîchir.'
+            : "garde 2 à 3 reps en réserve (pousse vraiment). C'est cette intensité qui permet à Kotsh d'apprendre ton Plafond — fais 3-12 reps puis renseigne reps + réserve."}
+        </p>
+      )}
+    </div>
   );
 }

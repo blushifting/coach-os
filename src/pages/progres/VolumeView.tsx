@@ -187,11 +187,10 @@ function Legend() {
   // position relative à la zone cible V_min/V_max. Cohérence visuelle avec
   // la silhouette `palette="volume"`.
   return (
-    <div className="flex flex-wrap gap-3 text-[10px] text-anthracite-300">
+    <div className="flex flex-wrap justify-center gap-3 text-[10px] text-anthracite-300">
       <LegendItem dotClass="bg-sang-900" label="sous le minimum" />
       <LegendItem dotClass="bg-sang-600" label="dans la cible" />
       <LegendItem dotClass="bg-sang-400" label="au-dessus" />
-      <LegendItem dotClass="bg-anthracite-500" label="pas touché" />
     </div>
   );
 }

@@ -34,7 +34,7 @@ export function ExerciseEyeButton({ exercise, brand, className }: ExerciseEyeBut
         title="Voir le mouvement"
         data-testid={`exercise-eye-${exercise.id}`}
         className={cn(
-          'flex w-11 shrink-0 items-center justify-center rounded-xl border border-anthracite-700 bg-anthracite-900 text-anthracite-300 transition hover:border-sang-700 hover:text-white',
+          'flex h-11 w-11 shrink-0 self-center items-center justify-center rounded-xl border border-anthracite-700 bg-anthracite-900 text-anthracite-300 transition hover:border-sang-700 hover:text-white',
           className,
         )}
       >
