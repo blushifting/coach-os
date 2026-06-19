@@ -280,7 +280,7 @@ describe('Conv #22 — sets_allocator (étape F)', () => {
     expect(pecSets).toBeGreaterThanOrEqual(9.5);
   });
 
-  it('plancher 3 séries / exo, plafond 6 / exo', () => {
+  it('plancher 3 séries / exo, plafond 5 / exo (règle 3-5, Bloc L)', () => {
     const state = makeStateForGoals({
       sessions_per_week: 4,
       prios: [['pectoraux', MuscleObjective.HYPERTROPHIE]],
@@ -290,7 +290,13 @@ describe('Conv #22 — sets_allocator (étape F)', () => {
     for (const day of plan.days) {
       for (const ex of day.exercises) {
         expect(ex.base_sets).toBeGreaterThanOrEqual(3);
-        expect(ex.base_sets).toBeLessThanOrEqual(6);
+        expect(ex.base_sets).toBeLessThanOrEqual(5);
+        // Bloc L — séries fixes : toutes les semaines de travail (1-4) sont
+        // égales, dans 3-5 ; la semaine 5 (déload) peut être plus basse.
+        expect(ex.progression.slice(0, 4)).toEqual([
+          ex.base_sets, ex.base_sets, ex.base_sets, ex.base_sets,
+        ]);
+        expect(ex.progression[3]!).toBeLessThanOrEqual(5);
       }
     }
   });

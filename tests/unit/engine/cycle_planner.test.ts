@@ -1,7 +1,7 @@
 /**
  * Miroir TS de prototype/tests/test_cycle_planner.py.
  * Couvre : effectiveVolumeBounds (extension MuscleGoal), targetFrequency,
- * israetelProgression, exosCountForVolume, compoundCountForObjective,
+ * cycleSetProgression, exosCountForVolume, compoundCountForObjective,
  * parameterizeSplit, composeSession, generateCyclePlan, rotateEmphasis,
  * orderSession.
  */
@@ -17,7 +17,7 @@ import {
   enforceLengthenedBias,
   exosCountForVolume,
   generateCyclePlan,
-  israetelProgression,
+  cycleSetProgression,
   parameterizeSplit,
   rotateEmphasis,
 } from '@/engine/cycle_planner';
@@ -166,29 +166,36 @@ describe('targetFrequency', () => {
 });
 
 // =============================================================================
-// 3. israetelProgression
+// 3. cycleSetProgression (Bloc L — séries fixes)
 // =============================================================================
 
-describe('israetelProgression', () => {
+describe('cycleSetProgression', () => {
   it('5 semaines', () => {
-    expect(israetelProgression(3).length).toBe(5);
+    expect(cycleSetProgression(3).length).toBe(5);
   });
 
   it('w5 (déload) ≤ w1', () => {
-    const p = israetelProgression(4);
+    const p = cycleSetProgression(4);
     expect(p[4]!).toBeLessThanOrEqual(p[0]!);
   });
 
-  it('monte de w1 à w4', () => {
-    const p = israetelProgression(3);
-    expect(p[0]!).toBeLessThanOrEqual(p[1]!);
-    expect(p[1]!).toBeLessThanOrEqual(p[2]!);
-    expect(p[2]!).toBeLessThanOrEqual(p[3]!);
+  it('séries FIXES de w1 à w4 (plus de bump hebdo)', () => {
+    const p = cycleSetProgression(4);
+    expect(p[0]).toBe(4);
+    expect(p[1]).toBe(4);
+    expect(p[2]).toBe(4);
+    expect(p[3]).toBe(4);
   });
 
-  it('cappée à v_max_per_exo', () => {
-    const p = israetelProgression(8, 10);
-    expect(Math.max(...p)).toBeLessThanOrEqual(10);
+  it('plafonnée au plafond par-exo (5) côté ceiling', () => {
+    const p = cycleSetProgression(8);
+    expect(p[0]).toBe(5);
+    expect(Math.max(...p)).toBeLessThanOrEqual(5);
+  });
+
+  it('clamp ceiling-only : ne plancher pas un base sous 3 (le plancher est géré en amont)', () => {
+    const p = cycleSetProgression(2);
+    expect(p.slice(0, 4)).toEqual([2, 2, 2, 2]);
   });
 });
 

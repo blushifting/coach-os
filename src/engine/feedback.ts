@@ -23,6 +23,16 @@ import {
  */
 export const RPE_RESERVE_FLOOR = 6;
 
+/**
+ * Bloc L — tolérance de reps sous la cible pour valider une charge volontairement
+ * plus lourde que la prescription comme nouveau point de calibration. Si l'user
+ * met plus lourd que préconisé et reste à ≤ 2 reps sous la cible, c'est un signal
+ * de force fiable (≈ résolution du RPE/Epley ; la mesure passe déjà le filtre
+ * `n_équiv ≤ 15`) : on adopte la charge décisivement au lieu d'amortir via l'EMA,
+ * pour ne pas « rétrograder » involontairement la charge à la séance suivante.
+ */
+export const LOAD_OVERRIDE_REP_TOLERANCE = 2;
+
 // =============================================================================
 // 1. Coefficient α du filtre EMA (cf. §6.2)
 // =============================================================================
@@ -98,6 +108,15 @@ export interface UpdateE1rmOptions {
    * Défaut : `false` (comportement EMA standard, séances ≥ 2 d'un exo).
    */
   readonly skipEma?: boolean;
+
+  /**
+   * Bloc L — charge et reps préconisées pour cet exo à cette séance (issues du
+   * `SessionPlan`). Sert à détecter que l'user a soulevé plus lourd que prévu :
+   * dans ce cas (et si l'écart de reps est dans la tolérance), on adopte la
+   * charge décisivement plutôt que de l'amortir via l'EMA (cf.
+   * `LOAD_OVERRIDE_REP_TOLERANCE`). Absent → comportement EMA standard.
+   */
+  readonly prescribed?: { readonly load_kg: number; readonly target_reps: number };
 }
 
 /**
@@ -158,13 +177,29 @@ export function updateE1rmForExercise(
   // Bootstrap si vide : on pose old = e1rmAgg.
   const old = state.e1rm[exercise.id] ?? e1rmAgg;
 
-  // 1.17 — séance « trop facile » : toutes les séries fiables sont à la réserve
-  // plancher (RPE 6 = 4+ reps en réserve). On NE damp PAS via l'EMA — le plafond
-  // monte décisivement vers l'e1RM observé (borne basse conservatrice : à effort
-  // faible, Epley sous-estime), pour que la séance suivante prescrive plus lourd.
-  // `max(old, …)` : une séance facile ne baisse jamais le plafond.
+  // Deux cas d'« adoption décisive » du plafond (pas d'amortissement EMA, et
+  // `max(old, …)` pour ne jamais baisser le plafond) :
+  //
+  //  1. 1.17 — séance « trop facile » : toutes les séries fiables sont à la
+  //     réserve plancher (RPE 6 = 4+ reps en réserve). Le plafond monte
+  //     décisivement vers l'e1RM observé (à effort faible, Epley sous-estime →
+  //     borne basse conservatrice), pour que la séance suivante prescrive plus
+  //     lourd.
+  //
+  //  2. Bloc L — charge volontairement > préconisée : l'user a soulevé plus
+  //     lourd que la prescription sur sa meilleure série fiable (celle qui pilote
+  //     déjà α) en restant à ≤ LOAD_OVERRIDE_REP_TOLERANCE reps sous la cible.
+  //     Sans ça, l'EMA amortit la charge soulevée et la séance suivante
+  //     reproposerait ~l'ancienne charge (plus basse) = rétrogradation
+  //     involontaire.
   const tooEasy = reliable.every((f) => f.rpe_perceived <= RPE_RESERVE_FLOOR);
-  const next = tooEasy
+  const best = reliable[bestIdx]!;
+  const outperformedLoad =
+    options.prescribed != null &&
+    best.load_kg > options.prescribed.load_kg &&
+    best.reps_done >= options.prescribed.target_reps - LOAD_OVERRIDE_REP_TOLERANCE;
+  const decisive = tooEasy || outperformedLoad;
+  const next = decisive
     ? Math.max(old, e1rmAgg)
     : alpha * e1rmAgg + (1 - alpha) * old;
   state.e1rm[exercise.id] = next;

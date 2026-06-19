@@ -235,3 +235,55 @@ describe('weekly_volume_debt', () => {
     expect(state.weekly_volume_debt).toEqual({});
   });
 });
+
+// =============================================================================
+// Bloc L — recordFeedback transmet la charge préconisée (anti-rétrogradation)
+// =============================================================================
+
+describe('recordFeedback — charge > préconisée (Bloc L)', () => {
+  it('transmet `prescribed` depuis le plan → charge plus lourde adoptée décisivement', () => {
+    const p = profile();
+    const mkState = () =>
+      startUser(p, catalog, {
+        muscleGoals: bootstrapMuscleGoalsFromProfile(p, ['pectoraux']),
+      });
+
+    // Plan minimal : bench_bb préconisé 80 kg × 10.
+    const plan: SessionPlan = {
+      seance_date: '2026-01-05',
+      week_in_cycle: 1,
+      cycle_index: 0,
+      rpe_target: 8,
+      label: 'A',
+      items: [
+        {
+          exercise_id: 'bench_bb',
+          sets: [
+            { exercise_id: 'bench_bb', reps: 10, load_kg: 80, rpe_target: 8, rest_s: 120 },
+          ],
+        },
+      ],
+    };
+    // L'user met 95 kg × 9 RPE 8 : plus lourd que préco, 1 rep sous la cible.
+    const fb: SessionFeedback = {
+      seance_date: '2026-01-05',
+      week_in_cycle: 1,
+      cycle_index: 0,
+      rpe_target: 8,
+      label: 'A',
+      sets: [{ exercise_id: 'bench_bb', reps_done: 9, load_kg: 95, rpe_perceived: 8 }],
+    };
+
+    const withPlan = mkState();
+    withPlan.e1rm['bench_bb'] = 100;
+    recordFeedback(withPlan, catalog, fb, { plan });
+
+    const withoutPlan = mkState();
+    withoutPlan.e1rm['bench_bb'] = 100;
+    recordFeedback(withoutPlan, catalog, fb, {});
+
+    // Avec le plan, `prescribed` est transmis → adoption décisive (≈ e1RM observé) ;
+    // sans le plan, l'EMA amortit → plafond plus bas.
+    expect(withPlan.e1rm['bench_bb']!).toBeGreaterThan(withoutPlan.e1rm['bench_bb']!);
+  });
+});

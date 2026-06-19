@@ -47,8 +47,8 @@ import {
 import {
   effectiveVolumeBounds,
   targetFrequency,
-  MAINTENANCE_MIN_SETS,
-  MAX_SETS_PER_SESSION_PER_MUSCLE,
+  MIN_SETS_PER_EXERCISE_PER_SESSION,
+  MAX_SETS_PER_EXERCISE_PER_SESSION,
   DELOAD_FACTOR,
 } from './volume';
 import {
@@ -119,24 +119,34 @@ function bankersRound(x: number): number {
 }
 
 // =============================================================================
-// 2. Progression Israetel (cf. 09 §2.1, §3.3)
+// 2. Progression de séries sur le cycle (Bloc L — séries fixes)
 // =============================================================================
 
 /**
- * Progression hebdo en séries pour 1 exo, sur 5 semaines (4 + déload).
- *   - w1 : baseSets
- *   - w2-w4 : +1 série / sem, plafonné à vMaxPerExo
- *   - w5 : déload, environ 50 % de base
+ * Nombre de séries par semaine pour 1 exo, sur 5 semaines (4 + déload).
+ *
+ * Bloc L (Conv #37) — **séries FIXES** sur les 4 semaines de travail, puis
+ * déload. On a abandonné l'ancien bump hebdo « +1 série/sem/exo » (algo Coach OS
+ * custom, infidèle aux sources : Israetel ajoute des séries par MUSCLE et SI
+ * l'user progresse — synthèse experte, évidence faible — pas par exo et pas
+ * inconditionnellement ; et au-delà de 5-6 séries/exo le rendement décroît,
+ * Schoenfeld 2017). La progression intra-cycle passe désormais par l'intensité
+ * (charge via recalibration e1RM + RPE cible qui monte) et les reps ; le volume
+ * monte d'un cycle à l'autre via la recalibration de fin de cycle.
+ *
+ *   - w1-w4 : baseSets (plafonné au plafond DUR par-exo, 5)
+ *   - w5    : déload, environ 50 % de base
  */
-export function israetelProgression(
+export function cycleSetProgression(
   baseSets: number,
-  vMaxPerExo: number = MAX_SETS_PER_SESSION_PER_MUSCLE,
+  vMaxPerExo: number = MAX_SETS_PER_EXERCISE_PER_SESSION,
 ): number[] {
-  const progression: number[] = [];
-  for (let w = 1; w <= 4; w += 1) {
-    progression.push(Math.min(vMaxPerExo, baseSets + (w - 1)));
-  }
-  const deload = Math.max(1, Math.trunc(baseSets * DELOAD_FACTOR));
+  // Plafond DUR par-exo uniquement (pas de plancher ici : le maintien à 2
+  // séries doit pouvoir descendre sous 3 ; le plancher 3 des muscles travaillés
+  // est garanti en amont, au moment où `baseSets` est déterminé).
+  const sets = Math.min(vMaxPerExo, baseSets);
+  const progression: number[] = [sets, sets, sets, sets];
+  const deload = Math.max(1, Math.trunc(sets * DELOAD_FACTOR));
   progression.push(deload);
   return progression;
 }
@@ -350,19 +360,19 @@ export function composeSession(
     const allForMuscle: Exercise[] = [...compounds, ...isolations];
     if (allForMuscle.length === 0) continue;
 
-    // base_sets par exo : V_session / nb d'exos, arrondi >= 2
+    // base_sets par exo : V_session / nb d'exos, borné à la règle 3-5 (Bloc L).
     let setsPerExo = Math.max(
-      2,
+      3,
       pythonRound(vSession / Math.max(1, allForMuscle.length)),
     );
-    setsPerExo = Math.min(setsPerExo, MAX_SETS_PER_SESSION_PER_MUSCLE);
+    setsPerExo = Math.min(setsPerExo, MAX_SETS_PER_EXERCISE_PER_SESSION);
 
     for (const ex of allForMuscle) {
       chosenPlanned.push(
         makePlannedExercise({
           exercise_id: ex.id,
           base_sets: setsPerExo,
-          progression: israetelProgression(setsPerExo),
+          progression: cycleSetProgression(setsPerExo),
           progression_rule: ProgressionRule.ISRAETEL_VOLUME,
         }),
       );
@@ -392,7 +402,10 @@ export function composeSession(
 
 /**
  * Pour chaque muscle SUGGERE, vérifie si volume incident suffit.
- * Si pas, ajoute 1 exo isolation léger (base_sets=2) sur le 1er jour qui l'accepte.
+ * Si pas, ajoute 1 exo isolation (base_sets=3, plancher par-exo) sur le 1er jour
+ * qui l'accepte. Bloc L — aligné sur le plancher du chemin V2 : un muscle en
+ * maintien sort à 3-4 séries/sem (≈ max(2, 40 % × V_min) des sources), c'est le
+ * volume hebdo total qui fait foi.
  */
 export function topUpMaintenance(
   weeklyTemplate: WeeklyTemplate,
@@ -418,12 +431,12 @@ export function topUpMaintenance(
       const excludeIds = new Set(day.exercises.map((p) => p.exercise_id));
       const iso = pickIsolationsForMuscle(muscle, 1, state, catalog, { excludeIds });
       if (iso.length === 0) continue;
-      const baseSets = Math.trunc(MAINTENANCE_MIN_SETS);
+      const baseSets = MIN_SETS_PER_EXERCISE_PER_SESSION;
       day.exercises.push(
         makePlannedExercise({
           exercise_id: iso[0]!.id,
           base_sets: baseSets,
-          progression: israetelProgression(baseSets),
+          progression: cycleSetProgression(baseSets),
           progression_rule: ProgressionRule.ISRAETEL_VOLUME,
         }),
       );
@@ -608,8 +621,9 @@ function equivalenceKey(ex: Exercise): string {
  * équivalents (ex: compound + isolation choisis par l'algo se retrouvent en
  * 2× bench_db si l'user remplace l'isolation par un compound équivalent).
  *
- * Cap : la somme de `base_sets` et chaque point de `progression` est cappée à
- * `MAX_SETS_PER_SESSION_PER_MUSCLE` pour éviter d'exploser le volume.
+ * Cap : la somme de `base_sets` et chaque point de `progression` est cappée au
+ * plafond DUR par-exo (`MAX_SETS_PER_EXERCISE_PER_SESSION` = 5) — la fusion
+ * produit UN exercice, qui doit respecter la règle 3-5 (Bloc L).
  */
 export function mergeEquivalentExercises(
   day: DayTemplate,
@@ -631,7 +645,7 @@ export function mergeEquivalentExercises(
       continue;
     }
     const existing = merged[existingIdx]!;
-    const cap = MAX_SETS_PER_SESSION_PER_MUSCLE;
+    const cap = MAX_SETS_PER_EXERCISE_PER_SESSION;
     const fusedSets = Math.min(cap, existing.base_sets + planned.base_sets);
     const len = Math.max(existing.progression.length, planned.progression.length);
     const fusedProg: number[] = [];

@@ -1,6 +1,6 @@
 /**
- * Miroir TS de prototype/tests/test_feedback.py.
- * Couvre : coefficient α de l'EMA, mise à jour e1RM, double progression.
+ * Couvre : coefficient α de l'EMA, mise à jour e1RM, adoption décisive de
+ * charge (Bloc L), double progression.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -139,6 +139,60 @@ describe('updateE1rmForExercise', () => {
     ];
     const [, next] = updateE1rmForExercise(state, ex, fbs)!;
     expect(next).toBe(130);
+  });
+});
+
+// =============================================================================
+// Bloc L — charge volontairement > préconisée (anti-rétrogradation)
+// =============================================================================
+
+describe('updateE1rmForExercise — charge > préconisée (Bloc L)', () => {
+  it('plus lourd que préco + reps dans la tolérance (≤2 sous cible) → adoption décisive', () => {
+    const state = startUserStub(profileIntermediaireH());
+    state.e1rm['bench_bb'] = 100;
+    const ex = catalog.get('bench_bb');
+    // Préco 80 kg × 10 ; l'user met 90 kg × 8 RPE 8 (2 reps sous la cible).
+    // e1rm_obs ≈ 90 × (1 + 0,0333×10) ≈ 120 ; EMA amorti aurait donné ~104.
+    const fbs: SetFeedback[] = [
+      { exercise_id: 'bench_bb', reps_done: 8, load_kg: 90, rpe_perceived: 8 },
+    ];
+    const [old, next] = updateE1rmForExercise(state, ex, fbs, undefined, {
+      prescribed: { load_kg: 80, target_reps: 10 },
+    })!;
+    expect(old).toBe(100);
+    expect(next).toBeGreaterThan(115); // décisif, pas l'EMA amorti
+  });
+
+  it('plus lourd mais reps trop basses (>2 sous la cible) → EMA amorti', () => {
+    const state = startUserStub(profileIntermediaireH());
+    state.e1rm['bench_bb'] = 100;
+    const ex = catalog.get('bench_bb');
+    // 90 kg mais seulement 6 reps vs cible 10 (4 sous la cible) → pas décisif.
+    const fbs: SetFeedback[] = [
+      { exercise_id: 'bench_bb', reps_done: 6, load_kg: 90, rpe_perceived: 8 },
+    ];
+    const [, next] = updateE1rmForExercise(state, ex, fbs, undefined, {
+      prescribed: { load_kg: 80, target_reps: 10 },
+    })!;
+    expect(next).toBeLessThan(108); // EMA, loin de l'e1RM observé (~114)
+  });
+
+  it('charge ≤ préconisée → EMA standard, identique à l’absence de prescribed', () => {
+    const ex = catalog.get('bench_bb');
+    const fbs: SetFeedback[] = [
+      { exercise_id: 'bench_bb', reps_done: 8, load_kg: 80, rpe_perceived: 8 },
+    ];
+    // Préco 100 kg : l'user met 80 (plus léger) → override ne se déclenche pas.
+    const s1 = startUserStub(profileIntermediaireH());
+    s1.e1rm['bench_bb'] = 130;
+    const withPresc = updateE1rmForExercise(s1, ex, fbs, undefined, {
+      prescribed: { load_kg: 100, target_reps: 10 },
+    })![1];
+    const s2 = startUserStub(profileIntermediaireH());
+    s2.e1rm['bench_bb'] = 130;
+    const without = updateE1rmForExercise(s2, ex, fbs)![1];
+    expect(withPresc).toBe(without);
+    expect(withPresc).toBeLessThan(130); // EMA a amorti, pas de max(old, …)
   });
 });
 

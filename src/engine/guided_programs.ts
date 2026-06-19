@@ -680,13 +680,11 @@ function computeProgression(canon: CanonicalExercise, rule: ProgressionRule): nu
   if (rule === ProgressionRule.AMRAP_LP) {
     return [base, base, base, base, Math.max(1, Math.floor(base / 2))];
   }
-  // ISRAETEL_VOLUME (Helms, PPL Nippard) : monte en séries
-  const progression: number[] = [];
-  for (let w = 1; w <= 4; w++) {
-    progression.push(base + (w - 1));
-  }
-  progression.push(Math.max(1, Math.floor(base * 0.5)));
-  return progression;
+  // ISRAETEL_VOLUME (Helms, PPL Nippard) : Bloc L — séries FIXES sur le cycle
+  // (plus de bump hebdo « +1 série/sem »), plafonnées à 5/exo (règle 3-5). La
+  // progression passe par l'intensité (charge/RPE) et les reps.
+  const sets = Math.min(5, base);
+  return [sets, sets, sets, sets, Math.max(1, Math.floor(sets * 0.5))];
 }
 
 export interface FitGuidedResult {

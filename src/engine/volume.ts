@@ -80,6 +80,14 @@ export const OBJECTIVE_VOLUME_FACTOR: Record<MuscleObjective, number> = {
 export const SETS_PER_SESSION_OPTIMAL = 5;
 export const MAX_SETS_PER_SESSION_PER_MUSCLE = 10;
 
+// Bloc L — bornes DURES de séries par exo et par séance (règle 3-5). Au-delà de
+// 5-6 séries/exo, le rendement décroît (Schoenfeld 2017) : on ne propose jamais
+// plus de 5 ni moins de 3 séries sur un même exercice (y compris en maintien :
+// c'est le volume hebdo total qui fait foi). La progression intra-cycle passe
+// par l'intensité (charge/RPE) et les reps, pas par l'empilement de séries.
+export const MIN_SETS_PER_EXERCISE_PER_SESSION = 3;
+export const MAX_SETS_PER_EXERCISE_PER_SESSION = 5;
+
 // Volume "maintenance" : 2 séries minimum, sinon 40 % de V_min (Bickel 2011).
 export const MAINTENANCE_MIN_SETS = 2.0;
 
@@ -224,12 +232,13 @@ export function targetFrequency(muscle: string, state: UserState): number {
  * séries/sem pour un muscle prio hypertrophie standard).
  *
  * Retour Azur (Conv #22.4) : "il faut viser 10-12 séries par semaine pour
- * un muscle prio, c'est primordial". Visée V_min en semaine 1 du cycle ; la
- * progression hebdo Israetel (`israetelProgression`) se charge de bumper
- * vers V_max sur les 4 semaines suivantes (+1 série/sem/exo). Pas besoin
- * de viser un point intermédiaire dès la sem 1, ça créait des explosions
- * de volume incident (fessiers à 17 séries via leg_press / walking_lunge
- * qui ont fessiers:1 en primaire).
+ * un muscle prio, c'est primordial". Visée V_min tout le cycle.
+ *
+ * Bloc L (Conv #37) : le nb de séries par exo est FIXE sur les 4 semaines du
+ * cycle (puis déload) — plus de bump hebdo de séries (cf. `cycleSetProgression`).
+ * La progression intra-cycle est portée par l'intensité (charge via
+ * recalibration e1RM + RPE cible) et les reps ; le volume monte d'un cycle à
+ * l'autre via la recalibration de fin de cycle.
  *
  *   - NON_COUVERT/absent → 0
  *   - SUGGERE (maintien) → V_maintien fixe (~4 séries)

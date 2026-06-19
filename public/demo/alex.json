@@ -131,6 +131,12 @@
             "rpe_perceived": 7.5
           },
           {
+            "exercise_id": "bench_bb",
+            "reps_done": 5,
+            "load_kg": 58,
+            "rpe_perceived": 7.5
+          },
+          {
             "exercise_id": "pullup_assisted",
             "reps_done": 8,
             "load_kg": -17,
@@ -212,6 +218,12 @@
             "rpe_perceived": 7.5
           },
           {
+            "exercise_id": "squat_bb_high",
+            "reps_done": 5,
+            "load_kg": 78,
+            "rpe_perceived": 7.5
+          },
+          {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
             "load_kg": 91,
@@ -238,6 +250,12 @@
         "cycle_index": 1,
         "rpe_target": 7.5,
         "sets": [
+          {
+            "exercise_id": "bb_row",
+            "reps_done": 5,
+            "load_kg": 54,
+            "rpe_perceived": 7.5
+          },
           {
             "exercise_id": "bb_row",
             "reps_done": 5,
@@ -319,6 +337,12 @@
         "cycle_index": 1,
         "rpe_target": 7.5,
         "sets": [
+          {
+            "exercise_id": "deadlift_conv",
+            "reps_done": 5,
+            "load_kg": 92,
+            "rpe_perceived": 7.5
+          },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
@@ -941,12 +965,6 @@
             "rpe_perceived": 7.5
           },
           {
-            "exercise_id": "bench_bb",
-            "reps_done": 5,
-            "load_kg": 60,
-            "rpe_perceived": 7.5
-          },
-          {
             "exercise_id": "pullup_assisted",
             "reps_done": 8,
             "load_kg": -19,
@@ -1034,12 +1052,6 @@
             "rpe_perceived": 9.5
           },
           {
-            "exercise_id": "squat_bb_high",
-            "reps_done": 7,
-            "load_kg": 84,
-            "rpe_perceived": 9.5
-          },
-          {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
             "load_kg": 99,
@@ -1066,12 +1078,6 @@
         "cycle_index": 1,
         "rpe_target": 7.5,
         "sets": [
-          {
-            "exercise_id": "bb_row",
-            "reps_done": 5,
-            "load_kg": 55,
-            "rpe_perceived": 7.5
-          },
           {
             "exercise_id": "bb_row",
             "reps_done": 5,
@@ -1159,12 +1165,6 @@
         "cycle_index": 1,
         "rpe_target": 7.5,
         "sets": [
-          {
-            "exercise_id": "deadlift_conv",
-            "reps_done": 5,
-            "load_kg": 97,
-            "rpe_perceived": 7.5
-          },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
@@ -1415,6 +1415,12 @@
             "rpe_perceived": 7.5
           },
           {
+            "exercise_id": "bench_bb",
+            "reps_done": 5,
+            "load_kg": 60,
+            "rpe_perceived": 7.5
+          },
+          {
             "exercise_id": "pullup",
             "reps_done": 8,
             "load_kg": 54,
@@ -1496,6 +1502,12 @@
             "rpe_perceived": 7.5
           },
           {
+            "exercise_id": "front_squat",
+            "reps_done": 5,
+            "load_kg": 62,
+            "rpe_perceived": 7.5
+          },
+          {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
             "load_kg": 98,
@@ -1522,6 +1534,12 @@
         "cycle_index": 2,
         "rpe_target": 7.5,
         "sets": [
+          {
+            "exercise_id": "bb_row",
+            "reps_done": 5,
+            "load_kg": 56,
+            "rpe_perceived": 7.5
+          },
           {
             "exercise_id": "bb_row",
             "reps_done": 5,
@@ -1603,6 +1621,12 @@
         "cycle_index": 2,
         "rpe_target": 7.5,
         "sets": [
+          {
+            "exercise_id": "deadlift_conv",
+            "reps_done": 5,
+            "load_kg": 99,
+            "rpe_perceived": 7.5
+          },
           {
             "exercise_id": "deadlift_conv",
             "reps_done": 5,
@@ -2138,12 +2162,6 @@
             "rpe_perceived": 7.5
           },
           {
-            "exercise_id": "bench_bb",
-            "reps_done": 5,
-            "load_kg": 63,
-            "rpe_perceived": 7.5
-          },
-          {
             "exercise_id": "pullup",
             "reps_done": 8,
             "load_kg": 57,
@@ -2311,10 +2329,10 @@
               "exercise_id": "bench_bb",
               "base_sets": 4,
               "progression": [
-                3,
                 4,
                 4,
-                5,
+                4,
+                4,
                 2
               ],
               "role": "main_push_h",
@@ -2378,10 +2396,10 @@
               "exercise_id": "front_squat",
               "base_sets": 4,
               "progression": [
-                3,
                 4,
                 4,
-                5,
+                4,
+                4,
                 2
               ],
               "role": "main_squat",
@@ -2417,10 +2435,10 @@
               "exercise_id": "bb_row",
               "base_sets": 4,
               "progression": [
-                3,
                 4,
                 4,
-                5,
+                4,
+                4,
                 2
               ],
               "role": "main_pull_h",
@@ -2484,10 +2502,10 @@
               "exercise_id": "deadlift_conv",
               "base_sets": 4,
               "progression": [
-                3,
                 4,
                 4,
-                5,
+                4,
+                4,
                 2
               ],
               "role": "main_hinge",
@@ -2535,6 +2553,13 @@
             {
               "exercise_id": "bench_bb",
               "sets": [
+                {
+                  "exercise_id": "bench_bb",
+                  "reps": 5,
+                  "load_kg": 58,
+                  "rpe_target": 7.5,
+                  "rest_s": 180
+                },
                 {
                   "exercise_id": "bench_bb",
                   "reps": 5,
@@ -2676,6 +2701,13 @@
                   "load_kg": 78,
                   "rpe_target": 7.5,
                   "rest_s": 240
+                },
+                {
+                  "exercise_id": "squat_bb_high",
+                  "reps": 5,
+                  "load_kg": 78,
+                  "rpe_target": 7.5,
+                  "rest_s": 240
                 }
               ]
             },
@@ -2725,6 +2757,13 @@
             {
               "exercise_id": "bb_row",
               "sets": [
+                {
+                  "exercise_id": "bb_row",
+                  "reps": 5,
+                  "load_kg": 54,
+                  "rpe_target": 7.5,
+                  "rest_s": 180
+                },
                 {
                   "exercise_id": "bb_row",
                   "reps": 5,
@@ -2846,6 +2885,13 @@
             {
               "exercise_id": "deadlift_conv",
               "sets": [
+                {
+                  "exercise_id": "deadlift_conv",
+                  "reps": 5,
+                  "load_kg": 92,
+                  "rpe_target": 7.5,
+                  "rest_s": 240
+                },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
@@ -3758,13 +3804,6 @@
                   "load_kg": 60,
                   "rpe_target": 7.5,
                   "rest_s": 180
-                },
-                {
-                  "exercise_id": "bench_bb",
-                  "reps": 5,
-                  "load_kg": 60,
-                  "rpe_target": 7.5,
-                  "rest_s": 180
                 }
               ]
             },
@@ -3893,13 +3932,6 @@
                   "load_kg": 81,
                   "rpe_target": 7.5,
                   "rest_s": 240
-                },
-                {
-                  "exercise_id": "squat_bb_high",
-                  "reps": 5,
-                  "load_kg": 81,
-                  "rpe_target": 7.5,
-                  "rest_s": 240
                 }
               ]
             },
@@ -3949,13 +3981,6 @@
             {
               "exercise_id": "bb_row",
               "sets": [
-                {
-                  "exercise_id": "bb_row",
-                  "reps": 5,
-                  "load_kg": 55,
-                  "rpe_target": 7.5,
-                  "rest_s": 180
-                },
                 {
                   "exercise_id": "bb_row",
                   "reps": 5,
@@ -4084,13 +4109,6 @@
             {
               "exercise_id": "deadlift_conv",
               "sets": [
-                {
-                  "exercise_id": "deadlift_conv",
-                  "reps": 5,
-                  "load_kg": 97,
-                  "rpe_target": 7.5,
-                  "rest_s": 240
-                },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
@@ -4483,6 +4501,13 @@
                   "load_kg": 60,
                   "rpe_target": 7.5,
                   "rest_s": 180
+                },
+                {
+                  "exercise_id": "bench_bb",
+                  "reps": 5,
+                  "load_kg": 60,
+                  "rpe_target": 7.5,
+                  "rest_s": 180
                 }
               ]
             },
@@ -4604,6 +4629,13 @@
                   "load_kg": 62,
                   "rpe_target": 7.5,
                   "rest_s": 240
+                },
+                {
+                  "exercise_id": "front_squat",
+                  "reps": 5,
+                  "load_kg": 62,
+                  "rpe_target": 7.5,
+                  "rest_s": 240
                 }
               ]
             },
@@ -4653,6 +4685,13 @@
             {
               "exercise_id": "bb_row",
               "sets": [
+                {
+                  "exercise_id": "bb_row",
+                  "reps": 5,
+                  "load_kg": 56,
+                  "rpe_target": 7.5,
+                  "rest_s": 180
+                },
                 {
                   "exercise_id": "bb_row",
                   "reps": 5,
@@ -4774,6 +4813,13 @@
             {
               "exercise_id": "deadlift_conv",
               "sets": [
+                {
+                  "exercise_id": "deadlift_conv",
+                  "reps": 5,
+                  "load_kg": 99,
+                  "rpe_target": 7.5,
+                  "rest_s": 240
+                },
                 {
                   "exercise_id": "deadlift_conv",
                   "reps": 5,
@@ -5686,13 +5732,6 @@
                   "load_kg": 63,
                   "rpe_target": 7.5,
                   "rest_s": 180
-                },
-                {
-                  "exercise_id": "bench_bb",
-                  "reps": 5,
-                  "load_kg": 63,
-                  "rpe_target": 7.5,
-                  "rest_s": 180
                 }
               ]
             },
@@ -5794,13 +5833,6 @@
             {
               "exercise_id": "bb_row",
               "sets": [
-                {
-                  "exercise_id": "bb_row",
-                  "reps": 5,
-                  "load_kg": 57,
-                  "rpe_target": 7.5,
-                  "rest_s": 180
-                },
                 {
                   "exercise_id": "bb_row",
                   "reps": 5,
@@ -5956,13 +5988,6 @@
                   "load_kg": 103,
                   "rpe_target": 7.5,
                   "rest_s": 240
-                },
-                {
-                  "exercise_id": "deadlift_conv",
-                  "reps": 5,
-                  "load_kg": 103,
-                  "rpe_target": 7.5,
-                  "rest_s": 240
                 }
               ]
             },
@@ -6012,6 +6037,12 @@
           "cycle_index": 1,
           "rpe_target": 7.5,
           "sets": [
+            {
+              "exercise_id": "bench_bb",
+              "reps_done": 5,
+              "load_kg": 58,
+              "rpe_perceived": 7.5
+            },
             {
               "exercise_id": "bench_bb",
               "reps_done": 5,
@@ -6120,6 +6151,12 @@
               "rpe_perceived": 7.5
             },
             {
+              "exercise_id": "squat_bb_high",
+              "reps_done": 5,
+              "load_kg": 78,
+              "rpe_perceived": 7.5
+            },
+            {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
               "load_kg": 91,
@@ -6154,6 +6191,12 @@
           "cycle_index": 1,
           "rpe_target": 7.5,
           "sets": [
+            {
+              "exercise_id": "bb_row",
+              "reps_done": 5,
+              "load_kg": 54,
+              "rpe_perceived": 7.5
+            },
             {
               "exercise_id": "bb_row",
               "reps_done": 5,
@@ -6243,6 +6286,12 @@
           "cycle_index": 1,
           "rpe_target": 7.5,
           "sets": [
+            {
+              "exercise_id": "deadlift_conv",
+              "reps_done": 5,
+              "load_kg": 92,
+              "rpe_perceived": 7.5
+            },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
@@ -6937,12 +6986,6 @@
               "rpe_perceived": 7.5
             },
             {
-              "exercise_id": "bench_bb",
-              "reps_done": 5,
-              "load_kg": 60,
-              "rpe_perceived": 7.5
-            },
-            {
               "exercise_id": "pullup_assisted",
               "reps_done": 8,
               "load_kg": -19,
@@ -7038,12 +7081,6 @@
               "rpe_perceived": 9.5
             },
             {
-              "exercise_id": "squat_bb_high",
-              "reps_done": 7,
-              "load_kg": 84,
-              "rpe_perceived": 9.5
-            },
-            {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
               "load_kg": 99,
@@ -7078,12 +7115,6 @@
           "cycle_index": 1,
           "rpe_target": 7.5,
           "sets": [
-            {
-              "exercise_id": "bb_row",
-              "reps_done": 5,
-              "load_kg": 55,
-              "rpe_perceived": 7.5
-            },
             {
               "exercise_id": "bb_row",
               "reps_done": 5,
@@ -7179,12 +7210,6 @@
           "cycle_index": 1,
           "rpe_target": 7.5,
           "sets": [
-            {
-              "exercise_id": "deadlift_conv",
-              "reps_done": 5,
-              "load_kg": 97,
-              "rpe_perceived": 7.5
-            },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
@@ -7475,6 +7500,12 @@
               "rpe_perceived": 7.5
             },
             {
+              "exercise_id": "bench_bb",
+              "reps_done": 5,
+              "load_kg": 60,
+              "rpe_perceived": 7.5
+            },
+            {
               "exercise_id": "pullup",
               "reps_done": 8,
               "load_kg": 54,
@@ -7564,6 +7595,12 @@
               "rpe_perceived": 7.5
             },
             {
+              "exercise_id": "front_squat",
+              "reps_done": 5,
+              "load_kg": 62,
+              "rpe_perceived": 7.5
+            },
+            {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
               "load_kg": 98,
@@ -7598,6 +7635,12 @@
           "cycle_index": 2,
           "rpe_target": 7.5,
           "sets": [
+            {
+              "exercise_id": "bb_row",
+              "reps_done": 5,
+              "load_kg": 56,
+              "rpe_perceived": 7.5
+            },
             {
               "exercise_id": "bb_row",
               "reps_done": 5,
@@ -7687,6 +7730,12 @@
           "cycle_index": 2,
           "rpe_target": 7.5,
           "sets": [
+            {
+              "exercise_id": "deadlift_conv",
+              "reps_done": 5,
+              "load_kg": 99,
+              "rpe_perceived": 7.5
+            },
             {
               "exercise_id": "deadlift_conv",
               "reps_done": 5,
@@ -8261,12 +8310,6 @@
           "cycle_index": 2,
           "rpe_target": 7.5,
           "sets": [
-            {
-              "exercise_id": "bench_bb",
-              "reps_done": 5,
-              "load_kg": 63,
-              "rpe_perceived": 7.5
-            },
             {
               "exercise_id": "bench_bb",
               "reps_done": 5,
@@ -10979,7 +11022,7 @@
           ],
           "muscles_overshoot": [],
           "adherence_pct": 1,
-          "volume_total_kg": 49432,
+          "volume_total_kg": 49194,
           "PRs": [
             [
               "squat_bb_high",
@@ -11026,13 +11069,6 @@
         {
           "exercise_id": "front_squat",
           "sets": [
-            {
-              "exercise_id": "front_squat",
-              "reps": 5,
-              "load_kg": 64,
-              "rpe_target": 7.5,
-              "rest_s": 240
-            },
             {
               "exercise_id": "front_squat",
               "reps": 5,

@@ -149,10 +149,12 @@ function makePE(args: {
 }
 
 /**
- * Progression typique cycle 5w UL : sets 3→4→4→5 puis 2 (déload).
- * Accessoires constants 3 sets sauf déload 2.
+ * Bloc L — séries FIXES sur le cycle (plus de bump hebdo). Exos principaux à
+ * 4 séries les 4 semaines de travail, puis 2 (déload). Accessoires 3 séries,
+ * déload 2. La progression visible passe par la charge et les reps, pas par
+ * l'empilement de séries.
  */
-const PROG_MAIN = [3, 4, 4, 5, 2];
+const PROG_MAIN = [4, 4, 4, 4, 2];
 const PROG_ACC = [3, 3, 3, 3, 2];
 
 function buildCyclePlan(cycleIdx: number, swapped: boolean): WeeklyTemplate {

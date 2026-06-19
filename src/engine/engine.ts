@@ -619,6 +619,25 @@ export function recordFeedback(
   const skipE1rmEntirely = sessionFeedback.week_in_cycle === DELOAD_WEEK_IN_CYCLE;
 
   const calibrated = options.calibratedExoIds ?? null;
+
+  // Bloc L — charge/reps préconisées par exo (1re série, toutes identiques),
+  // pour détecter une charge volontairement plus lourde que la prescription.
+  const prescribedByExo = new Map<
+    string,
+    { load_kg: number; target_reps: number }
+  >();
+  if (options.plan) {
+    for (const item of options.plan.items) {
+      const first = item.sets[0];
+      if (first) {
+        prescribedByExo.set(item.exercise_id, {
+          load_kg: first.load_kg,
+          target_reps: first.reps,
+        });
+      }
+    }
+  }
+
   const summary: RecordFeedbackResult = {};
   for (const [exId, fbs] of Object.entries(byEx)) {
     const ex = catalog.get(exId);
@@ -629,7 +648,10 @@ export function recordFeedback(
       continue;
     }
     const skipEma = calibrated !== null && !calibrated.has(exId);
-    summary[exId] = updateE1rmForExercise(state, ex, fbs, undefined, { skipEma });
+    summary[exId] = updateE1rmForExercise(state, ex, fbs, undefined, {
+      skipEma,
+      prescribed: prescribedByExo.get(exId),
+    });
     if (ex.e1RM_app === E1RMApp.PARTIAL || ex.e1RM_app === E1RMApp.NON) {
       maybeProgressReps(state, ex, fbs);
     }

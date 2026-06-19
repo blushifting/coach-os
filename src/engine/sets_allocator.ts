@@ -45,10 +45,13 @@ import {
 // Constantes solveur
 // =============================================================================
 
-/** Plancher séries/exo : en dessous, ce n'est pas un vrai exo. */
+/** Plancher séries/exo : en dessous, ce n'est pas un vrai exo (règle 3-5). */
 export const MIN_SETS_PER_EXERCISE = 3;
-/** Plafond séries/exo : au-dessus, rendement décroissant (Schoenfeld 2017). */
-export const MAX_SETS_PER_EXERCISE = 6;
+/**
+ * Plafond séries/exo : au-dessus, rendement décroissant (Schoenfeld 2017).
+ * Bloc L — ramené de 6 à 5 pour respecter la règle dure 3-5 séries/exo/séance.
+ */
+export const MAX_SETS_PER_EXERCISE = 5;
 
 /**
  * Constantes de durée alignées sur Conv #19 (`lib/onboarding-preview.ts`)
@@ -303,17 +306,17 @@ function pickBestBump(
 }
 
 // =============================================================================
-// 3. Conversion vers DayTemplate (avec progression Israetel)
+// 3. Conversion vers DayTemplate (séries fixes sur le cycle — Bloc L)
 // =============================================================================
 
-import { israetelProgression } from './cycle_planner';
+import { cycleSetProgression } from './cycle_planner';
 
 function toPlannedExercises(day: AllocatedDay): PlannedExercise[] {
   return day.exos.map((e) =>
     makePlannedExercise({
       exercise_id: e.exercise_id,
       base_sets: e.n_sets,
-      progression: israetelProgression(e.n_sets),
+      progression: cycleSetProgression(e.n_sets),
       progression_rule: ProgressionRule.ISRAETEL_VOLUME,
     }),
   );
