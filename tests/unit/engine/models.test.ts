@@ -177,9 +177,9 @@ describe('CanonicalExercise', () => {
     expect(ce.is_replaceable).toBe(true);
   });
 
-  it('GuidedProgram peut être instancié avec ProgressionRule', () => {
-    // Ici on vérifie juste que les enums sont exposés et que le typage tient.
-    expect(ProgressionRule.LINEAR_2_5KG).toBe('linear_2_5kg');
+  it('ProgressionRule expose la règle du moteur custom', () => {
+    // Bloc O — seul ISRAETEL_VOLUME subsiste (règles d'auteur retirées).
+    expect(ProgressionRule.ISRAETEL_VOLUME).toBe('israetel_volume');
   });
 });
 

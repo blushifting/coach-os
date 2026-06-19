@@ -1,11 +1,11 @@
 /**
- * Aperçu du programme avant validation finale de l'onboarding (Conv #11b).
+ * Helpers d'aperçu du récap d'onboarding (Conv #11b).
  *
- * Tout est calculé **en mémoire** : on construit un `UserState` temporaire,
- * on génère le `WeeklyTemplate` via `fitGuidedProgram` (guidé) ou
- * `generateCyclePlan` (custom), et on retourne un résumé exploitable par le
- * Step5 d'OnboardingPage. **Aucune écriture en DB / dans le store** — tant
- * que l'utilisateur n'a pas validé Step5, rien n'est persisté.
+ * Calculs **en mémoire**, sans écriture DB/store : volume hebdo par muscle
+ * (brut + pondéré, pour les jauges du mode « à la main »), application de
+ * variantes sur un template, delta musculaire d'un swap, estimation de durée
+ * et détection de tensions. La construction du template lui-même se fait côté
+ * OnboardingPage (squelette custom ou plan vide « à la main »).
  */
 
 import type { Catalog } from '@/engine/catalog';
@@ -14,76 +14,8 @@ import {
   exercisePrimaires,
   type DayTemplate,
   type PlannedExercise,
-  type Profile,
-  type MuscleGoal,
   type WeeklyTemplate,
 } from '@/engine/models';
-import { startUser as engineStartUser } from '@/engine/engine';
-import { fitGuidedProgram, getGuidedProgram } from '@/engine/guided_programs';
-import {
-  autoGenerateCyclePlanV2,
-  generateCyclePlan,
-} from '@/engine/cycle_planner';
-
-/** Resultat d'une preview. */
-export interface PreviewResult {
-  readonly template: WeeklyTemplate | null;
-  /** Liste des blocages (équipement manquant pour un programme guidé). */
-  readonly blocking: readonly string[];
-}
-
-/**
- * Construit la `WeeklyTemplate` qui sera posée à la fin de l'onboarding,
- * sans toucher au store ni à la DB. Si `programmeId` est non null on
- * utilise `fitGuidedProgram` (e1RM vides), sinon on appelle `generateCyclePlan`
- * sur un state temporaire.
- */
-export function buildPreviewTemplate(
-  profile: Profile,
-  muscleGoals: Record<string, MuscleGoal>,
-  programmeId: string | null,
-  catalog: Catalog,
-): PreviewResult {
-  // State temporaire — `engineStartUser` ne touche pas le store.
-  const tmpState = engineStartUser(profile, catalog, {
-    muscleGoals,
-    applyBalance: false,
-  });
-
-  if (programmeId !== null) {
-    const program = getGuidedProgram(programmeId);
-    if (program === null) {
-      return { template: null, blocking: [`Programme inconnu : ${programmeId}`] };
-    }
-    const { weekly, blocking } = fitGuidedProgram(
-      program,
-      profile,
-      new Set(profile.available_equip),
-      {}, // plafonds vides — la preview ne calcule pas les charges
-      catalog,
-      1,
-    );
-    return { template: weekly, blocking };
-  }
-
-  // Conv #22 — Si le profil porte une `duration_category` (= nouveau path
-  // co-construit, custom uniquement), on bascule sur autoGenerateCyclePlanV2
-  // qui passe par buildSkeleton + sets_allocator. L'auto-fill des variantes
-  // sert ici à présenter un programme cohérent dans le récap ; l'user pourra
-  // toujours swap des exos via VariantPickerSheet (path existant).
-  if (profile.duration_category !== undefined) {
-    return {
-      template: autoGenerateCyclePlanV2(
-        tmpState,
-        catalog,
-        profile.duration_category,
-      ),
-      blocking: [],
-    };
-  }
-
-  return { template: generateCyclePlan(tmpState, catalog), blocking: [] };
-}
 
 // =============================================================================
 // Récap volume hebdo par muscle primaire
@@ -109,6 +41,31 @@ export function weeklyVolumeByMuscle(
       }
       for (const m of primaires) {
         out[m] = (out[m] ?? 0) + planned.base_sets;
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Bloc O — séries **pondérées** par muscle sur le plan (Σ coef × base_sets sur
+ * TOUS les muscles de l'exo, primaires + synergistes), pas seulement les
+ * primaires. C'est l'unité des bandes de volume (`effectiveVolumeBounds`),
+ * donc la base des jauges « live » du mode « à la main ». Même logique que
+ * `topUpMaintenance` (cycle_planner) / `sumMuscleSets` (progress).
+ */
+export function weightedWeeklyVolumeByMuscle(
+  template: WeeklyTemplate,
+  catalog: Catalog,
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const day of template.days) {
+    for (const planned of day.exercises) {
+      if (!catalog.has(planned.exercise_id)) continue;
+      const ex = catalog.get(planned.exercise_id);
+      for (const [m, coef] of Object.entries(ex.muscles)) {
+        if (coef <= 0) continue;
+        out[m] = (out[m] ?? 0) + coef * planned.base_sets;
       }
     }
   }

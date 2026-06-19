@@ -67,6 +67,8 @@ export interface SerializedUserState {
   >;
   current_cycle_plan: import('@/engine/models').WeeklyTemplate | null;
   active_guided_program_id: string | null;
+  /** Bloc O — mode de construction ('auto'|'manual'). Absent sur anciens blobs (default 'auto'). */
+  build_mode?: 'auto' | 'manual';
   recovery_mode: boolean;
   recovery_weeks_remaining: number;
   equipment_overrides: Record<string, EquipmentOverride>;

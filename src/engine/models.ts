@@ -141,10 +141,9 @@ export enum MuscleStatus {
 
 /** Règle de progression hebdo d'un PlannedExercise (cf. 09 §2.1). */
 export enum ProgressionRule {
-  LINEAR_2_5KG = 'linear_2_5kg',
   DOUBLE_PROGRESSION = 'double_progression',
-  WAVE_5_3_1 = 'wave_5_3_1',
-  AMRAP_LP = 'amrap_lp',
+  // Bloc O — LINEAR_2_5KG / WAVE_5_3_1 / AMRAP_LP retirés avec les programmes
+  // tout faits (schémas non-RPE). Seul ISRAETEL_VOLUME alimente le custom.
   ISRAETEL_VOLUME = 'israetel_volume',
 }
 
@@ -852,6 +851,14 @@ export interface UserState {
   muscle_goals: Record<string, MuscleGoal>;
   current_cycle_plan: WeeklyTemplate | null;
   active_guided_program_id: string | null;
+  /**
+   * Bloc O — mode de construction du programme courant :
+   *  - `'auto'`   : généré par le moteur (sur-mesure).
+   *  - `'manual'` : grille remplie à la main par l'utilisateur. En fin de cycle,
+   *    le plan manuel est reconduit (pas régénéré). Absent sur anciens blobs
+   *    (default `'auto'` à la désérialisation).
+   */
+  build_mode?: 'auto' | 'manual';
   recovery_mode: boolean;
   recovery_weeks_remaining: number;
   // --- override équipement par exo ---
@@ -922,6 +929,7 @@ export function makeUserState(profile: Profile): UserState {
     muscle_goals: {},
     current_cycle_plan: null,
     active_guided_program_id: null,
+    build_mode: 'auto',
     recovery_mode: false,
     recovery_weeks_remaining: 0,
     equipment_overrides: {},

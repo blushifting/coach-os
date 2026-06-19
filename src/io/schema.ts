@@ -69,6 +69,8 @@ const userStateSchema = z
     muscle_goals: z.record(z.string(), muscleGoalSchema),
     current_cycle_plan: z.union([z.null(), z.object({}).passthrough()]),
     active_guided_program_id: z.union([z.null(), z.string()]),
+    // Bloc O — optionnel pour rétrocompat exports antérieurs.
+    build_mode: z.enum(['auto', 'manual']).optional(),
     recovery_mode: z.boolean(),
     recovery_weeks_remaining: z.number().int().min(0),
     equipment_overrides: z.record(

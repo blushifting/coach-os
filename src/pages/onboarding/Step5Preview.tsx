@@ -19,7 +19,12 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Sheet } from '@/components/Sheet';
 import type { Catalog } from '@/engine/catalog';
-import { exercisePrimaires, type Exercise, type WeeklyTemplate } from '@/engine/models';
+import {
+  exercisePrimaires,
+  type Exercise,
+  type UserState,
+  type WeeklyTemplate,
+} from '@/engine/models';
 import {
   analyzeProgramTension,
   estimateDayDurationMinutes,
@@ -40,6 +45,7 @@ import { photosFor } from '@/data/exercise-photos';
 import { ChargeBadge } from '@/pages/catalogue/ChargeBadge';
 import { ExerciseEyeButton } from '@/pages/catalogue/ExerciseEyeButton';
 import { VariantPickerSheet } from '@/components/VariantPickerSheet';
+import { VolumeGauges } from '@/components/VolumeGauges';
 
 interface Step5Props {
   readonly template: WeeklyTemplate | null;
@@ -48,6 +54,12 @@ interface Step5Props {
   readonly equipment: ReadonlySet<string>;
   /** Conv #23 — marque déclarée dans le draft (avant persistance du profil). */
   readonly gymBrand?: import('@/engine/models').GymBrand;
+  /**
+   * Bloc O — état temporaire (bornes de volume) du mode « à la main ». Non null
+   * uniquement en mode manuel → affiche les jauges de volume au lieu du simple
+   * récap chiffré.
+   */
+  readonly gaugeState?: UserState | null;
   readonly onSwap: (dayIndex: number, slotIndex: number, newExerciseId: string) => void;
   readonly onAdd: (dayIndex: number, exerciseId: string) => void;
   readonly onRemove: (dayIndex: number, slotIndex: number) => void;
@@ -74,11 +86,13 @@ export function Step5Preview({
   catalog,
   equipment,
   gymBrand,
+  gaugeState,
   onSwap,
   onAdd,
   onRemove,
   onRename,
 }: Step5Props) {
+  const isManual = gaugeState != null;
   const [picker, setPicker] = useState<SlotPickerState | null>(null);
   const [expanded, setExpanded] = useState(true);
   const [pedagogyOpen, setPedagogyOpen] = useState(false);
@@ -183,12 +197,17 @@ export function Step5Preview({
           Ton programme
         </h1>
         <p className="text-sm leading-relaxed text-anthracite-300">
-          Voici les séances générées d'après tes choix. Touche un exercice pour
-          le remplacer, retire ou ajoute ce que tu veux, renomme une séance.
+          {isManual
+            ? 'Tu pars de séances vides : ajoute tes exercices. Les barres de progression te disent si chaque muscle est assez travaillé.'
+            : 'Voici les séances générées d\'après tes choix. Touche un exercice pour le remplacer, retire ou ajoute ce que tu veux, renomme une séance.'}
         </p>
       </header>
 
-      <VolumeRecap volumeByMuscle={volumeByMuscle} />
+      {isManual && gaugeState != null && catalog !== null ? (
+        <VolumeGauges template={template} state={gaugeState} catalog={catalog} />
+      ) : (
+        <VolumeRecap volumeByMuscle={volumeByMuscle} />
+      )}
 
       {tension !== null && <TensionPanel tension={tension} />}
 

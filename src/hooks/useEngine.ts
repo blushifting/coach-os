@@ -34,7 +34,7 @@ import {
   mergeEquivalentExercisesInPlan,
   rotateEmphasis,
 } from '@/engine/cycle_planner';
-import { fitGuidedProgram, getGuidedProgram } from '@/engine/guided_programs';
+import { carryOverManualPlan } from '@/lib/manual-plan';
 import { initialVolumeBounds } from '@/engine/volume';
 import { SuggestedAction } from '@/engine/models';
 import type {
@@ -254,6 +254,8 @@ export interface StartUserArgs {
   muscleGoals?: Record<string, MuscleGoal> | null;
   applyBalance?: boolean;
   programmeId?: string | null;
+  /** Bloc O — 'auto' (moteur) ou 'manual' (grille à la main). Default 'auto'. */
+  buildMode?: 'auto' | 'manual';
 }
 
 export async function startUser(args: StartUserArgs): Promise<UserState> {
@@ -265,6 +267,7 @@ export async function startUser(args: StartUserArgs): Promise<UserState> {
   if (args.programmeId !== undefined && args.programmeId !== null) {
     newState.active_guided_program_id = args.programmeId;
   }
+  newState.build_mode = args.buildMode ?? 'auto';
   await txInitUser(newState, args.programmeId ?? null);
   await refreshHistory();
   useCoachOsStore.setState({ userState: newState });
@@ -282,10 +285,11 @@ export interface InitialCyclePlanResult {
 }
 
 /**
- * Génère et persiste le `WeeklyTemplate` Cycle 1.
+ * Génère et persiste le `WeeklyTemplate` Cycle 1 (custom).
  *
- * Mode guidé : `fitGuidedProgram(program, profile, equipment, plafonds={}, catalog)`.
- * Mode custom : `generateCyclePlan(state, catalog)`.
+ * Bloc O — plus de programmes tout faits : `autoGenerateCyclePlanV2` (path
+ * co-construit) ou legacy `generateCyclePlan`. Le mode « à la main » ne passe
+ * pas par ici (plan vide posé directement par OnboardingPage).
  *
  * Les exos sans e1RM connu sont bootstrap heuristiquement à la 1re séance
  * via `bootstrapE1rmIfMissing` (engine.ts) et raffinés par feedback RPE
@@ -301,38 +305,20 @@ export async function generateInitialCyclePlan(): Promise<InitialCyclePlanResult
     return { state: next, blocking: [] };
   }
 
-  const programmeId = next.active_guided_program_id;
-  if (programmeId !== null) {
-    const program = getGuidedProgram(programmeId);
-    if (program === null) {
-      throw new Error(`Programme guidé inconnu : ${programmeId}`);
-    }
-    const equipment = new Set(next.profile.available_equip);
-    const { weekly, blocking } = fitGuidedProgram(
-      program,
-      next.profile,
-      equipment,
-      next.e1rm,
+  // Bloc O — plus de programmes guidés : génération custom uniquement.
+  // (Le mode « à la main » ne passe pas par ici : OnboardingPage pose le plan
+  // vide directement via setCurrentCyclePlan.)
+  // Conv #22 — Si le profile porte une `duration_category` (path co-construit),
+  // bascule sur autoGenerateCyclePlanV2 (skeleton_builder + sets_allocator).
+  // Sinon legacy generateCyclePlan.
+  if (next.profile.duration_category !== undefined) {
+    next.current_cycle_plan = autoGenerateCyclePlanV2(
+      next,
       catalog,
-      next.cycle_index,
+      next.profile.duration_category,
     );
-    if (weekly === null) {
-      return { state: null, blocking };
-    }
-    next.current_cycle_plan = weekly;
   } else {
-    // Conv #22 — Si le profile porte une `duration_category` (nouveau path
-    // co-construit), bascule sur autoGenerateCyclePlanV2 qui utilise
-    // skeleton_builder + sets_allocator. Sinon legacy generateCyclePlan.
-    if (next.profile.duration_category !== undefined) {
-      next.current_cycle_plan = autoGenerateCyclePlanV2(
-        next,
-        catalog,
-        next.profile.duration_category,
-      );
-    } else {
-      next.current_cycle_plan = generateCyclePlan(next, catalog);
-    }
+    next.current_cycle_plan = generateCyclePlan(next, catalog);
   }
 
   await txSaveUserStateOnly(next);
@@ -1112,10 +1098,15 @@ export interface EndOfCycleArgs {
    */
   action?: SuggestedAction;
   /**
-   * Pour `CHANGER_PROGRAMME` : id du nouveau programme guidé (ou `null` pour
-   * basculer en custom). Sinon ignoré (le mode reste celui en cours).
+   * Bloc O — programmes tout faits supprimés : toujours `null` (custom/manuel).
+   * Conservé pour rétro-compat de signature.
    */
   nextProgrammeId?: string | null;
+  /**
+   * Bloc O — mode de construction du nouveau cycle ('auto'|'manual'). Utilisé
+   * par le restart d'onboarding. Si omis, on garde le mode courant.
+   */
+  nextBuildMode?: 'auto' | 'manual';
   /**
    * Pour `AJUSTER_OBJECTIFS` : nouveaux `muscle_goals` (les SUGGERE seront
    * recomposés via R1-R4). Si omis, on garde les goals actuels.
@@ -1284,7 +1275,7 @@ export async function importDataFromJson(json: string): Promise<void> {
  *   3. Bump `cycle_index += 1`, reset `current_week_in_cycle = 1`,
  *      vide `plateau_counter`.
  *   4. Régénère `current_cycle_plan` :
- *      - guidé : `fitGuidedProgram` (throw si équipement insuffisant).
+ *      - « à la main » : reconduit le plan manuel (`carryOverManualPlan`).
  *      - custom : `generateCyclePlan`.
  *   5. Persiste (cycle clos archivé avec end_date=today, nouveau cycle créé).
  *
@@ -1319,6 +1310,9 @@ export async function endOfCycle(args: EndOfCycleArgs = {}) {
   if (action === SuggestedAction.CHANGER_PROGRAMME) {
     next.active_guided_program_id = args.nextProgrammeId ?? null;
   }
+  if (args.nextBuildMode !== undefined) {
+    next.build_mode = args.nextBuildMode;
+  }
   if (action === SuggestedAction.TOURNER_EMPHASIS) {
     rotateEmphasis(next.muscle_goals);
   }
@@ -1332,26 +1326,15 @@ export async function endOfCycle(args: EndOfCycleArgs = {}) {
   next.weekly_volume_debt = {};
 
   // 4. Régénère le plan du nouveau cycle.
-  const programmeId = next.active_guided_program_id;
-  if (programmeId !== null) {
-    const program = getGuidedProgram(programmeId);
-    if (program === null) {
-      throw new Error(`Programme guidé inconnu : ${programmeId}`);
-    }
-    const { weekly, blocking } = fitGuidedProgram(
-      program,
-      next.profile,
-      new Set(next.profile.available_equip),
-      next.e1rm,
-      catalog,
+  // Bloc O — plus de programmes tout faits. En mode « à la main », on reconduit
+  // le plan manuel du cycle précédent (mêmes exos/séries, progression
+  // recalculée) au lieu de régénérer ; les charges montent via la
+  // recalibration appliquée à l'étape 1.
+  if (next.build_mode === 'manual' && before.current_cycle_plan !== null) {
+    next.current_cycle_plan = carryOverManualPlan(
+      before.current_cycle_plan,
       next.cycle_index,
     );
-    if (weekly === null) {
-      throw new Error(
-        `Équipement insuffisant pour ${program.name} : ${blocking.join(', ')}`,
-      );
-    }
-    next.current_cycle_plan = weekly;
   } else {
     next.current_cycle_plan = generateCyclePlan(next, catalog);
   }

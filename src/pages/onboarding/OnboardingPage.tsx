@@ -6,11 +6,10 @@
  *   2. Muscles + objectif par muscle (pinceau) — l'ancienne étape Équilibre
  *      R1-R4 est remplacée par une popin au passage à l'étape suivante :
  *      « Ajouter ces muscles » (défaut) / « Continuer sans » (refusable).
- *   3. Programme (nb séances + durée max + préférence équipement +
- *      sur-mesure mis en avant / programmes guidés en tableau)
- *   4. Récap : programme déjà construit (custom = squelette V2 auto-fill
- *      basé sur la préférence ; guidé = fitGuidedProgram). L'user peut
- *      swap des exos via la VariantPickerSheet existante.
+ *   3. Programme (nb séances + durée max + préférence équipement + mode de
+ *      construction : « Sur-mesure » ou « À la main », Bloc O)
+ *   4. Récap : sur-mesure = squelette V2 auto-fill (swap via VariantPickerSheet) ;
+ *      à la main = grille vide remplie par l'user, guidé par les jauges de volume.
  *
  * En mode `restart`, on saute Step1 (3 étapes affichées dans le stepper).
  *
@@ -21,7 +20,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { ChevronLeft, ChevronRight } from '@/components/icons';
-import { ALL_GUIDED_PROGRAMS } from '@/engine/guided_programs';
+import { startUser as engineStartUser } from '@/engine/engine';
 import { SuggestedAction, makePlannedExercise } from '@/engine/models';
 import {
   addFavoriteForPattern,
@@ -36,6 +35,9 @@ import {
 import { enterDemoMode } from '@/lib/demo';
 import { resetDemoDismissals } from '@/components/DemoMode';
 import {
+  PRESET_DEFAULT_MAINTENANCE,
+  PRESET_DEFAULT_PRIORITIES,
+  balanceKeyOf,
   buildMuscleGoals,
   buildProfile,
   computeBalanceSuggestions,
@@ -45,7 +47,7 @@ import {
   makeInitialDraft,
   type OnboardingDraft,
 } from '@/lib/onboarding-state';
-import { buildPreviewTemplate } from '@/lib/onboarding-preview';
+import { buildEmptyManualPlan } from '@/lib/manual-plan';
 import { defaultProgressionForDay } from '@/lib/custom-session';
 import {
   applyChosenVariantsToSkeleton,
@@ -55,7 +57,7 @@ import {
   isSkeletonFullyFilled,
 } from '@/lib/skeleton-onboarding';
 import { useCoachOsStore } from '@/store';
-import type { MuscleGoal, WeeklyTemplate } from '@/engine/models';
+import type { MuscleGoal, UserState, WeeklyTemplate } from '@/engine/models';
 import { explainSuggestion, muscleLabel } from '@/lib/balance-reasons';
 import { Step1Profile } from './Step1Profile';
 import { Step2Muscles } from './Step2Muscles';
@@ -81,7 +83,9 @@ export default function OnboardingPage() {
   );
 
   const initialStep = isRestart ? 2 : 1;
-  const isCustom = draft.programmeId === null;
+  // Bloc O — plus de programmes tout faits : le mode est soit « sur-mesure »
+  // (auto, le moteur remplit) soit « à la main » (manual, grille vide).
+  const isManual = draft.buildMode === 'manual';
 
   const [step, setStep] = useState<number>(initialStep);
   const [submitting, setSubmitting] = useState(false);
@@ -117,7 +121,7 @@ export default function OnboardingPage() {
   // Step5 (récap) en mode custom. Le récap montre directement le résultat ;
   // l'user modifie via VariantPickerSheet du Step5Preview.
   const skeletonResult = useMemo(() => {
-    if (!isCustom || catalog === null) return null;
+    if (isManual || catalog === null) return null;
     if (step < LAST_STEP) return null;
     try {
       const globalObjective = deriveGlobalObjective(draft);
@@ -136,10 +140,30 @@ export default function OnboardingPage() {
     } catch {
       return null;
     }
-  }, [isCustom, catalog, step, draft]);
+  }, [isManual, catalog, step, draft]);
 
   const skeleton = skeletonResult?.skeleton ?? null;
   const tmpState = skeletonResult?.tmpState ?? null;
+
+  // Bloc O — état temporaire (bornes de volume) pour les jauges du mode « à la
+  // main ». Calculé seulement à l'étape récap, en mode manuel.
+  const gaugeState = useMemo<UserState | null>(() => {
+    if (catalog === null || step < LAST_STEP || !isManual) return null;
+    try {
+      const profile = buildProfile(draft, deriveGlobalObjective(draft));
+      const suggestions = computeBalanceSuggestions(
+        draft.priorities,
+        draft.maintenance,
+      );
+      const muscleGoals = buildMuscleGoals(draft, suggestions);
+      return engineStartUser(profile, catalog, {
+        muscleGoals,
+        applyBalance: false,
+      });
+    } catch {
+      return null;
+    }
+  }, [catalog, step, isManual, draft]);
 
   // Auto-fill du squelette dès qu'on a un skeleton + catalog.
   // Utilise la préférence équipement du draft pour orienter le 1er pick.
@@ -166,59 +190,46 @@ export default function OnboardingPage() {
     if (step < LAST_STEP) {
       return { template: null, blocking: [] as readonly string[] };
     }
-    if (isCustom) {
-      if (skeleton === null || tmpState === null) {
-        return { template: null, blocking: ['Squelette indisponible'] };
-      }
-      const filled = applyChosenVariantsToSkeleton(
-        skeleton,
-        draft.chosenVariantsPerCell,
+    // Bloc O — mode « à la main » : grille vide, l'user remplit au récap.
+    if (isManual) {
+      return {
+        template: buildEmptyManualPlan(draft.sessionsPerWeek),
+        blocking: [] as readonly string[],
+      };
+    }
+    // Sur-mesure : squelette custom auto-fillé (l'user swap via VariantPicker).
+    if (skeleton === null || tmpState === null) {
+      return { template: null, blocking: ['Squelette indisponible'] };
+    }
+    const filled = applyChosenVariantsToSkeleton(
+      skeleton,
+      draft.chosenVariantsPerCell,
+    );
+    if (!isSkeletonFullyFilled(filled)) {
+      // Auto-fill silencieux si jamais quelques cases sont vides
+      // (cas pathologique : changement de prios en arrière puis retour).
+      const seeded = autoFillSkeletonDefaults(
+        filled,
+        catalog,
+        userState?.favorite_exercise_per_pattern ?? {},
+        draft.equipmentPreference,
       );
-      if (!isSkeletonFullyFilled(filled)) {
-        // Auto-fill silencieux si jamais quelques cases sont vides
-        // (cas pathologique : changement de prios en arrière puis retour).
-        const seeded = autoFillSkeletonDefaults(
-          filled,
-          catalog,
-          userState?.favorite_exercise_per_pattern ?? {},
-          draft.equipmentPreference,
-        );
-        try {
-          const template = generateCyclePlanV2(seeded, tmpState, catalog);
-          return { template, blocking: [] };
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : 'Impossible de générer l\'aperçu.';
-          return { template: null, blocking: [msg] };
-        }
-      }
       try {
-        const template = generateCyclePlanV2(filled, tmpState, catalog);
+        const template = generateCyclePlanV2(seeded, tmpState, catalog);
         return { template, blocking: [] };
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Impossible de générer l\'aperçu.';
         return { template: null, blocking: [msg] };
       }
     }
-    // Mode guidé legacy.
     try {
-      const guided =
-        draft.programmeId !== null
-          ? (ALL_GUIDED_PROGRAMS.find((p) => p.id === draft.programmeId) ?? null)
-          : null;
-      const objectiveOverride = guided?.objectifs_principaux[0];
-      const globalObjective = deriveGlobalObjective(draft, objectiveOverride);
-      const profile = buildProfile(draft, globalObjective);
-      const suggestions = computeBalanceSuggestions(
-        draft.priorities,
-        draft.maintenance,
-      );
-      const muscleGoals = buildMuscleGoals(draft, suggestions);
-      return buildPreviewTemplate(profile, muscleGoals, draft.programmeId, catalog);
+      const template = generateCyclePlanV2(filled, tmpState, catalog);
+      return { template, blocking: [] };
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Impossible de générer l\'aperçu.';
       return { template: null, blocking: [msg] };
     }
-  }, [step, isCustom, skeleton, tmpState, draft, catalog, userState]);
+  }, [step, isManual, skeleton, tmpState, draft, catalog, userState]);
 
   // Bloc G (Conv #32) — synchronise le snapshot éditable avec le template
   // régénéré : à chaque nouvelle identité de `preview.template` (régénération
@@ -289,11 +300,7 @@ export default function OnboardingPage() {
   // Clé de la sélection muscles courante — sert à ne pas re-proposer la
   // popin d'équilibre tant que l'user n'a rien changé après un refus.
   const balanceKey = useMemo(
-    () =>
-      JSON.stringify({
-        prios: draft.priorities.map((p) => `${p.muscle}:${p.objective}`),
-        maintenance: [...draft.maintenance].sort(),
-      }),
+    () => balanceKeyOf(draft.priorities, draft.maintenance),
     [draft.priorities, draft.maintenance],
   );
 
@@ -361,12 +368,7 @@ export default function OnboardingPage() {
     }
     setSubmitting(true);
     try {
-      const guided =
-        draft.programmeId !== null
-          ? (ALL_GUIDED_PROGRAMS.find((p) => p.id === draft.programmeId) ?? null)
-          : null;
-      const objectiveOverride = guided?.objectifs_principaux[0];
-      const globalObjective = deriveGlobalObjective(draft, objectiveOverride);
+      const globalObjective = deriveGlobalObjective(draft);
       const profile = buildProfile(draft, globalObjective);
       const suggestions = computeBalanceSuggestions(
         draft.priorities,
@@ -377,15 +379,21 @@ export default function OnboardingPage() {
       if (isRestart && userState !== null) {
         await updateProfile(profile);
         const action =
-          draft.programmeId !== userState.active_guided_program_id
+          draft.buildMode !== (userState.build_mode ?? 'auto')
             ? SuggestedAction.CHANGER_PROGRAMME
             : SuggestedAction.AJUSTER_OBJECTIFS;
         await endOfCycle({
           action,
-          nextProgrammeId: draft.programmeId,
+          nextProgrammeId: null,
+          nextBuildMode: draft.buildMode,
           newMuscleGoals: muscleGoals,
         });
-        if (isCustom && skeleton !== null) {
+        if (isManual) {
+          // Plan vide rempli au récap → on pose `edited` directement.
+          await setCurrentCyclePlan(
+            edited ?? buildEmptyManualPlan(draft.sessionsPerWeek),
+          );
+        } else if (skeleton !== null) {
           const filled = applyChosenVariantsToSkeleton(
             skeleton,
             draft.chosenVariantsPerCell,
@@ -405,8 +413,10 @@ export default function OnboardingPage() {
             await generateInitialCyclePlanFromSkeleton(fullyFilled);
           }
           await persistFavoritesFromSkeleton(fullyFilled);
-        }
-        if (edited !== null) {
+          if (edited !== null) {
+            await setCurrentCyclePlan(edited);
+          }
+        } else if (edited !== null) {
           await setCurrentCyclePlan(edited);
         }
         navigate('/programme', { replace: true });
@@ -417,9 +427,15 @@ export default function OnboardingPage() {
         profile,
         muscleGoals,
         applyBalance: false,
-        programmeId: draft.programmeId,
+        programmeId: null,
+        buildMode: draft.buildMode,
       });
-      if (isCustom && skeleton !== null) {
+      if (isManual) {
+        // Plan vide rempli au récap → on pose `edited` directement.
+        await setCurrentCyclePlan(
+          edited ?? buildEmptyManualPlan(draft.sessionsPerWeek),
+        );
+      } else if (skeleton !== null) {
         const filled = applyChosenVariantsToSkeleton(
           skeleton,
           draft.chosenVariantsPerCell,
@@ -434,11 +450,14 @@ export default function OnboardingPage() {
             );
         await generateInitialCyclePlanFromSkeleton(fullyFilled);
         await persistFavoritesFromSkeleton(fullyFilled);
+        if (edited !== null) {
+          await setCurrentCyclePlan(edited);
+        }
       } else {
         await generateInitialCyclePlan();
-      }
-      if (edited !== null) {
-        await setCurrentCyclePlan(edited);
+        if (edited !== null) {
+          await setCurrentCyclePlan(edited);
+        }
       }
       navigate('/programme', { replace: true });
       try {
@@ -485,7 +504,20 @@ export default function OnboardingPage() {
       case 1:
         return <Step1Profile draft={draft} onChange={patchDraft} />;
       case 2:
-        return <Step2Muscles draft={draft} onChange={patchDraft} />;
+        return (
+          <Step2Muscles
+            draft={draft}
+            onChange={patchDraft}
+            onPresetApplied={() =>
+              setDeclinedBalanceKey(
+                balanceKeyOf(
+                  [...PRESET_DEFAULT_PRIORITIES],
+                  new Set(PRESET_DEFAULT_MAINTENANCE),
+                ),
+              )
+            }
+          />
+        );
       case 3:
         return <Step4Program draft={draft} onChange={patchDraft} />;
       case 4:
@@ -496,6 +528,7 @@ export default function OnboardingPage() {
             catalog={catalog}
             equipment={draft.equipment}
             gymBrand={draft.gymBrand}
+            gaugeState={gaugeState}
             onSwap={(di, si, newId) =>
               editDay(di, (d) => {
                 const slot = d.exercises[si];
@@ -529,7 +562,7 @@ export default function OnboardingPage() {
       default:
         return null;
     }
-  }, [step, draft, preview, catalog, edited]);
+  }, [step, draft, preview, catalog, edited, gaugeState]);
 
   return (
     <div

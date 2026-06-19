@@ -17,7 +17,7 @@ import {
   recordFeedbackAndCommit,
   endOfWeek,
 } from '@/hooks/useEngine';
-import { fitGuidedProgram, getGuidedProgram } from '@/engine/guided_programs';
+import { generateCyclePlan } from '@/engine/cycle_planner';
 import { useCoachOsStore } from '@/store';
 import { resetDbInstance } from '@/db/schema';
 import { dateKey } from '@/lib/dashboard';
@@ -35,39 +35,20 @@ describe('e2e — persistance complète (critère de fin Conv #3)', () => {
     expect(useCoachOsStore.getState().bootstrapped).toBe(true);
     expect(useCoachOsStore.getState().userState).toBeNull();
 
-    // --- 2. Onboarding : startUser + fit programme guidé ---
+    // --- 2. Onboarding : startUser (programme custom) ---
     const profile = makeTestProfile();
     const muscleGoals = makeTestMuscleGoals();
     const userState = await startUser({
       profile,
       muscleGoals,
-      programmeId: 'ss',
     });
     expect(userState.profile.bodyweight_kg).toBe(80);
 
-    // Pour pouvoir générer une session via la voie nouvelle, on a besoin
-    // d'un current_cycle_plan. On le pose via fitGuidedProgram + on
-    // re-persiste via une mutation directe du userState dans le store.
+    // Pour générer une session, on a besoin d'un current_cycle_plan : on le
+    // pose via le moteur custom + on re-persiste par mutation directe du store.
     const catalog = new Catalog();
-    const program = getGuidedProgram('ss');
-    expect(program).not.toBeNull();
-    const plafonds = {
-      squat_bb_low: 100,
-      bench_bb: 80,
-      ohp_bb_standing: 50,
-      deadlift_conv: 130,
-    };
-    const fitted = fitGuidedProgram(
-      program!,
-      profile,
-      profile.available_equip,
-      plafonds,
-      catalog,
-      1,
-    );
-    expect(fitted.weekly).not.toBeNull();
     const stateAvecPlan = useCoachOsStore.getState().userState!;
-    stateAvecPlan.current_cycle_plan = fitted.weekly;
+    stateAvecPlan.current_cycle_plan = generateCyclePlan(stateAvecPlan, catalog);
     stateAvecPlan.muscle_goals = muscleGoals;
     // Sauve via endOfWeek qui passe par la transaction (sans changer d'index
     // car on ne déclenche aucun plateau ni hit Vmax).
@@ -136,7 +117,8 @@ describe('e2e — persistance complète (critère de fin Conv #3)', () => {
     expect(restored.userState?.history.length).toBe(historyLenBefore);
     expect(restored.userState?.e1rm).toEqual(e1rmBefore);
     expect(restored.userState?.muscle_goals['pectoraux']?.priority_rank).toBe(1);
-    expect(restored.userState?.active_guided_program_id).toBe('ss');
+    // Bloc O — un éventuel id guidé persisté est neutralisé au deserialize.
+    expect(restored.userState?.active_guided_program_id).toBeNull();
 
     // Tables dérivées rechargées
     expect(restored.history.sessions).toHaveLength(sessionsCountBefore);

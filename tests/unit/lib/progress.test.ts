@@ -378,7 +378,7 @@ describe('buildCycleHistory', () => {
     objectifs_principaux: [],
     cycle_length_weeks: 4,
     days: [],
-    progression_rule: ProgressionRule.LINEAR_2_5KG,
+    progression_rule: ProgressionRule.ISRAETEL_VOLUME,
     notes: '',
   } as unknown as GuidedProgram;
 

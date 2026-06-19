@@ -53,6 +53,12 @@ interface Step2Props {
   readonly draft: OnboardingDraft;
   readonly onChange: (patch: Partial<OnboardingDraft>) => void;
   readonly stepLabel?: string;
+  /**
+   * Bloc O — appelé quand l'utilisateur applique le préset full-body. Le préset
+   * laisse volontairement 4 muscles absents (couverts par proxy) ; OnboardingPage
+   * pré-décline alors la popin d'équilibre pour ne pas nager sur ce choix.
+   */
+  readonly onPresetApplied?: () => void;
 }
 
 /** Style par objectif — voir la doc palette `objective` de la silhouette. */
@@ -114,7 +120,7 @@ function muscleObjective(
   return null;
 }
 
-export function Step2Muscles({ draft, onChange }: Step2Props) {
+export function Step2Muscles({ draft, onChange, onPresetApplied }: Step2Props) {
   const [brush, setBrush] = useState<MuscleObjective>(
     MuscleObjective.HYPERTROPHIE,
   );
@@ -176,6 +182,7 @@ export function Step2Muscles({ draft, onChange }: Step2Props) {
       priorities: [...PRESET_DEFAULT_PRIORITIES],
       maintenance: new Set(PRESET_DEFAULT_MAINTENANCE),
     });
+    onPresetApplied?.();
   }
 
   // Liste : prios (ordre de rang), puis maintiens et non-sélectionnés en

@@ -103,6 +103,26 @@ export interface MuscleCoverage {
 }
 
 /**
+ * Classe un volume hebdo (séries pondérées) par rapport à sa bande cible.
+ * Factorisé (Bloc O) pour être partagé entre la couverture hebdo réelle et les
+ * jauges de volume « live » du mode « à la main ».
+ *
+ * Tolérance epsilon (Conv #18) : `sets` pondéré (coefs muscles) peut tomber
+ * pile sur une borne avec un arrondi flottant (ex : 9.999…).
+ */
+export function classifyVolume(
+  sets: number,
+  vMin: number,
+  vMax: number,
+): CoverageStatus {
+  if (vMin === 0 && vMax === 0) return 'hors_scope';
+  if (sets === 0) return 'non_travaille';
+  if (sets < vMin - 0.05) return 'sous_min';
+  if (sets > vMax + 0.05) return 'depassement';
+  return 'ok';
+}
+
+/**
  * Calcule la couverture par muscle pour la semaine **du programme** contenant
  * `now` (Conv #11h — alignée sur `cycleStart` plutôt que sur le lundi ISO,
  * pour être cohérente avec le calendrier visuel). Si `cycleStart` est null
@@ -135,21 +155,7 @@ export function computeCoverageThisWeek(
   for (const muscle of muscles) {
     const [vMin, vMax] = effectiveVolumeBounds(state as UserState, muscle);
     const sets = counts[muscle] ?? 0;
-    let status: CoverageStatus;
-    if (vMin === 0 && vMax === 0) {
-      status = 'hors_scope';
-    } else if (sets === 0) {
-      status = 'non_travaille';
-    } else if (sets < vMin - 0.05) {
-      // Conv #18 — tolérance epsilon : sets pondéré (coefs muscles) peut
-      // tomber pile à vMin avec un arrondi flottant (ex : 9.999…). Le user
-      // qui programme "12 séries pec" pour vMin=12 voyait encore sous_min.
-      status = 'sous_min';
-    } else if (sets > vMax + 0.05) {
-      status = 'depassement';
-    } else {
-      status = 'ok';
-    }
+    const status = classifyVolume(sets, vMin, vMax);
     const denom = vMax > 0 ? vMax : Math.max(1, sets);
     const intensity = Math.min(1, sets / denom);
     out.push({ muscle, sets, vMin, vMax, status, intensity });

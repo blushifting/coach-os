@@ -1,7 +1,7 @@
 {
   "name": "coach-os",
   "private": true,
-  "version": "1.24.0",
+  "version": "1.25.0",
   "type": "module",
   "description": "Coach OS — PWA d'aide à la musculation autorégulée RPE-based.",
   "scripts": {

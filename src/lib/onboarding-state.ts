@@ -16,7 +16,6 @@ import {
   EquipmentPreference,
   GymBrand,
   Level,
-  MUSCLES,
   MuscleObjective,
   MuscleStatus,
   Objective,
@@ -56,6 +55,13 @@ export interface OnboardingDraft {
   /** `null` = mode custom (pas de programme guidé). */
   readonly programmeId: string | null;
   /**
+   * Bloc O — mode de construction du programme :
+   *  - `'auto'`   : le moteur remplit (sur-mesure).
+   *  - `'manual'` : grille vide, l'utilisateur remplit lui-même (jours nus +
+   *    jauges de volume). Default : `'auto'`.
+   */
+  readonly buildMode: 'auto' | 'manual';
+  /**
    * Conv #22 — durée MAX par séance (plafond patterns/séance).
    * Sert au nouveau path co-construit (mode custom seulement).
    * Default : MEDIUM (≤ 1h30).
@@ -84,31 +90,49 @@ export interface OnboardingDraft {
 // =============================================================================
 
 /**
- * Préset full-body « intégrale » (Conv #28) : tous les muscles couverts.
+ * Préset full-body « réfléchi » (Bloc O).
  *
- * 4 prios Hypertrophie (push/pull/jambes/épaules) + TOUS les autres en
- * maintien explicite. Choix sourcés :
+ * 5 prios Hypertrophie qui couvrent les grands patterns (poussée H, tirage V,
+ * squat, charnière/hinge, élévations) + un maintien CIBLÉ (6 muscles), pas
+ * « tous les autres ». Le reste (trapèzes hauts, mollets, obliques, lombaires)
+ * est volontairement ABSENT : il est couvert par proxy via les
+ * polyarticulaires, sans forcer d'isolation inutile. La silhouette n'est donc
+ * plus pleine, mais le programme est honnête.
+ *
+ * Choix sourcés :
  *  - ~10-12 séries/sem directes par muscle (Schoenfeld 2017, V_min) n'est
- *    tenable que sur ~4-5 muscles dans un budget 3 séances × 1h30.
- *  - Petits muscles (biceps, triceps, deltos post.) : le volume indirect des
- *    polyarticulaires suffit largement en maintien (Gentil et al. 2013).
- *  - Fessiers volontairement en maintien : en prio ils gonflent trop les
- *    séries jambes (toujours co-sollicités par squat/fentes/hinge) ; le
- *    volume par proxy est déjà bon. L'user peut les repasser en prio.
+ *    tenable que sur ~4-5 muscles dans un budget 3 séances × 1h30 → 5 prios.
+ *  - Ischios en prio (Bloc O) : équilibre la chaîne postérieure, absente des
+ *    prios « tout quad » d'avant.
+ *  - Maintien ciblé : dos épaisseur (tirage H/posture), fessiers (proxy
+ *    squat+hinge déjà fort), biceps (isolation-only au catalogue), triceps
+ *    (équilibre pressing), deltos postérieurs (équilibre vs deltos antérieurs),
+ *    abdos (gainage léger).
+ *  - Absents couverts par proxy (Gentil et al. 2013) : trapèzes hauts
+ *    (soulevé/tirages), mollets (optionnel), obliques (gainage des
+ *    polyarticulaires), lombaires (squat/hinge déjà très sollicitants).
+ *
+ * NB : avec ce préset, R3 (core) suggérerait `lombaires` (absent) → la popin
+ * d'équilibre est pré-déclinée à l'application du préset (cf. `balanceKeyOf` +
+ * `onPresetApplied` dans OnboardingPage), sans repasser lombaires en maintien.
  */
 export const PRESET_DEFAULT_PRIORITIES: readonly RankedPriority[] = [
   { muscle: 'pectoraux', objective: MuscleObjective.HYPERTROPHIE },
   { muscle: 'dos_largeur', objective: MuscleObjective.HYPERTROPHIE },
   { muscle: 'quadriceps', objective: MuscleObjective.HYPERTROPHIE },
+  { muscle: 'ischios', objective: MuscleObjective.HYPERTROPHIE },
   { muscle: 'deltos_lateraux', objective: MuscleObjective.HYPERTROPHIE },
 ];
 
-/** Tous les muscles hors prios du préset, en maintien explicite. */
-export const PRESET_DEFAULT_MAINTENANCE: ReadonlySet<string> = new Set(
-  MUSCLES.filter(
-    (m) => !PRESET_DEFAULT_PRIORITIES.some((p) => p.muscle === m),
-  ),
-);
+/** Maintien ciblé du préset full-body (6 muscles, pas « tous les autres »). */
+export const PRESET_DEFAULT_MAINTENANCE: ReadonlySet<string> = new Set([
+  'dos_epaisseur',
+  'fessiers',
+  'biceps',
+  'triceps',
+  'deltos_posterieurs',
+  'abdos',
+]);
 
 // =============================================================================
 // Construction de l'état initial
@@ -131,6 +155,7 @@ export function makeInitialDraft(): OnboardingDraft {
     priorities: [],
     maintenance: new Set<string>(),
     programmeId: null,
+    buildMode: 'auto',
     durationCategory: DurationCategory.MEDIUM,
     equipmentPreference: EquipmentPreference.NO_PREFERENCE,
     gymBrand: GymBrand.NONE,
@@ -175,6 +200,7 @@ export function draftFromUserState(state: UserState): OnboardingDraft {
     priorities,
     maintenance,
     programmeId: state.active_guided_program_id,
+    buildMode: state.build_mode ?? 'auto',
     durationCategory:
       state.profile.duration_category ?? DurationCategory.MEDIUM,
     equipmentPreference:
@@ -193,6 +219,23 @@ export function draftFromUserState(state: UserState): OnboardingDraft {
  * muscles SUGGERE par R1-R4 (fonction pure de `balance.ts`). Les muscles
  * déjà en entretien sont vus comme couverts → seuls les vrais trous sortent.
  */
+/**
+ * Clé stable d'une sélection muscles (prios + maintien). Sert à mémoriser un
+ * refus de la popin d'équilibre (pas de re-popin tant que la sélection ne
+ * change pas) et à pré-décliner la popin quand on applique un préset.
+ * Factorisé ici pour que OnboardingPage et Step2Muscles produisent EXACTEMENT
+ * la même clé.
+ */
+export function balanceKeyOf(
+  priorities: readonly RankedPriority[],
+  maintenance: ReadonlySet<string>,
+): string {
+  return JSON.stringify({
+    prios: priorities.map((p) => `${p.muscle}:${p.objective}`),
+    maintenance: [...maintenance].sort(),
+  });
+}
+
 export function computeBalanceSuggestions(
   priorities: readonly RankedPriority[],
   maintenance: ReadonlySet<string> = new Set(),

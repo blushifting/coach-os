@@ -131,22 +131,37 @@ test('bouton retour fonctionnel à chaque étape', async ({ page }) => {
   await expect(page.getByTestId('btn-prev')).toBeDisabled();
 });
 
-test('parcours avec programme guidé (tableau lignes)', async ({ page }) => {
+test('parcours à la main : grille vide + jauges → ajout exo → /programme', async ({
+  page,
+}) => {
   await page.goto('onboarding');
 
   await page.getByTestId('btn-next').click();
 
   await page.getByTestId('preset-default').click();
   await page.getByTestId('btn-next').click();
+  await expect(page.getByTestId('balance-dialog')).toHaveCount(0);
+  await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '3');
 
-  // Taper la ligne = sélection + dépliage des détails.
-  await page.getByTestId('program-ss').click();
-  await expect(page.getByTestId('program-ss')).toHaveAttribute('aria-checked', 'true');
-  await expect(page.getByTestId('program-details-ss')).toBeVisible();
+  // Mode « à la main ».
+  await page.getByTestId('program-manual').click();
+  await expect(page.getByTestId('program-manual')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
   await page.getByTestId('btn-next').click();
   await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '4');
 
+  // Récap : grille vide + jauges de volume.
   await expect(page.getByTestId('step5-preview')).toBeVisible();
+  await expect(page.getByTestId('volume-gauges')).toBeVisible();
+  await expect(page.getByTestId('day-card-0')).toBeVisible();
+
+  // Ajout d'un exercice dans la 1re séance.
+  await page.getByTestId('btn-add-0').click();
+  await expect(page.getByTestId('step5-add-search')).toBeVisible();
+  await page.locator('[data-testid^="step5-add-pick-"]').first().click();
+
   await page.getByTestId('btn-finish').click();
   await expect(page).toHaveURL(/\/programme$/);
 });

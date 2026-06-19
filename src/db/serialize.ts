@@ -80,6 +80,7 @@ export function serializeUserState(state: UserState): SerializedUserState {
     current_cycle_plan:
       state.current_cycle_plan === null ? null : structuredClone(state.current_cycle_plan),
     active_guided_program_id: state.active_guided_program_id,
+    build_mode: state.build_mode ?? 'auto',
     recovery_mode: state.recovery_mode,
     recovery_weeks_remaining: state.recovery_weeks_remaining,
     equipment_overrides: Object.fromEntries(
@@ -123,7 +124,11 @@ export function deserializeUserState(s: SerializedUserState): UserState {
     ),
     current_cycle_plan:
       s.current_cycle_plan === null ? null : structuredClone(s.current_cycle_plan),
-    active_guided_program_id: s.active_guided_program_id,
+    // Bloc O — les programmes tout faits sont supprimés. Tout ancien id guidé
+    // persisté est neutralisé ici (le plan déjà construit reste jouable ; au
+    // prochain endOfCycle il sera régénéré en custom).
+    active_guided_program_id: null,
+    build_mode: s.build_mode ?? 'auto',
     recovery_mode: s.recovery_mode,
     recovery_weeks_remaining: s.recovery_weeks_remaining,
     equipment_overrides: Object.fromEntries(

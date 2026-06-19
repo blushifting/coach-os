@@ -12,24 +12,39 @@ import { bootstrapMuscleGoalsFromProfile, startUser } from '@/engine/engine';
 import {
   analyzeProgramTension,
   applyVariantsToTemplate,
-  buildPreviewTemplate,
   estimateExerciseDurationMinutes,
   muscleDeltaForSwap,
   SESSION_DURATION_WARN_MIN,
   weeklyVolumeByMuscle,
+  weightedWeeklyVolumeByMuscle,
   type VariantReplacement,
 } from '@/lib/onboarding-preview';
 import {
   ExType,
   Objective,
   type DayTemplate,
+  type MuscleGoal,
+  type Profile,
   type WeeklyTemplate,
 } from '@/engine/models';
+import { generateCyclePlan } from '@/engine/cycle_planner';
 import { profile } from '../engine/_helpers';
 
 const catalog = new Catalog();
 
-describe('buildPreviewTemplate (Conv #11b)', () => {
+/**
+ * Construit un template custom en mémoire (remplace l'ancien
+ * `buildPreviewTemplate`, retiré au Bloc O avec les programmes tout faits).
+ */
+function previewTemplate(p: Profile, goals: Record<string, MuscleGoal>) {
+  const tmp = startUser(p, catalog, { muscleGoals: goals, applyBalance: false });
+  return {
+    template: generateCyclePlan(tmp, catalog),
+    blocking: [] as readonly string[],
+  };
+}
+
+describe('preview custom template', () => {
   it('mode custom : retourne un WeeklyTemplate non-null sans blocking', () => {
     const p = profile();
     const goals = bootstrapMuscleGoalsFromProfile(p, [
@@ -37,19 +52,10 @@ describe('buildPreviewTemplate (Conv #11b)', () => {
       'dos_largeur',
       'quadriceps',
     ]);
-    const { template, blocking } = buildPreviewTemplate(p, goals, null, catalog);
+    const { template, blocking } = previewTemplate(p, goals);
     expect(blocking).toEqual([]);
     expect(template).not.toBeNull();
     expect(template!.days.length).toBeGreaterThan(0);
-  });
-
-  it('mode guidé : utilise fitGuidedProgram', () => {
-    const p = profile();
-    const goals = bootstrapMuscleGoalsFromProfile(p, ['pectoraux']);
-    const { template } = buildPreviewTemplate(p, goals, 'ss', catalog);
-    if (template !== null) {
-      expect(template.days.length).toBeGreaterThan(0);
-    }
   });
 
   it('preview ne touche pas un éventuel state existant (in-memory pur)', () => {
@@ -58,7 +64,7 @@ describe('buildPreviewTemplate (Conv #11b)', () => {
     // Sentinel : un state existant.
     const sentinel = startUser(p, catalog, { muscleGoals: goals });
     const before = JSON.stringify(sentinel);
-    buildPreviewTemplate(p, goals, null, catalog);
+    previewTemplate(p, goals);
     expect(JSON.stringify(sentinel)).toBe(before);
   });
 });
@@ -67,7 +73,7 @@ describe('weeklyVolumeByMuscle', () => {
   it('accumule base_sets par muscle primaire', () => {
     const p = profile();
     const goals = bootstrapMuscleGoalsFromProfile(p, ['pectoraux', 'quadriceps']);
-    const { template } = buildPreviewTemplate(p, goals, null, catalog);
+    const { template } = previewTemplate(p, goals);
     expect(template).not.toBeNull();
     const volume = weeklyVolumeByMuscle(template!, catalog);
     // Au moins un des muscles prioritaires doit avoir un volume > 0.
@@ -75,13 +81,26 @@ describe('weeklyVolumeByMuscle', () => {
     const quad = volume.quadriceps ?? 0;
     expect(pec + quad).toBeGreaterThan(0);
   });
+
+  it('weightedWeeklyVolumeByMuscle pondère (synergistes inclus) ≥ primaires seuls', () => {
+    const p = profile();
+    const goals = bootstrapMuscleGoalsFromProfile(p, ['pectoraux', 'quadriceps']);
+    const { template } = previewTemplate(p, goals);
+    expect(template).not.toBeNull();
+    const weighted = weightedWeeklyVolumeByMuscle(template!, catalog);
+    const primary = weeklyVolumeByMuscle(template!, catalog);
+    const sum = (o: Record<string, number>) =>
+      Object.values(o).reduce((a, b) => a + b, 0);
+    // Le pondéré somme TOUS les muscles (coef × séries), donc ≥ primaires seuls.
+    expect(sum(weighted)).toBeGreaterThanOrEqual(sum(primary));
+  });
 });
 
 describe('applyVariantsToTemplate', () => {
   it('remplace uniquement exercise_id, conserve base_sets et progression', () => {
     const p = profile();
     const goals = bootstrapMuscleGoalsFromProfile(p, ['pectoraux']);
-    const { template } = buildPreviewTemplate(p, goals, null, catalog);
+    const { template } = previewTemplate(p, goals);
     expect(template).not.toBeNull();
     const firstSlot = template!.days[0]?.exercises[0];
     expect(firstSlot).toBeDefined();
@@ -104,7 +123,7 @@ describe('applyVariantsToTemplate', () => {
   it('liste vide → retourne le template original', () => {
     const p = profile();
     const goals = bootstrapMuscleGoalsFromProfile(p, ['pectoraux']);
-    const { template } = buildPreviewTemplate(p, goals, null, catalog);
+    const { template } = previewTemplate(p, goals);
     const next = applyVariantsToTemplate(template!, []);
     expect(next).toBe(template); // identité référentielle
   });
@@ -112,7 +131,7 @@ describe('applyVariantsToTemplate', () => {
   it('index hors plage → silencieusement ignoré', () => {
     const p = profile();
     const goals = bootstrapMuscleGoalsFromProfile(p, ['pectoraux']);
-    const { template } = buildPreviewTemplate(p, goals, null, catalog);
+    const { template } = previewTemplate(p, goals);
     const next = applyVariantsToTemplate(template!, [
       { dayIndex: 99, slotIndex: 99, newExerciseId: 'inexistant' },
     ]);
@@ -243,7 +262,7 @@ describe('estimateExerciseDurationMinutes / analyzeProgramTension (Conv #11h)', 
       'quadriceps',
       'ischios',
     ]);
-    const { template, blocking } = buildPreviewTemplate(p, goals, null, catalog);
+    const { template, blocking } = previewTemplate(p, goals);
     expect(blocking).toEqual([]);
     expect(template).not.toBeNull();
     const tension = analyzeProgramTension(template!, catalog);

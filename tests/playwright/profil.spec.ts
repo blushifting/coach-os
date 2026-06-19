@@ -186,7 +186,11 @@ test('profil : édition priorités via onboarding partiel persistée', async ({
   await page.getByTestId('obj-pectoraux-force').click();
 
   // Step 2 → 3 (Programme) → 4 (Aperçu)
+  // Bloc O — le préset full-body laisse les lombaires absents (couverts par
+  // proxy) ; modifier la sélection rouvre la popin d'équilibre (R3 core). On
+  // décline pour conserver le choix de l'utilisateur, puis on avance.
   await page.getByTestId('btn-next').click();
+  await page.getByTestId('balance-decline').click();
   await page.getByTestId('btn-next').click();
   await page.getByTestId('btn-finish').click();
 
