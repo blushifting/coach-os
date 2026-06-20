@@ -1,7 +1,7 @@
 {
   "name": "coach-os",
   "private": true,
-  "version": "1.25.0",
+  "version": "1.26.0",
   "type": "module",
   "description": "Coach OS — PWA d'aide à la musculation autorégulée RPE-based.",
   "scripts": {
@@ -11,7 +11,6 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "parity-check": "tsx tools/parity-check.ts",
     "generate-icons": "node scripts/generate-icons.mjs",
     "demo:generate": "tsx --tsconfig tsconfig.app.json scripts/generate-alex-demo.mts",
     "lint": "eslint .",

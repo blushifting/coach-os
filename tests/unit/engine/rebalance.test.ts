@@ -4,9 +4,9 @@
  * Stratégie :
  *  - Tests unitaires sur des templates artisanaux pour valider les
  *    invariants (jour non vide, pas de doublon, fréquence préservée).
- *  - Tests d'intégration via `generateCyclePlan` sur les 3 splits types
- *    (full-body 3j, UL 4j, PPL 6j) pour vérifier que la variance baisse
- *    et que le `slot_kind` n'est jamais cassé.
+ *  - Tests d'intégration via `autoGenerateCyclePlanV3` (voie unique, Conv #39)
+ *    pour vérifier que la variance baisse et que le `slot_kind` n'est jamais
+ *    cassé (le kind est dérivé du label de séance).
  */
 
 import { describe, expect, it } from 'vitest';
@@ -16,9 +16,7 @@ import {
   MIN_REBALANCE_GAIN_MIN,
   rebalanceCycleDurations,
 } from '@/engine/rebalance';
-import { generateCyclePlan } from '@/engine/cycle_planner';
-import { selectSplit, SlotKind } from '@/engine/split';
-import { parameterizeSplit } from '@/engine/cycle_planner';
+import { autoGenerateCyclePlanV3 } from '@/engine/cycle_planner';
 import { startUser } from '@/engine/engine';
 import { analyzeProgramTension } from '@/lib/onboarding-preview';
 import {
@@ -49,8 +47,8 @@ describe('rebalanceCycleDurations — constantes', () => {
 // Intégration : full-body 3j
 // =============================================================================
 
-describe('rebalance via generateCyclePlan — full-body 3j', () => {
-  it('réduit la variance de durée entre les 3 jours (Conv #16-2)', () => {
+describe('rebalance via autoGenerateCyclePlanV3 — 3 séances', () => {
+  it('réduit la variance de durée entre les jours (Conv #16-2)', () => {
     const p = profile({
       sessions_per_week: 3,
       objective: Objective.HYPERTROPHIE,
@@ -64,16 +62,14 @@ describe('rebalance via generateCyclePlan — full-body 3j', () => {
       'triceps',
     ]);
     const state = startUser(p, catalog, { muscleGoals: goals });
-    const template = generateCyclePlan(state, catalog);
+    const template = autoGenerateCyclePlanV3(state, catalog);
 
     const tension = analyzeProgramTension(template, catalog);
     const nonEmpty = tension.durationsMin.filter((d) => d > 0);
     expect(nonEmpty.length).toBeGreaterThan(0);
     const spread = Math.max(...nonEmpty) - Math.min(...nonEmpty);
 
-    // Spread devrait être notablement réduit. Sans rebalance, le scenario
-    // Azur tournait à 58/39/31 = 27 min de spread. Avec rebalance + l'algo
-    // de coût d'exos de Conv #15-11, on vise < 15 min.
+    // Variance de durée maîtrisée entre les séances.
     expect(spread).toBeLessThanOrEqual(15);
 
     // Tous les jours doivent rester non vides.
@@ -93,7 +89,7 @@ describe('rebalance via generateCyclePlan — full-body 3j', () => {
       'quadriceps',
     ]);
     const state = startUser(p, catalog, { muscleGoals: goals });
-    const template = generateCyclePlan(state, catalog);
+    const template = autoGenerateCyclePlanV3(state, catalog);
 
     // Pour chaque muscle prioritaire, vérifie qu'il est travaillé sur
     // ≥ 2 jours différents (cible bootstrap pour 3 séances/sem).
@@ -116,10 +112,10 @@ describe('rebalance via generateCyclePlan — full-body 3j', () => {
 });
 
 // =============================================================================
-// Intégration : UL 4j (intra slot_kind respecté)
+// Intégration : UL 4j (slot_kind respecté, dérivé du label)
 // =============================================================================
 
-describe('rebalance via generateCyclePlan — UL 4j', () => {
+describe('rebalance via autoGenerateCyclePlanV3 — UL 4j', () => {
   it('respecte les slot_kind : aucun exo UPPER ne migre vers un jour LOWER', () => {
     const p = profile({
       sessions_per_week: 4,
@@ -132,32 +128,20 @@ describe('rebalance via generateCyclePlan — UL 4j', () => {
       'ischios',
     ]);
     const state = startUser(p, catalog, { muscleGoals: goals });
+    const template = autoGenerateCyclePlanV3(state, catalog);
 
-    // On a besoin du slot_kind par jour pour vérifier.
-    const split = selectSplit(
-      state.profile.sessions_per_week,
-      state.muscle_goals,
-      state.profile.level,
-    );
-    const daysMeta = parameterizeSplit(split, state.muscle_goals, state);
-    const template = generateCyclePlan(state, catalog);
-
-    expect(template.days.length).toBe(daysMeta.length);
-
-    // Pour chaque jour LOWER, aucun exo dont muscle primaire = pectoraux
-    // ou bras (catégoriquement UPPER). Et inverse pour UPPER.
-    for (let i = 0; i < template.days.length; i++) {
-      const kind = daysMeta[i]!.slot_kind;
-      for (const ex of template.days[i]!.exercises) {
+    // Le kind est dérivé du label de séance (Conv #39 : « Upper A », « Lower B »).
+    for (const day of template.days) {
+      const isUpper = /upper/i.test(day.label);
+      const isLower = /lower/i.test(day.label);
+      for (const ex of day.exercises) {
         if (!catalog.has(ex.exercise_id)) continue;
         const primaires = exercisePrimaires(catalog.get(ex.exercise_id));
-        if (kind === SlotKind.LOWER) {
-          // Aucun pec/dos/bras/épaule en LOWER.
+        if (isLower) {
           expect(primaires).not.toContain('pectoraux');
           expect(primaires).not.toContain('biceps');
           expect(primaires).not.toContain('triceps');
-        } else if (kind === SlotKind.UPPER) {
-          // Aucun quad/ischio/fessier en UPPER.
+        } else if (isUpper) {
           expect(primaires).not.toContain('quadriceps');
           expect(primaires).not.toContain('ischios');
           expect(primaires).not.toContain('fessiers');

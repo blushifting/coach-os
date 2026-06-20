@@ -16,6 +16,7 @@ import type {
   UserState,
 } from './models';
 import {
+  DurationCategory,
   SuggestedAction,
   exercisePrimaires,
   makeCycleReview,
@@ -27,7 +28,7 @@ import {
   VMAX_UP_DELTA,
   countWeeklyVolume,
 } from './volume';
-import { generateCyclePlan, rotateEmphasis } from './cycle_planner';
+import { autoGenerateCyclePlanV3, rotateEmphasis } from './cycle_planner';
 
 // =============================================================================
 // Constantes recovery mode (cf. 09 §8.6)
@@ -309,11 +310,18 @@ export function applyUserActionAfterCycle(
   catalog: Catalog,
   action: SuggestedAction,
 ): void {
+  // Conv #39 — voie unique V2 (cf. endOfCycle de useEngine).
+  const regen = () =>
+    autoGenerateCyclePlanV3(
+      state,
+      catalog,
+      state.profile.duration_category ?? DurationCategory.MEDIUM,
+    );
   if (action === SuggestedAction.CONTINUER_PAREIL) {
-    state.current_cycle_plan = generateCyclePlan(state, catalog);
+    state.current_cycle_plan = regen();
   } else if (action === SuggestedAction.TOURNER_EMPHASIS) {
     rotateEmphasis(state.muscle_goals);
-    state.current_cycle_plan = generateCyclePlan(state, catalog);
+    state.current_cycle_plan = regen();
   }
   // AJUSTER_OBJECTIFS et CHANGER_PROGRAMME : interaction UX, regen plan plus tard.
 

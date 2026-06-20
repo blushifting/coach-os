@@ -215,7 +215,7 @@ export default function OnboardingPage() {
         draft.equipmentPreference,
       );
       try {
-        const template = generateCyclePlanV2(seeded, tmpState, catalog);
+        const template = generateCyclePlanV3(seeded, tmpState, catalog);
         return { template, blocking: [] };
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Impossible de générer l\'aperçu.';
@@ -223,7 +223,7 @@ export default function OnboardingPage() {
       }
     }
     try {
-      const template = generateCyclePlanV2(filled, tmpState, catalog);
+      const template = generateCyclePlanV3(filled, tmpState, catalog);
       return { template, blocking: [] };
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Impossible de générer l\'aperçu.';
@@ -852,4 +852,4 @@ function CancelRestartDialog({
 }
 
 // Conv #22.2 — Import direct (au lieu de require()) pour le preview.
-import { generateCyclePlanV2 } from '@/engine/cycle_planner';
+import { generateCyclePlanV3 } from '@/engine/cycle_planner';

@@ -37,7 +37,7 @@ import {
   targetFrequencyV2,
   targetVolume,
 } from '@/engine/volume';
-import { autoGenerateCyclePlanV2 } from '@/engine/cycle_planner';
+import { autoGenerateCyclePlanV3 } from '@/engine/cycle_planner';
 import { EQUIP_FULL } from './_helpers';
 
 // =============================================================================
@@ -255,7 +255,7 @@ describe('Conv #22 — Under-fill : warn si capacité >> demande', () => {
 // =============================================================================
 
 describe('Conv #22 — sets_allocator (étape F)', () => {
-  it('Profil 1 + autoGenerateCyclePlanV2 : pec atteint V_min', () => {
+  it('Profil 1 + autoGenerateCyclePlanV3 : pec atteint V_min', () => {
     const state = makeStateForGoals({
       sessions_per_week: 4,
       prios: [
@@ -265,7 +265,7 @@ describe('Conv #22 — sets_allocator (étape F)', () => {
       ],
       suggested: ['ischios', 'deltos_posterieurs', 'abdos', 'lombaires'],
     });
-    const plan = autoGenerateCyclePlanV2(state, catalog, DurationCategory.MEDIUM);
+    const plan = autoGenerateCyclePlanV3(state, catalog, DurationCategory.MEDIUM);
     expect(plan.days).toHaveLength(4);
     // Compter volume pec sur le cycle.
     let pecSets = 0;
@@ -286,7 +286,7 @@ describe('Conv #22 — sets_allocator (étape F)', () => {
       prios: [['pectoraux', MuscleObjective.HYPERTROPHIE]],
       suggested: ['deltos_posterieurs', 'abdos', 'lombaires'],
     });
-    const plan = autoGenerateCyclePlanV2(state, catalog, DurationCategory.MEDIUM);
+    const plan = autoGenerateCyclePlanV3(state, catalog, DurationCategory.MEDIUM);
     for (const day of plan.days) {
       for (const ex of day.exercises) {
         expect(ex.base_sets).toBeGreaterThanOrEqual(3);

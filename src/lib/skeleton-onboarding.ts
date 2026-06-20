@@ -26,7 +26,7 @@ import {
 import { startUser as engineStartUser } from '@/engine/engine';
 import { buildSkeleton } from '@/engine/skeleton_builder';
 import {
-  generateCyclePlanV2,
+  generateCyclePlanV3,
 } from '@/engine/cycle_planner';
 import { candidatesForCell } from '@/engine/pattern_grid';
 
@@ -151,7 +151,7 @@ export function buildFinalPlanFromSkeleton(
   catalog: Catalog,
 ): WeeklyTemplate | null {
   if (!isSkeletonFullyFilled(skeleton)) return null;
-  return generateCyclePlanV2(skeleton, tmpState, catalog);
+  return generateCyclePlanV3(skeleton, tmpState, catalog);
 }
 
 /**

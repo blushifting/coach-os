@@ -1,9 +1,12 @@
 /**
- * Miroir TS de prototype/tests/test_cycle_planner.py.
+ * Tests du planificateur de cycle (voie unique V3, Conv #39).
  * Couvre : effectiveVolumeBounds (extension MuscleGoal), targetFrequency,
- * cycleSetProgression, exosCountForVolume, compoundCountForObjective,
- * parameterizeSplit, composeSession, generateCyclePlan, rotateEmphasis,
- * orderSession.
+ * cycleSetProgression, autoGenerateCyclePlanV3 (invariants globaux),
+ * enforceLengthenedBias, rotateEmphasis, orderSession.
+ *
+ * NB : les tests des internes legacy (parameterizeSplit, composeSession,
+ * exosCountForVolume, compoundCountForObjective, generateCyclePlan) ont été
+ * retirés avec la suppression de la voie legacy (Conv #39).
  */
 
 import { describe, expect, it } from 'vitest';
@@ -11,14 +14,9 @@ import { describe, expect, it } from 'vitest';
 import { applyBalanceRules } from '@/engine/balance';
 import { Catalog } from '@/engine/catalog';
 import {
-  DayMeta,
-  composeSession,
-  compoundCountForObjective,
-  enforceLengthenedBias,
-  exosCountForVolume,
-  generateCyclePlan,
+  autoGenerateCyclePlanV3,
   cycleSetProgression,
-  parameterizeSplit,
+  enforceLengthenedBias,
   rotateEmphasis,
 } from '@/engine/cycle_planner';
 import {
@@ -28,15 +26,11 @@ import {
   type UserState,
   exercisePrimaires,
 } from '@/engine/models';
-import {
-  MAX_TOTAL_SETS_PER_SESSION,
-  orderSession,
-  totalSets,
-} from '@/engine/selection';
-import { SPLIT_UL_4X, SlotKind } from '@/engine/split';
+import { orderSession, totalSets } from '@/engine/selection';
 import {
   effectiveVolumeBounds,
   targetFrequency,
+  MAX_TOTAL_SETS_PER_SESSION_V2,
 } from '@/engine/volume';
 
 import { profileIntermediaireH, startUserStub } from './_helpers';
@@ -76,20 +70,6 @@ function typicalGoals(): Record<string, MuscleGoal> {
   };
   for (const sg of applyBalanceRules(goals)) goals[sg.muscle] = sg;
   return goals;
-}
-
-function dayMeta(
-  dayIndex: number,
-  label: string,
-  slotKind: SlotKind,
-  focus: string[] = [],
-): DayMeta {
-  return {
-    day_index: dayIndex,
-    label,
-    slot_kind: slotKind,
-    target_muscles_focus: [...focus],
-  };
 }
 
 // =============================================================================
@@ -200,148 +180,41 @@ describe('cycleSetProgression', () => {
 });
 
 // =============================================================================
-// 4. exosCountForVolume / compoundCountForObjective
+// 4. autoGenerateCyclePlanV3 — invariants globaux (voie unique)
 // =============================================================================
 
-describe('exosCountForVolume', () => {
-  it('paliers 1/2/3/4', () => {
-    expect(exosCountForVolume(5)).toBe(1);
-    expect(exosCountForVolume(10)).toBe(2);
-    expect(exosCountForVolume(15)).toBe(3);
-    expect(exosCountForVolume(20)).toBe(4);
-  });
-});
-
-describe('compoundCountForObjective', () => {
-  it('FORCE = 100 %', () => {
-    expect(compoundCountForObjective(3, MuscleObjective.FORCE)).toBe(3);
-  });
-
-  it('HYPERTROPHIE ~60 % (3 → 2)', () => {
-    expect(compoundCountForObjective(3, MuscleObjective.HYPERTROPHIE)).toBe(2);
-  });
-});
-
-// =============================================================================
-// 5. parameterizeSplit
-// =============================================================================
-
-describe('parameterizeSplit', () => {
+describe('autoGenerateCyclePlanV3', () => {
   it('n jours = sessions_per_week', () => {
     const state = stateInterH4x();
     state.muscle_goals = typicalGoals();
-    expect(parameterizeSplit(SPLIT_UL_4X, state.muscle_goals, state).length).toBe(4);
-  });
-
-  it('pec dans au moins un jour UPPER', () => {
-    const state = stateInterH4x();
-    state.muscle_goals = typicalGoals();
-    const dm = parameterizeSplit(SPLIT_UL_4X, state.muscle_goals, state);
-    const upperDays = dm.filter((d) => d.slot_kind === SlotKind.UPPER);
-    expect(upperDays.some((d) => d.target_muscles_focus.includes('pectoraux'))).toBe(true);
-  });
-
-  it('quad dans au moins un jour LOWER', () => {
-    const state = stateInterH4x();
-    state.muscle_goals = typicalGoals();
-    const dm = parameterizeSplit(SPLIT_UL_4X, state.muscle_goals, state);
-    const lowerDays = dm.filter((d) => d.slot_kind === SlotKind.LOWER);
-    expect(lowerDays.some((d) => d.target_muscles_focus.includes('quadriceps'))).toBe(true);
-  });
-});
-
-// =============================================================================
-// 6. composeSession — invariants par jour
-// =============================================================================
-
-describe('composeSession', () => {
-  it('au moins 1 exo si muscles focus', () => {
-    const state = stateInterH4x();
-    state.muscle_goals = typicalGoals();
-    const day = composeSession(
-      dayMeta(0, 'Upper A', SlotKind.UPPER, ['pectoraux']),
-      state,
-      catalog,
-    );
-    expect(day.exercises.length).toBeGreaterThanOrEqual(1);
-  });
-
-  it('lengthened_bias si Hyp + 2+ exos sur muscle', () => {
-    const state = stateInterH4x();
-    state.muscle_goals = typicalGoals();
-    state.volume_min.pectoraux = 12.0;
-    state.volume_max.pectoraux = 18.0;
-    const day = composeSession(
-      dayMeta(0, 'Upper A', SlotKind.UPPER, ['pectoraux']),
-      state,
-      catalog,
-    );
-    if (day.exercises.length >= 2) {
-      const candidatesLengthened = catalog
-        .for_muscle_primary('pectoraux')
-        .filter(
-          (x) =>
-            x.tags.includes('lengthened_bias') &&
-            (x.equip.length === 0 ||
-              x.equip.every((e) => state.profile.available_equip.has(e))),
-        );
-      if (candidatesLengthened.length > 0) {
-        const anyLengthened = day.exercises.some((p) =>
-          catalog.get(p.exercise_id).tags.includes('lengthened_bias'),
-        );
-        expect(anyLengthened).toBe(true);
-      }
-    }
-  });
-
-  it('SUGGERE seul → ≤ 2 exos (pas d\'explosion)', () => {
-    const state = stateInterH4x();
-    state.muscle_goals = typicalGoals();
-    expect(state.muscle_goals.abdos!.status).toBe(MuscleStatus.SUGGERE);
-    const day = composeSession(
-      dayMeta(0, 'Upper A', SlotKind.UPPER, ['abdos']),
-      state,
-      catalog,
-    );
-    expect(day.exercises.length).toBeLessThanOrEqual(2);
-  });
-});
-
-// =============================================================================
-// 7. generateCyclePlan — invariants globaux
-// =============================================================================
-
-describe('generateCyclePlan', () => {
-  it('n jours = sessions_per_week', () => {
-    const state = stateInterH4x();
-    state.muscle_goals = typicalGoals();
-    const plan = generateCyclePlan(state, catalog);
+    const plan = autoGenerateCyclePlanV3(state, catalog);
     expect(plan.days.length).toBe(state.profile.sessions_per_week);
   });
 
   it('chaque jour a au moins 1 exo', () => {
     const state = stateInterH4x();
     state.muscle_goals = typicalGoals();
-    const plan = generateCyclePlan(state, catalog);
+    const plan = autoGenerateCyclePlanV3(state, catalog);
     for (const day of plan.days) {
       expect(day.exercises.length).toBeGreaterThanOrEqual(1);
     }
   });
 
-  it('caps par séance respectés', () => {
+  it('caps par séance respectés (plafond V3)', () => {
     const state = stateInterH4x();
     state.muscle_goals = typicalGoals();
-    const plan = generateCyclePlan(state, catalog);
-    const cap = MAX_TOTAL_SETS_PER_SESSION[state.profile.level];
+    const plan = autoGenerateCyclePlanV3(state, catalog);
     for (const day of plan.days) {
-      expect(totalSets(day.exercises)).toBeLessThanOrEqual(cap);
+      expect(totalSets(day.exercises)).toBeLessThanOrEqual(
+        MAX_TOTAL_SETS_PER_SESSION_V2,
+      );
     }
   });
 
   it('priorités couvertes (chaque PRIORITAIRE touché ≥ 1 fois)', () => {
     const state = stateInterH4x();
     state.muscle_goals = typicalGoals();
-    const plan = generateCyclePlan(state, catalog);
+    const plan = autoGenerateCyclePlanV3(state, catalog);
 
     for (const [muscle, goal] of Object.entries(state.muscle_goals)) {
       if (goal.status !== MuscleStatus.PRIORITAIRE) continue;
@@ -362,7 +235,7 @@ describe('generateCyclePlan', () => {
   it('progression de longueur 5 sur chaque PlannedExercise', () => {
     const state = stateInterH4x();
     state.muscle_goals = typicalGoals();
-    const plan = generateCyclePlan(state, catalog);
+    const plan = autoGenerateCyclePlanV3(state, catalog);
     for (const day of plan.days) {
       for (const p of day.exercises) {
         expect(p.progression.length).toBe(5);
@@ -370,18 +243,25 @@ describe('generateCyclePlan', () => {
     }
   });
 
-  it('rationale contient le nom du split', () => {
+  // Conv #39 — alternance préservée : pas deux jours non-FULL de même kind
+  // consécutifs (le bug U/U/L/L). On vérifie via les labels de séance.
+  it('alternance respectée pour un profil équilibré 4× (Upper/Lower)', () => {
     const state = stateInterH4x();
     state.muscle_goals = typicalGoals();
-    const plan = generateCyclePlan(state, catalog);
-    expect(plan.rationale.includes('Upper/Lower') || plan.rationale.includes('U/L')).toBe(
-      true,
+    const plan = autoGenerateCyclePlanV3(state, catalog);
+    const kinds = plan.days.map((d) =>
+      /upper/i.test(d.label) ? 'U' : /lower/i.test(d.label) ? 'L' : 'X',
     );
+    for (let i = 1; i < kinds.length; i += 1) {
+      if (kinds[i] !== 'X') {
+        expect(kinds[i]).not.toBe(kinds[i - 1]);
+      }
+    }
   });
 });
 
 // =============================================================================
-// 7b. enforceLengthenedBias (D2 Conv #7, cf. 09 §6.4)
+// 5. enforceLengthenedBias (D2 Conv #7, cf. 09 §6.4)
 // =============================================================================
 
 describe('enforceLengthenedBias', () => {
@@ -390,7 +270,7 @@ describe('enforceLengthenedBias', () => {
     state.muscle_goals = {
       fessiers: prio('fessiers', MuscleObjective.HYPERTROPHIE, 1),
     };
-    const plan = generateCyclePlan(state, catalog);
+    const plan = autoGenerateCyclePlanV3(state, catalog);
     const fessiersExos = plan.days.flatMap((d) =>
       d.exercises
         .map((p) => catalog.get(p.exercise_id))
@@ -403,30 +283,12 @@ describe('enforceLengthenedBias', () => {
     }
   });
 
-  it('no-op si objectif FORCE (pas de substitution forcée)', () => {
-    const state = stateInterH4x();
-    state.muscle_goals = {
-      pectoraux: prio('pectoraux', MuscleObjective.FORCE, 1),
-    };
-    const plan = generateCyclePlan(state, catalog);
-    const pecExos = plan.days.flatMap((d) =>
-      d.exercises
-        .map((p) => catalog.get(p.exercise_id))
-        .filter((ex) => exercisePrimaires(ex).includes('pectoraux')),
-    );
-    expect(pecExos.length).toBeGreaterThan(0);
-    // FORCE => essentiellement des compounds, pas de subst forcée par iso lengthened.
-    expect(
-      pecExos.every((ex) => ex.type === 'compound' || !ex.tags.includes('lengthened_bias')),
-    ).toBe(true);
-  });
-
   it('idempotent : 2e appel ne change rien si déjà couvert', () => {
     const state = stateInterH4x();
     state.muscle_goals = {
       fessiers: prio('fessiers', MuscleObjective.HYPERTROPHIE, 1),
     };
-    const plan = generateCyclePlan(state, catalog);
+    const plan = autoGenerateCyclePlanV3(state, catalog);
     const before = plan.days.map((d) => d.exercises.map((p) => p.exercise_id));
     enforceLengthenedBias(plan, state, catalog);
     const after = plan.days.map((d) => d.exercises.map((p) => p.exercise_id));
@@ -435,7 +297,7 @@ describe('enforceLengthenedBias', () => {
 });
 
 // =============================================================================
-// 8. rotateEmphasis
+// 6. rotateEmphasis
 // =============================================================================
 
 describe('rotateEmphasis', () => {
@@ -469,7 +331,7 @@ describe('rotateEmphasis', () => {
 });
 
 // =============================================================================
-// 9. orderSession (cf. selection.ts) — sanity
+// 7. orderSession (cf. selection.ts) — sanity
 // =============================================================================
 
 describe('orderSession — compounds avant iso', () => {

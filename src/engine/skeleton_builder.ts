@@ -42,6 +42,7 @@ import {
 } from './volume';
 import {
   ALL_SPLITS,
+  SlotKind,
   muscleBelongsToSlot,
   type SplitTemplate,
 } from './split';
@@ -146,14 +147,35 @@ const SCORE_OVERFLOW = -10;
 /** Pénalité sous-utilisation (séance peu remplie). */
 const SCORE_UNDERFILL_THRESHOLD = 0.4; // < 40% capacité = under-fill
 const SCORE_UNDERFILL = -2;
+/**
+ * Conv #39 — Séance VIDE (0 case) = malus dominant, distinct du simple
+ * sous-remplissage. Force le scorer à préférer une structure adaptée à la
+ * distribution (ex. Push/Pull pour un profil « haut du corps seul ») plutôt
+ * qu'un U/L avec des jours jambes vides. Doit écraser le bonus canonique le
+ * plus élevé pour qu'une structure sans séance vide gagne toujours.
+ */
+const SCORE_EMPTY_SESSION = -25;
 /** Bonus splits canoniques bien lus (U/L, PPL). */
 const SCORE_CANONICAL_BONUS: Record<string, number> = {
+  // Canoniques.
   ul_4x: 2,
   ppl_6x: 2,
   ul_5x_spec: 1,
   fb_3x: 1,
   fb_2x: 0,
   ppl_3x: 0,
+  // Conv #39 — additionnelles spécialisées (bonus comparable aux canoniques).
+  push_pull_2x: 1,
+  push_pull_4x: 2,
+  push_pull_6x: 2,
+  ulf_3x: 0,
+  ppl_ul_5x: 1,
+  ul_6x: 1,
+  // Filets Full Body : bonus faible → ne gagnent que si une structure
+  // spécialisée laisse des séances vides.
+  fb_4x: 0,
+  fb_5x: 0,
+  fb_6x: 0,
 };
 
 /**
@@ -267,6 +289,12 @@ function scoreSplit(
       warnings.push(
         `${split.slots[i]!.label}: ${load} patterns vs ${capacityPerSession} max`,
       );
+    } else if (load === 0) {
+      // Conv #39 — séance vide = structure inadaptée à la distribution.
+      score += SCORE_EMPTY_SESSION;
+      warnings.push(
+        `${split.slots[i]!.label}: séance vide (aucun muscle éligible)`,
+      );
     } else if (load < capacityPerSession * SCORE_UNDERFILL_THRESHOLD) {
       score += SCORE_UNDERFILL;
     }
@@ -280,33 +308,71 @@ function scoreSplit(
 // =============================================================================
 
 /**
- * Sélectionne le meilleur split parmi les 6 canoniques pour ce profil.
- * Critère : score max (respect freq cible, équilibre capacité, lisibilité).
- *
- * Note Conv #22 : si profile.sessions_per_week ne matche aucun split
- * directement (ex. 4 séances), on prend les splits dont sessions_per_week =
- * profile.sessions_per_week. Pas de splits ad-hoc dans cette version
- * (Phase 1.A) — l'U/L 5× spec / PPL 6× couvrent les cas "Profil 3" upper-heavy.
+ * Conv #39 — Full Body N× ajoutés comme **filet** (dernier recours, choisis
+ * seulement si aucune structure spécialisée n'est valide). FB 2×/3× restent
+ * des choix canoniques légitimes et ne sont PAS dans ce set.
+ */
+const FILET_SPLIT_IDS: ReadonlySet<string> = new Set(['fb_4x', 'fb_5x', 'fb_6x']);
+
+/** Vrai si la distribution laisse au moins une séance sans aucune case. */
+function hasEmptySession(r: SplitScoreResult): boolean {
+  return r.distribution.some((cells) => cells.length === 0);
+}
+
+/**
+ * Conv #39 — Invariant d'alternance : deux séances consécutives ne doivent pas
+ * partager le même `slot_kind` non-FULL (sinon on travaille les mêmes muscles
+ * deux jours d'affilée — c'était le bug U/U/L/L). FULL est exempté : un Full
+ * Body répète volontairement tous les muscles (filet de dernier recours, dont
+ * la récupération repose sur la cadence de repos).
+ */
+export function splitAlternationOk(split: SplitTemplate): boolean {
+  for (let i = 1; i < split.slots.length; i += 1) {
+    const prev = split.slots[i - 1]!.kind;
+    const cur = split.slots[i]!.kind;
+    if (prev === cur && cur !== SlotKind.FULL) return false;
+  }
+  return true;
+}
+
+/**
+ * Sélectionne la meilleure structure pour ce profil parmi le catalogue élargi
+ * (Conv #39). Boucle de sélection **bornée** (par le nombre de candidats — donc
+ * aucun risque d'infini) :
+ *   1. score tous les candidats à `sessionsPerWeek` séances ;
+ *   2. tri par score décroissant (tie-break = ordre d'`ALL_SPLITS`, canoniques
+ *      d'abord) ;
+ *   3. retient la 1re structure qui respecte les invariants DURS — aucune
+ *      séance vide ET alternance des kinds ;
+ *   4. si aucune ne les respecte (ex. très peu de muscles → forcément des
+ *      séances vides ; l'user assume d'aller contre l'avis de maintien), repli
+ *      sur la meilleure au score, ses warnings signalant le problème.
  */
 export function selectBestSplit(
   demands: readonly MuscleDemand[],
   sessionsPerWeek: number,
   capacityPerSession: number,
 ): SplitScoreResult {
-  const candidates = ALL_SPLITS.filter((s) => s.sessions_per_week === sessionsPerWeek);
+  const candidates = ALL_SPLITS.filter(
+    (s) => s.sessions_per_week === sessionsPerWeek,
+  );
   if (candidates.length === 0) {
     throw new RangeError(
-      `Aucun split canonique pour sessions_per_week=${sessionsPerWeek}`,
+      `Aucune structure pour sessions_per_week=${sessionsPerWeek}`,
     );
   }
-  let best: SplitScoreResult | null = null;
-  for (const split of candidates) {
-    const res = scoreSplit(split, demands, capacityPerSession);
-    if (best === null || res.score > best.score) {
-      best = res;
-    }
-  }
-  return best!;
+  const scored = candidates
+    .map((split) => scoreSplit(split, demands, capacityPerSession))
+    .sort((a, b) => b.score - a.score);
+  const valid = scored.filter(
+    (r) => !hasEmptySession(r) && splitAlternationOk(r.split),
+  );
+  // Conv #39 — on préfère une structure SPÉCIALISÉE valide ; le filet Full Body
+  // (4×/5×/6×) n'est retenu que si aucune spécialisée n'est valide (toutes
+  // laissent des séances vides — ex. 1 seul muscle prio). FB 2×/3× ne sont PAS
+  // des filets : ce sont des choix canoniques légitimes, traités normalement.
+  const specialized = valid.find((r) => !FILET_SPLIT_IDS.has(r.split.id));
+  return specialized ?? valid[0] ?? scored[0]!;
 }
 
 // =============================================================================

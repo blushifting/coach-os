@@ -28,15 +28,14 @@ import {
 import * as engine from '@/engine/engine';
 import { applyBalanceRules } from '@/engine/balance';
 import {
-  autoGenerateCyclePlanV2,
-  generateCyclePlan,
-  generateCyclePlanV2,
+  autoGenerateCyclePlanV3,
+  generateCyclePlanV3,
   mergeEquivalentExercisesInPlan,
   rotateEmphasis,
 } from '@/engine/cycle_planner';
 import { carryOverManualPlan } from '@/lib/manual-plan';
 import { initialVolumeBounds } from '@/engine/volume';
-import { SuggestedAction } from '@/engine/models';
+import { SuggestedAction, DurationCategory } from '@/engine/models';
 import type {
   EquipmentOverride,
   MuscleGoal,
@@ -287,7 +286,7 @@ export interface InitialCyclePlanResult {
 /**
  * Génère et persiste le `WeeklyTemplate` Cycle 1 (custom).
  *
- * Bloc O — plus de programmes tout faits : `autoGenerateCyclePlanV2` (path
+ * Bloc O — plus de programmes tout faits : `autoGenerateCyclePlanV3` (path
  * co-construit) ou legacy `generateCyclePlan`. Le mode « à la main » ne passe
  * pas par ici (plan vide posé directement par OnboardingPage).
  *
@@ -308,18 +307,14 @@ export async function generateInitialCyclePlan(): Promise<InitialCyclePlanResult
   // Bloc O — plus de programmes guidés : génération custom uniquement.
   // (Le mode « à la main » ne passe pas par ici : OnboardingPage pose le plan
   // vide directement via setCurrentCyclePlan.)
-  // Conv #22 — Si le profile porte une `duration_category` (path co-construit),
-  // bascule sur autoGenerateCyclePlanV2 (skeleton_builder + sets_allocator).
-  // Sinon legacy generateCyclePlan.
-  if (next.profile.duration_category !== undefined) {
-    next.current_cycle_plan = autoGenerateCyclePlanV2(
-      next,
-      catalog,
-      next.profile.duration_category,
-    );
-  } else {
-    next.current_cycle_plan = generateCyclePlan(next, catalog);
-  }
+  // Conv #39 — voie unique : génération via autoGenerateCyclePlanV3
+  // (skeleton_builder + sets_allocator). Fallback MEDIUM pour les états
+  // antérieurs à la `duration_category` (pré-Conv #22).
+  next.current_cycle_plan = autoGenerateCyclePlanV3(
+    next,
+    catalog,
+    next.profile.duration_category ?? DurationCategory.MEDIUM,
+  );
 
   await txSaveUserStateOnly(next);
   useCoachOsStore.setState({ userState: next });
@@ -329,7 +324,7 @@ export async function generateInitialCyclePlan(): Promise<InitialCyclePlanResult
 /**
  * Conv #22 — Génère le plan à partir d'un `SkeletonTemplate` déjà rempli
  * (étape E du wizard onboarding). Court-circuite l'auto-fill par défaut de
- * `autoGenerateCyclePlanV2` et utilise directement les choix de l'user.
+ * `autoGenerateCyclePlanV3` et utilise directement les choix de l'user.
  *
  * Persiste aussi le squelette dans `state.current_skeleton` pour permettre
  * "Modifier la grille" ultérieurement.
@@ -343,7 +338,7 @@ export async function generateInitialCyclePlanFromSkeleton(
     useCoachOsStore.setState({ userState: next });
     return { state: next, blocking: [] };
   }
-  next.current_cycle_plan = generateCyclePlanV2(skeleton, next, catalog);
+  next.current_cycle_plan = generateCyclePlanV3(skeleton, next, catalog);
   next.current_skeleton = skeleton;
   await txSaveUserStateOnly(next);
   useCoachOsStore.setState({ userState: next });
@@ -1336,7 +1331,13 @@ export async function endOfCycle(args: EndOfCycleArgs = {}) {
       next.cycle_index,
     );
   } else {
-    next.current_cycle_plan = generateCyclePlan(next, catalog);
+    // Conv #39 — fin de cycle régénérée par la MÊME voie que l'onboarding
+    // (V2). `duration_category` est persisté sur le profil ; fallback MEDIUM.
+    next.current_cycle_plan = autoGenerateCyclePlanV3(
+      next,
+      catalog,
+      next.profile.duration_category ?? DurationCategory.MEDIUM,
+    );
   }
 
   // 5. Persiste (cycle clos + nouveau cycle).

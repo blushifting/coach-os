@@ -1,17 +1,16 @@
 /**
- * Planification du cycle (custom) : génère un WeeklyTemplate à partir des MuscleGoals.
+ * Planification du cycle — post-passes + point d'entrée V3.
  *
  * Référence : recherche/09_programmation.md §5, §6, §9.
  *
- * Pipeline :
- *   1. selectSplit → SplitTemplate
- *   2. parameterizeSplit → DayMeta[] (muscles attribués à chaque jour)
- *   3. composeSession par jour → DayTemplate (exos choisis, séries, progression)
- *   4. resolveCapacityConflict → caps par séance respectés
- *   5. WeeklyTemplate retourné
- *
- * L'algo NE calcule PAS les charges live ; ça reste à `buildPrescription` à
- * chaque instanciation de séance.
+ * Conv #39 — la voie legacy (`generateCyclePlan` + `parameterizeSplit` +
+ * `composeSession` + `topUpMaintenance` + `resolveCapacityConflict`) a été
+ * supprimée. La génération passe désormais exclusivement par
+ * `generateCyclePlanV3` / `autoGenerateCyclePlanV3` (skeleton_builder →
+ * sets_allocator), suivis des post-passes ci-dessous (lengthened bias, fusion
+ * d'équivalents, rééquilibrage durées, préférence d'équipement, étiquetage
+ * A/B/C). L'algo NE calcule PAS les charges live ; ça reste à
+ * `buildPrescription` à chaque instanciation de séance.
  */
 
 import type {
@@ -29,94 +28,19 @@ import type {
 import {
   EquipmentPreference,
   ExType,
-  Level,
   MuscleObjective,
   MuscleStatus,
-  ProgressionRule,
   chargesForPreference,
   exercisePrimaires,
   makePlannedExercise,
   makeWeeklyTemplate,
 } from './models';
 import {
-  selectSplit,
-  muscleBelongsToSlot,
-  type SlotKind,
-  type SplitTemplate,
-} from './split';
-import {
-  effectiveVolumeBounds,
-  targetFrequency,
-  MIN_SETS_PER_EXERCISE_PER_SESSION,
   MAX_SETS_PER_EXERCISE_PER_SESSION,
   DELOAD_FACTOR,
 } from './volume';
-import {
-  pickCompoundsForMuscle,
-  pickIsolationsForMuscle,
-  orderSession,
-  totalSets,
-  MAX_TOTAL_SETS_PER_SESSION,
-} from './selection';
-import { pythonRound } from './prescription';
+import { pickIsolationsForMuscle } from './selection';
 import { rebalanceCycleDurations } from './rebalance';
-
-// =============================================================================
-// Types intermédiaires
-// =============================================================================
-
-/** Métadonnées d'un jour avant choix des exos (sortie de parameterizeSplit). */
-export interface DayMeta {
-  day_index: number;
-  label: string;
-  slot_kind: SlotKind;
-  target_muscles_focus: string[];
-}
-
-// =============================================================================
-// 1. Composition exos par muscle selon V_cible (cf. 09 §6.1)
-// =============================================================================
-
-/**
- * Nombre d'exos à programmer par muscle selon le volume hebdo cible.
- * Cf. 09 §6.1 :
- *   - V ≤ 6  → 1 exo
- *   - V 7-12 → 2 exos
- *   - V 13-18 → 3 exos
- *   - V > 18 → 4 exos
- */
-export function exosCountForVolume(vSession: number): number {
-  if (vSession <= 6) return 1;
-  if (vSession <= 12) return 2;
-  if (vSession <= 18) return 3;
-  return 4;
-}
-
-/** Nb de compounds selon ratio par objectif (cf. 09 §6.2). */
-export function compoundCountForObjective(
-  nTotal: number,
-  objective: MuscleObjective,
-): number {
-  if (objective === MuscleObjective.FORCE) return nTotal;
-  if (objective === MuscleObjective.HYPERTROPHIE) {
-    // Banker's rounding pour parité Python (round(n*0.6)).
-    return Math.max(1, bankersRound(nTotal * 0.6));
-  }
-  if (objective === MuscleObjective.ENDURANCE) {
-    return Math.max(1, Math.trunc(nTotal / 2));
-  }
-  // MAINTIEN : sécurité.
-  return nTotal;
-}
-
-function bankersRound(x: number): number {
-  const floor = Math.floor(x);
-  const diff = x - floor;
-  if (diff < 0.5) return floor;
-  if (diff > 0.5) return floor + 1;
-  // exact .5 → arrondi vers le pair
-  return floor % 2 === 0 ? floor : floor + 1;
-}
 
 // =============================================================================
 // 2. Progression de séries sur le cycle (Bloc L — séries fixes)
@@ -149,339 +73,6 @@ export function cycleSetProgression(
   const deload = Math.max(1, Math.trunc(sets * DELOAD_FACTOR));
   progression.push(deload);
   return progression;
-}
-
-// =============================================================================
-// 3. Paramétrisation : distribuer muscles sur jours du split (cf. 09 §9.2)
-// =============================================================================
-
-const STATUS_ORDER: Record<MuscleStatus, number> = {
-  [MuscleStatus.PRIORITAIRE]: 0,
-  [MuscleStatus.SUGGERE]: 1,
-  [MuscleStatus.NON_COUVERT]: 99,
-};
-
-/**
- * Distribue les muscles prioritaires + suggérés sur les jours du split.
- * Ordre de placement (cf. 09 §4.6) : statut PRIORITAIRE avant SUGGERE,
- * puis priority_rank ascendant.
- */
-/**
- * Coût estimé (≈ nb d'exos) qu'un muscle ajoutera à un jour, basé sur
- * son volume cible et sa fréquence. Sert au tri d'équilibrage de
- * `parameterizeSplit` (Conv #15-11) — auparavant on comptait juste le
- * nombre de muscles, ce qui sous-estimait les muscles prioritaires
- * hypertrophie (3-4 exos) face aux MAINTIEN (1 exo).
- */
-function expectedExosForMuscle(
-  muscle: string,
-  goal: MuscleGoal,
-  state: UserState,
-): number {
-  if (goal.status === MuscleStatus.NON_COUVERT) return 0;
-  const freq =
-    goal.status === MuscleStatus.PRIORITAIRE ? targetFrequency(muscle, state) : 1;
-  if (freq === 0) return 0;
-  const [vMin] = effectiveVolumeBounds(state, muscle);
-  const vSession = freq > 0 ? vMin / freq : vMin;
-  return exosCountForVolume(vSession);
-}
-
-export function parameterizeSplit(
-  split: SplitTemplate,
-  muscleGoals: Record<string, MuscleGoal>,
-  state: UserState,
-): DayMeta[] {
-  const daysMeta: DayMeta[] = split.slots.map((slot, i) => ({
-    day_index: i,
-    label: slot.label,
-    slot_kind: slot.kind,
-    target_muscles_focus: [],
-  }));
-
-  // Conv #15-11 — coût accumulé par jour (≈ nb d'exos attendus). On place
-  // chaque muscle sur le(s) jour(s) le(s) moins chargé(s) plutôt que le(s)
-  // jour(s) avec le moins de muscles. Évite que le jour 1 récupère tous
-  // les muscles prioritaires hypertrophie (3-4 exos chacun) pendant que
-  // les autres jours ramassent les maintiens (1 exo).
-  const costByDay: number[] = daysMeta.map(() => 0);
-
-  // Pré-calcul du coût attendu par muscle (utilisé pour MAJ costByDay au
-  // placement et pour ordre "first-fit decreasing").
-  const muscleCost = new Map<string, number>();
-  for (const [muscle, goal] of Object.entries(muscleGoals)) {
-    muscleCost.set(muscle, expectedExosForMuscle(muscle, goal, state));
-  }
-
-  const sortedGoals = Object.entries(muscleGoals).slice().sort((a, b) => {
-    const sa = STATUS_ORDER[a[1].status];
-    const sb = STATUS_ORDER[b[1].status];
-    if (sa !== sb) return sa - sb;
-    if (a[1].priority_rank !== b[1].priority_rank) {
-      return a[1].priority_rank - b[1].priority_rank;
-    }
-    // Conv #15-11 — départage par coût décroissant pour placer d'abord
-    // les muscles les plus coûteux (heuristique first-fit decreasing).
-    const ca = muscleCost.get(a[0]) ?? 0;
-    const cb = muscleCost.get(b[0]) ?? 0;
-    return cb - ca;
-  });
-
-  for (const [muscle, goal] of sortedGoals) {
-    if (goal.status === MuscleStatus.NON_COUVERT) continue;
-    const freq =
-      goal.status === MuscleStatus.PRIORITAIRE ? targetFrequency(muscle, state) : 1;
-    if (freq === 0) continue;
-
-    const eligibleIndices = daysMeta
-      .map((d, i) => ({ d, i }))
-      .filter(({ d }) => muscleBelongsToSlot(muscle, d.slot_kind));
-    if (eligibleIndices.length === 0) continue;
-    // Conv #15-11 — tri par coût croissant des jours (vs. ancien
-    // tri par nb de muscles). Départage stable par day_index pour rester
-    // déterministe.
-    eligibleIndices.sort((a, b) => {
-      const ca = costByDay[a.i] ?? 0;
-      const cb = costByDay[b.i] ?? 0;
-      if (ca !== cb) return ca - cb;
-      return a.i - b.i;
-    });
-
-    const cost = muscleCost.get(muscle) ?? 0;
-    let placed = 0;
-    for (const { d, i } of eligibleIndices) {
-      if (placed >= freq) break;
-      if (!d.target_muscles_focus.includes(muscle)) {
-        d.target_muscles_focus.push(muscle);
-        costByDay[i] = (costByDay[i] ?? 0) + cost;
-        placed += 1;
-      }
-    }
-  }
-
-  return daysMeta;
-}
-
-// =============================================================================
-// 4. Composition d'une séance (cf. 09 §6, §9.2)
-// =============================================================================
-
-const ANGLE_KEYWORDS: ReadonlySet<string> = new Set([
-  'incline',
-  'decline',
-  'flat',
-  'vertical',
-  'horizontal',
-  'overhead',
-  'neutral',
-  'pronated',
-  'supinated',
-  'lengthened_bias',
-  'shortened_bias',
-]);
-
-function angleTags(ex: Exercise): Set<string> {
-  const out = new Set<string>();
-  for (const t of ex.tags) if (ANGLE_KEYWORDS.has(t)) out.add(t);
-  return out;
-}
-
-function topPriorityMuscleIn(
-  dayMeta: DayMeta,
-  state: UserState,
-): string | null {
-  const candidates: Array<readonly [number, string]> = [];
-  for (const m of dayMeta.target_muscles_focus) {
-    const g = state.muscle_goals[m];
-    if (g && g.status === MuscleStatus.PRIORITAIRE) {
-      candidates.push([g.priority_rank, m]);
-    }
-  }
-  if (candidates.length === 0) return null;
-  candidates.sort((a, b) => a[0] - b[0]);
-  return candidates[0]![1];
-}
-
-/**
- * Choisit les exos pour ce jour selon les muscles focus.
- * Pour chaque muscle focus :
- *   - Calcul du nb d'exos selon V_session
- *   - Sélection compounds + isolations selon ratio par objectif
- *   - Application lengthened_bias si Hypertrophie + 2+ exos
- *   - Diversification d'angles
- */
-export function composeSession(
-  dayMeta: DayMeta,
-  state: UserState,
-  catalog: Catalog,
-): import('./models').DayTemplate {
-  const chosenPlanned: PlannedExercise[] = [];
-  const chosenIds = new Set<string>();
-
-  for (const muscle of dayMeta.target_muscles_focus) {
-    const goal = state.muscle_goals[muscle];
-    if (!goal || goal.status === MuscleStatus.NON_COUVERT) continue;
-
-    const [vMin] = effectiveVolumeBounds(state, muscle);
-    const freq =
-      goal.status === MuscleStatus.PRIORITAIRE
-        ? Math.max(1, targetFrequency(muscle, state))
-        : 1;
-    const vSession = freq > 0 ? vMin / freq : vMin;
-    const nExos = exosCountForVolume(vSession);
-
-    // MAINTIEN ou SUGGERE : pas d'iso dédiée (cf. 09 §3.4).
-    const nCompounds =
-      goal.objective === MuscleObjective.MAINTIEN ||
-      goal.status === MuscleStatus.SUGGERE
-        ? nExos
-        : compoundCountForObjective(nExos, goal.objective);
-
-    const compounds = pickCompoundsForMuscle(muscle, nCompounds, state, catalog, {
-      excludeIds: chosenIds,
-    });
-
-    const nIsoNeeded = nExos - compounds.length;
-    const avoidAngles = new Set<string>();
-    for (const c of compounds) {
-      for (const t of angleTags(c)) avoidAngles.add(t);
-    }
-    const preferLengthened =
-      goal.objective === MuscleObjective.HYPERTROPHIE && nExos >= 2;
-    const isolations =
-      nIsoNeeded > 0
-        ? pickIsolationsForMuscle(muscle, nIsoNeeded, state, catalog, {
-            preferLengthened,
-            avoidAngles,
-            excludeIds: chosenIds,
-          })
-        : [];
-
-    const allForMuscle: Exercise[] = [...compounds, ...isolations];
-    if (allForMuscle.length === 0) continue;
-
-    // base_sets par exo : V_session / nb d'exos, borné à la règle 3-5 (Bloc L).
-    let setsPerExo = Math.max(
-      3,
-      pythonRound(vSession / Math.max(1, allForMuscle.length)),
-    );
-    setsPerExo = Math.min(setsPerExo, MAX_SETS_PER_EXERCISE_PER_SESSION);
-
-    for (const ex of allForMuscle) {
-      chosenPlanned.push(
-        makePlannedExercise({
-          exercise_id: ex.id,
-          base_sets: setsPerExo,
-          progression: cycleSetProgression(setsPerExo),
-          progression_rule: ProgressionRule.ISRAETEL_VOLUME,
-        }),
-      );
-      chosenIds.add(ex.id);
-    }
-  }
-
-  // Ordre dans la séance.
-  const exObjects = chosenPlanned.map((p) => catalog.get(p.exercise_id));
-  const priorityMuscle = topPriorityMuscleIn(dayMeta, state);
-  const orderedEx = orderSession(exObjects, priorityMuscle);
-  const idToPlanned = new Map<string, PlannedExercise>();
-  for (const p of chosenPlanned) idToPlanned.set(p.exercise_id, p);
-  const reordered = orderedEx.map((e) => idToPlanned.get(e.id)!);
-
-  return {
-    day_index: dayMeta.day_index,
-    label: dayMeta.label,
-    target_muscles_focus: [...dayMeta.target_muscles_focus],
-    exercises: reordered,
-  };
-}
-
-// =============================================================================
-// 5. Top-up maintenance (cf. 09 §3.4)
-// =============================================================================
-
-/**
- * Pour chaque muscle SUGGERE, vérifie si volume incident suffit.
- * Si pas, ajoute 1 exo isolation (base_sets=3, plancher par-exo) sur le 1er jour
- * qui l'accepte. Bloc L — aligné sur le plancher du chemin V2 : un muscle en
- * maintien sort à 3-4 séries/sem (≈ max(2, 40 % × V_min) des sources), c'est le
- * volume hebdo total qui fait foi.
- */
-export function topUpMaintenance(
-  weeklyTemplate: WeeklyTemplate,
-  state: UserState,
-  catalog: Catalog,
-): void {
-  const incident: Record<string, number> = {};
-  for (const day of weeklyTemplate.days) {
-    for (const planned of day.exercises) {
-      const ex = catalog.get(planned.exercise_id);
-      for (const [muscle, coef] of Object.entries(ex.muscles)) {
-        incident[muscle] = (incident[muscle] ?? 0) + coef * planned.base_sets;
-      }
-    }
-  }
-
-  for (const [muscle, goal] of Object.entries(state.muscle_goals)) {
-    if (goal.status !== MuscleStatus.SUGGERE) continue;
-    const vTarget = effectiveVolumeBounds(state, muscle)[0];
-    if ((incident[muscle] ?? 0) >= vTarget) continue;
-
-    for (const day of weeklyTemplate.days) {
-      const excludeIds = new Set(day.exercises.map((p) => p.exercise_id));
-      const iso = pickIsolationsForMuscle(muscle, 1, state, catalog, { excludeIds });
-      if (iso.length === 0) continue;
-      const baseSets = MIN_SETS_PER_EXERCISE_PER_SESSION;
-      day.exercises.push(
-        makePlannedExercise({
-          exercise_id: iso[0]!.id,
-          base_sets: baseSets,
-          progression: cycleSetProgression(baseSets),
-          progression_rule: ProgressionRule.ISRAETEL_VOLUME,
-        }),
-      );
-      if (!day.target_muscles_focus.includes(muscle)) {
-        day.target_muscles_focus.push(muscle);
-      }
-      incident[muscle] = (incident[muscle] ?? 0) + baseSets;
-      break;
-    }
-  }
-}
-
-// =============================================================================
-// 6. Résolution conflits capacité (cf. 09 §5.6)
-// =============================================================================
-
-/**
- * Si un jour dépasse le cap par séance, tronque en gardant les 1ers exos
- * (ordre = compounds prioritaires d'abord). Sinon, ajoute warning.
- */
-export function resolveCapacityConflict(
-  weeklyTemplate: WeeklyTemplate,
-  level: Level,
-  _state: UserState,
-): void {
-  const cap = MAX_TOTAL_SETS_PER_SESSION[level];
-  for (const day of weeklyTemplate.days) {
-    if (totalSets(day.exercises) <= cap) continue;
-    const kept: PlannedExercise[] = [];
-    let running = 0;
-    for (const p of day.exercises) {
-      if (running + p.base_sets > cap) continue;
-      kept.push(p);
-      running += p.base_sets;
-    }
-    if (running > cap || kept.length < day.exercises.length) {
-      day.exercises = kept;
-    }
-    if (totalSets(day.exercises) > cap) {
-      weeklyTemplate.warnings.push(
-        `Jour ${day.label} : volume cible > capacité (${totalSets(day.exercises)}>${cap}). ` +
-          `Ajouter une séance ou réduire les priorités.`,
-      );
-    }
-  }
 }
 
 // =============================================================================
@@ -678,75 +269,6 @@ export function mergeEquivalentExercisesInPlan(
 }
 
 // =============================================================================
-// 8. Point d'entrée : generateCyclePlan (cf. 09 §9.2)
-// =============================================================================
-
-/**
- * Génère un WeeklyTemplate pour 1 cycle complet à partir des MuscleGoals.
- * Pré-requis : `state.muscle_goals` doit être posé (par l'onboarding ou via
- * Profile.objective + applyBalanceRules).
- */
-export function generateCyclePlan(
-  state: UserState,
-  catalog: Catalog,
-): WeeklyTemplate {
-  const split = selectSplit(
-    state.profile.sessions_per_week,
-    state.muscle_goals,
-    state.profile.level,
-  );
-
-  const daysMeta = parameterizeSplit(split, state.muscle_goals, state);
-
-  const weekly = makeWeeklyTemplate({
-    cycle_index: state.cycle_index,
-    rationale: `Custom ${split.name}`,
-    days: [],
-  });
-
-  for (const dm of daysMeta) {
-    weekly.days.push(composeSession(dm, state, catalog));
-  }
-
-  topUpMaintenance(weekly, state, catalog);
-  enforceLengthenedBias(weekly, state, catalog);
-  resolveCapacityConflict(weekly, state.profile.level, state);
-
-  // Conv #16-2 — rééquilibrage des durées de séance. Opère intra-groupe
-  // par slot_kind (UPPER avec UPPER, LOWER avec LOWER, FULLBODY entre
-  // eux, etc.) → préserve l'esprit du split. N'altère pas si les jours
-  // sont déjà équilibrés ou si les contraintes (fréquence muscle, jour
-  // non vide) bloquent les opérations.
-  const slotKinds = daysMeta.map((dm) => dm.slot_kind);
-  const { template: rebalanced } = rebalanceCycleDurations(
-    weekly,
-    slotKinds,
-    state,
-    catalog,
-  );
-
-  // Conv #19 — Fusion d'exos équivalents (même pattern + primaires + charge).
-  // Évite d'avoir 2 slots "même exo" après que composeSession + lengthened
-  // bias + top-up maintenance ont sélectionné des doublons fonctionnels.
-  // Sera aussi rappelée après `applyVariantReplacements`.
-  mergeEquivalentExercisesInPlan(rebalanced, catalog);
-
-  // Conv #21b (J) — Tri des jours par coût neuro décroissant. Logique :
-  // si une séance saute, autant que ce soit la moins "chargée" → on place
-  // les plus coûteuses en début de cycle/semaine pour les sécuriser.
-  // Le tri est intra-cycle : il modifie l'ordre des `days[]` mais ne touche
-  // pas leur contenu. `day_index` est conservé tel quel (id stable, sert
-  // au lookup historique des feedbacks). L'UI lit toujours
-  // `cyclePlan.days[i]` donc l'index passé à `generateSession` reste valide.
-  orderDaysByNeuralCost(rebalanced, catalog);
-  // Conv #23 — réassigne les suffixes A/B/C après le tri neuro pour que
-  // le 1er jour soit toujours « X A », le 2e « X B », etc.
-  renumberSessionLabels(rebalanced);
-
-  return rebalanced;
-}
-
-// =============================================================================
 // 9. Conv #22 — Nouveau path co-construit (skeleton + sets_allocator)
 // =============================================================================
 
@@ -757,7 +279,7 @@ import { DurationCategory } from './models';
 /**
  * Conv #30 — Passe « préférence d'équipement stricte » sur le plan final.
  *
- * Le filtre par charge à l'auto-fill (candidatesForCell / autoGenerateCyclePlanV2)
+ * Le filtre par charge à l'auto-fill (candidatesForCell / autoGenerateCyclePlanV3)
  * est limité au PATTERN de la case : si aucune machine/poulie n'existe pour ce
  * pattern précis, il retombe sur une charge non voulue. Et les post-passes
  * (`enforceLengthenedBias` notamment) ré-injectent ensuite des variantes étirées
@@ -837,7 +359,7 @@ export function enforceEquipmentPreference(
  * @param filledSkeleton skeleton avec `chosen_exercise_id` posé sur toutes
  *   les cases (sinon les cases vides sont signalées en warnings).
  */
-export function generateCyclePlanV2(
+export function generateCyclePlanV3(
   filledSkeleton: SkeletonTemplate,
   state: UserState,
   catalog: Catalog,
@@ -874,7 +396,8 @@ export function generateCyclePlanV2(
   } catch {
     // best-effort : si le rééquilibrage échoue, on garde la version brute.
   }
-  orderDaysByNeuralCost(weekly, catalog);
+  // Conv #39 — plus de tri neuro : l'ordre canonique du split est conservé
+  // (préserve l'alternance U/L/U/L, etc.).
   renumberSessionLabels(weekly);
   // Conv #30 — en DERNIER : la préférence d'équipement stricte prime sur les
   // swaps précédents (lengthened bias en poids libre, etc.). Corrige les fuites
@@ -928,7 +451,7 @@ function inferSlotKindsFromSplitName(
  * (ex. tests, migration, mode démo). L'auto-fill des variantes utilise
  * le 1er candidat de chaque case (= compound canonique).
  */
-export function autoGenerateCyclePlanV2(
+export function autoGenerateCyclePlanV3(
   state: UserState,
   catalog: Catalog,
   durationCategory: DurationCategory = DurationCategory.MEDIUM,
@@ -961,49 +484,12 @@ export function autoGenerateCyclePlanV2(
       cell.chosen_exercise_id = fit?.id ?? null;
     }
   }
-  return generateCyclePlanV2(skeleton, state, catalog);
+  return generateCyclePlanV3(skeleton, state, catalog);
 }
 
-/**
- * Conv #21b — Coût neuro d'un jour-type = somme des séries pondérées par
- * un bonus "polyarticulaire". Compound × 1.5 reflète le coût neuro-musculaire
- * supérieur d'un squat / soulevé / développé vs. une élévation latérale.
- *
- * Hors-cible : on ne tient PAS compte du RPE (qui dépend de la phase du
- * cycle, pas du day-type). Pour un Push/Pull/Legs où chaque day a un
- * volume similaire, le tri sera principalement guidé par le compoundBonus.
- */
-function dayNeuralCost(day: DayTemplate, catalog: Catalog): number {
-  let score = 0;
-  for (const ex of day.exercises) {
-    let compoundBonus = 1.0;
-    try {
-      const meta = catalog.get(ex.exercise_id);
-      if (meta.type === 'compound') compoundBonus = 1.5;
-    } catch {
-      // Exo inconnu (custom retiré entre temps ?) — on garde le score brut.
-    }
-    score += ex.base_sets * compoundBonus;
-  }
-  return score;
-}
-
-/**
- * Trie `template.days[]` IN PLACE par coût neuro décroissant. Départage
- * stable par `day_index` ascendant (pour garder un ordre déterministe
- * quand deux jours ont le même coût — ex. Upper A vs Upper B).
- */
-export function orderDaysByNeuralCost(
-  template: WeeklyTemplate,
-  catalog: Catalog,
-): void {
-  template.days.sort((a, b) => {
-    const ca = dayNeuralCost(a, catalog);
-    const cb = dayNeuralCost(b, catalog);
-    if (cb !== ca) return cb - ca; // décroissant
-    return a.day_index - b.day_index; // tie-break stable
-  });
-}
+// Conv #39 — `dayNeuralCost` / `orderDaysByNeuralCost` (Conv #21b) supprimés :
+// le tri des jours par coût neuro cassait l'alternance des splits (U/U/L/L).
+// L'ordre canonique du `SplitTemplate` est désormais conservé tel quel.
 
 /**
  * Conv #23, refonte Conv #28 — Assigne une lettre **globale** par séance

@@ -17,7 +17,7 @@ import {
   recordFeedbackAndCommit,
   endOfWeek,
 } from '@/hooks/useEngine';
-import { generateCyclePlan } from '@/engine/cycle_planner';
+import { autoGenerateCyclePlanV3 } from '@/engine/cycle_planner';
 import { useCoachOsStore } from '@/store';
 import { resetDbInstance } from '@/db/schema';
 import { dateKey } from '@/lib/dashboard';
@@ -48,7 +48,7 @@ describe('e2e — persistance complète (critère de fin Conv #3)', () => {
     // pose via le moteur custom + on re-persiste par mutation directe du store.
     const catalog = new Catalog();
     const stateAvecPlan = useCoachOsStore.getState().userState!;
-    stateAvecPlan.current_cycle_plan = generateCyclePlan(stateAvecPlan, catalog);
+    stateAvecPlan.current_cycle_plan = autoGenerateCyclePlanV3(stateAvecPlan, catalog);
     stateAvecPlan.muscle_goals = muscleGoals;
     // Sauve via endOfWeek qui passe par la transaction (sans changer d'index
     // car on ne déclenche aucun plateau ni hit Vmax).

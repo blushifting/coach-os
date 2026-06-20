@@ -1,7 +1,10 @@
 /**
- * Miroir TS de prototype/tests/test_split.py.
- * Couvre : 6 splits canoniques, select_split, muscle_belongs_to_slot,
- * place_days_in_week, check_48h_rule.
+ * Tests des splits canoniques + catalogue + muscleBelongsToSlot.
+ *
+ * NB : selectSplit / placeDaysInWeek / check48hRule ont été supprimés
+ * (Conv #39 — voie legacy + placement calendaire mort) ; leurs tests aussi.
+ * La sélection de structure est désormais testée via skeleton_builder
+ * (selectBestSplit) et split-selection-v3.test.ts.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -15,33 +18,11 @@ import {
   SPLIT_UL_5X_SPEC,
   SPLIT_PPL_6X,
   ALL_SPLITS,
-  selectSplit,
-  placeDaysInWeek,
-  check48hRule,
   muscleBelongsToSlot,
 } from '@/engine/split';
-import {
-  Level,
-  makeWeeklyTemplate,
-  type DayTemplate,
-} from '@/engine/models';
-
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-function gapDays(a: Date, b: Date): number {
-  return Math.round((b.getTime() - a.getTime()) / MS_PER_DAY);
-}
-
-function dayTemplate(
-  day_index: number,
-  label: string,
-  target_muscles_focus: string[],
-): DayTemplate {
-  return { day_index, label, target_muscles_focus, exercises: [] };
-}
 
 // =============================================================================
-// 1. Constantes : les 6 splits existent avec le bon nombre de sessions
+// 1. Constantes : les 6 splits canoniques existent avec le bon nb de sessions
 // =============================================================================
 
 describe('constantes splits', () => {
@@ -75,10 +56,11 @@ describe('constantes splits', () => {
     expect(SPLIT_PPL_6X.slots.length).toBe(6);
   });
 
-  it('ALL_SPLITS index complet', () => {
+  it('ALL_SPLITS index complet (6 canoniques + 9 additionnelles Conv #39)', () => {
     expect(ALL_SPLITS).toContain(SPLIT_FB_2X);
     expect(ALL_SPLITS).toContain(SPLIT_PPL_6X);
-    expect(ALL_SPLITS.length).toBe(6);
+    // 6 canoniques + Push/Pull 2/4/6× + ULF 3× + PPL+UL 5× + U/L 6× + FB 4/5/6×.
+    expect(ALL_SPLITS.length).toBe(15);
   });
 
   it('FB 3× n\'a que des slots full body', () => {
@@ -103,45 +85,7 @@ describe('constantes splits', () => {
 });
 
 // =============================================================================
-// 2. selectSplit : règles par sessions_per_week
-// =============================================================================
-
-describe('selectSplit', () => {
-  it('2 séances → FB 2×', () => {
-    expect(selectSplit(2, {}, Level.INTERMEDIAIRE)).toBe(SPLIT_FB_2X);
-  });
-
-  it('3 séances par défaut → FB 3× (Schoenfeld 2019)', () => {
-    expect(selectSplit(3, {}, Level.DEBUTANT)).toBe(SPLIT_FB_3X);
-  });
-
-  it('4 séances → U/L 4× (gold standard)', () => {
-    expect(selectSplit(4, {}, Level.INTERMEDIAIRE)).toBe(SPLIT_UL_4X);
-  });
-
-  it('5 séances → U/L 5× + spec', () => {
-    expect(selectSplit(5, {}, Level.INTERMEDIAIRE)).toBe(SPLIT_UL_5X_SPEC);
-  });
-
-  it('6 séances avancé → PPL 6×', () => {
-    expect(selectSplit(6, {}, Level.AVANCE)).toBe(SPLIT_PPL_6X);
-  });
-
-  it('6 séances débutant → fallback U/L 4×', () => {
-    expect(selectSplit(6, {}, Level.DEBUTANT)).toBe(SPLIT_UL_4X);
-  });
-
-  it('1 séance → erreur', () => {
-    expect(() => selectSplit(1, {}, Level.INTERMEDIAIRE)).toThrow();
-  });
-
-  it('7 séances → erreur', () => {
-    expect(() => selectSplit(7, {}, Level.INTERMEDIAIRE)).toThrow();
-  });
-});
-
-// =============================================================================
-// 3. muscleBelongsToSlot
+// 2. muscleBelongsToSlot
 // =============================================================================
 
 describe('muscleBelongsToSlot', () => {
@@ -179,9 +123,8 @@ describe('muscleBelongsToSlot', () => {
 
   // Conv #17c — chaque muscle canonique (MUSCLES) doit pouvoir être placé
   // sur **au moins un slot** de chaque split canonique, sinon il serait
-  // silencieusement ignoré par parameterizeSplit. Garde-fou contre la
-  // régression du bug obliques (ignoré sur UL/PPL) et trapezes_hauts
-  // (ignoré sur PPL).
+  // silencieusement ignoré. Garde-fou contre la régression du bug obliques
+  // (ignoré sur UL/PPL) et trapezes_hauts (ignoré sur PPL).
   it('obliques éligible sur UL et PPL (pas seulement FULL)', () => {
     expect(muscleBelongsToSlot('obliques', SlotKind.UPPER)).toBe(true);
     expect(muscleBelongsToSlot('obliques', SlotKind.LOWER)).toBe(true);
@@ -224,100 +167,5 @@ describe('muscleBelongsToSlot', () => {
         expect(ok, `${m} doit être placé sur ${split.name}`).toBe(true);
       }
     }
-  });
-});
-
-// =============================================================================
-// 4. placeDaysInWeek — défauts éprouvés
-// =============================================================================
-
-describe('placeDaysInWeek', () => {
-  it('2 séances : ≥2 jours d\'écart', () => {
-    const days = placeDaysInWeek(SPLIT_FB_2X);
-    expect(days.length).toBe(2);
-    expect(gapDays(days[0]!, days[1]!)).toBeGreaterThanOrEqual(2);
-  });
-
-  it('3 séances : écarts entre 1 et 3 jours', () => {
-    const days = placeDaysInWeek(SPLIT_FB_3X);
-    expect(days.length).toBe(3);
-    for (let i = 0; i < days.length - 1; i += 1) {
-      const gap = gapDays(days[i]!, days[i + 1]!);
-      expect(gap).toBeGreaterThanOrEqual(1);
-      expect(gap).toBeLessThanOrEqual(3);
-    }
-  });
-
-  it('4 séances : 4 jours retournés', () => {
-    expect(placeDaysInWeek(SPLIT_UL_4X).length).toBe(4);
-  });
-
-  it('préférences user respectées', () => {
-    const pref = [
-      new Date(Date.UTC(2026, 0, 6)),
-      new Date(Date.UTC(2026, 0, 8)),
-      new Date(Date.UTC(2026, 0, 10)),
-    ];
-    const days = placeDaysInWeek(SPLIT_FB_3X, pref);
-    expect(days.map((d) => d.getTime())).toEqual(pref.map((d) => d.getTime()));
-  });
-
-  it('préférences mauvaise longueur → erreur', () => {
-    const pref = [new Date(Date.UTC(2026, 0, 6)), new Date(Date.UTC(2026, 0, 8))];
-    expect(() => placeDaysInWeek(SPLIT_FB_3X, pref)).toThrow();
-  });
-});
-
-// =============================================================================
-// 5. check48hRule
-// =============================================================================
-
-describe('check48hRule', () => {
-  it('aucune violation si jours espacés', () => {
-    const wt = makeWeeklyTemplate({
-      cycle_index: 1,
-      rationale: 'U/L 4×',
-      days: [
-        dayTemplate(0, 'Upper A', ['pectoraux']),
-        dayTemplate(1, 'Lower A', ['quadriceps']),
-        dayTemplate(2, 'Upper B', ['pectoraux']),
-        dayTemplate(3, 'Lower B', ['quadriceps']),
-      ],
-    });
-    const dates = [
-      new Date(Date.UTC(2026, 0, 5)),
-      new Date(Date.UTC(2026, 0, 6)),
-      new Date(Date.UTC(2026, 0, 8)),
-      new Date(Date.UTC(2026, 0, 9)),
-    ];
-    expect(check48hRule(wt, dates)).toEqual([]);
-  });
-
-  it('violation si même muscle à 1 jour d\'écart', () => {
-    const wt = makeWeeklyTemplate({
-      cycle_index: 1,
-      rationale: 'test',
-      days: [
-        dayTemplate(0, 'Push A', ['pectoraux']),
-        dayTemplate(1, 'Push B', ['pectoraux']),
-      ],
-    });
-    const dates = [new Date(Date.UTC(2026, 0, 5)), new Date(Date.UTC(2026, 0, 6))];
-    const v = check48hRule(wt, dates);
-    expect(v.length).toBeGreaterThanOrEqual(1);
-    expect(v.some((x) => x.sharedMuscles.includes('pectoraux'))).toBe(true);
-  });
-
-  it('aucune violation si muscles différents', () => {
-    const wt = makeWeeklyTemplate({
-      cycle_index: 1,
-      rationale: 'test',
-      days: [
-        dayTemplate(0, 'Upper', ['pectoraux']),
-        dayTemplate(1, 'Lower', ['quadriceps']),
-      ],
-    });
-    const dates = [new Date(Date.UTC(2026, 0, 5)), new Date(Date.UTC(2026, 0, 6))];
-    expect(check48hRule(wt, dates)).toEqual([]);
   });
 });

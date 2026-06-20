@@ -27,7 +27,7 @@ import {
   type Profile,
   type WeeklyTemplate,
 } from '@/engine/models';
-import { generateCyclePlan } from '@/engine/cycle_planner';
+import { autoGenerateCyclePlanV3 } from '@/engine/cycle_planner';
 import { profile } from '../engine/_helpers';
 
 const catalog = new Catalog();
@@ -39,7 +39,7 @@ const catalog = new Catalog();
 function previewTemplate(p: Profile, goals: Record<string, MuscleGoal>) {
   const tmp = startUser(p, catalog, { muscleGoals: goals, applyBalance: false });
   return {
-    template: generateCyclePlan(tmp, catalog),
+    template: autoGenerateCyclePlanV3(tmp, catalog),
     blocking: [] as readonly string[],
   };
 }

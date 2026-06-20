@@ -15,7 +15,7 @@ import {
   startUser,
 } from '@/engine/engine';
 import { exercisePrimaires } from '@/engine/models';
-import { generateCyclePlan } from '@/engine/cycle_planner';
+import { autoGenerateCyclePlanV3 } from '@/engine/cycle_planner';
 import { applyUserActionAfterCycle } from '@/engine/lifecycle';
 import { SuggestedAction } from '@/engine/models';
 import type {
@@ -62,7 +62,7 @@ describe('Engine e2e', () => {
       'pectoraux', 'dos_largeur', 'quadriceps', 'ischios',
     ]);
     const state = startUser(p, catalog, { muscleGoals: goals });
-    state.current_cycle_plan = generateCyclePlan(state, catalog);
+    state.current_cycle_plan = autoGenerateCyclePlanV3(state, catalog);
 
     let curDate = '2026-01-05';
     for (let week = 0; week < 5; week++) {
@@ -85,7 +85,7 @@ describe('Engine e2e', () => {
       'pectoraux', 'dos_largeur', 'quadriceps', 'ischios',
     ]);
     const state = startUser(p, catalog, { muscleGoals: goals });
-    state.current_cycle_plan = generateCyclePlan(state, catalog);
+    state.current_cycle_plan = autoGenerateCyclePlanV3(state, catalog);
 
     let curDate = '2026-01-05';
     for (let week = 0; week < 5; week++) {
@@ -118,7 +118,7 @@ describe('replaceSessionItem', () => {
       'pectoraux', 'dos_largeur', 'quadriceps', 'ischios',
     ]);
     const state = startUser(p, catalog, { muscleGoals: goals });
-    state.current_cycle_plan = generateCyclePlan(state, catalog);
+    state.current_cycle_plan = autoGenerateCyclePlanV3(state, catalog);
 
     const plan = generateSession(state, catalog, 0, '2026-01-05');
     const oldItem = plan.items[0]!;
@@ -140,7 +140,7 @@ describe('replaceSessionItem', () => {
     const p = profile();
     const goals = bootstrapMuscleGoalsFromProfile(p, ['pectoraux']);
     const state = startUser(p, catalog, { muscleGoals: goals });
-    state.current_cycle_plan = generateCyclePlan(state, catalog);
+    state.current_cycle_plan = autoGenerateCyclePlanV3(state, catalog);
     const plan = generateSession(state, catalog, 0, '2026-01-05');
     expect(() => replaceSessionItem(plan, 999, 'bench_bb', state, catalog)).toThrow();
   });
@@ -162,7 +162,7 @@ describe('weekly_volume_debt', () => {
     const p = profile();
     const goals = bootstrapMuscleGoalsFromProfile(p, ['pectoraux', 'quadriceps']);
     const state = startUser(p, catalog, { muscleGoals: goals });
-    state.current_cycle_plan = generateCyclePlan(state, catalog);
+    state.current_cycle_plan = autoGenerateCyclePlanV3(state, catalog);
 
     const plan = generateSession(state, catalog, 0, '2026-01-05');
     // Construit un feedback qui ne coche QUE la première série de chaque exo
@@ -200,7 +200,7 @@ describe('weekly_volume_debt', () => {
     const p = profile();
     const goals = bootstrapMuscleGoalsFromProfile(p, ['pectoraux']);
     const state = startUser(p, catalog, { muscleGoals: goals });
-    state.current_cycle_plan = generateCyclePlan(state, catalog);
+    state.current_cycle_plan = autoGenerateCyclePlanV3(state, catalog);
 
     // Dette artificielle énorme sur pectoraux (doit être limitée par le cap)
     state.weekly_volume_debt = { pectoraux: 99 };
@@ -227,7 +227,7 @@ describe('weekly_volume_debt', () => {
     const p = profile();
     const goals = bootstrapMuscleGoalsFromProfile(p, ['pectoraux']);
     const state = startUser(p, catalog, { muscleGoals: goals });
-    state.current_cycle_plan = generateCyclePlan(state, catalog);
+    state.current_cycle_plan = autoGenerateCyclePlanV3(state, catalog);
     state.weekly_volume_debt = { pectoraux: 4, biceps: 2 };
 
     endOfWeek(state, catalog);

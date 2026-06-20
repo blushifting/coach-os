@@ -19,7 +19,7 @@ import {
   generateSession,
   startUser,
 } from '@/engine/engine';
-import { generateCyclePlan } from '@/engine/cycle_planner';
+import { autoGenerateCyclePlanV3 } from '@/engine/cycle_planner';
 import {
   MuscleObjective,
   MuscleStatus,
@@ -42,7 +42,7 @@ function stateWithPlan(): UserState {
     'pectoraux', 'dos_largeur', 'quadriceps', 'ischios',
   ]);
   const state = startUser(p, catalog, { muscleGoals: goals });
-  state.current_cycle_plan = generateCyclePlan(state, catalog);
+  state.current_cycle_plan = autoGenerateCyclePlanV3(state, catalog);
   return state;
 }
 

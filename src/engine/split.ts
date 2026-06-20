@@ -16,8 +16,6 @@
  * Sources : Schoenfeld 2019 (fréquence), Helms 2018, Israetel 2017.
  */
 
-import type { MuscleGoal, WeeklyTemplate } from './models';
-import { Level } from './models';
 import {
   UPPER_BODY,
   LOWER_BODY,
@@ -133,13 +131,126 @@ export const SPLIT_PPL_6X: SplitTemplate = {
   ],
 };
 
+// =============================================================================
+// Conv #39 — structures additionnelles (catalogue élargi)
+// =============================================================================
+// Couvrent les distributions musculaires atypiques que les 6 canoniques
+// laissaient mal servies (haut du corps seul → séances jambes vides, etc.).
+// Le scorer (skeleton_builder) choisit la meilleure ; le filet Full Body N×
+// garantit toujours une solution sans séance vide. AUCUN nouveau SlotKind :
+// tout réutilise FULL/UPPER/LOWER/PUSH/PULL/LEGS.
+
+// Push/Pull (haut du corps sans jambes) — 2× / 4× / 6×.
+export const SPLIT_PUSH_PULL_2X: SplitTemplate = {
+  id: 'push_pull_2x',
+  name: 'Push/Pull 2×',
+  sessions_per_week: 2,
+  slots: [makeSlot('Push A', SlotKind.PUSH), makeSlot('Pull B', SlotKind.PULL)],
+};
+
+export const SPLIT_PUSH_PULL_4X: SplitTemplate = {
+  id: 'push_pull_4x',
+  name: 'Push/Pull 4×',
+  sessions_per_week: 4,
+  slots: [
+    makeSlot('Push A', SlotKind.PUSH),
+    makeSlot('Pull B', SlotKind.PULL),
+    makeSlot('Push C', SlotKind.PUSH),
+    makeSlot('Pull D', SlotKind.PULL),
+  ],
+};
+
+export const SPLIT_PUSH_PULL_6X: SplitTemplate = {
+  id: 'push_pull_6x',
+  name: 'Push/Pull 6×',
+  sessions_per_week: 6,
+  slots: [
+    makeSlot('Push A', SlotKind.PUSH),
+    makeSlot('Pull B', SlotKind.PULL),
+    makeSlot('Push C', SlotKind.PUSH),
+    makeSlot('Pull D', SlotKind.PULL),
+    makeSlot('Push E', SlotKind.PUSH),
+    makeSlot('Pull F', SlotKind.PULL),
+  ],
+};
+
+// Upper/Lower/Full — compromis 3 séances entre full body et split.
+export const SPLIT_ULF_3X: SplitTemplate = {
+  id: 'ulf_3x',
+  name: 'Upper/Lower/Full 3×',
+  sessions_per_week: 3,
+  slots: [
+    makeSlot('Upper A', SlotKind.UPPER),
+    makeSlot('Lower B', SlotKind.LOWER),
+    makeSlot('Full C', SlotKind.FULL),
+  ],
+};
+
+// PPL + Upper/Lower — split 5 séances moderne (alternative au U/L + Focus).
+export const SPLIT_PPL_UL_5X: SplitTemplate = {
+  id: 'ppl_ul_5x',
+  name: 'PPL + Upper/Lower 5×',
+  sessions_per_week: 5,
+  slots: [
+    makeSlot('Push A', SlotKind.PUSH),
+    makeSlot('Pull B', SlotKind.PULL),
+    makeSlot('Legs C', SlotKind.LEGS),
+    makeSlot('Upper D', SlotKind.UPPER),
+    makeSlot('Lower E', SlotKind.LOWER),
+  ],
+};
+
+// Upper/Lower 6× (haute fréquence équilibrée haut/bas).
+export const SPLIT_UL_6X: SplitTemplate = {
+  id: 'ul_6x',
+  name: 'Upper/Lower 6×',
+  sessions_per_week: 6,
+  slots: [
+    makeSlot('Upper A', SlotKind.UPPER),
+    makeSlot('Lower B', SlotKind.LOWER),
+    makeSlot('Upper C', SlotKind.UPPER),
+    makeSlot('Lower D', SlotKind.LOWER),
+    makeSlot('Upper E', SlotKind.UPPER),
+    makeSlot('Lower F', SlotKind.LOWER),
+  ],
+};
+
+// Full Body N× — filet universel (jamais de séance vide, choisi en dernier
+// recours via un bonus canonique faible).
+function fullBodySplit(n: number): SplitTemplate {
+  const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+  return {
+    id: `fb_${n}x`,
+    name: `Full Body ${n}×`,
+    sessions_per_week: n,
+    slots: Array.from({ length: n }, (_, i) =>
+      makeSlot(`Full ${letters[i] ?? String(i + 1)}`, SlotKind.FULL),
+    ),
+  };
+}
+export const SPLIT_FB_4X = fullBodySplit(4);
+export const SPLIT_FB_5X = fullBodySplit(5);
+export const SPLIT_FB_6X = fullBodySplit(6);
+
 export const ALL_SPLITS: readonly SplitTemplate[] = [
+  // Canoniques.
   SPLIT_FB_2X,
   SPLIT_FB_3X,
   SPLIT_PPL_3X,
   SPLIT_UL_4X,
   SPLIT_UL_5X_SPEC,
   SPLIT_PPL_6X,
+  // Conv #39 — additionnelles.
+  SPLIT_PUSH_PULL_2X,
+  SPLIT_PUSH_PULL_4X,
+  SPLIT_PUSH_PULL_6X,
+  SPLIT_ULF_3X,
+  SPLIT_PPL_UL_5X,
+  SPLIT_UL_6X,
+  // Filets Full Body.
+  SPLIT_FB_4X,
+  SPLIT_FB_5X,
+  SPLIT_FB_6X,
 ];
 
 // =============================================================================
@@ -200,131 +311,3 @@ export function muscleBelongsToSlot(muscle: string, kind: SlotKind): boolean {
   }
 }
 
-// =============================================================================
-// Sélection du split selon profil (cf. 09 §5.3)
-// =============================================================================
-
-/**
- * Choisit le split canonique selon `sessionsPerWeek` + `level`.
- *
- * Règles (09 §5.3) :
- *   - 2 séances → FB 2×
- *   - 3 séances → FB 3× (défaut, Schoenfeld 2019). PPL 3× nécessite opt-in user
- *     explicite (non géré ici, à passer en paramètre quand UX existera).
- *   - 4 séances → U/L 4× (gold standard)
- *   - 5 séances → U/L 5× + spec
- *   - 6 séances → PPL 6× (sauf débutant : fallback U/L 4× avec alerte UX)
- */
-export function selectSplit(
-  sessionsPerWeek: number,
-  _muscleGoals: Record<string, MuscleGoal>,
-  level: Level,
-): SplitTemplate {
-  if (sessionsPerWeek === 2) return SPLIT_FB_2X;
-  if (sessionsPerWeek === 3) return SPLIT_FB_3X;
-  if (sessionsPerWeek === 4) return SPLIT_UL_4X;
-  if (sessionsPerWeek === 5) return SPLIT_UL_5X_SPEC;
-  if (sessionsPerWeek === 6) {
-    if (level === Level.DEBUTANT) return SPLIT_UL_4X;
-    return SPLIT_PPL_6X;
-  }
-  throw new RangeError(`sessions_per_week=${sessionsPerWeek} hors range [2, 6]`);
-}
-
-// =============================================================================
-// Placement des jours dans la semaine (cf. 09 §5.5)
-// =============================================================================
-
-/** Lundi 5 janvier 2026 (référence). */
-export const REFERENCE_MONDAY = new Date(Date.UTC(2026, 0, 5));
-
-const DEFAULT_OFFSETS: Record<number, readonly number[]> = {
-  2: [0, 3], //                            lundi, jeudi
-  3: [0, 2, 4], //                         lundi, mercredi, vendredi
-  4: [0, 1, 3, 4], //                      lundi, mardi, jeudi, vendredi
-  5: [0, 1, 3, 4, 5], //                   lundi, mardi, jeudi, vendredi, samedi
-  6: [0, 1, 2, 4, 5, 6], //                lun, mar, mer, ven, sam, dim (off jeudi)
-};
-
-function addDays(d: Date, days: number): Date {
-  const out = new Date(d.getTime());
-  out.setUTCDate(out.getUTCDate() + days);
-  return out;
-}
-
-/**
- * Renvoie la liste des dates de séance pour la semaine.
- * Si `userPrefDays` est fourni, on l'utilise (avec validation longueur).
- * Sinon, défaut éprouvé selon `sessions_per_week` (cf. 09 §5.5).
- */
-export function placeDaysInWeek(
-  split: SplitTemplate,
-  userPrefDays: readonly Date[] | null = null,
-  referenceMonday: Date = REFERENCE_MONDAY,
-): Date[] {
-  const n = split.sessions_per_week;
-  if (userPrefDays !== null) {
-    if (userPrefDays.length !== n) {
-      throw new RangeError(
-        `user_pref_days a ${userPrefDays.length} jours, attendu ${n} pour split ${split.id}`,
-      );
-    }
-    return userPrefDays.map((d) => new Date(d.getTime()));
-  }
-  const offsets = DEFAULT_OFFSETS[n];
-  if (!offsets) {
-    throw new RangeError(`Pas de placement par défaut pour ${n} séances/sem`);
-  }
-  return offsets.map((off) => addDays(referenceMonday, off));
-}
-
-// =============================================================================
-// Vérification de la règle 48h (cf. 09 §5.5)
-// =============================================================================
-
-export interface FortyEightHourViolation {
-  labelI: string;
-  labelJ: string;
-  sharedMuscles: string[];
-  gapDays: number;
-}
-
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-/**
- * Pour chaque paire de jours qui partagent un muscle (focus), écart ≥ 2 jours.
- *
- * Source : MacDougall 1995, Damas 2016 (synthèse protéique 36-48h post-effort).
- */
-export function check48hRule(
-  weeklyTemplate: WeeklyTemplate,
-  dayDates: readonly Date[],
-): FortyEightHourViolation[] {
-  if (dayDates.length !== weeklyTemplate.days.length) {
-    throw new RangeError(
-      `day_dates a ${dayDates.length} entrées, weekly_template.days en a ${weeklyTemplate.days.length}`,
-    );
-  }
-  const violations: FortyEightHourViolation[] = [];
-  const days = weeklyTemplate.days;
-  for (let i = 0; i < days.length; i += 1) {
-    for (let j = i + 1; j < days.length; j += 1) {
-      const di = days[i]!;
-      const dj = days[j]!;
-      const setI = new Set(di.target_muscles_focus);
-      const shared: string[] = [];
-      for (const m of dj.target_muscles_focus) if (setI.has(m)) shared.push(m);
-      if (shared.length === 0) continue;
-      const gap = Math.round((dayDates[j]!.getTime() - dayDates[i]!.getTime()) / MS_PER_DAY);
-      if (gap < 2) {
-        violations.push({
-          labelI: di.label,
-          labelJ: dj.label,
-          sharedMuscles: shared.slice().sort(),
-          gapDays: gap,
-        });
-      }
-    }
-  }
-  return violations;
-}
