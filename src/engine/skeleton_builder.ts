@@ -32,6 +32,7 @@ import type {
 } from './models';
 import {
   DurationCategory,
+  ExType,
   MAX_PATTERNS_PER_SESSION,
   MuscleStatus,
   makeSkeletonTemplate,
@@ -47,6 +48,7 @@ import {
   type SplitTemplate,
 } from './split';
 import { patternsForMusclePrio, getMusclePatterns } from './pattern_grid';
+import { estimateExerciseDurationMinutes } from '@/lib/onboarding-preview';
 
 // =============================================================================
 // Types intermédiaires
@@ -178,110 +180,299 @@ const SCORE_CANONICAL_BONUS: Record<string, number> = {
   fb_6x: 0,
 };
 
+// =============================================================================
+// Conv #40 — Coût durée proxy + distribution en passes (Temps-2 polish)
+// =============================================================================
+
 /**
- * Score un split candidat en simulant la distribution des cases.
- * Retourne aussi la distribution et focus calculés (réutilisés ensuite).
+ * Coût durée estimé d'une cellule AVANT allocation des séries. Réutilise le
+ * modèle de durée canonique (`estimateExerciseDurationMinutes`,
+ * onboarding-preview) avec un nb de séries supposé constant : seul le rôle
+ * compte (repos compound 150 s vs iso 80 s → un compound « pèse » ~1,5× un
+ * iso). Sert à équilibrer la DURÉE entre séances sœurs (Conv #40, décision
+ * Azur : « on équilibre en durée/volume, le mélange compound/iso n'est pas
+ * grave »).
+ */
+const ASSUMED_SETS_PER_CELL = 4;
+function cellDurationCost(role: RoleHint): number {
+  return estimateExerciseDurationMinutes(
+    { base_sets: ASSUMED_SETS_PER_CELL },
+    role === 'compound' ? ExType.COMPOUND : ExType.ISOLATION,
+  );
+}
+function dayDurationCost(cells: readonly PatternCell[]): number {
+  let total = 0;
+  for (const c of cells) total += cellDurationCost(c.role_hint);
+  return total;
+}
+
+/** Muscles « plaçables presque partout » = variable d'ajustement (#2). */
+const CORE_PAD_MUSCLES: ReadonlySet<string> = new Set([
+  'abdos',
+  'obliques',
+  'lombaires',
+]);
+/** En-dessous de (moyenne − ce seuil, en min) une séance est jugée creuse. */
+const CORE_PAD_THRESHOLD_MIN = 2;
+/** Max de cases core ajoutées par étoffage dans une même séance. */
+const CORE_PAD_MAX_PER_SESSION = 2;
+
+interface CellDistribution {
+  distribution: PatternCell[][];
+  focus_per_day: string[][];
+  warnings: string[];
+}
+
+/**
+ * Distribue les cases sur les séances du split, en passes (Conv #40) :
+ *   1. prioritaires : équilibrage par DURÉE (un compound pèse plus qu'un iso),
+ *      FULL autorisé (un prio peut tomber sur le Focus) ;
+ *   2. maintien NON-core : exclut les slots FULL si le split a des slots
+ *      spécialisés (réserve le Focus aux prios) ;
+ *   2b. core en maintien : 1 placement de base (exclut FULL) ;
+ *   3. enrichissement Focus/FULL : on garnit les slots FULL des prios les plus
+ *      sous-couvertes jusqu'à la charge moyenne des séances spécialisées
+ *      (« modéré ») — fin du « Focus fourre-tout » ;
+ *   4. étoffage core : on verse du core dans les séances CREUSES (non vides)
+ *      pour rapprocher les durées.
+ *
+ * Invariants : aucune passe ne RETIRE de case ; l'enrichissement ne touche que
+ * les slots FULL ; l'étoffage ne touche que les séances déjà non vides → une
+ * séance structurellement vide le reste (préserve les garanties Conv #39 :
+ * sélection de split + alternance + « haut du corps seul → Push/Pull »). Sans
+ * aléa (tie-breaks stables) → déterminisme onboarding ↔ fin de cycle conservé.
+ */
+function distributeCells(
+  split: SplitTemplate,
+  demands: readonly MuscleDemand[],
+  capacityPerSession: number,
+): CellDistribution {
+  const nSessions = split.sessions_per_week;
+  const distribution: PatternCell[][] = Array.from({ length: nSessions }, () => []);
+  const focusPerDay: string[][] = Array.from({ length: nSessions }, () => []);
+  const warnings: string[] = [];
+  const placedByMuscle = new Map<string, number>();
+  const hasSpecialized = split.slots.some((s) => s.kind !== SlotKind.FULL);
+
+  const eligibleDays = (muscle: string, excludeFull: boolean): number[] => {
+    const out: number[] = [];
+    for (let i = 0; i < nSessions; i += 1) {
+      const slot = split.slots[i]!;
+      if (excludeFull && slot.kind === SlotKind.FULL) continue;
+      if (muscleBelongsToSlot(muscle, slot.kind)) out.push(i);
+    }
+    return out;
+  };
+
+  // Séance éligible la MOINS chargée en durée, non saturée en nb de cases.
+  const lightestDay = (eligible: readonly number[]): number => {
+    let best = -1;
+    let bestCost = Infinity;
+    for (const i of eligible) {
+      if (distribution[i]!.length >= capacityPerSession) continue;
+      const cost = dayDurationCost(distribution[i]!);
+      if (cost < bestCost - 1e-9) {
+        bestCost = cost;
+        best = i;
+      }
+    }
+    return best;
+  };
+
+  const placeCell = (
+    d: MuscleDemand,
+    p: { pattern: Pattern; role_hint: RoleHint },
+    dayIdx: number,
+  ): void => {
+    distribution[dayIdx]!.push({
+      pattern: p.pattern,
+      primary_muscle: d.muscle,
+      role_hint: p.role_hint,
+      chosen_exercise_id: null,
+    });
+    placedByMuscle.set(d.muscle, (placedByMuscle.get(d.muscle) ?? 0) + 1);
+    if (
+      d.goal.status === MuscleStatus.PRIORITAIRE &&
+      !focusPerDay[dayIdx]!.includes(d.muscle)
+    ) {
+      focusPerDay[dayIdx]!.push(d.muscle);
+    }
+  };
+
+  // Placement « de base » d'un muscle : ses patterns sur freq séances cibles.
+  const placeBase = (d: MuscleDemand, excludeFull: boolean): void => {
+    let eligible = eligibleDays(d.muscle, excludeFull);
+    if (eligible.length === 0 && excludeFull) {
+      eligible = eligibleDays(d.muscle, false); // repli : autoriser FULL.
+    }
+    if (eligible.length === 0) {
+      warnings.push(`${d.muscle}: aucune séance compatible dans ${split.name}`);
+      return;
+    }
+    const freqAchievable = Math.min(d.target_frequency, eligible.length);
+    const patternsToPlace: Array<{ pattern: Pattern; role_hint: RoleHint }> = [];
+    if (d.patterns.length >= freqAchievable) {
+      patternsToPlace.push(...d.patterns);
+    } else {
+      const main = d.patterns[0]!;
+      for (let i = 0; i < freqAchievable; i += 1) {
+        patternsToPlace.push(d.patterns[i] ?? main);
+      }
+    }
+    let dropped = 0;
+    for (const p of patternsToPlace) {
+      const dayIdx = lightestDay(eligible);
+      if (dayIdx < 0) {
+        dropped += 1;
+        continue;
+      }
+      placeCell(d, p, dayIdx);
+    }
+    if (dropped > 0) {
+      warnings.push(
+        `${d.muscle}: ${dropped} pattern(s) non placé(s) (capacité saturée). Ajoute une séance ou monte la durée max.`,
+      );
+    }
+  };
+
+  // Passe 1 — prioritaires (FULL autorisé).
+  for (const d of demands) {
+    if (d.goal.status === MuscleStatus.PRIORITAIRE) placeBase(d, false);
+  }
+  // Passe 2 — maintien non-core (FULL exclu si slots spécialisés).
+  for (const d of demands) {
+    if (d.goal.status !== MuscleStatus.SUGGERE) continue;
+    if (CORE_PAD_MUSCLES.has(d.muscle)) continue;
+    placeBase(d, hasSpecialized);
+  }
+  // Passe 2b — core en maintien : 1 placement de base.
+  for (const d of demands) {
+    if (d.goal.status !== MuscleStatus.SUGGERE) continue;
+    if (!CORE_PAD_MUSCLES.has(d.muscle)) continue;
+    placeBase(d, hasSpecialized);
+  }
+
+  // Passe 3 — enrichissement Focus/FULL par les prios sous-couvertes (#1).
+  const fullIdx: number[] = [];
+  const specIdx: number[] = [];
+  for (let i = 0; i < nSessions; i += 1) {
+    if (split.slots[i]!.kind === SlotKind.FULL) fullIdx.push(i);
+    else specIdx.push(i);
+  }
+  const priorities = demands.filter(
+    (d) => d.goal.status === MuscleStatus.PRIORITAIRE,
+  );
+  if (fullIdx.length > 0 && specIdx.length > 0 && priorities.length > 0) {
+    const avgSpec =
+      specIdx.reduce((s, i) => s + dayDurationCost(distribution[i]!), 0) /
+      specIdx.length;
+    const desired = (d: MuscleDemand): number =>
+      Math.max(d.target_frequency, d.patterns.length);
+    // Prios les plus sous-couvertes d'abord (placé/désiré asc, puis rank asc).
+    const byCoverage = [...priorities].sort((a, b) => {
+      const ca = (placedByMuscle.get(a.muscle) ?? 0) / desired(a);
+      const cb = (placedByMuscle.get(b.muscle) ?? 0) / desired(b);
+      if (Math.abs(ca - cb) > 1e-9) return ca - cb;
+      return a.goal.priority_rank - b.goal.priority_rank;
+    });
+    for (const day of fullIdx) {
+      // 1 cellule ISO par prio DISTINCTE (re-ciblage « finisher »), jusqu'à la
+      // durée moyenne des séances spécialisées (« modéré »).
+      const present = new Set(distribution[day]!.map((c) => c.primary_muscle));
+      for (const pick of byCoverage) {
+        if (distribution[day]!.length >= capacityPerSession) break;
+        if (dayDurationCost(distribution[day]!) >= avgSpec) break;
+        if (present.has(pick.muscle)) continue;
+        const iso =
+          getMusclePatterns(pick.muscle).isolationPatterns[0] ??
+          pick.patterns[0]!.pattern;
+        placeCell(pick, { pattern: iso, role_hint: 'isolation' }, day);
+        present.add(pick.muscle);
+      }
+    }
+  }
+
+  // Passe 4 — étoffage core des séances creuses (#2), borné.
+  const coreDemands = demands.filter(
+    (d) =>
+      d.goal.status === MuscleStatus.SUGGERE && CORE_PAD_MUSCLES.has(d.muscle),
+  );
+  if (coreDemands.length > 0) {
+    const addedPerDay = new Array<number>(nSessions).fill(0);
+    const maxIters = nSessions * CORE_PAD_MAX_PER_SESSION;
+    for (let it = 0; it < maxIters; it += 1) {
+      const costs = distribution.map((cells) => dayDurationCost(cells));
+      const avg = costs.reduce((a, b) => a + b, 0) / nSessions;
+      let target = -1;
+      let targetCost = Infinity;
+      for (let i = 0; i < nSessions; i += 1) {
+        if (distribution[i]!.length === 0) continue; // ne pas rescuer une vide
+        if (distribution[i]!.length >= capacityPerSession) continue;
+        if (addedPerDay[i]! >= CORE_PAD_MAX_PER_SESSION) continue;
+        if (costs[i]! >= avg - CORE_PAD_THRESHOLD_MIN) continue;
+        if (costs[i]! < targetCost) {
+          targetCost = costs[i]!;
+          target = i;
+        }
+      }
+      if (target < 0) break;
+      const kind = split.slots[target]!.kind;
+      // Jamais 2× le même muscle core dans une séance (pas d'empilement).
+      const inDay = new Set(distribution[target]!.map((c) => c.primary_muscle));
+      const pick = coreDemands
+        .filter(
+          (d) => muscleBelongsToSlot(d.muscle, kind) && !inDay.has(d.muscle),
+        )
+        .sort(
+          (a, b) =>
+            (placedByMuscle.get(a.muscle) ?? 0) -
+            (placedByMuscle.get(b.muscle) ?? 0),
+        )[0];
+      if (!pick) break;
+      placeCell(
+        pick,
+        { pattern: pick.patterns[0]!.pattern, role_hint: 'isolation' },
+        target,
+      );
+      addedPerDay[target]! += 1;
+    }
+  }
+
+  return { distribution, focus_per_day: focusPerDay, warnings };
+}
+
+/**
+ * Score un split candidat à partir de la distribution produite par
+ * `distributeCells`. Pénalités inchangées (Conv #39) : bonus canonique,
+ * fréquence cible par muscle, overflow / séance vide (−25, dominant) /
+ * sous-remplissage.
  */
 function scoreSplit(
   split: SplitTemplate,
   demands: readonly MuscleDemand[],
   capacityPerSession: number,
 ): SplitScoreResult {
+  const { distribution, focus_per_day, warnings } = distributeCells(
+    split,
+    demands,
+    capacityPerSession,
+  );
   const nSessions = split.sessions_per_week;
-  const distribution: PatternCell[][] = Array.from({ length: nSessions }, () => []);
-  const focusPerDay: string[][] = Array.from({ length: nSessions }, () => []);
-  const warnings: string[] = [];
   let score = SCORE_CANONICAL_BONUS[split.id] ?? 0;
 
-  // Pour chaque demande, placer les cases sur les séances éligibles.
+  // Fréquence atteinte par muscle = nb de séances distinctes où il apparaît.
   for (const d of demands) {
-    const eligibleIdx: number[] = [];
+    let achieved = 0;
     for (let i = 0; i < nSessions; i += 1) {
-      const slot = split.slots[i]!;
-      if (muscleBelongsToSlot(d.muscle, slot.kind)) eligibleIdx.push(i);
-    }
-    if (eligibleIdx.length === 0) {
-      // Muscle non plaçable dans ce split (ex. quadriceps en split full-upper).
-      score += SCORE_FREQ_MISS * d.target_frequency;
-      warnings.push(`${d.muscle}: aucune séance compatible dans ${split.name}`);
-      continue;
-    }
-
-    // Tri des séances éligibles par charge actuelle ascendante.
-    const sortByLoad = (): number[] => {
-      const arr = [...eligibleIdx];
-      arr.sort((a, b) => {
-        const la = distribution[a]!.length;
-        const lb = distribution[b]!.length;
-        if (la !== lb) return la - lb;
-        return a - b; // tie-break stable
-      });
-      return arr;
-    };
-
-    // Combien de séances on touche pour ce muscle.
-    const freqAchievable = Math.min(d.target_frequency, eligibleIdx.length);
-
-    // Placement des patterns sur les freq séances cibles.
-    // Si nb_patterns ≥ freq : on packe plusieurs patterns dans certaines séances.
-    // Si nb_patterns < freq : on place 1 pattern par séance (peut dupliquer le 1er pattern compound).
-    const patternsToPlace: Array<{ pattern: Pattern; role_hint: RoleHint }> = [];
-    if (d.patterns.length >= freqAchievable) {
-      patternsToPlace.push(...d.patterns);
-    } else {
-      // Pad avec duplication du compound principal.
-      const main = d.patterns[0]!;
-      for (let i = 0; i < freqAchievable; i += 1) {
-        patternsToPlace.push(d.patterns[i] ?? main);
+      if (distribution[i]!.some((c) => c.primary_muscle === d.muscle)) {
+        achieved += 1;
       }
     }
-
-    // Placement strict capé par capacityPerSession. Si la séance préférée
-    // est pleine, on tente la suivante. Si toutes les séances éligibles
-    // sont pleines, on drop la cell et on warn (sur-engagement).
-    let placedCount = 0;
-    let droppedCount = 0;
-    for (const p of patternsToPlace) {
-      const ordered = sortByLoad(); // re-sort à chaque placement
-      let placed = false;
-      for (const dayIdx of ordered) {
-        if ((distribution[dayIdx]!.length) >= capacityPerSession) continue;
-        const cell: PatternCell = {
-          pattern: p.pattern,
-          primary_muscle: d.muscle,
-          role_hint: p.role_hint,
-          chosen_exercise_id: null,
-        };
-        distribution[dayIdx]!.push(cell);
-        if (
-          d.goal.status === MuscleStatus.PRIORITAIRE &&
-          !focusPerDay[dayIdx]!.includes(d.muscle)
-        ) {
-          focusPerDay[dayIdx]!.push(d.muscle);
-        }
-        placed = true;
-        placedCount += 1;
-        break;
-      }
-      if (!placed) droppedCount += 1;
-    }
-
-    if (droppedCount > 0) {
-      score += SCORE_FREQ_MISS * droppedCount;
-      warnings.push(
-        `${d.muscle}: ${droppedCount} pattern(s) non placé(s) (capacité saturée). Ajoute une séance ou monte la durée max.`,
-      );
-    }
-
-    // Score : freq atteinte vs cible.
-    if (freqAchievable >= d.target_frequency) {
-      score += SCORE_FREQ_HIT;
-    } else {
-      score += SCORE_FREQ_MISS * (d.target_frequency - freqAchievable);
-    }
+    if (achieved >= d.target_frequency) score += SCORE_FREQ_HIT;
+    else score += SCORE_FREQ_MISS * (d.target_frequency - achieved);
   }
 
-  // Pénalité overflow / underfill par séance.
+  // Pénalité overflow / séance vide / sous-remplissage par séance.
   for (let i = 0; i < nSessions; i += 1) {
     const load = distribution[i]!.length;
     if (load > capacityPerSession) {
@@ -300,7 +491,7 @@ function scoreSplit(
     }
   }
 
-  return { split, score, distribution, focus_per_day: focusPerDay, warnings };
+  return { split, score, distribution, focus_per_day, warnings };
 }
 
 // =============================================================================

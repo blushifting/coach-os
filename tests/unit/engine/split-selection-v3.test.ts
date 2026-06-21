@@ -16,12 +16,15 @@ import { describe, expect, it } from 'vitest';
 import { applyBalanceRules } from '@/engine/balance';
 import { Catalog } from '@/engine/catalog';
 import { autoGenerateCyclePlanV3 } from '@/engine/cycle_planner';
-import { splitAlternationOk } from '@/engine/skeleton_builder';
+import { buildSkeleton, splitAlternationOk } from '@/engine/skeleton_builder';
 import { ALL_SPLITS } from '@/engine/split';
+import { estimateDayDurationMinutes } from '@/lib/onboarding-preview';
 import {
+  DurationCategory,
   MuscleObjective,
   MuscleStatus,
   type MuscleGoal,
+  type SkeletonDay,
   type UserState,
   exercisePrimaires,
 } from '@/engine/models';
@@ -171,6 +174,74 @@ describe('splitAlternationOk', () => {
   it('tous les splits du catalogue respectent l\'alternance', () => {
     for (const split of ALL_SPLITS) {
       expect(splitAlternationOk(split)).toBe(true);
+    }
+  });
+});
+
+// =============================================================================
+// 5. Temps-2 polish (Conv #40) — qualité du remplissage de la grille
+// =============================================================================
+
+const DUR = DurationCategory.MEDIUM;
+const CORE = new Set(['abdos', 'obliques', 'lombaires']);
+const isPrio = (state: UserState, m: string): boolean =>
+  state.muscle_goals[m]?.status === MuscleStatus.PRIORITAIRE;
+
+function groupIdxByKind(
+  days: ReadonlyArray<{ split_label?: string; label?: string }>,
+): Map<string, number[]> {
+  const out = new Map<string, number[]>();
+  days.forEach((d, i) => {
+    const k = kindOf(d.split_label ?? d.label ?? '');
+    const arr = out.get(k) ?? [];
+    arr.push(i);
+    out.set(k, arr);
+  });
+  return out;
+}
+
+describe('Temps-2 polish — remplissage (Conv #40)', () => {
+  it('#1 préset 5× : la séance Focus ne contient QUE des prios', () => {
+    const state = balancedState(5, PRESET);
+    const sk = buildSkeleton(state, DUR);
+    const focus = sk.days.find((d: SkeletonDay) =>
+      /focus|full/i.test(d.split_label),
+    );
+    expect(focus).toBeDefined();
+    expect(focus!.cells.length).toBeGreaterThan(0);
+    for (const c of focus!.cells) {
+      expect(isPrio(state, c.primary_muscle)).toBe(true);
+    }
+  });
+
+  it('#2 préset 6× : core en variable d\'ajustement, aucune séance famélique', () => {
+    const sk = buildSkeleton(balancedState(6, PRESET), DUR);
+    const minCells = Math.min(...sk.days.map((d) => d.cells.length));
+    expect(minCells).toBeGreaterThanOrEqual(3);
+  });
+
+  it('#2 core jamais empilé en double dans une même séance', () => {
+    const sk = buildSkeleton(balancedState(6, PRESET), DUR);
+    for (const d of sk.days) {
+      const counts = new Map<string, number>();
+      for (const c of d.cells) {
+        if (CORE.has(c.primary_muscle)) {
+          counts.set(c.primary_muscle, (counts.get(c.primary_muscle) ?? 0) + 1);
+        }
+      }
+      for (const n of counts.values()) expect(n).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('#3 préset 4× : séances sœurs de durée proche (plus de tout-compound vs tout-iso)', () => {
+    const plan = autoGenerateCyclePlanV3(balancedState(4, PRESET), catalog);
+    for (const idxs of groupIdxByKind(plan.days).values()) {
+      if (idxs.length < 2) continue;
+      const durs = idxs.map((i) =>
+        estimateDayDurationMinutes(plan.days[i]!, catalog),
+      );
+      const spread = Math.max(...durs) - Math.min(...durs);
+      expect(spread).toBeLessThanOrEqual(15);
     }
   });
 });
