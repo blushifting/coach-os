@@ -22,8 +22,8 @@ import type { Exercise } from '@/engine/models';
 import { kgUnitLabel } from '@/lib/catalog-filter';
 import {
   computeLiveE1rmFromEntries,
-  lastCheckedSetIsUnreliable,
-  suggestNextLoadAfterUnreliable,
+  lastCheckedSetTooEasy,
+  suggestNextLoadAfterTooEasy,
   type SetEntry,
 } from '@/lib/session-runner';
 import type { E1rmConfidence } from '@/lib/calibration-status';
@@ -42,23 +42,26 @@ export function CalibrationBanner({
   entries,
 }: CalibrationBannerProps) {
   const liveE1rm = useMemo(
-    () => computeLiveE1rmFromEntries(exercise, bodyweightKg, entries),
+    () =>
+      computeLiveE1rmFromEntries(exercise, bodyweightKg, entries, {
+        informativeOnly: true,
+      }),
     [exercise, bodyweightKg, entries],
   );
-  const unreliable = useMemo(
-    () => (liveE1rm === null ? lastCheckedSetIsUnreliable(entries) : null),
+  const tooEasy = useMemo(
+    () => (liveE1rm === null ? lastCheckedSetTooEasy(entries) : null),
     [entries, liveE1rm],
   );
   const suggestedLoad = useMemo(() => {
-    if (unreliable === null) return null;
-    return suggestNextLoadAfterUnreliable({
+    if (tooEasy === null) return null;
+    return suggestNextLoadAfterTooEasy({
       exercise,
       bodyweightKg,
-      reps: unreliable.reps,
-      rpe: unreliable.rpe,
-      load_kg: unreliable.load_kg,
+      reps: tooEasy.reps,
+      rpe: tooEasy.rpe,
+      load_kg: tooEasy.load_kg,
     });
-  }, [unreliable, exercise, bodyweightKg]);
+  }, [tooEasy, exercise, bodyweightKg]);
 
   if (confidence === 'measured') return null;
 
@@ -80,7 +83,7 @@ export function CalibrationBanner({
           </span>{' '}
           — les séries suivantes sont ajustées automatiquement.
         </p>
-      ) : unreliable !== null ? (
+      ) : tooEasy !== null ? (
         <p>
           <span className="font-semibold text-blue-300">
             Trop facile pour mesurer ton Plafond

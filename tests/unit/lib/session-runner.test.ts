@@ -11,10 +11,10 @@ import {
   countDoneSets,
   countPlannedSets,
   initEntries,
-  lastCheckedSetIsUnreliable,
+  lastCheckedSetTooEasy,
   listDayCandidates,
   recalibrateUpcomingSets,
-  suggestNextLoadAfterUnreliable,
+  suggestNextLoadAfterTooEasy,
   updateSetEntry,
   type SessionEntries,
 } from '@/lib/session-runner';
@@ -273,9 +273,9 @@ describe('computeSessionSummary', () => {
 
   it('PR : exos avec delta e1RM > 0.05 kg', () => {
     const summary: RecordFeedbackResult = {
-      bench_press: [80, 81.5] as const,
-      shoulder_press: [40, 40] as const, // pas de PR
-      curl: [15, 14.5] as const, // régression
+      bench_press: { old: 80, next: 81.5, definitive: true },
+      shoulder_press: { old: 40, next: 40, definitive: true }, // pas de PR
+      curl: { old: 15, next: 14.5, definitive: true }, // régression
     };
     // Conv #21 — Les 3 exos sont déjà calibrés (avaient un plafond avant).
     // Sans ce set, ils seraient classés en "première calibration" et n'iraient
@@ -289,10 +289,10 @@ describe('computeSessionSummary', () => {
 
   it('plafondChanges : distingue 1re calibration, hausse, baisse, plat', () => {
     const summary: RecordFeedbackResult = {
-      bench_press: [80, 82] as const, // hausse
-      shoulder_press: [40, 39] as const, // baisse
-      squat: [100, 100] as const, // plat
-      pullup: [60, 70] as const, // 1re calibration (oldE n'a pas d'historique)
+      bench_press: { old: 80, next: 82, definitive: true }, // hausse
+      shoulder_press: { old: 40, next: 39, definitive: true }, // baisse
+      squat: { old: 100, next: 100, definitive: true }, // plat
+      pullup: { old: 60, next: 70, definitive: true }, // 1re calibration
     };
     const calibrated = new Set(['bench_press', 'shoulder_press', 'squat']);
     const r = computeSessionSummary(fb, summary, [], calibrated);
@@ -370,10 +370,19 @@ describe('computeLiveE1rmFromEntries', () => {
     expect(computeLiveE1rmFromEntries(exo, 75, entries)).toBeNull();
   });
 
-  it('null si la série cochée est non fiable (n_eq > 15)', () => {
-    // 15 reps RPE 5 → n_eq=20, ignoré.
+  it('informativeOnly : null si la série est trop facile (4+)', () => {
+    // 15 reps RPE 5 (réserve 5+) → trop facile → exclu du plafond « appris ».
     const entries = [{ reps: 15, load_kg: 50, rpe: 5, done: true }];
-    expect(computeLiveE1rmFromEntries(exo, 75, entries)).toBeNull();
+    expect(
+      computeLiveE1rmFromEntries(exo, 75, entries, { informativeOnly: true }),
+    ).toBeNull();
+  });
+
+  it('Bloc R — par défaut, une série haute-rep/facile compte (Epley étendu)', () => {
+    // Même série : sans le filtre informatif, elle produit un e1RM (sert au
+    // recalibrage intra-séance, y compris depuis une série lourde en 4+).
+    const entries = [{ reps: 15, load_kg: 50, rpe: 5, done: true }];
+    expect(computeLiveE1rmFromEntries(exo, 75, entries)).not.toBeNull();
   });
 
   it('moyenne pondérée de 2 séries fiables — pas un simple max', () => {
@@ -390,15 +399,15 @@ describe('computeLiveE1rmFromEntries', () => {
   });
 });
 
-describe('lastCheckedSetIsUnreliable', () => {
-  it('null si la dernière cochée est fiable', () => {
+describe('lastCheckedSetTooEasy', () => {
+  it('null si la dernière cochée a un vrai effort (RPE > 4+)', () => {
     const entries = [{ reps: 8, load_kg: 80, rpe: 8, done: true }];
-    expect(lastCheckedSetIsUnreliable(entries)).toBeNull();
+    expect(lastCheckedSetTooEasy(entries)).toBeNull();
   });
 
-  it('retourne la série si la dernière cochée a n_eq > 15', () => {
+  it('retourne la série si la dernière cochée est en 4+ (RPE ≤ plancher)', () => {
     const entries = [{ reps: 15, load_kg: 50, rpe: 5, done: true }];
-    expect(lastCheckedSetIsUnreliable(entries)).toEqual({
+    expect(lastCheckedSetTooEasy(entries)).toEqual({
       reps: 15,
       load_kg: 50,
       rpe: 5,
@@ -410,14 +419,14 @@ describe('lastCheckedSetIsUnreliable', () => {
       { reps: 8, load_kg: 80, rpe: 8, done: false },
       { reps: 15, load_kg: 50, rpe: 5, done: true },
     ];
-    expect(lastCheckedSetIsUnreliable(entries)).not.toBeNull();
+    expect(lastCheckedSetTooEasy(entries)).not.toBeNull();
   });
 });
 
-describe('suggestNextLoadAfterUnreliable', () => {
+describe('suggestNextLoadAfterTooEasy', () => {
   it('propose une charge plus haute quand la série a été trop facile', () => {
     const exo = catalog.get('leg_press_45');
-    const r = suggestNextLoadAfterUnreliable({
+    const r = suggestNextLoadAfterTooEasy({
       exercise: exo,
       bodyweightKg: 75,
       reps: 15,

@@ -60,6 +60,9 @@ export function CatalogueDetailSheet({
   // catalogue par défaut). Dialog de confirmation parce que c'est destructif.
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // Bloc R — réinitialisation du plafond (efface mesure + historique e1RM).
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const bodyweightKg = useCoachOsStore(
     (s) => s.userState?.profile.bodyweight_kg ?? 75,
   );
@@ -185,6 +188,21 @@ export function CatalogueDetailSheet({
           bodyweightKg={bodyweightKg}
           onClose={() => setManualOpen(false)}
         />
+
+        {/* Bloc R — réinitialiser le plafond : efface la mesure + l'historique
+            e1RM → l'exo repart en calibration. Affiché seulement s'il est calibré. */}
+        {e1rm !== null && e1rm > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            fullWidth
+            disabled={demoActive || resetting}
+            data-testid={`btn-reset-plafond-${exercise.id}`}
+            onClick={() => setConfirmReset(true)}
+          >
+            {resetting ? 'Réinitialisation…' : 'Réinitialiser mon Plafond'}
+          </Button>
+        )}
 
         {/* Conv #18 — Personnalisation des bornes d'équipement (inc/min/max
             par exo). Bouton secondaire car secondaire vis-à-vis du plafond. */}
@@ -349,6 +367,33 @@ export function CatalogueDetailSheet({
           }
         }}
         onCancel={() => setConfirmDelete(false)}
+      />
+
+      <Dialog
+        open={confirmReset}
+        title="Réinitialiser ce Plafond ?"
+        description={
+          <>
+            Coach OS efface le{' '}
+            <Concept topic="plafond">Plafond</Concept> de{' '}
+            <strong>{displayName}</strong> et toutes ses mesures passées.
+            À ta prochaine séance, l'app re-mesurera ta charge de départ,
+            comme si tu n'avais jamais fait cet exercice.
+          </>
+        }
+        confirmLabel="Réinitialiser"
+        cancelLabel="Annuler"
+        destructive
+        onConfirm={async () => {
+          setConfirmReset(false);
+          setResetting(true);
+          try {
+            await engine.resetE1rm(exercise.id);
+          } finally {
+            setResetting(false);
+          }
+        }}
+        onCancel={() => setConfirmReset(false)}
       />
     </Sheet>
   );

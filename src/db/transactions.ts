@@ -150,10 +150,18 @@ export interface CommitSessionFeedbackArgs {
    * pour le tout 1er feedback du cycle (cf. `recordFeedbackAndCommit`).
    */
   anchorStartDate?: boolean;
+  /**
+   * Bloc R — exos dont la MAJ e1RM de cette séance est DÉFINITIVE (≥ 1 série
+   * informative, RPE > 4+). Seuls ceux-là reçoivent un snapshot daté (→ passent
+   * en confidence 'measured'). Les MAJ provisoires (séance tout-4+) remontent
+   * `state.e1rm` mais ne snapshotent pas → l'exo reste en calibration. Absent →
+   * comportement legacy (snapshot de tous les exos touchés).
+   */
+  definitiveExoIds?: ReadonlySet<string>;
 }
 
 export async function txCommitSessionFeedback(args: CommitSessionFeedbackArgs): Promise<void> {
-  const { feedback, state, sessionId, anchorStartDate = false } = args;
+  const { feedback, state, sessionId, anchorStartDate = false, definitiveExoIds } = args;
   const db = getDb();
   await db.transaction(
     'rw',
@@ -181,7 +189,11 @@ export async function txCommitSessionFeedback(args: CommitSessionFeedbackArgs): 
       }
       const touchedExIds = new Set(feedback.sets.map((s) => s.exercise_id));
       const snapshots = [...touchedExIds]
-        .filter((exId) => state.e1rm[exId] !== undefined)
+        .filter(
+          (exId) =>
+            state.e1rm[exId] !== undefined &&
+            (definitiveExoIds?.has(exId) ?? true),
+        )
         .map((exId) => ({
           date: feedback.seance_date,
           exercise_id: exId,
@@ -227,6 +239,27 @@ export async function txCommitManualE1rm(args: CommitManualE1rmArgs): Promise<vo
 }
 
 // =============================================================================
+// Bloc R — Reset d'un plafond e1RM (fiche catalogue). Le caller a déjà fait
+// `delete state.e1rm[exerciseId]` : on persiste l'état nettoyé + on efface tous
+// les snapshots de l'exo → il repart en calibration (bootstrap reseed), comme
+// jamais fait.
+// =============================================================================
+
+export interface ResetE1rmArgs {
+  state: UserState;
+  exerciseId: string;
+}
+
+export async function txResetE1rm(args: ResetE1rmArgs): Promise<void> {
+  const { state, exerciseId } = args;
+  const db = getDb();
+  await db.transaction('rw', [db.userState, db.e1rmSnapshots], async () => {
+    await putUserStateInTx(state);
+    await db.e1rmSnapshots.where('exercise_id').equals(exerciseId).delete();
+  });
+}
+
+// =============================================================================
 // Fin de semaine (mute juste UserState)
 // =============================================================================
 
@@ -260,14 +293,27 @@ export interface EndOfCycleArgs {
   closedCycleIndex: number;
   /** programme du nouveau cycle (null = pas encore choisi). */
   nextProgrammeId: string | null;
+  /**
+   * Bloc R (A2) — exos dont le muscle a changé d'objectif au nouveau cycle :
+   * on efface leurs snapshots e1RM (le caller a déjà retiré `state.e1rm[id]`)
+   * pour qu'ils repartent en calibration de zéro, sans fuite d'info entre deux
+   * cycles de modes différents.
+   */
+  resetSnapshotExoIds?: readonly string[];
 }
 
 export async function txEndOfCycle(args: EndOfCycleArgs): Promise<void> {
-  const { state, review, closedCycleIndex, nextProgrammeId } = args;
+  const { state, review, closedCycleIndex, nextProgrammeId, resetSnapshotExoIds } = args;
   const db = getDb();
   const today = nowIso().slice(0, 10);
-  await db.transaction('rw', [db.userState, db.cycles, db.sessions], async () => {
+  await db.transaction(
+    'rw',
+    [db.userState, db.cycles, db.sessions, db.e1rmSnapshots],
+    async () => {
     await putUserStateInTx(state);
+    if (resetSnapshotExoIds && resetSnapshotExoIds.length > 0) {
+      await db.e1rmSnapshots.where('exercise_id').anyOf([...resetSnapshotExoIds]).delete();
+    }
     const closed = await db.cycles.get(closedCycleIndex);
     await db.cycles.put({
       cycle_index: closedCycleIndex,

@@ -25,11 +25,10 @@ import {
   effectiveLoadForE1rm,
   externalLoadFromE1rm,
   EPLEY_K,
-  measurementIsReliable,
   roundToIncrement,
   targetLoad,
 } from '@/engine/prescription';
-import { aggregateE1rmWeighted } from '@/engine/feedback';
+import { aggregateE1rmWeighted, RPE_RESERVE_FLOOR } from '@/engine/feedback';
 import type { FeedbackRow } from '@/db/schema';
 
 // =============================================================================
@@ -151,33 +150,39 @@ export function updateSetEntry(
 
 /**
  * Calcule le plafond "live" d'un exo en cours de séance, par moyenne pondérée
- * de toutes les séries fiables déjà cochées. Cohérent avec l'algo fin-de-séance
- * (`updateE1rmForExercise`) — pas de filtre EMA ici car la baseline (bootstrap
- * heuristique) n'est pas une vraie mesure.
+ * des séries cochées (Epley étendu, cohérent avec `updateE1rmForExercise` — pas
+ * de filtre EMA ici car la baseline bootstrap n'est pas une vraie mesure).
  *
- * `null` si aucune série cochée fiable / si rpe ou reps absents.
+ * Bloc R — par défaut on prend TOUTES les séries valides (sert au recalibrage
+ * intra-séance, qui doit aussi propager depuis une série lourde faite en 4+).
+ * `informativeOnly` ne garde que les séries à effort réel (RPE > 4+) → sert au
+ * bandeau « Plafond appris » pour ne pas l'afficher depuis une séance trop facile.
+ *
+ * `null` si aucune série exploitable.
  */
 export function computeLiveE1rmFromEntries(
   exercise: Exercise,
   bodyweightKg: number,
   entries: ReadonlyArray<SetEntry>,
+  options: { informativeOnly?: boolean } = {},
 ): number | null {
-  const reliable = entries.flatMap((e) => {
+  const sets = entries.flatMap((e) => {
     if (!e.done) return [];
     if (e.reps === null || e.reps <= 0) return [];
     if (e.load_kg === null) return [];
     if (e.rpe === null) return [];
-    if (!measurementIsReliable(e.reps, e.rpe)) return [];
+    if (options.informativeOnly && e.rpe <= RPE_RESERVE_FLOOR) return [];
     return [{ load_kg: e.load_kg, reps: e.reps, rpe: e.rpe }];
   });
-  return aggregateE1rmWeighted(reliable, exercise, bodyweightKg);
+  return aggregateE1rmWeighted(sets, exercise, bodyweightKg);
 }
 
 /**
- * Est-ce que la dernière série cochée de cet exo était non fiable ? Sert à
- * afficher un message correctif dans le bandeau de calibration.
+ * La dernière série cochée était-elle « trop facile » (réserve 4+, RPE ≤ plancher) ?
+ * Sert à afficher un message correctif + une charge suggérée plus lourde dans le
+ * bandeau de calibration (Bloc R — critère 4+, cf. Conv #34).
  */
-export function lastCheckedSetIsUnreliable(entries: ReadonlyArray<SetEntry>): {
+export function lastCheckedSetTooEasy(entries: ReadonlyArray<SetEntry>): {
   reps: number;
   rpe: number;
   load_kg: number;
@@ -186,7 +191,7 @@ export function lastCheckedSetIsUnreliable(entries: ReadonlyArray<SetEntry>): {
     const e = entries[i]!;
     if (!e.done) continue;
     if (e.reps === null || e.rpe === null || e.load_kg === null) return null;
-    if (!measurementIsReliable(e.reps, e.rpe)) {
+    if (e.rpe <= RPE_RESERVE_FLOOR) {
       return { reps: e.reps, rpe: e.rpe, load_kg: e.load_kg };
     }
     return null;
@@ -195,14 +200,11 @@ export function lastCheckedSetIsUnreliable(entries: ReadonlyArray<SetEntry>): {
 }
 
 /**
- * Quand la dernière série est non fiable (trop facile : n_équiv > 15), propose
- * une charge plus adaptée pour la série suivante : on extrapole un plafond à
- * partir de la série non fiable, puis on cible ~80 % de ce plafond pour la
- * prochaine tentative — censé tomber à ~5 reps avec un vrai effort.
- *
- * Retourne `null` si extrapolation impossible.
+ * Quand la dernière série est « trop facile » (réserve 4+), propose une charge
+ * plus lourde pour la suivante : on extrapole un plafond depuis la série puis on
+ * cible ~5 reps à RPE 7,5 (un vrai effort). Retourne `null` si impossible.
  */
-export function suggestNextLoadAfterUnreliable(args: {
+export function suggestNextLoadAfterTooEasy(args: {
   exercise: Exercise;
   bodyweightKg: number;
   reps: number;
@@ -451,9 +453,11 @@ export function computeSessionSummary(
 
   const prs: Array<{ exerciseId: string; deltaKg: number }> = [];
   const plafondChanges: PlafondChange[] = [];
-  for (const [exId, tuple] of Object.entries(summary)) {
-    if (tuple === null) continue;
-    const [oldE, newE] = tuple;
+  for (const [exId, update] of Object.entries(summary)) {
+    // Bloc R — on ignore les MAJ provisoires (séance tout-4+) : pas de plafond
+    // « mesuré » à afficher (l'état vide « aucune série assez intense » suffit).
+    if (update === null || !update.definitive) continue;
+    const { old: oldE, next: newE } = update;
     const wasCalibrated = previouslyCalibratedExoIds.has(exId);
     plafondChanges.push({
       exerciseId: exId,

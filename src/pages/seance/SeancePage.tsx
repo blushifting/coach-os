@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useEngine } from '@/hooks/useEngine';
 import { useCoachOsStore } from '@/store';
-import { E1RMApp, type SessionPlan } from '@/engine/models';
+import { type SessionPlan } from '@/engine/models';
 import {
   buildSessionFeedback,
   computeSessionSummary,
@@ -10,7 +10,7 @@ import {
   type SessionEntries,
   type SessionSummaryData,
 } from '@/lib/session-runner';
-import { calibrationConfidenceFor, exercisesEverDone } from '@/lib/calibration-status';
+import { e1rmConfidenceFor } from '@/lib/calibration-status';
 import { ChevronLeft } from '@/components/icons';
 import { SessionRunner } from './SessionRunner';
 import { SessionSummary } from './SessionSummary';
@@ -69,32 +69,19 @@ export default function SeancePage() {
     (plan: SessionPlan): ReadonlySet<string> => {
       const today = new Date();
       const e1rm = userState?.e1rm ?? {};
-      const everDone = exercisesEverDone(feedbacks);
       const out = new Set<string>();
       for (const item of plan.items) {
-        // Bloc I — confidence unifiée : un exo sans e1RM (`e1RM_app:'non'`) déjà
-        // fait une fois n'est PLUS en calibration (sinon ses reps repartaient à
-        // vide à chaque séance). `e1RM_app` lu sur le catalog (fallback FULL).
-        const e1rmApp =
-          catalog?.has(item.exercise_id) === true
-            ? catalog.get(item.exercise_id).e1RM_app
-            : E1RMApp.FULL;
+        // Bloc R — modèle unifié : confidence pilotée par les snapshots datés
+        // pour TOUS les exos (plus de cas spécial `e1RM_app`).
         if (
-          calibrationConfidenceFor(
-            item.exercise_id,
-            e1rmApp,
-            e1rm,
-            snapshots,
-            everDone,
-            today,
-          ) !== 'measured'
+          e1rmConfidenceFor(item.exercise_id, e1rm, snapshots, today) !== 'measured'
         ) {
           out.add(item.exercise_id);
         }
       }
       return out;
     },
-    [snapshots, feedbacks, catalog, userState?.e1rm],
+    [snapshots, userState?.e1rm],
   );
   const calibrationExoIds = useMemo<ReadonlySet<string>>(() => {
     if (currentSessionPlan === null) return new Set();

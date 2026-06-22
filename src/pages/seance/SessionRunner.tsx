@@ -8,7 +8,7 @@ import { ProgressRing } from '@/components/ProgressRing';
 import { cn } from '@/lib/cn';
 import { triggerHaptic } from '@/lib/haptics';
 import type { Catalog } from '@/engine/catalog';
-import { ChargeType, E1RMApp, type SessionPlan } from '@/engine/models';
+import { ChargeType, type SessionPlan } from '@/engine/models';
 import { useEngine } from '@/hooks/useEngine';
 import { useCoachOsStore } from '@/store';
 import { useDemoMode, useGymBrand } from '@/store/selectors';
@@ -23,9 +23,8 @@ import {
   type SetEntry,
   updateSetEntry,
 } from '@/lib/session-runner';
-import { calibrationConfidenceFor, exercisesEverDone } from '@/lib/calibration-status';
+import { e1rmConfidenceFor } from '@/lib/calibration-status';
 import { bootstrapE1rmIfMissing } from '@/engine/engine';
-import { measurementIsReliable } from '@/engine/prescription';
 import { ChargeBadge } from '@/pages/catalogue/ChargeBadge';
 import { AddExerciseSheet } from './AddExerciseSheet';
 import { CalibrationBanner } from './CalibrationBanner';
@@ -34,8 +33,10 @@ import { SetInput } from './SetInput';
 
 /**
  * Une série est "comptable pour live e1rm" si elle peut être incluse dans le
- * calcul `computeLiveE1rmFromEntries` (= recalibrage intra-séance). Mêmes
- * conditions : done + reps>0 + load_kg + rpe + n_equiv ≤ 15 (fiable Epley).
+ * calcul `computeLiveE1rmFromEntries` (= recalibrage intra-séance). Bloc R —
+ * plus de filtre de fiabilité : toute série cochée valide (done + reps>0 +
+ * load_kg + rpe) compte, y compris une série lourde faite en réserve (4+),
+ * pour que le recalibrage propage la charge (fix du gel de calibration).
  */
 function isCountableForLiveE1rm(s: SetEntry | undefined): boolean {
   if (!s) return false;
@@ -43,7 +44,7 @@ function isCountableForLiveE1rm(s: SetEntry | undefined): boolean {
   if (s.reps === null || s.reps <= 0) return false;
   if (s.load_kg === null) return false;
   if (s.rpe === null) return false;
-  return measurementIsReliable(s.reps, s.rpe);
+  return true;
 }
 
 interface SessionRunnerProps {
@@ -73,7 +74,6 @@ export function SessionRunner({
   const demoActive = useDemoMode();
   const brand = useGymBrand();
   const snapshots = useCoachOsStore((s) => s.history.e1rmSnapshots);
-  const feedbacks = useCoachOsStore((s) => s.history.feedbacks);
   const [detail, setDetail] = useState<{ exerciseId: string; itemIndex: number } | null>(null);
   const [confirmFinish, setConfirmFinish] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
@@ -119,28 +119,19 @@ export function SessionRunner({
   const confidenceByExo = useMemo(() => {
     const today = new Date();
     const e1rm = userState?.e1rm ?? {};
-    const everDone = exercisesEverDone(feedbacks);
-    const out: Record<string, ReturnType<typeof calibrationConfidenceFor>> = {};
+    const out: Record<string, ReturnType<typeof e1rmConfidenceFor>> = {};
     for (const item of plan.items) {
-      // Bloc I — les exos sans e1RM (`e1RM_app:'non'`) sont calibrés dès qu'ils
-      // ont été faits une fois (via l'historique), au lieu de rester en
-      // calibration perpétuelle. `e1RM_app` lu sur le catalog (fallback FULL si
-      // exo inconnu → délègue à la confidence par snapshots, comportement legacy).
-      const e1rmApp =
-        catalog?.has(item.exercise_id) === true
-          ? catalog.get(item.exercise_id).e1RM_app
-          : E1RMApp.FULL;
-      out[item.exercise_id] = calibrationConfidenceFor(
+      // Bloc R — modèle unifié : confidence pilotée par les snapshots datés pour
+      // TOUS les exos (plus de cas spécial `e1RM_app`).
+      out[item.exercise_id] = e1rmConfidenceFor(
         item.exercise_id,
-        e1rmApp,
         e1rm,
         snapshots,
-        everDone,
         today,
       );
     }
     return out;
-  }, [plan.items, userState?.e1rm, snapshots, feedbacks, catalog]);
+  }, [plan.items, userState?.e1rm, snapshots]);
   const bodyweight = userState?.profile.bodyweight_kg ?? 75;
 
   // Conv #15 vague 2/3 — snapshot des e1RM au mount du runner (figé pour

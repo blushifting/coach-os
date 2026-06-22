@@ -25,7 +25,6 @@ import type {
 } from './models';
 import {
   ChargeType,
-  E1RMApp,
   ExType,
   MUSCLES,
   MuscleStatus,
@@ -40,7 +39,7 @@ import {
   effectiveLoadForE1rm,
   targetRpe,
 } from './prescription';
-import { maybeProgressReps, updateE1rmForExercise } from './feedback';
+import { updateE1rmForExercise, type E1rmUpdate } from './feedback';
 import {
   advanceWeek,
   aggregateForceIndex,
@@ -122,7 +121,6 @@ export function calibrateInitialE1rm(
   const bw = state.profile.bodyweight_kg;
   for (const fb of testResults) {
     const ex = catalog.get(fb.exercise_id);
-    if (ex.e1RM_app === E1RMApp.NON) continue;
     const totalLoad = effectiveLoadForE1rm(fb.load_kg, ex, bw);
     const e1rmO = e1rmObserved(totalLoad, fb.reps_done, fb.rpe_perceived);
     (setE1rms[fb.exercise_id] ??= []).push(e1rmO);
@@ -161,6 +159,17 @@ const BOOTSTRAP_PCT: Record<string, number> = {
  */
 const BOOTSTRAP_DUMBBELL_FACTOR = 0.5;
 
+/**
+ * Bloc R — Facteur d'ajustement bootstrap pour les ISOLATIONS.
+ *
+ * `BOOTSTRAP_PCT` est calé sur la force d'un muscle dans son mouvement
+ * principal (polyarticulaire), pas sur une isolation : `deltos_lateraux 0,4`
+ * × 75 kg = 30 kg d'« e1RM » d'élévation latérale = aberrant. On divise donc
+ * par 2 pour les exos d'isolation (cumulable avec le facteur DUMBBELL). La
+ * recalibration intra-séance corrige le reste en 1-2 séries.
+ */
+const BOOTSTRAP_ISOLATION_FACTOR = 0.5;
+
 export function bootstrapE1rmIfMissing(state: UserState, exercise: Exercise): number {
   if (exercise.id in state.e1rm) return state.e1rm[exercise.id]!;
   const bw = state.profile.bodyweight_kg;
@@ -171,10 +180,13 @@ export function bootstrapE1rmIfMissing(state: UserState, exercise: Exercise): nu
   } else {
     pct = 0.5;
   }
-  const raw = Math.max(20, bw * pct);
-  const factor =
-    exercise.charge === ChargeType.DUMBBELL ? BOOTSTRAP_DUMBBELL_FACTOR : 1;
-  return raw * factor;
+  // Bloc R — plus de plancher : `Math.max(20, …)` forçait ≥ 20 kg d'e1RM sur
+  // tout (pour passer dessous il faudrait peser comme un enfant) → absurde sur
+  // les petites isolations. On garde juste `bw × pct`, modulé par les facteurs.
+  let load = bw * pct;
+  if (exercise.charge === ChargeType.DUMBBELL) load *= BOOTSTRAP_DUMBBELL_FACTOR;
+  if (exercise.type === ExType.ISOLATION) load *= BOOTSTRAP_ISOLATION_FACTOR;
+  return load;
 }
 
 // =============================================================================
@@ -575,7 +587,7 @@ export function generateSessionLegacy(
 // 5. Enregistrement du feedback d'une séance
 // =============================================================================
 
-export type RecordFeedbackResult = Record<string, readonly [number, number] | null>;
+export type RecordFeedbackResult = Record<string, E1rmUpdate | null>;
 
 export interface RecordFeedbackOptions {
   /**
@@ -652,9 +664,6 @@ export function recordFeedback(
       skipEma,
       prescribed: prescribedByExo.get(exId),
     });
-    if (ex.e1RM_app === E1RMApp.PARTIAL || ex.e1RM_app === E1RMApp.NON) {
-      maybeProgressReps(state, ex, fbs);
-    }
   }
 
   if (options.plan) {

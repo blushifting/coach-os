@@ -56,6 +56,7 @@ import {
   txCancelSession,
   txSkipSession,
   txCommitManualE1rm,
+  txResetE1rm,
   txCommitSessionFeedback,
   txEndOfCycle,
   txEndOfWeek,
@@ -1027,6 +1028,21 @@ export async function setManualE1rm(args: SetManualE1rmArgs): Promise<UserState>
   return next;
 }
 
+/**
+ * Bloc R — Réinitialise le plafond d'un exo : efface `state.e1rm[exo]` + tous
+ * ses snapshots → l'exo repart en calibration (bootstrap reseed à la prochaine
+ * séance), comme jamais fait. Déclenché depuis la fiche catalogue, et réutilisé
+ * au changement d'objectif inter-cycle (cf. `endOfCycle`).
+ */
+export async function resetE1rm(exerciseId: string): Promise<UserState> {
+  const next = requireUserState();
+  delete next.e1rm[exerciseId];
+  await txResetE1rm({ state: next, exerciseId });
+  useCoachOsStore.setState({ userState: next });
+  await refreshHistory();
+  return next;
+}
+
 // =============================================================================
 // Enregistrement d'un feedback
 // =============================================================================
@@ -1053,12 +1069,21 @@ export async function recordFeedbackAndCommit(
     plan,
     calibratedExoIds,
   });
+  // Bloc R — ne snapshote (→ confidence 'measured') que les MAJ DÉFINITIVES :
+  // une séance tout-4+ remonte l'e1RM (provisoire) mais ne marque pas l'exo
+  // comme calibré (sinon le bandeau de calibration disparaîtrait à tort).
+  const definitiveExoIds = new Set(
+    Object.entries(summary)
+      .filter(([, u]) => u !== null && u.definitive)
+      .map(([id]) => id),
+  );
   const sessionId = useCoachOsStore.getState().currentSessionId;
   await txCommitSessionFeedback({
     feedback,
     state: next,
     sessionId,
     anchorStartDate: isFirstFeedbackOfCycle,
+    definitiveExoIds,
   });
   useCoachOsStore.setState({
     userState: next,
@@ -1302,6 +1327,41 @@ export async function endOfCycle(args: EndOfCycleArgs = {}) {
     }
     next.muscle_goals = goals;
   }
+
+  // Bloc R (A2) — un muscle qui change d'objectif change les reps cibles de ses
+  // exos → leur plafond "faux mais cohérent" (biaisé par les reps) devient
+  // incohérent. Décision Azur : on remet ces exos à zéro (bootstrap, comme
+  // jamais faits) plutôt que de laisser fuiter l'info entre deux cycles de modes
+  // différents. La courbe de force de l'exo repart à zéro (assumé).
+  const resetExoIds: string[] = [];
+  if (args.newMuscleGoals) {
+    const changedMuscles = new Set<string>();
+    for (const m of new Set([
+      ...Object.keys(before.muscle_goals),
+      ...Object.keys(next.muscle_goals),
+    ])) {
+      if (before.muscle_goals[m]?.objective !== next.muscle_goals[m]?.objective) {
+        changedMuscles.add(m);
+      }
+    }
+    if (changedMuscles.size > 0) {
+      for (const exId of Object.keys(next.e1rm)) {
+        let ex;
+        try {
+          ex = catalog.get(exId);
+        } catch {
+          continue;
+        }
+        const primaryChanged = Object.entries(ex.muscles).some(
+          ([m, coef]) => coef >= 1.0 && changedMuscles.has(m),
+        );
+        if (primaryChanged) {
+          delete next.e1rm[exId];
+          resetExoIds.push(exId);
+        }
+      }
+    }
+  }
   if (action === SuggestedAction.CHANGER_PROGRAMME) {
     next.active_guided_program_id = args.nextProgrammeId ?? null;
   }
@@ -1346,6 +1406,7 @@ export async function endOfCycle(args: EndOfCycleArgs = {}) {
     review,
     closedCycleIndex,
     nextProgrammeId: next.active_guided_program_id,
+    resetSnapshotExoIds: resetExoIds,
   });
   await refreshHistory();
   useCoachOsStore.setState({
@@ -1382,6 +1443,7 @@ export interface EngineApi {
   shouldSuggestFavorite: typeof shouldSuggestFavorite;
   applyVariantReplacements: typeof applyVariantReplacements;
   setManualE1rm: typeof setManualE1rm;
+  resetE1rm: typeof resetE1rm;
   generateAndStoreSession: typeof generateAndStoreSession;
   planSessionForDay: typeof planSessionForDay;
   loadPlannedSessionForRunner: typeof loadPlannedSessionForRunner;
@@ -1430,6 +1492,7 @@ export function useEngine(): EngineApi {
       shouldSuggestFavorite,
       applyVariantReplacements,
       setManualE1rm,
+      resetE1rm,
       generateAndStoreSession,
       planSessionForDay,
       loadPlannedSessionForRunner,
