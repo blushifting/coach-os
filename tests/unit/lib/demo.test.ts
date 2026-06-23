@@ -63,7 +63,7 @@ describe('enterDemoMode / exitDemoMode', () => {
       sessions: [],
       feedbacks: [],
       e1rmSnapshots: [],
-      cycles: [{ cycle_index: 1, start_date: '2026-01-01', end_date: null, programme_id: null, review: null }],
+      cycles: [{ cycle_index: 1, start_date: '2026-01-01', end_date: null, review: null }],
     });
 
     const snap = loadAlex();

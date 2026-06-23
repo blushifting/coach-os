@@ -29,8 +29,6 @@ export function suggestedActionLabel(action: SuggestedAction): string {
       return 'Ajuster les objectifs';
     case 'tourner':
       return 'Tourner l\'emphasis';
-    case 'changer':
-      return 'Changer de programme';
     default:
       return 'Continuer pareil';
   }

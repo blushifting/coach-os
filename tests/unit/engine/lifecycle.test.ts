@@ -55,9 +55,9 @@ describe('suggestNextAction', () => {
     expect(suggestNextAction([], [], [], 0.5)).toBe(SuggestedAction.AJUSTER_OBJECTIFS);
   });
 
-  it('3 plateaux → CHANGER_PROGRAMME', () => {
+  it('3 plateaux → AJUSTER (programmes guidés supprimés, Conv #44)', () => {
     expect(suggestNextAction([], ['pec', 'dos', 'quad'], [], 0.9)).toBe(
-      SuggestedAction.CHANGER_PROGRAMME,
+      SuggestedAction.AJUSTER_OBJECTIFS,
     );
   });
 

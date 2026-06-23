@@ -53,7 +53,7 @@ interface CycleCardProps {
 }
 
 function CycleCard({ item, catalog }: CycleCardProps) {
-  const title = item.programName ?? `Cycle ${item.cycleIndex}`;
+  const title = `Cycle ${item.cycleIndex}`;
   return (
     <Card
       data-testid={`cycle-card-${item.cycleIndex}`}

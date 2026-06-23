@@ -20,7 +20,6 @@ import { Catalog } from '@/engine/catalog';
 import type { CycleRow, FeedbackRow } from '@/db/schema';
 import type {
   Exercise,
-  GuidedProgram,
   CycleReview,
   SessionFeedback,
   UserState,
@@ -32,7 +31,6 @@ import {
   MuscleObjective,
   MuscleStatus,
   Pattern,
-  ProgressionRule,
   Sex,
   SuggestedAction,
   exerciseFromDict,
@@ -116,7 +114,6 @@ function makeState(overrides: Partial<UserState> = {}): UserState {
       },
     },
     current_cycle_plan: null,
-    active_guided_program_id: null,
     recovery_mode: false,
     recovery_weeks_remaining: 0,
     equipment_overrides: {},
@@ -161,10 +158,9 @@ function makeCycleRow(
   cycleIndex: number,
   startDate: string,
   endDate: string | null,
-  programmeId: string | null,
   review: CycleReview | null,
 ): CycleRow {
-  return { cycle_index: cycleIndex, start_date: startDate, end_date: endDate, programme_id: programmeId, review };
+  return { cycle_index: cycleIndex, start_date: startDate, end_date: endDate, review };
 }
 
 function makeReview(input: {
@@ -365,33 +361,17 @@ describe('computeVolumeHistory', () => {
 // =============================================================================
 
 describe('buildCycleHistory', () => {
-  const fakeProgram = {
-    id: 'ss',
-    name: 'Starting Strength',
-    author: '',
-    source: '',
-    sessions_per_week: 3,
-    public_cible: [],
-    objectifs_principaux: [],
-    cycle_length_weeks: 4,
-    days: [],
-    progression_rule: ProgressionRule.ISRAETEL_VOLUME,
-    notes: '',
-  } as unknown as GuidedProgram;
-
   it('ignore les cycles sans review', () => {
     const items = buildCycleHistory(
       [
-        makeCycleRow(1, '2026-04-01', '2026-05-01', 'ss', null),
+        makeCycleRow(1, '2026-04-01', '2026-05-01', null),
         makeCycleRow(
           2,
           '2026-05-02',
           '2026-06-01',
-          'ss',
           makeReview({ cycle_index: 2, plafonds: { bp: 5 }, volume_total_kg: 10000 }),
         ),
       ],
-      [fakeProgram],
     );
     expect(items).toHaveLength(1);
     expect(items[0]!.cycleIndex).toBe(2);
@@ -404,45 +384,17 @@ describe('buildCycleHistory', () => {
           1,
           '2026-03-01',
           '2026-04-01',
-          'ss',
           makeReview({ cycle_index: 1, plafonds: { bp: 3 }, volume_total_kg: 8000 }),
         ),
         makeCycleRow(
           2,
           '2026-04-02',
           '2026-05-01',
-          'ss',
           makeReview({ cycle_index: 2, plafonds: { bp: 5 }, volume_total_kg: 11000 }),
         ),
       ],
-      [fakeProgram],
     );
     expect(items.map((i) => i.cycleIndex)).toEqual([2, 1]);
-  });
-
-  it('résout le nom du programme depuis programme_id', () => {
-    const items = buildCycleHistory(
-      [
-        makeCycleRow(
-          1,
-          '2026-03-01',
-          '2026-04-01',
-          'ss',
-          makeReview({ cycle_index: 1, plafonds: {}, volume_total_kg: 0 }),
-        ),
-        makeCycleRow(
-          2,
-          '2026-04-02',
-          '2026-05-01',
-          'inconnu',
-          makeReview({ cycle_index: 2, plafonds: {}, volume_total_kg: 0 }),
-        ),
-      ],
-      [fakeProgram],
-    );
-    const byIdx = new Map(items.map((i) => [i.cycleIndex, i]));
-    expect(byIdx.get(1)?.programName).toBe('Starting Strength');
-    expect(byIdx.get(2)?.programName).toBeNull();
   });
 
   it('classe et tronque les plafonds (top 3 décroissants)', () => {
@@ -452,7 +404,6 @@ describe('buildCycleHistory', () => {
           1,
           '2026-03-01',
           '2026-04-01',
-          'ss',
           makeReview({
             cycle_index: 1,
             plafonds: { a: 3, b: 7, c: 1, d: 12, e: 5 },
@@ -460,7 +411,6 @@ describe('buildCycleHistory', () => {
           }),
         ),
       ],
-      [fakeProgram],
     );
     expect(items[0]!.plafondsTop.map(([, k]) => k)).toEqual([12, 7, 5]);
   });
@@ -472,18 +422,15 @@ describe('buildCycleHistory', () => {
           1,
           '2026-03-01',
           '2026-04-01',
-          'ss',
           makeReview({ cycle_index: 1, plafonds: { bp: 5 }, volume_total_kg: 8000 }),
         ),
         makeCycleRow(
           2,
           '2026-04-02',
           '2026-05-01',
-          'ss',
           makeReview({ cycle_index: 2, plafonds: { bp: 8 }, volume_total_kg: 11000 }),
         ),
       ],
-      [fakeProgram],
     );
     const latest = items[0]!;
     expect(latest.deltaVolumeKg).toBe(3000);

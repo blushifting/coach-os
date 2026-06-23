@@ -117,8 +117,6 @@ describe('e2e — persistance complète (critère de fin Conv #3)', () => {
     expect(restored.userState?.history.length).toBe(historyLenBefore);
     expect(restored.userState?.e1rm).toEqual(e1rmBefore);
     expect(restored.userState?.muscle_goals['pectoraux']?.priority_rank).toBe(1);
-    // Bloc O — un éventuel id guidé persisté est neutralisé au deserialize.
-    expect(restored.userState?.active_guided_program_id).toBeNull();
 
     // Tables dérivées rechargées
     expect(restored.history.sessions).toHaveLength(sessionsCountBefore);

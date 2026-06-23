@@ -17,9 +17,8 @@ import { pickReviewToDisplay, suggestedActionLabel } from './selectors';
  * Page Bilan de cycle — Conv #5a.
  *
  * Affichage lecture seule de `CycleReview` (adhérence / volume / PR /
- * plafonds / muscles). Les 3 boutons d'action (Continuer / Ajuster /
- * Changer) sont des stubs : le câblage `endOfCycle({nextProgrammeId})`
- * et la navigation associée arrivent en Conv #5b ou #6c.
+ * plafonds / muscles), suivi de deux actions : « Continuer pareil »
+ * (`endOfCycle` direct) et « Ajuster les objectifs » (onboarding partiel).
  *
  * Source : `recherche/08_ux_decisions.md §5 Fin de programme / fin de cycle`.
  */
@@ -286,11 +285,10 @@ function ReviewActions({ review }: { review: CycleReview }) {
   }
 
   function startPartialRestart() {
-    // Conv #18 — "Ajuster les objectifs" et "Changer de programme" passent
-    // tous deux par le même onboarding partiel (Step2→5) que celui lancé
-    // depuis Profil. À la finalisation, l'onboarding appelle endOfCycle
-    // avec l'action déduite (AJUSTER_OBJECTIFS si seul les goals changent,
-    // CHANGER_PROGRAMME si le programmeId change).
+    // Conv #18 — "Ajuster les objectifs" passe par le même onboarding partiel
+    // (Step2→5) que celui lancé depuis Profil. À la finalisation, l'onboarding
+    // appelle endOfCycle avec l'action AJUSTER_OBJECTIFS (+ le nouveau build_mode
+    // si l'user a basculé sur-mesure ↔ programme libre).
     navigate('/onboarding?restart=1');
   }
 
@@ -299,7 +297,7 @@ function ReviewActions({ review }: { review: CycleReview }) {
       <h2 className="text-sm font-semibold text-white">Et maintenant ?</h2>
       <p className="text-xs text-anthracite-300">Kotsh te suggère : {suggested}.</p>
       <div className="mt-2 flex flex-col gap-2">
-        {/* Conv #15 vague 3 — en mode démo, les 3 boutons sont verrouillés :
+        {/* Conv #15 vague 3 — en mode démo, les boutons sont verrouillés :
             sinon l'utilisateur peut accidentellement valider le bilan d'Alex
             (= passer au cycle suivant dans le snapshot démo). */}
         <Button
@@ -319,15 +317,6 @@ function ReviewActions({ review }: { review: CycleReview }) {
           data-testid="action-ajuster"
         >
           Ajuster les objectifs
-        </Button>
-        <Button
-          variant="secondary"
-          fullWidth
-          disabled={pending || demoActive}
-          onClick={startPartialRestart}
-          data-testid="action-changer"
-        >
-          Changer de programme
         </Button>
       </div>
       {error !== null && (

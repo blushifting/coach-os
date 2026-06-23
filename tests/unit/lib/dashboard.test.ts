@@ -67,7 +67,6 @@ function makeState(overrides: Partial<UserState> = {}): UserState {
     last_used_for_muscle: {},
     muscle_goals: {},
     current_cycle_plan: null,
-    active_guided_program_id: null,
     recovery_mode: false,
     recovery_weeks_remaining: 0,
     equipment_overrides: {},
@@ -324,7 +323,7 @@ describe('nextCycleReviewDate', () => {
   it('start_date + 5 sem - 1j', () => {
     const state = makeState({ cycle_index: 1 });
     const cycles: CycleRow[] = [
-      { cycle_index: 1, start_date: '2026-05-04', end_date: null, programme_id: null, review: null },
+      { cycle_index: 1, start_date: '2026-05-04', end_date: null, review: null },
     ];
     // 2026-05-04 lundi + 35j - 1 = 2026-06-07 (dim)
     expect(nextCycleReviewDate(state, cycles)).toBe('2026-06-07');
@@ -333,7 +332,7 @@ describe('nextCycleReviewDate', () => {
 
 describe('computeCycleTimeProgress', () => {
   const cycles: CycleRow[] = [
-    { cycle_index: 1, start_date: '2026-05-04', end_date: null, programme_id: null, review: null },
+    { cycle_index: 1, start_date: '2026-05-04', end_date: null, review: null },
   ];
 
   it('null si pas de cycle correspondant', () => {
@@ -415,7 +414,7 @@ describe('buildCalendarMatrix', () => {
     const state = makeState({ cycle_index: 1 });
     const cycles: CycleRow[] = [
       // 2026-05-13 = mercredi → 1re case = mercredi (anchor)
-      { cycle_index: 1, start_date: '2026-05-13', end_date: null, programme_id: null, review: null },
+      { cycle_index: 1, start_date: '2026-05-13', end_date: null, review: null },
     ];
     const m = buildCalendarMatrix(state, cycles, [], [], parseDateKey('2026-05-13'));
     expect(m).not.toBeNull();
@@ -433,7 +432,7 @@ describe('buildCalendarMatrix', () => {
   it('statut completed si feedback à la date', () => {
     const state = makeState({ cycle_index: 1 });
     const cycles: CycleRow[] = [
-      { cycle_index: 1, start_date: '2026-05-11', end_date: null, programme_id: null, review: null },
+      { cycle_index: 1, start_date: '2026-05-11', end_date: null, review: null },
     ];
     const sessions = [makeSession('2026-05-12', 'completed', 'Pousser')];
     const fbs = [makeFeedback('2026-05-12', 1, 1)];
@@ -447,7 +446,7 @@ describe('buildCalendarMatrix', () => {
   it('statut planned si session future sans feedback', () => {
     const state = makeState({ cycle_index: 1 });
     const cycles: CycleRow[] = [
-      { cycle_index: 1, start_date: '2026-05-11', end_date: null, programme_id: null, review: null },
+      { cycle_index: 1, start_date: '2026-05-11', end_date: null, review: null },
     ];
     const sessions = [makeSession('2026-05-15', 'planned', 'Tirer')];
     const m = buildCalendarMatrix(state, cycles, sessions, [], parseDateKey('2026-05-13'));
@@ -459,7 +458,7 @@ describe('buildCalendarMatrix', () => {
   it('statut rest-past pour un jour passé sans séance', () => {
     const state = makeState({ cycle_index: 1 });
     const cycles: CycleRow[] = [
-      { cycle_index: 1, start_date: '2026-05-11', end_date: null, programme_id: null, review: null },
+      { cycle_index: 1, start_date: '2026-05-11', end_date: null, review: null },
     ];
     const m = buildCalendarMatrix(state, cycles, [], [], parseDateKey('2026-05-13'));
     expect(m!.weeks[0]![0]!.status).toBe('rest-past'); // lundi 11, passé
@@ -468,7 +467,7 @@ describe('buildCalendarMatrix', () => {
   it('statut free-future pour un jour à venir sans séance', () => {
     const state = makeState({ cycle_index: 1 });
     const cycles: CycleRow[] = [
-      { cycle_index: 1, start_date: '2026-05-11', end_date: null, programme_id: null, review: null },
+      { cycle_index: 1, start_date: '2026-05-11', end_date: null, review: null },
     ];
     const m = buildCalendarMatrix(state, cycles, [], [], parseDateKey('2026-05-13'));
     expect(m!.weeks[0]![4]!.status).toBe('free-future'); // vendredi
@@ -477,7 +476,7 @@ describe('buildCalendarMatrix', () => {
   it('marque isDeload sur les 7 cases de la semaine 5', () => {
     const state = makeState({ cycle_index: 1 });
     const cycles: CycleRow[] = [
-      { cycle_index: 1, start_date: '2026-05-11', end_date: null, programme_id: null, review: null },
+      { cycle_index: 1, start_date: '2026-05-11', end_date: null, review: null },
     ];
     const m = buildCalendarMatrix(state, cycles, [], [], parseDateKey('2026-05-13'));
     expect(m!.weeks[4]!.every((c) => c.isDeload)).toBe(true);
@@ -487,7 +486,7 @@ describe('buildCalendarMatrix', () => {
   it('marque isToday sur la bonne case', () => {
     const state = makeState({ cycle_index: 1 });
     const cycles: CycleRow[] = [
-      { cycle_index: 1, start_date: '2026-05-11', end_date: null, programme_id: null, review: null },
+      { cycle_index: 1, start_date: '2026-05-11', end_date: null, review: null },
     ];
     const m = buildCalendarMatrix(state, cycles, [], [], parseDateKey('2026-05-13'));
     const todays = m!.weeks.flat().filter((c) => c.isToday);
@@ -500,7 +499,7 @@ describe('buildCalendarMatrix', () => {
   it('séance planned dans le passé sans feedback → status=rest-past', () => {
     const state = makeState({ cycle_index: 1 });
     const cycles: CycleRow[] = [
-      { cycle_index: 1, start_date: '2026-05-11', end_date: null, programme_id: null, review: null },
+      { cycle_index: 1, start_date: '2026-05-11', end_date: null, review: null },
     ];
     const sessions = [makeSession('2026-05-12', 'planned', 'Tirer')];
     const m = buildCalendarMatrix(state, cycles, sessions, [], parseDateKey('2026-05-13'));

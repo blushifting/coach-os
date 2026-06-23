@@ -2,8 +2,8 @@
  * Types du domaine Coach OS.
  *
  * Tous les types métier sont ici. Les modules suivants (prescription, feedback,
- * volume, selection, engine, balance, split, cycle_planner, lifecycle,
- * guided_programs) consomment ces structures sans en définir.
+ * volume, selection, engine, balance, split, cycle_planner, lifecycle)
+ * consomment ces structures sans en définir.
  */
 
 // =============================================================================
@@ -146,7 +146,6 @@ export enum SuggestedAction {
   CONTINUER_PAREIL = 'continuer',
   AJUSTER_OBJECTIFS = 'ajuster',
   TOURNER_EMPHASIS = 'tourner',
-  CHANGER_PROGRAMME = 'changer',
 }
 
 export enum Pattern {
@@ -650,84 +649,6 @@ export function makeSkeletonTemplate(input: SkeletonTemplateInput): SkeletonTemp
 }
 
 // =============================================================================
-// Programmes guidés (cf. 09 §2.4)
-// =============================================================================
-
-/**
- * Slot d'exercice dans un programme guidé.
- * `fallback_subst` : sous-ensemble strict du `groupe_substitution` du catalogue,
- *                    validé par les concepteurs du programme.
- * `is_replaceable` : false = exo structurel, programme non-adaptable si indispo.
- */
-export interface CanonicalExercise {
-  readonly role: string;
-  readonly preferred_id: string;
-  readonly fallback_subst: readonly string[];
-  readonly sets: number;
-  readonly reps_scheme: string;
-  readonly intensity_scheme: string;
-  readonly is_replaceable: boolean;
-}
-
-export interface CanonicalExerciseInput {
-  role: string;
-  preferred_id: string;
-  fallback_subst: readonly string[] | string[];
-  sets: number;
-  reps_scheme: string;
-  intensity_scheme: string;
-  is_replaceable?: boolean;
-}
-
-export function makeCanonicalExercise(input: CanonicalExerciseInput): CanonicalExercise {
-  return Object.freeze({
-    role: input.role,
-    preferred_id: input.preferred_id,
-    fallback_subst: Object.freeze([...input.fallback_subst]),
-    sets: input.sets,
-    reps_scheme: input.reps_scheme,
-    intensity_scheme: input.intensity_scheme,
-    is_replaceable: input.is_replaceable ?? true,
-  });
-}
-
-export interface GuidedDayTemplate {
-  readonly label: string;
-  readonly canonical_exercises: readonly CanonicalExercise[];
-}
-
-/** Programme guidé prefab (Starting Strength, 5/3/1, PPL Nippard, etc.). */
-export interface GuidedProgram {
-  readonly id: string;
-  readonly name: string;
-  readonly author: string;
-  readonly source: string;
-  readonly sessions_per_week: number;
-  readonly public_cible: readonly Level[];
-  readonly objectifs_principaux: readonly MuscleObjective[];
-  readonly cycle_length_weeks: number;
-  readonly days: readonly GuidedDayTemplate[];
-  readonly progression_rule: ProgressionRule;
-  readonly notes: string;
-  /**
-   * Conv #23 — pitch en une ligne « pour qui / pour quoi », style coach
-   * kiné. Affiché sous le nom du programme dans le sélecteur. Optionnel
-   * pour rétrocompat.
-   */
-  readonly short_pitch?: string;
-  /**
-   * Conv #23 — raisons concrètes de choisir ce programme. Bullets de
-   * 1 ligne, vocabulaire verrouillé (Plafond, Hypertrophie, Cycle…).
-   */
-  readonly pour?: readonly string[];
-  /**
-   * Conv #23 — raisons concrètes d'éviter ce programme (mauvais fit).
-   * Mêmes contraintes de rédaction que `pour`.
-   */
-  readonly contre?: readonly string[];
-}
-
-// =============================================================================
 // Bilan de fin de cycle (cf. 09 §2.5)
 // =============================================================================
 
@@ -834,7 +755,6 @@ export interface UserState {
   // --- algo de programmation (cf. 09 §2.6) ---
   muscle_goals: Record<string, MuscleGoal>;
   current_cycle_plan: WeeklyTemplate | null;
-  active_guided_program_id: string | null;
   /**
    * Bloc O — mode de construction du programme courant :
    *  - `'auto'`   : généré par le moteur (sur-mesure).
@@ -911,7 +831,6 @@ export function makeUserState(profile: Profile): UserState {
     last_used_for_muscle: {},
     muscle_goals: {},
     current_cycle_plan: null,
-    active_guided_program_id: null,
     build_mode: 'auto',
     recovery_mode: false,
     recovery_weeks_remaining: 0,

@@ -234,7 +234,9 @@ export function suggestNextAction(
   adherence: number,
 ): SuggestedAction {
   if (adherence < 0.6) return SuggestedAction.AJUSTER_OBJECTIFS;
-  if (musclesPlateau.length >= 3) return SuggestedAction.CHANGER_PROGRAMME;
+  // Conv #44 — plateau sur ≥3 muscles : on suggère d'ajuster les objectifs/volume
+  // (l'ancienne action « changer de programme » a disparu avec les programmes guidés).
+  if (musclesPlateau.length >= 3) return SuggestedAction.AJUSTER_OBJECTIFS;
   if (musclesProgresses.length >= musclesPlateau.length + 2 && adherence > 0.85) {
     return SuggestedAction.TOURNER_EMPHASIS;
   }
@@ -310,7 +312,7 @@ export function applyUserActionAfterCycle(
   catalog: Catalog,
   action: SuggestedAction,
 ): void {
-  // Conv #39 — voie unique V2 (cf. endOfCycle de useEngine).
+  // Conv #39 — voie unique V3 (cf. endOfCycle de useEngine).
   const regen = () =>
     autoGenerateCyclePlanV3(
       state,
@@ -323,7 +325,7 @@ export function applyUserActionAfterCycle(
     rotateEmphasis(state.muscle_goals);
     state.current_cycle_plan = regen();
   }
-  // AJUSTER_OBJECTIFS et CHANGER_PROGRAMME : interaction UX, regen plan plus tard.
+  // AJUSTER_OBJECTIFS : interaction UX, regen plan plus tard.
 
   state.cycle_index += 1;
   state.current_week_in_cycle = 1;

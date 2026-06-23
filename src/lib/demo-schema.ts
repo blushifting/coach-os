@@ -148,7 +148,6 @@ const serializedUserStateSchema = z.object({
   last_used_for_muscle: z.record(z.string(), z.string()),
   muscle_goals: z.record(z.string(), muscleGoalSchema),
   current_cycle_plan: weeklyTemplateSchema.nullable(),
-  active_guided_program_id: z.string().nullable(),
   recovery_mode: z.boolean(),
   recovery_weeks_remaining: z.number().int(),
   equipment_overrides: z.record(z.string(), equipmentOverrideSchema),
@@ -192,7 +191,6 @@ const cycleRowSchema = z.object({
   cycle_index: z.number().int(),
   start_date: z.string(),
   end_date: z.string().nullable(),
-  programme_id: z.string().nullable(),
   review: cycleReviewSchema.nullable(),
 });
 

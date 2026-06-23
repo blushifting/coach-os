@@ -43,7 +43,7 @@ function syncEquipmentOverridesInTx(state: UserState): Promise<unknown> {
 // Init utilisateur (Onboarding terminé)
 // =============================================================================
 
-export async function txInitUser(state: UserState, programmeId: string | null): Promise<void> {
+export async function txInitUser(state: UserState): Promise<void> {
   const db = getDb();
   await db.transaction(
     'rw',
@@ -55,7 +55,6 @@ export async function txInitUser(state: UserState, programmeId: string | null): 
         cycle_index: state.cycle_index,
         start_date: nowIso().slice(0, 10),
         end_date: null,
-        programme_id: programmeId,
         review: null,
       });
     },
@@ -291,8 +290,6 @@ export interface EndOfCycleArgs {
   review: CycleReview;
   /** cycle_index de celui qui se termine (peut différer de state.cycle_index). */
   closedCycleIndex: number;
-  /** programme du nouveau cycle (null = pas encore choisi). */
-  nextProgrammeId: string | null;
   /**
    * Bloc R (A2) — exos dont le muscle a changé d'objectif au nouveau cycle :
    * on efface leurs snapshots e1RM (le caller a déjà retiré `state.e1rm[id]`)
@@ -303,7 +300,7 @@ export interface EndOfCycleArgs {
 }
 
 export async function txEndOfCycle(args: EndOfCycleArgs): Promise<void> {
-  const { state, review, closedCycleIndex, nextProgrammeId, resetSnapshotExoIds } = args;
+  const { state, review, closedCycleIndex, resetSnapshotExoIds } = args;
   const db = getDb();
   const today = nowIso().slice(0, 10);
   await db.transaction(
@@ -319,7 +316,6 @@ export async function txEndOfCycle(args: EndOfCycleArgs): Promise<void> {
       cycle_index: closedCycleIndex,
       start_date: closed?.start_date ?? today,
       end_date: today,
-      programme_id: closed?.programme_id ?? null,
       review,
     });
     if (state.cycle_index !== closedCycleIndex) {
@@ -329,7 +325,6 @@ export async function txEndOfCycle(args: EndOfCycleArgs): Promise<void> {
           cycle_index: state.cycle_index,
           start_date: today,
           end_date: null,
-          programme_id: nextProgrammeId,
           review: null,
         });
       }

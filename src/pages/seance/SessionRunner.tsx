@@ -165,7 +165,8 @@ export function SessionRunner({
   // workflow réel est : reps+kg → cocher (done=true) → RPE après coche. Si
   // on déclenchait sur done false→true uniquement, on rateait la mesure car
   // `liveE1rm` est null sans rpe. Désormais on déclenche dès qu'une série
-  // passe à "fiable pour e1rm" (done + reps + load + rpe + n_equiv ≤ 15).
+  // passe à "comptable pour e1rm" (done + reps + load + rpe ; cf.
+  // `isCountableForLiveE1rm`, plus de filtre n_equiv depuis Bloc R).
   const handleEntriesChange = useCallback(
     (next: SessionEntries) => {
       if (catalog === null) {

@@ -28,7 +28,7 @@ async function seedDb() {
     max_load_kg: 200,
     pdc_only: null,
   };
-  await txInitUser(state, 'starting_strength');
+  await txInitUser(state);
 
   const plan: SessionPlan = {
     seance_date: '2026-05-10',

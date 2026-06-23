@@ -160,7 +160,6 @@ describe('cycles.repo', () => {
       cycle_index: 1,
       start_date: '2026-05-01',
       end_date: null,
-      programme_id: 'starting_strength',
       review: null,
     });
     await setCycleEnd(1, '2026-06-05');

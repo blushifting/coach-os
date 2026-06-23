@@ -70,7 +70,9 @@ const userStateSchema = z
     last_used_for_muscle: recordOfString,
     muscle_goals: z.record(z.string(), muscleGoalSchema),
     current_cycle_plan: z.union([z.null(), z.object({}).passthrough()]),
-    active_guided_program_id: z.union([z.null(), z.string()]),
+    // Conv #44 — programmes guidés supprimés. Champ toléré (optionnel) pour
+    // accepter les exports antérieurs, mais ignoré à la désérialisation.
+    active_guided_program_id: z.union([z.null(), z.string()]).optional(),
     // Bloc O — optionnel pour rétrocompat exports antérieurs.
     build_mode: z.enum(['auto', 'manual']).optional(),
     recovery_mode: z.boolean(),
@@ -133,7 +135,9 @@ const cycleRowSchema = z.object({
   cycle_index: z.number().int(),
   start_date: z.string(),
   end_date: z.string().nullable(),
-  programme_id: z.string().nullable(),
+  // Conv #44 — programmes guidés supprimés. Champ toléré (optionnel) pour
+  // accepter les exports antérieurs, mais ignoré à l'import.
+  programme_id: z.string().nullable().optional(),
   review: z.union([z.null(), z.object({}).passthrough()]),
 });
 

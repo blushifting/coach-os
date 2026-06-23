@@ -254,7 +254,7 @@ export default function OnboardingPage() {
 
   // Conv #22 — Invalide chosenVariantsPerCell dès que la grille du
   // squelette change (prios, accepted suggestions, sessions, durée,
-  // préférence équipement, programmeId).
+  // préférence équipement).
   const inputsKey = useMemo(
     () =>
       JSON.stringify({
@@ -263,7 +263,6 @@ export default function OnboardingPage() {
         sessions: draft.sessionsPerWeek,
         duration: draft.durationCategory,
         equipPref: draft.equipmentPreference,
-        programme: draft.programmeId,
       }),
     [
       draft.priorities,
@@ -271,7 +270,6 @@ export default function OnboardingPage() {
       draft.sessionsPerWeek,
       draft.durationCategory,
       draft.equipmentPreference,
-      draft.programmeId,
     ],
   );
   const prevInputsKey = useRef(inputsKey);
@@ -378,13 +376,10 @@ export default function OnboardingPage() {
 
       if (isRestart && userState !== null) {
         await updateProfile(profile);
-        const action =
-          draft.buildMode !== (userState.build_mode ?? 'auto')
-            ? SuggestedAction.CHANGER_PROGRAMME
-            : SuggestedAction.AJUSTER_OBJECTIFS;
+        // Le changement éventuel de mode (sur-mesure ↔ programme libre) est porté
+        // par `nextBuildMode` ; l'action reste « ajuster les objectifs ».
         await endOfCycle({
-          action,
-          nextProgrammeId: null,
+          action: SuggestedAction.AJUSTER_OBJECTIFS,
           nextBuildMode: draft.buildMode,
           newMuscleGoals: muscleGoals,
         });
@@ -427,7 +422,6 @@ export default function OnboardingPage() {
         profile,
         muscleGoals,
         applyBalance: false,
-        programmeId: null,
         buildMode: draft.buildMode,
       });
       if (isManual) {

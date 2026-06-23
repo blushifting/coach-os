@@ -29,20 +29,19 @@ describe('transactions.ts — atomicité blob ↔ tables dérivées', () => {
       max_load_kg: 200,
       pdc_only: null,
     };
-    await txInitUser(state, 'starting_strength');
+    await txInitUser(state);
 
     expect(await loadUserState()).not.toBeNull();
     const cycles = await listAllCycles();
     expect(cycles).toHaveLength(1);
     expect(cycles[0]?.cycle_index).toBe(1);
-    expect(cycles[0]?.programme_id).toBe('starting_strength');
     const ov = await loadOverridesAsRecord();
     expect(ov['bench_barbell']?.inc_kg).toBe(1);
   });
 
   it('txSaveSessionPlan insert session + sauve userState dans la même tx', async () => {
     const state = startUser(makeTestProfile(), new Catalog());
-    await txInitUser(state, null);
+    await txInitUser(state);
 
     const plan: SessionPlan = {
       seance_date: '2026-05-10',
@@ -65,7 +64,7 @@ describe('transactions.ts — atomicité blob ↔ tables dérivées', () => {
 
   it('txCommitSessionFeedback insère feedback + snapshots + marque session completed', async () => {
     const state = startUser(makeTestProfile(), new Catalog());
-    await txInitUser(state, null);
+    await txInitUser(state);
 
     const plan: SessionPlan = {
       seance_date: '2026-05-10',
@@ -103,7 +102,7 @@ describe('transactions.ts — atomicité blob ↔ tables dérivées', () => {
 
   it('txCommitSessionFeedback ré-ancre start_date sur la date du feedback si anchorStartDate', async () => {
     const state = startUser(makeTestProfile(), new Catalog());
-    await txInitUser(state, null);
+    await txInitUser(state);
     // start_date placeholder (onboarding) distinct de la 1re séance.
     await getDb().cycles.update(1, { start_date: '2026-05-01' });
 
@@ -123,7 +122,7 @@ describe('transactions.ts — atomicité blob ↔ tables dérivées', () => {
 
   it('txCommitSessionFeedback ne touche pas start_date sans anchorStartDate', async () => {
     const state = startUser(makeTestProfile(), new Catalog());
-    await txInitUser(state, null);
+    await txInitUser(state);
     await getDb().cycles.update(1, { start_date: '2026-05-01' });
 
     const feedback: SessionFeedback = {
@@ -142,7 +141,7 @@ describe('transactions.ts — atomicité blob ↔ tables dérivées', () => {
 
   it('txEndOfWeek met à jour uniquement userState', async () => {
     const state = startUser(makeTestProfile(), new Catalog());
-    await txInitUser(state, null);
+    await txInitUser(state);
     state.current_week_in_cycle = 2;
     await txEndOfWeek(state);
     expect((await loadUserState())?.current_week_in_cycle).toBe(2);
@@ -150,7 +149,7 @@ describe('transactions.ts — atomicité blob ↔ tables dérivées', () => {
 
   it('txEndOfCycle ferme le cycle courant et ouvre le suivant si avancé', async () => {
     const state = startUser(makeTestProfile(), new Catalog());
-    await txInitUser(state, 'starting_strength');
+    await txInitUser(state);
 
     // Simule l'avancement post-endOfCycle (cycle_index passe à 2)
     state.cycle_index = 2;
@@ -172,7 +171,6 @@ describe('transactions.ts — atomicité blob ↔ tables dérivées', () => {
       state,
       review,
       closedCycleIndex: 1,
-      nextProgrammeId: 'greyskull',
     });
 
     const cycles = await listAllCycles();
@@ -180,13 +178,12 @@ describe('transactions.ts — atomicité blob ↔ tables dérivées', () => {
     expect(cycles[0]?.end_date).not.toBeNull();
     expect(cycles[0]?.review).not.toBeNull();
     expect(cycles[1]?.cycle_index).toBe(2);
-    expect(cycles[1]?.programme_id).toBe('greyskull');
     expect((await loadUserState())?.cycle_index).toBe(2);
   });
 
   it('rollback : si une étape échoue dans la transaction, rien n\'est commit', async () => {
     const state = startUser(makeTestProfile(), new Catalog());
-    await txInitUser(state, null);
+    await txInitUser(state);
 
     const db = getDb();
     let threw = false;

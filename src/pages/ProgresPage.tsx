@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { ALL_GUIDED_PROGRAMS } from '@/engine/guided_programs';
 import { cn } from '@/lib/cn';
 import {
   buildCycleHistory,
@@ -72,7 +71,7 @@ export default function ProgresPage() {
         undefined,
         cycleStart,
       ),
-      cycles: buildCycleHistory(history.cycles, ALL_GUIDED_PROGRAMS),
+      cycles: buildCycleHistory(history.cycles),
       force: computeE1rmHistory(history.feedbacks, catalog),
     };
   }, [userState, catalog, history]);

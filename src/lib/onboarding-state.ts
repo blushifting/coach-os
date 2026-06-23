@@ -51,9 +51,7 @@ export interface OnboardingDraft {
   // popin d'équilibre R1-R4). Statut final = SUGGERE / MAINTIEN / rank 99.
   readonly maintenance: ReadonlySet<string>;
 
-  // Étape 3 : choix programme
-  /** `null` = mode custom (pas de programme guidé). */
-  readonly programmeId: string | null;
+  // Étape 3 : mode de construction
   /**
    * Bloc O — mode de construction du programme :
    *  - `'auto'`   : le moteur remplit (sur-mesure).
@@ -148,13 +146,11 @@ export function makeInitialDraft(): OnboardingDraft {
     // Default INTERMEDIAIRE = milieu juste pour les V_min/V_max init.
     level: Level.INTERMEDIAIRE,
     sessionsPerWeek: 3,
-    // Conv #22 — équipement retiré de l'UI. Default = salle complète pour
-    // que `fitGuidedProgram` (mode guidé) trouve tous les exos canoniques.
-    // Le mode custom co-construit n'utilise plus ce filtre.
+    // Conv #22 — équipement retiré de l'UI. Default = salle complète ; le mode
+    // custom co-construit n'utilise plus ce filtre (préférence = simple prefill).
     equipment: new Set<string>(EQUIPMENT_PRESET_FULL_GYM),
     priorities: [],
     maintenance: new Set<string>(),
-    programmeId: null,
     buildMode: 'auto',
     durationCategory: DurationCategory.MEDIUM,
     equipmentPreference: EquipmentPreference.NO_PREFERENCE,
@@ -199,7 +195,6 @@ export function draftFromUserState(state: UserState): OnboardingDraft {
     equipment: new Set(state.profile.available_equip),
     priorities,
     maintenance,
-    programmeId: state.active_guided_program_id,
     buildMode: state.build_mode ?? 'auto',
     durationCategory:
       state.profile.duration_category ?? DurationCategory.MEDIUM,
@@ -267,10 +262,9 @@ export function computeBalanceSuggestions(
 
 /**
  * Dérive l'`Objective` global (champ legacy de `Profile`) depuis le draft.
- * - Si programme guidé : on ne peut pas l'extraire ici (besoin du GuidedProgram).
- *   L'appelant peut surcharger via le paramètre `override`.
- * - Sinon : `MuscleObjective` majoritaire parmi les PRIORITAIRE, mappé.
- *   `MAINTIEN` n'existe pas au niveau global → fallback `HYPERTROPHIE`.
+ * `MuscleObjective` majoritaire parmi les PRIORITAIRE, mappé. `MAINTIEN`
+ * n'existe pas au niveau global → fallback `HYPERTROPHIE`. L'appelant peut
+ * surcharger via le paramètre `override`.
  */
 export function deriveGlobalObjective(
   draft: OnboardingDraft,

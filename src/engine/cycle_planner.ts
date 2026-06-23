@@ -503,10 +503,7 @@ export function autoGenerateCyclePlanV3(
  *  - Un éventuel suffixe lettre existant (`\s+[A-F]$`) est retiré, puis la
  *    lettre globale (position dans le tableau) est apposée.
  *  - Les labels SANS suffixe (« Push », « Focus ») reçoivent aussi leur
- *    lettre — toute séance custom est donc identifiable par sa lettre.
- *  - Cette passe ne s'applique qu'aux plans custom : les programmes guidés
- *    (`fitGuidedProgram`) n'y transitent pas et gardent leurs labels
- *    d'auteur (« Workout A2 », « Press Day »…).
+ *    lettre — toute séance est donc identifiable par sa lettre.
  */
 export function renumberSessionLabels(template: WeeklyTemplate): void {
   const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];

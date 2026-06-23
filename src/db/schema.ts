@@ -65,7 +65,6 @@ export interface SerializedUserState {
     { muscle: string; objective: string; status: string; priority_rank: number }
   >;
   current_cycle_plan: import('@/engine/models').WeeklyTemplate | null;
-  active_guided_program_id: string | null;
   /** Bloc O — mode de construction ('auto'|'manual'). Absent sur anciens blobs (default 'auto'). */
   build_mode?: 'auto' | 'manual';
   recovery_mode: boolean;
@@ -131,7 +130,6 @@ export interface CycleRow {
   cycle_index: number;
   start_date: string;
   end_date: string | null;
-  programme_id: string | null;
   review: CycleReview | null;
 }
 

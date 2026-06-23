@@ -51,6 +51,7 @@
       "triceps_pushdown_rope": 0.0333,
       "leg_press_45": 0.0333
     },
+    "reps_pr": {},
     "volume_min": {
       "pectoraux": 10,
       "dos_largeur": 12,
@@ -2530,7 +2531,6 @@
       ],
       "warnings": []
     },
-    "active_guided_program_id": null,
     "recovery_mode": false,
     "recovery_weeks_remaining": 0,
     "equipment_overrides": {},
@@ -10992,7 +10992,6 @@
         "cycle_index": 1,
         "start_date": "2026-03-23",
         "end_date": "2026-04-26",
-        "programme_id": null,
         "review": {
           "cycle_index": 1,
           "plafonds_progression": {
@@ -11052,7 +11051,6 @@
         "cycle_index": 2,
         "start_date": "2026-04-27",
         "end_date": null,
-        "programme_id": null,
         "review": null
       }
     ]

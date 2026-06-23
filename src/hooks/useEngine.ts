@@ -253,7 +253,6 @@ export interface StartUserArgs {
   profile: Profile;
   muscleGoals?: Record<string, MuscleGoal> | null;
   applyBalance?: boolean;
-  programmeId?: string | null;
   /** Bloc O — 'auto' (moteur) ou 'manual' (grille à la main). Default 'auto'. */
   buildMode?: 'auto' | 'manual';
 }
@@ -264,11 +263,8 @@ export async function startUser(args: StartUserArgs): Promise<UserState> {
     muscleGoals: args.muscleGoals ?? null,
     applyBalance: args.applyBalance ?? true,
   });
-  if (args.programmeId !== undefined && args.programmeId !== null) {
-    newState.active_guided_program_id = args.programmeId;
-  }
   newState.build_mode = args.buildMode ?? 'auto';
-  await txInitUser(newState, args.programmeId ?? null);
+  await txInitUser(newState);
   await refreshHistory();
   useCoachOsStore.setState({ userState: newState });
   return newState;
@@ -278,17 +274,11 @@ export async function startUser(args: StartUserArgs): Promise<UserState> {
 // Génération du WeeklyTemplate Cycle 1 (post-onboarding)
 // =============================================================================
 
-export interface InitialCyclePlanResult {
-  /** `null` si un programme guidé est bloqué par l'équipement. */
-  state: UserState | null;
-  blocking: string[];
-}
-
 /**
  * Génère et persiste le `WeeklyTemplate` Cycle 1 (custom).
  *
- * Bloc O — plus de programmes tout faits : `autoGenerateCyclePlanV3` (path
- * co-construit) ou legacy `generateCyclePlan`. Le mode « à la main » ne passe
+ * Bloc O — plus de programmes tout faits : génération via
+ * `autoGenerateCyclePlanV3` (path co-construit). Le mode « à la main » ne passe
  * pas par ici (plan vide posé directement par OnboardingPage).
  *
  * Les exos sans e1RM connu sont bootstrap heuristiquement à la 1re séance
@@ -297,12 +287,12 @@ export interface InitialCyclePlanResult {
  *
  * Idempotent : ne régénère pas si `state.current_cycle_plan` est déjà posé.
  */
-export async function generateInitialCyclePlan(): Promise<InitialCyclePlanResult> {
+export async function generateInitialCyclePlan(): Promise<void> {
   const catalog = requireCatalog();
   const next = requireUserState();
   if (next.current_cycle_plan !== null) {
     useCoachOsStore.setState({ userState: next });
-    return { state: next, blocking: [] };
+    return;
   }
 
   // Bloc O — plus de programmes guidés : génération custom uniquement.
@@ -319,7 +309,6 @@ export async function generateInitialCyclePlan(): Promise<InitialCyclePlanResult
 
   await txSaveUserStateOnly(next);
   useCoachOsStore.setState({ userState: next });
-  return { state: next, blocking: [] };
 }
 
 /**
@@ -332,18 +321,17 @@ export async function generateInitialCyclePlan(): Promise<InitialCyclePlanResult
  */
 export async function generateInitialCyclePlanFromSkeleton(
   skeleton: SkeletonTemplate,
-): Promise<InitialCyclePlanResult> {
+): Promise<void> {
   const catalog = requireCatalog();
   const next = requireUserState();
   if (next.current_cycle_plan !== null) {
     useCoachOsStore.setState({ userState: next });
-    return { state: next, blocking: [] };
+    return;
   }
   next.current_cycle_plan = generateCyclePlanV3(skeleton, next, catalog);
   next.current_skeleton = skeleton;
   await txSaveUserStateOnly(next);
   useCoachOsStore.setState({ userState: next });
-  return { state: next, blocking: [] };
 }
 
 /**
@@ -1118,11 +1106,6 @@ export interface EndOfCycleArgs {
    */
   action?: SuggestedAction;
   /**
-   * Bloc O — programmes tout faits supprimés : toujours `null` (custom/manuel).
-   * Conservé pour rétro-compat de signature.
-   */
-  nextProgrammeId?: string | null;
-  /**
    * Bloc O — mode de construction du nouveau cycle ('auto'|'manual'). Utilisé
    * par le restart d'onboarding. Si omis, on garde le mode courant.
    */
@@ -1289,14 +1272,13 @@ export async function importDataFromJson(json: string): Promise<void> {
  *      (`engine.endOfCycle`).
  *   2. Applique les changements liés à `args.action` :
  *      - `AJUSTER_OBJECTIFS` : remplace `muscle_goals` (R1-R4 par-dessus).
- *      - `CHANGER_PROGRAMME` : pose `active_guided_program_id`.
  *      - `TOURNER_EMPHASIS` : permute les emphasis sur les priorités.
  *      - `CONTINUER_PAREIL` (défaut) : rien à modifier.
  *   3. Bump `cycle_index += 1`, reset `current_week_in_cycle = 1`,
  *      vide `plateau_counter`.
  *   4. Régénère `current_cycle_plan` :
  *      - « à la main » : reconduit le plan manuel (`carryOverManualPlan`).
- *      - custom : `generateCyclePlan`.
+ *      - custom : `autoGenerateCyclePlanV3`.
  *   5. Persiste (cycle clos archivé avec end_date=today, nouveau cycle créé).
  *
  * Utilisable aussi pour une **fin prématurée** (item Conv #18) : on archive
@@ -1317,9 +1299,8 @@ export async function endOfCycle(args: EndOfCycleArgs = {}) {
   // 2. Applique les changements demandés AVANT régénération du plan.
   // Conv #18 — `newMuscleGoals` est appliqué dès qu'il est fourni, quelle
   // que soit l'action. Cas typique : l'onboarding partiel peut changer
-  // les priorités musculaires ET le programme guidé en un seul flux ;
-  // on déduit l'action principale côté UI mais les deux modifs doivent
-  // tomber dans l'état.
+  // les priorités musculaires ET le mode de construction en un seul flux ;
+  // les deux modifs doivent tomber dans l'état.
   if (args.newMuscleGoals) {
     const goals: Record<string, MuscleGoal> = { ...args.newMuscleGoals };
     for (const sg of applyBalanceRules(goals)) {
@@ -1362,9 +1343,6 @@ export async function endOfCycle(args: EndOfCycleArgs = {}) {
       }
     }
   }
-  if (action === SuggestedAction.CHANGER_PROGRAMME) {
-    next.active_guided_program_id = args.nextProgrammeId ?? null;
-  }
   if (args.nextBuildMode !== undefined) {
     next.build_mode = args.nextBuildMode;
   }
@@ -1392,7 +1370,7 @@ export async function endOfCycle(args: EndOfCycleArgs = {}) {
     );
   } else {
     // Conv #39 — fin de cycle régénérée par la MÊME voie que l'onboarding
-    // (V2). `duration_category` est persisté sur le profil ; fallback MEDIUM.
+    // (V3). `duration_category` est persisté sur le profil ; fallback MEDIUM.
     next.current_cycle_plan = autoGenerateCyclePlanV3(
       next,
       catalog,
@@ -1405,7 +1383,6 @@ export async function endOfCycle(args: EndOfCycleArgs = {}) {
     state: next,
     review,
     closedCycleIndex,
-    nextProgrammeId: next.active_guided_program_id,
     resetSnapshotExoIds: resetExoIds,
   });
   await refreshHistory();

@@ -600,7 +600,6 @@ function serializeUserState(state: UserState): SerializedUserState {
     last_used_for_muscle: { ...state.last_used_for_muscle },
     muscle_goals: { ...state.muscle_goals },
     current_cycle_plan: state.current_cycle_plan,
-    active_guided_program_id: state.active_guided_program_id,
     recovery_mode: state.recovery_mode,
     recovery_weeks_remaining: state.recovery_weeks_remaining,
     equipment_overrides: { ...state.equipment_overrides },
@@ -664,7 +663,7 @@ function main(): void {
   };
 
   const cycles: CycleRow[] = [
-    { cycle_index: 1, start_date: CYCLE_1_START, end_date: null, programme_id: null, review: null },
+    { cycle_index: 1, start_date: CYCLE_1_START, end_date: null, review: null },
   ];
 
   const schedule = buildSchedule();
@@ -689,7 +688,6 @@ function main(): void {
         cycle_index: 2,
         start_date: addDays(CYCLE_1_START, 5 * 7),
         end_date: null,
-        programme_id: null,
         review: null,
       });
       lastCycleProcessed = 2;

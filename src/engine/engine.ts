@@ -289,8 +289,8 @@ export function generateSession(
 ): SessionPlan {
   if (state.current_cycle_plan === null) {
     throw new Error(
-      'state.current_cycle_plan est null — appelle generateCyclePlan ou ' +
-      'fitGuidedProgram avant generateSession.',
+      'state.current_cycle_plan est null — appelle autoGenerateCyclePlanV3 ' +
+      'avant generateSession.',
     );
   }
   const days = state.current_cycle_plan.days;

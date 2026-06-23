@@ -19,7 +19,6 @@ import type { CycleRow, FeedbackRow } from '@/db/schema';
 import type {
   ChargeType,
   CycleReview,
-  GuidedProgram,
   SessionFeedback,
   UserState,
 } from '@/engine/models';
@@ -288,9 +287,6 @@ export function computeVolumeHistory(
 
 export interface CycleHistoryItem {
   readonly cycleIndex: number;
-  /** Nom du programme suivi pendant ce cycle, ou null si inconnu. */
-  readonly programName: string | null;
-  readonly programId: string | null;
   readonly startDate: string;
   readonly endDate: string | null;
   /** Volume total kg (somme du cycle), 0 si pas de review. */
@@ -336,11 +332,7 @@ export interface MuscleObjectiveOutcome {
  */
 export function buildCycleHistory(
   cycles: readonly CycleRow[],
-  programs: readonly GuidedProgram[],
 ): CycleHistoryItem[] {
-  const programById = new Map<string, GuidedProgram>();
-  for (const p of programs) programById.set(p.id, p);
-
   // Tri chronologique ascendant (cycle_index = ordre naturel).
   const sorted = [...cycles].sort((a, b) => a.cycle_index - b.cycle_index);
 
@@ -355,10 +347,6 @@ export function buildCycleHistory(
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
       .map(([id, d]) => [id, d] as const);
-
-    const programName = c.programme_id
-      ? programById.get(c.programme_id)?.name ?? null
-      : null;
 
     // Δ vs cycle précédent (le précédent ayant aussi une review).
     let deltaVolumeKg: number | null = null;
@@ -380,8 +368,6 @@ export function buildCycleHistory(
 
     items.push({
       cycleIndex: c.cycle_index,
-      programName,
-      programId: c.programme_id,
       startDate: c.start_date,
       endDate: c.end_date,
       volumeTotalKg: review.volume_total_kg,

@@ -9,8 +9,6 @@ import { useCoachOsStore, type CoachOsState } from './index';
 // === Slice "profile" ===
 export const selectProfile = (s: CoachOsState) => s.userState?.profile ?? null;
 export const selectMuscleGoals = (s: CoachOsState) => s.userState?.muscle_goals ?? null;
-export const selectActiveProgrammeId = (s: CoachOsState) =>
-  s.userState?.active_guided_program_id ?? null;
 
 // === Slice "session" (UI séance en cours) ===
 export const selectCurrentSessionPlan = (s: CoachOsState) => s.currentSessionPlan;

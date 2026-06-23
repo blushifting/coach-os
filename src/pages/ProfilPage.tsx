@@ -26,7 +26,6 @@ import {
 } from '@/hooks/useEngine';
 import { ImportValidationError } from '@/io/import';
 import { exportToJsonString } from '@/io/export';
-import { ALL_GUIDED_PROGRAMS } from '@/engine/guided_programs';
 import { Sex, type Profile } from '@/engine/models';
 import { muscleLabel, objectiveLabel } from '@/lib/balance-reasons';
 import {
@@ -80,11 +79,6 @@ export default function ProfilPage() {
   function openPrioritesProgramme() {
     navigate('/onboarding?restart=1');
   }
-
-  const activeProgramme =
-    userState.active_guided_program_id !== null
-      ? ALL_GUIDED_PROGRAMS.find((p) => p.id === userState.active_guided_program_id) ?? null
-      : null;
 
   async function handleExport() {
     setBusy('export');
@@ -273,7 +267,7 @@ export default function ProfilPage() {
         >
           <span className="text-anthracite-300">Programme</span>
           <span className="text-right font-medium text-white">
-            {activeProgramme !== null ? activeProgramme.name : 'Sur mesure'} ·{' '}
+            Sur mesure ·{' '}
             <span className="tabular-nums text-anthracite-300">
               {userState.profile.sessions_per_week} séances/sem
             </span>

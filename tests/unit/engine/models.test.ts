@@ -27,7 +27,6 @@ import {
   makePlannedExercise,
   makeWeeklyTemplate,
   weeklyTemplateSessionsPlanned,
-  makeCanonicalExercise,
   makeCycleReview,
   makeEquipmentOverride,
   makeUserState,
@@ -160,23 +159,11 @@ describe('WeeklyTemplate', () => {
 });
 
 // =============================================================================
-// 5. CanonicalExercise / GuidedProgram (création minimale)
+// 5. ProgressionRule
 // =============================================================================
 
-describe('CanonicalExercise', () => {
-  it('is_replaceable = true par défaut', () => {
-    const ce = makeCanonicalExercise({
-      role: 'main_squat',
-      preferred_id: 'back_squat_high_bar',
-      fallback_subst: ['back_squat_low_bar', 'smith_squat'],
-      sets: 5,
-      reps_scheme: '5x5',
-      intensity_scheme: 'linear_+2.5kg',
-    });
-    expect(ce.is_replaceable).toBe(true);
-  });
-
-  it('ProgressionRule expose la règle du moteur custom', () => {
+describe('ProgressionRule', () => {
+  it('expose la règle du moteur custom', () => {
     // Bloc O — seul ISRAETEL_VOLUME subsiste (règles d'auteur retirées).
     expect(ProgressionRule.ISRAETEL_VOLUME).toBe('israetel_volume');
   });
@@ -244,7 +231,6 @@ describe('UserState', () => {
     const state = makeUserState(buildProfile());
     expect(state.muscle_goals).toEqual({});
     expect(state.current_cycle_plan).toBeNull();
-    expect(state.active_guided_program_id).toBeNull();
     expect(state.recovery_mode).toBe(false);
     expect(state.recovery_weeks_remaining).toBe(0);
     expect(state.equipment_overrides).toEqual({});
