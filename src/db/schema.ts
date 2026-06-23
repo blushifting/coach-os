@@ -53,7 +53,6 @@ export interface SerializedUserState {
   profile: SerializedProfile;
   e1rm: Record<string, number>;
   k_user: Record<string, number>;
-  reps_pr: Record<string, number>;
   volume_min: Record<string, number>;
   volume_max: Record<string, number>;
   current_week_in_cycle: number;

@@ -25,7 +25,6 @@ import type {
 import {
   Objective,
   ChargeType,
-  E1RMApp,
   ExType,
   MuscleObjective,
   MuscleStatus,
@@ -466,9 +465,6 @@ export function buildPrescription(
     extLoad = roundToIncrement(extLoad, inc);
   }
   const rest = targetRest(exercise, profile.objective);
-
-  // E1RMApp.NON / PARTIAL : on calcule quand même mais le caller peut l'ignorer.
-  void E1RMApp;
 
   return {
     exercise_id: exercise.id,

@@ -2,7 +2,7 @@
  * Helpers pour la création d'un exercice "custom" par l'utilisateur (Conv #21b).
  *
  * Pourquoi ce fichier sépare ces utilitaires :
- *  - La logique de défauts (inc_kg, reps_hyp, repos, e1RM_app) selon la
+ *  - La logique de défauts (inc_kg, reps_hyp, repos) selon la
  *    charge / le type d'exercice est non-triviale et mérite d'être testée
  *    indépendamment du composant React.
  *  - La détection de doublon (par nom + par profil "pattern/charge/muscles
@@ -46,21 +46,6 @@ export function defaultIncKg(charge: string): number {
   if (charge === 'dumbbell') return 2;
   if (charge === 'bodyweight') return 0;
   return 1;
-}
-
-/**
- * `e1RM_app` par défaut selon la charge. Conv #14 + #20 :
- *  - charges mesurables → 'full' (Epley appliqué pleinement)
- *  - poids du corps + lest / assistance → 'partial' (Epley sur la charge
- *    externe, mais e1RM peu informatif)
- *  - poids du corps pur → 'non' (pas d'e1RM, on suit la double progression
- *    sur les reps)
- */
-export function defaultE1RMApp(charge: string): 'full' | 'partial' | 'non' {
-  if (charge === 'bodyweight') return 'non';
-  if (charge === 'bodyweight_loaded' || charge === 'bodyweight_assisted')
-    return 'partial';
-  return 'full';
 }
 
 /**
@@ -143,7 +128,7 @@ export const EMPTY_DRAFT: CustomExerciseDraft = {
 
 /**
  * Convertit un brouillon validé en `ExerciseDict` prêt à persister. Pose les
- * valeurs auto (inc_kg, reps_hyp, repos, e1RM_app) à partir des choix de
+ * valeurs auto (inc_kg, reps_hyp, repos) à partir des choix de
  * l'user.
  *
  * `existingIds` doit contenir tous les ids du catalog (défaut + customs déjà
@@ -177,7 +162,6 @@ export function buildExerciseDict(
     reps_force: repsForce ?? repsHyp, // l'ExerciseDict attend un tuple non-null
     repos_s: defaultRepos(draft.type),
     dif: 'moyen',
-    e1RM_app: defaultE1RMApp(draft.charge),
     tags: [],
     note: draft.note.trim(),
   } as ExerciseDict;

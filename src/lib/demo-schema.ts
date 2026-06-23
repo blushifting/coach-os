@@ -139,7 +139,6 @@ const serializedUserStateSchema = z.object({
   profile: serializedProfileSchema,
   e1rm: z.record(z.string(), z.number()),
   k_user: z.record(z.string(), z.number()),
-  reps_pr: z.record(z.string(), z.number()),
   volume_min: z.record(z.string(), z.number()),
   volume_max: z.record(z.string(), z.number()),
   current_week_in_cycle: z.number().int(),

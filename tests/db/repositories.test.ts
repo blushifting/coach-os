@@ -197,7 +197,6 @@ describe('userAddedExercises.repo', () => {
       reps_hyp: [8, 12],
       repos_s: 90,
       dif: 'moyen',
-      e1RM_app: 'non',
     };
     await addUserExercise(dict);
     const list = await listUserExercises();

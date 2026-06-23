@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Catalog, loadExercises } from '@/engine/catalog';
-import { E1RMApp, ExType, MUSCLES } from '@/engine/models';
+import { ExType, MUSCLES } from '@/engine/models';
 
 // =============================================================================
 // 1. Chargement
@@ -110,11 +110,6 @@ describe('Catalog.filter', () => {
     const exos = cat.filter({ isolation_only: true });
     expect(exos.length).toBeGreaterThan(0);
     for (const ex of exos) expect(ex.type).toBe(ExType.ISOLATION);
-  });
-
-  it('e1rm_apps filtre par applicabilité du e1RM', () => {
-    const exos = cat.filter({ e1rm_apps: [E1RMApp.FULL] });
-    for (const ex of exos) expect(ex.e1RM_app).toBe(E1RMApp.FULL);
   });
 
   it('equip_available exclut les exos avec équipement manquant', () => {

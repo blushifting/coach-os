@@ -8,7 +8,6 @@ import { Catalog } from '@/engine/catalog';
 import type { Level, SessionFeedback, SessionPlan, UserState } from '@/engine/models';
 import {
   ChargeType,
-  E1RMApp,
   ExType,
   Pattern,
   Sex,
@@ -40,7 +39,6 @@ function makeExercise(id: string, muscles: Record<string, number>) {
     reps_force: [3, 5],
     repos_s: 120,
     dif: 'mod',
-    e1RM_app: E1RMApp.FULL,
     tags: [],
     note: '',
     synonymes: [],

@@ -9,7 +9,6 @@ import { enforceEquipmentPreference } from '@/engine/cycle_planner';
 import { Catalog } from '@/engine/catalog';
 import {
   ChargeType,
-  E1RMApp,
   EquipmentPreference,
   ExType,
   Pattern,
@@ -42,7 +41,6 @@ function makeExo(
     reps_force: [3, 5],
     repos_s: 120,
     dif: 'mod',
-    e1RM_app: E1RMApp.FULL,
     tags: [],
     note: '',
     synonymes: [],

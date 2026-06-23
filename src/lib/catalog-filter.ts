@@ -273,7 +273,7 @@ export function hasActiveFilters(f: CatalogFilters): boolean {
 /**
  * Applique les filtres et la recherche texte. Si du texte est fourni, le tri
  * est par score fuzzy décroissant ; sinon on garde l'ordre du catalogue
- * (le catalogue est déjà ordonné par "désirable" cf. prototype `catalog.py`).
+ * (le catalogue est déjà ordonné par « désirable »).
  *
  * Tous les critères sont AND entre catégories, OR à l'intérieur d'une catégorie.
  */

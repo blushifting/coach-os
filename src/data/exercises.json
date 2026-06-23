@@ -29,7 +29,6 @@
     ],
     "repos_s": 180,
     "dif": "élevé",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -63,7 +62,6 @@
     ],
     "repos_s": 180,
     "dif": "élevé",
-    "e1RM_app": "full",
     "tags": [
       "incline_30",
       "pec_haut"
@@ -100,7 +98,6 @@
     ],
     "repos_s": 180,
     "dif": "élevé",
-    "e1RM_app": "full",
     "tags": [
       "incline_45",
       "pec_haut",
@@ -137,7 +134,6 @@
     ],
     "repos_s": 180,
     "dif": "élevé",
-    "e1RM_app": "full",
     "tags": [
       "decline",
       "pec_bas"
@@ -174,7 +170,6 @@
     ],
     "repos_s": 180,
     "dif": "élevé",
-    "e1RM_app": "full",
     "tags": [
       "prise_serree"
     ],
@@ -209,7 +204,6 @@
     ],
     "repos_s": 150,
     "dif": "moyen",
-    "e1RM_app": "full",
     "tags": [
       "guide"
     ],
@@ -244,7 +238,6 @@
     ],
     "repos_s": 150,
     "dif": "moyen",
-    "e1RM_app": "full",
     "tags": [
       "rom_libre"
     ],
@@ -279,7 +272,6 @@
     ],
     "repos_s": 150,
     "dif": "moyen",
-    "e1RM_app": "full",
     "tags": [
       "incline_30",
       "lengthened_bias"
@@ -314,7 +306,6 @@
     ],
     "repos_s": 150,
     "dif": "moyen",
-    "e1RM_app": "full",
     "tags": [
       "decline"
     ],
@@ -348,7 +339,6 @@
     ],
     "repos_s": 120,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [
       "guide"
     ],
@@ -382,7 +372,6 @@
     ],
     "repos_s": 120,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [
       "incline",
       "guide"
@@ -417,7 +406,6 @@
     ],
     "repos_s": 150,
     "dif": "moyen",
-    "e1RM_app": "full",
     "tags": [
       "torse_penche",
       "lengthened_bias"
@@ -447,7 +435,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [],
     "note": ""
   },
@@ -474,7 +461,6 @@
     "reps_force": null,
     "repos_s": 120,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -502,7 +488,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "moyen",
-    "e1RM_app": "partial",
     "tags": [
       "lengthened_bias"
     ],
@@ -532,7 +517,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "moyen",
-    "e1RM_app": "partial",
     "tags": [
       "incline",
       "lengthened_bias",
@@ -563,7 +547,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [
       "guide"
     ],
@@ -592,7 +575,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [
       "pec_bas"
     ],
@@ -621,7 +603,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [],
     "note": ""
   },
@@ -648,7 +629,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [
       "pec_haut"
     ],
@@ -682,7 +662,6 @@
     ],
     "repos_s": 180,
     "dif": "élevé",
-    "e1RM_app": "full",
     "tags": [
       "prise_pronation"
     ],
@@ -716,7 +695,6 @@
     ],
     "repos_s": 180,
     "dif": "élevé",
-    "e1RM_app": "full",
     "tags": [
       "prise_neutre"
     ],
@@ -750,7 +728,6 @@
     ],
     "repos_s": 180,
     "dif": "élevé",
-    "e1RM_app": "full",
     "tags": [
       "prise_supination",
       "biceps+"
@@ -782,7 +759,6 @@
     "reps_force": null,
     "repos_s": 150,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -814,7 +790,6 @@
     ],
     "repos_s": 120,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [
       "prise_pronation"
     ],
@@ -848,7 +823,6 @@
     ],
     "repos_s": 120,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [
       "prise_neutre"
     ],
@@ -882,7 +856,6 @@
     ],
     "repos_s": 120,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [
       "prise_supination"
     ],
@@ -916,7 +889,6 @@
     ],
     "repos_s": 120,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [
       "prise_large"
     ],
@@ -947,7 +919,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "moyen",
-    "e1RM_app": "partial",
     "tags": [
       "lengthened_bias"
     ],
@@ -977,7 +948,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [],
     "note": ""
   },
@@ -1004,7 +974,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [],
     "note": ""
   },
@@ -1037,7 +1006,6 @@
     ],
     "repos_s": 180,
     "dif": "élevé",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -1070,7 +1038,6 @@
     ],
     "repos_s": 150,
     "dif": "moyen",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -1103,7 +1070,6 @@
     ],
     "repos_s": 120,
     "dif": "moyen",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -1137,7 +1103,6 @@
     ],
     "repos_s": 120,
     "dif": "moyen",
-    "e1RM_app": "full",
     "tags": [
       "torse_appuye"
     ],
@@ -1171,7 +1136,6 @@
     ],
     "repos_s": 120,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [
       "guide"
     ],
@@ -1205,7 +1169,6 @@
     ],
     "repos_s": 120,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -1237,7 +1200,6 @@
     ],
     "repos_s": 120,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [
       "prise_neutre"
     ],
@@ -1272,7 +1234,6 @@
     ],
     "repos_s": 120,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [
       "prise_large",
       "dpost+"
@@ -1302,7 +1263,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [],
     "note": ""
   },
@@ -1332,7 +1292,6 @@
     ],
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -1362,7 +1321,6 @@
     ],
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [
       "rom_libre"
     ],
@@ -1391,7 +1349,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [],
     "note": ""
   },
@@ -1421,7 +1378,6 @@
     ],
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -1450,7 +1406,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "moyen",
-    "e1RM_app": "partial",
     "tags": [
       "shoulder_caution"
     ],
@@ -1481,7 +1436,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "moyen",
-    "e1RM_app": "partial",
     "tags": [
       "shoulder_caution"
     ],
@@ -1517,7 +1471,6 @@
     ],
     "repos_s": 240,
     "dif": "élevé",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -1551,7 +1504,6 @@
     ],
     "repos_s": 240,
     "dif": "élevé",
-    "e1RM_app": "full",
     "tags": [
       "hinge_compose"
     ],
@@ -1587,7 +1539,6 @@
     ],
     "repos_s": 240,
     "dif": "élevé",
-    "e1RM_app": "full",
     "tags": [
       "quad_dominant"
     ],
@@ -1618,7 +1569,6 @@
     "reps_force": null,
     "repos_s": 120,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [
       "accessible"
     ],
@@ -1652,7 +1602,6 @@
     ],
     "repos_s": 180,
     "dif": "moyen",
-    "e1RM_app": "full",
     "tags": [
       "guide"
     ],
@@ -1686,7 +1635,6 @@
     ],
     "repos_s": 180,
     "dif": "moyen",
-    "e1RM_app": "full",
     "tags": [
       "guide",
       "lengthened_bias"
@@ -1721,7 +1669,6 @@
     ],
     "repos_s": 180,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [
       "guide"
     ],
@@ -1755,7 +1702,6 @@
     ],
     "repos_s": 180,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [
       "guide"
     ],
@@ -1790,7 +1736,6 @@
     ],
     "repos_s": 120,
     "dif": "élevé",
-    "e1RM_app": "full",
     "tags": [
       "lengthened_bias"
     ],
@@ -1821,7 +1766,6 @@
     "reps_force": null,
     "repos_s": 120,
     "dif": "moyen",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -1849,7 +1793,6 @@
     "reps_force": null,
     "repos_s": 120,
     "dif": "moyen",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -1877,7 +1820,6 @@
     "reps_force": null,
     "repos_s": 120,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -1907,7 +1849,6 @@
     ],
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [
       "guide"
     ],
@@ -1934,7 +1875,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "élevé",
-    "e1RM_app": "partial",
     "tags": [
       "lengthened_bias"
     ],
@@ -1970,7 +1910,6 @@
     ],
     "repos_s": 240,
     "dif": "élevé",
-    "e1RM_app": "full",
     "tags": [
       "technique_++"
     ],
@@ -2005,7 +1944,6 @@
     ],
     "repos_s": 240,
     "dif": "élevé",
-    "e1RM_app": "full",
     "tags": [
       "quad+"
     ],
@@ -2041,7 +1979,6 @@
     ],
     "repos_s": 210,
     "dif": "moyen",
-    "e1RM_app": "full",
     "tags": [
       "accessible"
     ],
@@ -2075,7 +2012,6 @@
     ],
     "repos_s": 180,
     "dif": "élevé",
-    "e1RM_app": "full",
     "tags": [
       "lengthened_bias"
     ],
@@ -2109,7 +2045,6 @@
     ],
     "repos_s": 150,
     "dif": "moyen",
-    "e1RM_app": "full",
     "tags": [
       "lengthened_bias"
     ],
@@ -2140,7 +2075,6 @@
     "reps_force": null,
     "repos_s": 120,
     "dif": "élevé",
-    "e1RM_app": "full",
     "tags": [
       "equilibre"
     ],
@@ -2175,7 +2109,6 @@
     ],
     "repos_s": 150,
     "dif": "élevé",
-    "e1RM_app": "full",
     "tags": [
       "rom_caution"
     ],
@@ -2207,7 +2140,6 @@
     ],
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [
       "guide"
     ],
@@ -2239,7 +2171,6 @@
     ],
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [
       "guide",
       "lengthened_bias"
@@ -2267,7 +2198,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [],
     "note": ""
   },
@@ -2295,7 +2225,6 @@
     "reps_force": null,
     "repos_s": 150,
     "dif": "élevé",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -2327,7 +2256,6 @@
     ],
     "repos_s": 150,
     "dif": "moyen",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -2358,7 +2286,6 @@
     ],
     "repos_s": 150,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [
       "guide"
     ],
@@ -2388,7 +2315,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -2416,7 +2342,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "moyen",
-    "e1RM_app": "partial",
     "tags": [],
     "note": ""
   },
@@ -2443,7 +2368,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [
       "lengthened_bias"
     ],
@@ -2473,7 +2397,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [],
     "note": ""
   },
@@ -2504,7 +2427,6 @@
     ],
     "repos_s": 150,
     "dif": "moyen",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -2531,7 +2453,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "non",
     "tags": [
       "gastrocnemien"
     ],
@@ -2560,7 +2481,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "non",
     "tags": [
       "soleus"
     ],
@@ -2589,7 +2509,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "non",
     "tags": [
       "gastrocnemien"
     ],
@@ -2618,7 +2537,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "non",
     "tags": [],
     "note": ""
   },
@@ -2645,7 +2563,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "non",
     "tags": [
       "lengthened_bias"
     ],
@@ -2681,7 +2598,6 @@
     ],
     "repos_s": 180,
     "dif": "élevé",
-    "e1RM_app": "full",
     "tags": [
       "gainage"
     ],
@@ -2716,7 +2632,6 @@
     ],
     "repos_s": 150,
     "dif": "moyen",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -2749,7 +2664,6 @@
     ],
     "repos_s": 150,
     "dif": "moyen",
-    "e1RM_app": "full",
     "tags": [
       "rom_libre"
     ],
@@ -2784,7 +2698,6 @@
     ],
     "repos_s": 150,
     "dif": "moyen",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -2816,7 +2729,6 @@
     ],
     "repos_s": 120,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [
       "guide"
     ],
@@ -2845,7 +2757,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "non",
     "tags": [],
     "note": ""
   },
@@ -2872,7 +2783,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "non",
     "tags": [
       "tension_constante"
     ],
@@ -2901,7 +2811,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "non",
     "tags": [
       "guide"
     ],
@@ -2932,7 +2841,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "non",
     "tags": [],
     "note": ""
   },
@@ -2960,7 +2868,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "non",
     "tags": [],
     "note": ""
   },
@@ -2989,7 +2896,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "non",
     "tags": [
       "torse_appuye",
       "lengthened_bias"
@@ -3020,7 +2926,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "non",
     "tags": [],
     "note": ""
   },
@@ -3048,7 +2953,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "non",
     "tags": [
       "guide"
     ],
@@ -3080,7 +2984,6 @@
     ],
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -3110,7 +3013,6 @@
     ],
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [
       "poignets"
     ],
@@ -3142,7 +3044,6 @@
     ],
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -3170,7 +3071,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "moyen",
-    "e1RM_app": "full",
     "tags": [
       "lengthened_bias"
     ],
@@ -3202,7 +3102,6 @@
     ],
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [
       "brachioradial"
     ],
@@ -3234,7 +3133,6 @@
     ],
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [
       "guide"
     ],
@@ -3264,7 +3162,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [],
     "note": ""
   },
@@ -3291,7 +3188,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [
       "tension_constante"
     ],
@@ -3321,7 +3217,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "moyen",
-    "e1RM_app": "partial",
     "tags": [
       "rom_court"
     ],
@@ -3350,7 +3245,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [],
     "note": ""
   },
@@ -3380,7 +3274,6 @@
     ],
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [
       "tension_constante"
     ],
@@ -3409,7 +3302,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [
       "rom_libre"
     ],
@@ -3443,7 +3335,6 @@
     ],
     "repos_s": 150,
     "dif": "moyen",
-    "e1RM_app": "full",
     "tags": [
       "torse_droit"
     ],
@@ -3479,7 +3370,6 @@
     ],
     "repos_s": 150,
     "dif": "élevé",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -3509,7 +3399,6 @@
     ],
     "repos_s": 90,
     "dif": "moyen",
-    "e1RM_app": "full",
     "tags": [
       "lengthened_bias",
       "long_head"
@@ -3539,7 +3428,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [
       "lengthened_bias",
       "long_head"
@@ -3573,7 +3461,6 @@
     ],
     "repos_s": 90,
     "dif": "moyen",
-    "e1RM_app": "full",
     "tags": [
       "lengthened_bias"
     ],
@@ -3608,7 +3495,6 @@
     ],
     "repos_s": 120,
     "dif": "élevé",
-    "e1RM_app": "full",
     "tags": [
       "hybride"
     ],
@@ -3637,7 +3523,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [
       "rom_court"
     ],
@@ -3666,7 +3551,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [],
     "note": ""
   },
@@ -3694,7 +3578,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [
       "charge_progressive"
     ],
@@ -3721,7 +3604,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [
       "guide"
     ],
@@ -3748,7 +3630,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "non",
     "tags": [],
     "note": ""
   },
@@ -3776,7 +3657,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "élevé",
-    "e1RM_app": "non",
     "tags": [
       "lengthened_bias"
     ],
@@ -3804,7 +3684,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "moyen",
-    "e1RM_app": "non",
     "tags": [],
     "note": ""
   },
@@ -3829,7 +3708,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "non",
     "tags": [],
     "note": ""
   },
@@ -3858,7 +3736,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "élevé",
-    "e1RM_app": "non",
     "tags": [
       "lengthened_bias"
     ],
@@ -3888,7 +3765,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "non",
     "tags": [],
     "note": ""
   },
@@ -3915,7 +3791,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "non",
     "tags": [],
     "note": ""
   },
@@ -3940,7 +3815,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "moyen",
-    "e1RM_app": "non",
     "tags": [
       "isometrique_secondaire"
     ],
@@ -3968,7 +3842,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "non",
     "tags": [
       "rotation"
     ],
@@ -3996,7 +3869,6 @@
     "reps_force": null,
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "non",
     "tags": [],
     "note": ""
   },
@@ -4025,7 +3897,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [],
     "note": ""
   },
@@ -4054,7 +3925,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [],
     "note": ""
   },
@@ -4083,7 +3953,6 @@
     "reps_force": null,
     "repos_s": 90,
     "dif": "moyen",
-    "e1RM_app": "partial",
     "tags": [],
     "note": ""
   },
@@ -4113,7 +3982,6 @@
     ],
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -4143,7 +4011,6 @@
     ],
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -4174,7 +4041,6 @@
     ],
     "repos_s": 90,
     "dif": "moyen",
-    "e1RM_app": "full",
     "tags": [
       "lengthened_bias"
     ],
@@ -4206,7 +4072,6 @@
     ],
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "full",
     "tags": [],
     "note": ""
   },
@@ -4236,7 +4101,6 @@
     ],
     "repos_s": 90,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [],
     "note": ""
   },
@@ -4266,7 +4130,6 @@
     ],
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [],
     "note": ""
   },
@@ -4296,7 +4159,6 @@
     ],
     "repos_s": 60,
     "dif": "facile",
-    "e1RM_app": "partial",
     "tags": [],
     "note": "Cible les adducteurs (groupe interne cuisse) ; rattaché ici aux ischios médiaux dans le modèle 15 muscles."
   }

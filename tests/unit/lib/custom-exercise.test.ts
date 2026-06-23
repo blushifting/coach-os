@@ -2,14 +2,13 @@
  * Tests pour `lib/custom-exercise.ts` (Conv #21b).
  *
  * Couvre les helpers purs : slugify, uniqueId, validateDraft, findDuplicate,
- * defaultIncKg/defaultE1RMApp/defaultRepsHyp. La construction d'`ExerciseDict`
+ * defaultIncKg/defaultRepsHyp. La construction d'`ExerciseDict`
  * est testée bout-en-bout via `buildExerciseDict`.
  */
 
 import { describe, expect, it } from 'vitest';
 import {
   buildExerciseDict,
-  defaultE1RMApp,
   defaultIncKg,
   defaultRepos,
   defaultRepsHyp,
@@ -30,15 +29,6 @@ describe('defaults par charge / type', () => {
     expect(defaultIncKg('machine_stack')).toBe(1);
     expect(defaultIncKg('cable')).toBe(1);
     expect(defaultIncKg('bodyweight_loaded')).toBe(1);
-  });
-
-  it('defaultE1RMApp : full charges mesurables, partial bw-charged, non bw pur', () => {
-    expect(defaultE1RMApp('barbell')).toBe('full');
-    expect(defaultE1RMApp('dumbbell')).toBe('full');
-    expect(defaultE1RMApp('cable')).toBe('full');
-    expect(defaultE1RMApp('bodyweight')).toBe('non');
-    expect(defaultE1RMApp('bodyweight_loaded')).toBe('partial');
-    expect(defaultE1RMApp('bodyweight_assisted')).toBe('partial');
   });
 
   it('defaultRepsHyp / defaultRepos : différent selon compound vs iso', () => {
@@ -158,7 +148,6 @@ describe('buildExerciseDict', () => {
     expect(dict.nom_fr).toBe('Curl rotation perso');
     expect(dict.charge).toBe('dumbbell');
     expect(dict.inc_kg).toBe(2);
-    expect(dict.e1RM_app).toBe('full');
     expect(dict.reps_hyp).toEqual([10, 15]);
     expect(dict.repos_s).toBe(90);
     expect(dict.muscles).toEqual({ biceps: 1, deltos_anterieurs: 0.5 });

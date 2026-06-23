@@ -28,7 +28,6 @@ import type {
 } from '@/engine/models';
 import {
   ChargeType,
-  E1RMApp,
   ExType,
   MuscleObjective,
   MuscleStatus,
@@ -62,7 +61,6 @@ function makeExercise(
     reps_force: [3, 5],
     repos_s: 120,
     dif: 'mod',
-    e1RM_app: E1RMApp.FULL,
     tags: [],
     note: '',
     synonymes: [],
@@ -90,7 +88,6 @@ function makeState(overrides: Partial<UserState> = {}): UserState {
     } as UserState['profile'],
     e1rm: {},
     k_user: {},
-    reps_pr: {},
     volume_min: { pectoraux: 10, biceps: 8, quadriceps: 10 },
     volume_max: { pectoraux: 18, biceps: 14, quadriceps: 18 },
     current_week_in_cycle: 2,

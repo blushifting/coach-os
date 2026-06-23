@@ -156,7 +156,7 @@ export function targetVolume(state: UserState, muscle: string): number {
 export const SHORTENED_DELOAD_FACTOR = 0.7;
 
 // =============================================================================
-// 5. Voie muscle_goals : effectiveVolumeBounds + targetFrequency (cf. 09 §4.5)
+// 5. Voie muscle_goals : effectiveVolumeBounds + targetFrequencyV2 (cf. 09 §4.5)
 // =============================================================================
 
 /**
@@ -207,24 +207,6 @@ export function effectiveVolumeBounds(
   // PRIORITAIRE non-maintien
   const factor = OBJECTIVE_VOLUME_FACTOR[goal.objective];
   return [baseMin * factor, baseMax * factor];
-}
-
-/**
- * Fréquence hebdo cible pour ce muscle (cf. 09 §5.1).
- * freq = ceil(V_cible / SETS_PER_SESSION_OPTIMAL), capée à sessions_per_week.
- *
- * @deprecated Conv #22 — utilise `targetFrequencyV2` qui se base sur
- * `effectiveCycleTargetVolume` (V cible évolutif sur cycle) plutôt que
- * V_min seul. Conservée pour compat des modules legacy (cycle_planner
- * actuel, parameterizeSplit, composeSession).
- */
-export function targetFrequency(muscle: string, state: UserState): number {
-  const [vMin] = effectiveVolumeBounds(state, muscle);
-  if (vMin <= 0) {
-    return 0;
-  }
-  const freq = Math.max(1, Math.ceil(vMin / SETS_PER_SESSION_OPTIMAL));
-  return Math.min(freq, state.profile.sessions_per_week);
 }
 
 /**

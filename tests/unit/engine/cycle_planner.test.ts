@@ -1,6 +1,6 @@
 /**
  * Tests du planificateur de cycle (voie unique V3, Conv #39).
- * Couvre : effectiveVolumeBounds (extension MuscleGoal), targetFrequency,
+ * Couvre : effectiveVolumeBounds (extension MuscleGoal), targetFrequencyV2,
  * cycleSetProgression, autoGenerateCyclePlanV3 (invariants globaux),
  * enforceLengthenedBias, rotateEmphasis, orderSession.
  *
@@ -29,7 +29,7 @@ import {
 import { orderSession, totalSets } from '@/engine/selection';
 import {
   effectiveVolumeBounds,
-  targetFrequency,
+  targetFrequencyV2,
   MAX_TOTAL_SETS_PER_SESSION_V2,
 } from '@/engine/volume';
 
@@ -119,27 +119,27 @@ describe('effectiveVolumeBounds', () => {
 });
 
 // =============================================================================
-// 2. targetFrequency
+// 2. targetFrequencyV2
 // =============================================================================
 
-describe('targetFrequency', () => {
+describe('targetFrequencyV2', () => {
   it('hypertrophie inter → fréquence 1-4', () => {
     const state = stateInterH4x();
     state.muscle_goals.pectoraux = prio('pectoraux', MuscleObjective.HYPERTROPHIE);
-    const f = targetFrequency('pectoraux', state);
+    const f = targetFrequencyV2('pectoraux', state);
     expect(f).toBeGreaterThanOrEqual(1);
     expect(f).toBeLessThanOrEqual(4);
   });
 
   it('aucun goal → freq 0', () => {
     const state = stateInterH4x();
-    expect(targetFrequency('pectoraux', state)).toBe(0);
+    expect(targetFrequencyV2('pectoraux', state)).toBe(0);
   });
 
   it('cappée par sessions_per_week', () => {
     const state = stateInterH4x();
     state.muscle_goals.pectoraux = prio('pectoraux', MuscleObjective.ENDURANCE);
-    expect(targetFrequency('pectoraux', state)).toBeLessThanOrEqual(
+    expect(targetFrequencyV2('pectoraux', state)).toBeLessThanOrEqual(
       state.profile.sessions_per_week,
     );
   });

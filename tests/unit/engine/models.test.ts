@@ -39,7 +39,6 @@ import {
   Pattern,
   ExType,
   ChargeType,
-  E1RMApp,
   type ExerciseDict,
   // Helper de conversion
   objectiveToMuscleObjective,
@@ -381,7 +380,6 @@ const DICT_BENCH: ExerciseDict = {
   reps_force: [3, 5],
   repos_s: 180,
   dif: 'élevé',
-  e1RM_app: 'full',
   tags: [],
 };
 
@@ -392,7 +390,6 @@ describe('exerciseFromDict', () => {
     expect(ex.pattern).toBe(Pattern.PUSH_H);
     expect(ex.type).toBe(ExType.COMPOUND);
     expect(ex.charge).toBe(ChargeType.BARBELL);
-    expect(ex.e1RM_app).toBe(E1RMApp.FULL);
     expect(ex.equip).toEqual(['bb_oly', 'bench_flat', 'rack']);
     expect(ex.reps_hyp).toEqual([6, 10]);
     expect(ex.reps_force).toEqual([3, 5]);

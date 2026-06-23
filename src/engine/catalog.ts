@@ -3,7 +3,7 @@
  */
 
 import type { Exercise, ExerciseDict } from './models';
-import { ChargeType, E1RMApp, ExType, exerciseFromDict, exercisePrimaires } from './models';
+import { ChargeType, ExType, exerciseFromDict, exercisePrimaires } from './models';
 import rawExercises from '../data/exercises.json';
 import { EXERCISE_SYNONYMES } from '../data/exercise-synonymes';
 
@@ -16,9 +16,8 @@ import { EXERCISE_SYNONYMES } from '../data/exercise-synonymes';
  * Les synonymes du JSON (vides pour la quasi-totalité des entrées) sont
  * complétés par `EXERCISE_SYNONYMES` (cf. `data/exercise-synonymes.ts`).
  * Origine : Azur cherchait "DC", "bench press", "SDT", … sans les trouver
- * (Conv #10d). On enrichit ici plutôt que dans le JSON pour ne pas dupliquer
- * la table entre `src/data/` et `prototype/data/` ; la parité Python reste
- * triviale puisque la recherche fuzzy est UI-only.
+ * (Conv #10d). On enrichit ici plutôt que dans le JSON pour garder la table
+ * source légère ; la recherche fuzzy est purement UI.
  */
 let _cached: readonly Exercise[] | null = null;
 
@@ -56,7 +55,6 @@ export interface CatalogFilterOptions {
   muscle_primary?: string;
   /** Set d'équipements disponibles. Si fourni, exclut les exos qui requièrent un équipement absent. */
   equip_available?: Set<string>;
-  e1rm_apps?: readonly E1RMApp[];
   tags_in?: readonly string[];
   compound_only?: boolean;
   isolation_only?: boolean;
@@ -140,7 +138,6 @@ export class Catalog {
     for (const x of candidates) {
       if (opts.compound_only && x.type !== ExType.COMPOUND) continue;
       if (opts.isolation_only && x.type !== ExType.ISOLATION) continue;
-      if (opts.e1rm_apps && !opts.e1rm_apps.includes(x.e1RM_app)) continue;
       if (opts.equip_available !== undefined) {
         // bodyweight pur : pas d'équipement requis
         if (x.equip.length > 0) {

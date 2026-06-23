@@ -18,7 +18,7 @@
  * sous réserve de respecter les **invariants** :
  *
  *  1. **Fréquence muscle préservée** : aucun muscle prioritaire ne passe
- *     sous sa `targetFrequency` après l'opération.
+ *     sous sa `targetFrequencyV2` après l'opération.
  *  2. **Jour non vide** : aucun jour ne se retrouve avec 0 exo.
  *  3. **Pas de doublon** : un Move ne crée pas 2 fois le même `exercise_id`
  *     sur le receveur.
@@ -42,7 +42,7 @@ import {
   type UserState,
   type WeeklyTemplate,
 } from './models';
-import { targetFrequency } from './volume';
+import { targetFrequencyV2 } from './volume';
 import { estimateExerciseDurationMinutes } from '@/lib/onboarding-preview';
 
 /** Nb max d'itérations par groupe de jours (= par slot_kind). */
@@ -317,7 +317,7 @@ function isOperationValid(
   // 3. Fréquence muscle prioritaire préservée
   for (const [muscle, goal] of Object.entries(state.muscle_goals)) {
     if (goal.status !== MuscleStatus.PRIORITAIRE) continue;
-    const target = targetFrequency(muscle, state);
+    const target = targetFrequencyV2(muscle, state);
     if (target === 0) continue;
     if (countMuscleFrequency(newDays, muscle, catalog) < target) return false;
   }

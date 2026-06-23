@@ -3,14 +3,11 @@
  *
  * Référence : recherche/09_programmation.md §5, §6, §9.
  *
- * Conv #39 — la voie legacy (`generateCyclePlan` + `parameterizeSplit` +
- * `composeSession` + `topUpMaintenance` + `resolveCapacityConflict`) a été
- * supprimée. La génération passe désormais exclusivement par
- * `generateCyclePlanV3` / `autoGenerateCyclePlanV3` (skeleton_builder →
- * sets_allocator), suivis des post-passes ci-dessous (lengthened bias, fusion
- * d'équivalents, rééquilibrage durées, préférence d'équipement, étiquetage
- * A/B/C). L'algo NE calcule PAS les charges live ; ça reste à
- * `buildPrescription` à chaque instanciation de séance.
+ * Génération exclusivement via `generateCyclePlanV3` / `autoGenerateCyclePlanV3`
+ * (skeleton_builder → sets_allocator), suivis des post-passes ci-dessous
+ * (lengthened bias, fusion d'équivalents, rééquilibrage durées, préférence
+ * d'équipement, étiquetage A/B/C). L'algo NE calcule PAS les charges live ;
+ * ça reste à `buildPrescription` à chaque instanciation de séance.
  */
 
 import type {

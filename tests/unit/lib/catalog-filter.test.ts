@@ -6,7 +6,6 @@ import { describe, expect, it } from 'vitest';
 import { Catalog } from '@/engine/catalog';
 import {
   ChargeType,
-  E1RMApp,
   ExType,
   Pattern,
   exerciseFromDict,
@@ -47,7 +46,6 @@ function ex(
     reps_force: partial.reps_force ?? null,
     repos_s: partial.repos_s ?? 120,
     dif: partial.dif ?? 'moyen',
-    e1RM_app: (partial.e1RM_app as string | undefined) ?? E1RMApp.FULL,
     tags: partial.tags ?? [],
     note: partial.note ?? '',
     synonymes: partial.synonymes ?? [],

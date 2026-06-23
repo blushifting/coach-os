@@ -4,12 +4,6 @@
  * Tous les types métier sont ici. Les modules suivants (prescription, feedback,
  * volume, selection, engine, balance, split, cycle_planner, lifecycle,
  * guided_programs) consomment ces structures sans en définir.
- *
- * Convention de port :
- *   - Python `Enum(str, Enum)` → enum TS string-valued.
- *   - Python `@dataclass(frozen=True)` immuable → `interface` + factory `makeXxx`.
- *   - Python `@dataclass` mutable → `interface` + factory avec valeurs par défaut.
- *   - `tuple[...]` Python → `readonly [...]` TS si arité fixe, sinon `readonly T[]`.
  */
 
 // =============================================================================
@@ -182,12 +176,6 @@ export enum ChargeType {
   BODYWEIGHT_ASSISTED = 'bodyweight_assisted',
 }
 
-export enum E1RMApp {
-  FULL = 'full',
-  PARTIAL = 'partial',
-  NON = 'non',
-}
-
 /**
  * Conv #29 — Types de charge autorisés pour une préférence STRICTE.
  * Renvoie `null` pour NO_PREFERENCE/undefined (= aucune restriction).
@@ -263,7 +251,6 @@ export interface Exercise {
   readonly reps_force: readonly [number, number] | null;
   readonly repos_s: number;
   readonly dif: string;
-  readonly e1RM_app: E1RMApp;
   readonly tags: readonly string[];
   readonly note: string;
   readonly synonymes: readonly string[];
@@ -285,7 +272,6 @@ export interface ExerciseDict {
   reps_force?: [number, number] | number[] | null;
   repos_s: number;
   dif: string;
-  e1RM_app: string;
   tags?: string[] | null;
   note?: string | null;
   synonymes?: string[] | null;
@@ -319,7 +305,6 @@ export function exerciseFromDict(d: ExerciseDict): Exercise {
     reps_force: repsForce,
     repos_s: Math.trunc(d.repos_s),
     dif: d.dif,
-    e1RM_app: d.e1RM_app as E1RMApp,
     tags: Object.freeze([...(d.tags ?? [])]),
     note: d.note ?? '',
     synonymes: Object.freeze([...(d.synonymes ?? [])]),
@@ -839,7 +824,6 @@ export interface UserState {
   /** par exercise_id */
   e1rm: Record<string, number>;
   k_user: Record<string, number>;
-  reps_pr: Record<string, number>;
   volume_min: Record<string, number>;
   volume_max: Record<string, number>;
   current_week_in_cycle: number;
@@ -918,7 +902,6 @@ export function makeUserState(profile: Profile): UserState {
     profile,
     e1rm: {},
     k_user: {},
-    reps_pr: {},
     volume_min: {},
     volume_max: {},
     current_week_in_cycle: 1,

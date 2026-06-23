@@ -58,7 +58,9 @@ const userStateSchema = z
     profile: profileSchema,
     e1rm: recordOfNumber,
     k_user: recordOfNumber,
-    reps_pr: recordOfNumber,
+    // reps_pr — vestige (Bloc R) : accepté en import pour rétrocompat des
+    // anciens exports, mais non conservé dans le modèle.
+    reps_pr: recordOfNumber.optional(),
     volume_min: recordOfNumber,
     volume_max: recordOfNumber,
     current_week_in_cycle: z.number().int().min(1).max(5),

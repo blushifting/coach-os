@@ -1,13 +1,9 @@
 /**
  * Orchestrateur Coach OS — API stable.
  *
- *
- * Deux voies de generateSession :
- * - Voie nouvelle (recommandée) : `generateSession(state, catalog, day_index, date)`
- *   lit `state.current_cycle_plan.days[day_index]`. Charges live via
- *   `buildPrescription` avec muscle_goals + state.
- * - Voie legacy : `generateSessionLegacy(state, catalog, target_muscles, ...)`.
- *   Conservée pour rétrocompat tests/CLI/simulation.
+ * `generateSession(state, catalog, day_index, date)` lit
+ * `state.current_cycle_plan.days[day_index]` et calcule les charges live via
+ * `buildPrescription` (muscle_goals + state).
  */
 
 import type { Catalog } from './catalog';
@@ -47,10 +43,6 @@ import {
   initialVolumeBounds,
   targetVolume,
 } from './volume';
-import {
-  pickForMuscle,
-  splitVolumeIntoSessions,
-} from './selection';
 import { applyBalanceRules } from './balance';
 import {
   adjustVolumeBoundsAtCycleEnd,
@@ -489,97 +481,6 @@ export function replaceSessionItem(
     ...plan,
     items: newItems,
     rpe_target: rpeAvg,
-  };
-}
-
-// =============================================================================
-// 4. Génération d'une séance — voie legacy
-// =============================================================================
-
-function selectExercisesForSession(
-  catalog: Catalog,
-  state: UserState,
-  targetMuscles: readonly string[],
-  isolationQuota = 1,
-): Exercise[] {
-  const chosen: Exercise[] = [];
-  const chosenIds = new Set<string>();
-
-  for (const m of targetMuscles) {
-    const ex = pickForMuscle(catalog, m, state, {
-      preferCompound: true,
-      excludeIds: chosenIds,
-    });
-    if (ex === null) continue;
-    chosen.push(ex);
-    chosenIds.add(ex.id);
-  }
-
-  let isosAdded = 0;
-  for (const m of targetMuscles) {
-    if (isosAdded >= isolationQuota) break;
-    const ex = pickForMuscle(catalog, m, state, {
-      preferCompound: false,
-      excludeIds: chosenIds,
-    });
-    if (ex === null || ex.type !== ExType.ISOLATION) continue;
-    chosen.push(ex);
-    chosenIds.add(ex.id);
-    isosAdded++;
-  }
-
-  return chosen;
-}
-
-export interface GenerateSessionLegacyOptions {
-  label?: string;
-  isolationQuota?: number;
-  nSessionsForMuscle?: number | null;
-}
-
-export function generateSessionLegacy(
-  state: UserState,
-  catalog: Catalog,
-  targetMuscles: readonly string[],
-  seanceDate: string,
-  options: GenerateSessionLegacyOptions = {},
-): SessionPlan {
-  const label = options.label ?? '';
-  const isolationQuota = options.isolationQuota ?? 1;
-  const nSessionsForMuscle =
-    options.nSessionsForMuscle ?? Math.max(1, Math.floor(state.profile.sessions_per_week / 2));
-
-  const chosen = selectExercisesForSession(catalog, state, targetMuscles, isolationQuota);
-  const rpe = targetRpe(state.profile.objective, state.current_week_in_cycle);
-
-  const items: SessionItem[] = [];
-  for (const ex of chosen) {
-    const primairesAvecQuota = exercisePrimaires(ex).filter((m) => m in state.volume_min);
-    if (primairesAvecQuota.length === 0) continue;
-    const mMain = primairesAvecQuota[0]!;
-    const weeklyTarget = targetVolume(state, mMain);
-    const perSession = splitVolumeIntoSessions(weeklyTarget, nSessionsForMuscle)[0]!;
-    const nSets = Math.max(1, Math.min(5, perSession));
-
-    // Conv #20 — bootstrap transitoire, pas de persistance (cf. generateSession).
-    const e1rmTotal = bootstrapE1rmIfMissing(state, ex);
-
-    const prescription = buildPrescription(
-      ex, e1rmTotal, state.profile, state.current_week_in_cycle,
-    );
-    const sets: SetPrescription[] = [];
-    for (let i = 0; i < nSets; i++) sets.push(prescription);
-    items.push({ exercise_id: ex.id, sets });
-    state.last_used_for_muscle[mMain] = ex.id;
-  }
-
-  return {
-    seance_date: seanceDate,
-    week_in_cycle: state.current_week_in_cycle,
-    cycle_index: state.cycle_index,
-    rpe_target: rpe,
-    items,
-    label,
   };
 }
 

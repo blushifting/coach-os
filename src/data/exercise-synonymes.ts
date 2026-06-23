@@ -4,8 +4,8 @@
  * Origine : Azur cherchait des exos sous un nom usuel (ex. "DC", "bench
  * press", "shrugs", "SDT") sans les trouver. Ce mapping enrichit le champ
  * `synonymes` des entrées de `exercises.json` (volontairement vide à la
- * source pour ne pas dupliquer entre src/ et prototype/data/). Il est
- * mergé au chargement par `loadExercises()`.
+ * source pour garder le JSON léger). Il est mergé au chargement par
+ * `loadExercises()`.
  *
  * Convention :
  *  - Inclure abréviations FR usuelles (DC, SDT, RDL, OHP, GHR, …).
@@ -24,10 +24,6 @@
  * (« iso-lateral row », « selection chest press », « aura chest press »,
  * « versa pulldown », « vertical traction », « glute drive »…), sans
  * le préfixe marque (déjà capté par le fuzzy si tapé en plus).
- *
- * Côté parité Python : ce mapping vit côté TS car la recherche fuzzy est
- * UI-only. Le prototype peut être miroité plus tard (`prototype/data/`)
- * s'il devient consommateur de la recherche.
  */
 
 export const EXERCISE_SYNONYMES: Readonly<Record<string, readonly string[]>> = {
