@@ -13,6 +13,7 @@ import {
   initEntries,
   lastCheckedSetTooEasy,
   listDayCandidates,
+  propagateLoadToUpcomingSets,
   recalibrateUpcomingSets,
   suggestNextLoadAfterTooEasy,
   updateSetEntry,
@@ -531,5 +532,77 @@ describe('recalibrateUpcomingSets', () => {
     // ratio ≈ 1.5 → 50 × 1.5 ≈ 75 (recalculé depuis 50, pas depuis 60).
     expect(next[0]![1]!.load_kg).toBeGreaterThan(60);
     expect(next[0]![1]!.loadAuto).toBe(true);
+  });
+});
+
+// =============================================================================
+// Report de charge hors calibration (Bloc S, Conv #45)
+// =============================================================================
+
+describe('propagateLoadToUpcomingSets', () => {
+  it('reporte une charge MODIFIÉE sur les séries suivantes encore prescrites', () => {
+    const plan = makePlan(); // bench_press : 2 séries à 80 kg
+    const entries: SessionEntries = [
+      [
+        { reps: 5, load_kg: 85, rpe: 8, done: true }, // validée, 80 → 85
+        { reps: 5, load_kg: 80, rpe: 6, done: false }, // encore la prescription
+      ],
+      [{ reps: 8, load_kg: 40, rpe: 6, done: false }],
+    ];
+    const next = propagateLoadToUpcomingSets({ entries, plan, itemIdx: 0, fromSetIdx: 0 });
+    expect(next[0]![1]!.load_kg).toBe(85);
+    expect(next[0]![1]!.loadAuto).toBe(true);
+    // L'autre exo n'est jamais touché (même référence).
+    expect(next[1]).toBe(entries[1]);
+  });
+
+  it('reporte sur TOUTES les séries suivantes prescrites (multi-séries)', () => {
+    const plan = makeCalibPlan(); // leg_press_45 : 3 séries à 50 kg
+    const entries: SessionEntries = [
+      [
+        { reps: 8, load_kg: 55, rpe: 7, done: true }, // 50 → 55
+        { reps: 8, load_kg: 50, rpe: 6, done: false },
+        { reps: 8, load_kg: 50, rpe: 6, done: false },
+      ],
+    ];
+    const next = propagateLoadToUpcomingSets({ entries, plan, itemIdx: 0, fromSetIdx: 0 });
+    expect(next[0]![1]!.load_kg).toBe(55);
+    expect(next[0]![2]!.load_kg).toBe(55);
+  });
+
+  it('no-op si la charge validée vaut encore la prescription (référence inchangée)', () => {
+    const plan = makePlan();
+    const entries: SessionEntries = [
+      [
+        { reps: 5, load_kg: 80, rpe: 8, done: true }, // = prescription
+        { reps: 5, load_kg: 80, rpe: 6, done: false },
+      ],
+    ];
+    const next = propagateLoadToUpcomingSets({ entries, plan, itemIdx: 0, fromSetIdx: 0 });
+    expect(next).toBe(entries);
+  });
+
+  it("préserve une série suivante ajustée à la main par l'user", () => {
+    const plan = makePlan();
+    const entries: SessionEntries = [
+      [
+        { reps: 5, load_kg: 85, rpe: 8, done: true }, // 80 → 85
+        { reps: 5, load_kg: 90, rpe: 6, done: false, loadAuto: false }, // bumpée main
+      ],
+    ];
+    const next = propagateLoadToUpcomingSets({ entries, plan, itemIdx: 0, fromSetIdx: 0 });
+    expect(next[0]![1]!.load_kg).toBe(90); // respectée
+  });
+
+  it('ignore les séries déjà cochées', () => {
+    const plan = makePlan();
+    const entries: SessionEntries = [
+      [
+        { reps: 5, load_kg: 85, rpe: 8, done: true }, // 80 → 85
+        { reps: 5, load_kg: 80, rpe: 8, done: true }, // déjà cochée
+      ],
+    ];
+    const next = propagateLoadToUpcomingSets({ entries, plan, itemIdx: 0, fromSetIdx: 0 });
+    expect(next[0]![1]!.load_kg).toBe(80); // intacte (done)
   });
 });

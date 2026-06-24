@@ -6,6 +6,7 @@ import { type SessionPlan } from '@/engine/models';
 import {
   buildSessionFeedback,
   computeSessionSummary,
+  DEFAULT_RPE,
   initEntries,
   type SessionEntries,
   type SessionSummaryData,
@@ -169,7 +170,10 @@ export default function SeancePage() {
         return item.sets.map((s) => ({
           reps: isCalibration ? null : s.reps,
           load_kg: s.load_kg,
-          rpe: null,
+          // Bloc S (Conv #45) — Réserve toujours à « 4+ » par défaut, même sur
+          // un exo fraîchement remplacé (cohérent avec `initEntries`). Plus de
+          // position initiale neutre `null` qui aurait verrouillé la validation.
+          rpe: DEFAULT_RPE,
           done: false,
         }));
       }

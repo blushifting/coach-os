@@ -10,12 +10,6 @@ interface SetInputProps {
   readonly entry: SetEntry;
   readonly onChange: (patch: Partial<SetEntry>) => void;
   /**
-   * Le bouton "✓" est verrouillé tant que la série précédente n'est pas validée.
-   * Les saisies reps/charge/effort restent éditables — on peut préparer ses
-   * valeurs à l'avance, on ne peut juste pas cocher en désordre.
-   */
-  readonly checkLocked?: boolean;
-  /**
    * Détermine le rendu du champ charge :
    *  - `BODYWEIGHT` → badge "Poids du corps" non éditable, load_kg verrouillé à 0
    *  - `BODYWEIGHT_LOADED` / `BODYWEIGHT_ASSISTED` → input + chip "PdC" qui force
@@ -90,7 +84,6 @@ export function SetInput({
   index,
   entry,
   onChange,
-  checkLocked = false,
   chargeType,
   pdcOnly = false,
   unilateral = false,
@@ -99,23 +92,23 @@ export function SetInput({
   const bodyweightOnly = isBodyweightOnly(chargeType) || pdcOnly;
   const effectiveLoad: number | null = bodyweightOnly ? 0 : entry.load_kg;
 
+  // Bloc S (Conv #45) — plus aucun « lock » : ni ordre des séries, ni curseur.
+  // Le ✓ ne se grise QUE si une valeur est vide (reps/charge), seul cas =
+  // 1re séance d'un exo (calibration, reps à saisir). La Réserve démarrant
+  // toujours à « 4+ », elle ne bloque jamais la validation.
   const canCheck =
     entry.reps !== null &&
     entry.reps > 0 &&
-    (bodyweightOnly || entry.load_kg !== null) &&
-    entry.rpe !== null;
+    (bodyweightOnly || entry.load_kg !== null);
 
   const locked = entry.done;
   const disableInputs = locked;
-  const disableCheck = !entry.done && (checkLocked || !canCheck);
+  const disableCheck = !entry.done && !canCheck;
 
-  const checkTitle = entry.done
-    ? undefined
-    : checkLocked
-      ? 'Termine la série précédente d’abord'
-      : !canCheck
-        ? 'Renseigne reps, charge et effort avant de valider'
-        : undefined;
+  const checkTitle =
+    entry.done || canCheck
+      ? undefined
+      : 'Renseigne reps et charge avant de valider';
 
   const [justChecked, setJustChecked] = useState(false);
   const prevDone = useRef(entry.done);
@@ -137,7 +130,6 @@ export function SetInput({
     <div
       data-testid={`set-row-${index}`}
       data-done={entry.done ? 'true' : 'false'}
-      data-locked={checkLocked ? 'true' : 'false'}
       className={cn(
         'rounded-lg border px-2 py-2 text-sm transition-colors duration-300',
         // 1.16 — série validée = VERT (« c'est fait »), plus de rouge (réservé
@@ -196,7 +188,16 @@ export function SetInput({
             aria-label={entry.done ? 'Annuler la série (déverrouille la saisie)' : 'Valider la série'}
             title={checkTitle}
             disabled={disableCheck}
-            onClick={() => onChange({ done: !entry.done })}
+            onClick={() =>
+              // Validation : si la Réserve n'a jamais été posée (rpe null,
+              // ex. ancienne séance ou exo fraîchement remplacé), on fige le
+              // défaut « 4+ » pour que la série ne soit pas écartée du feedback.
+              onChange(
+                !entry.done && entry.rpe === null
+                  ? { done: true, rpe: DEFAULT_RPE }
+                  : { done: !entry.done },
+              )
+            }
             className={cn(
               'flex h-11 w-11 items-center justify-center rounded-full text-lg transition-all duration-200 active:scale-95',
               entry.done
@@ -458,20 +459,21 @@ interface RpeSliderProps {
 }
 
 function RpeSlider({ index, value, disabled, onChange }: RpeSliderProps) {
-  // Bloc I (Conv #34) — curseur sur-mesure. L'`<input type=range>` natif est
-  // conservé caché (opacity-0, pointer-events:none) UNIQUEMENT pour
-  // l'accessibilité clavier (flèches) et le pilotage e2e (`fill`). Le clic/tap
-  // natif est ainsi neutralisé À LA RACINE (plus d'annulation visible
-  // « par-dessus », plus de flash). La track + le thumb sont des <div> placés en
-  // % et SEUL un glissement horizontal change la valeur : un tap pur ne fait
-  // rien, et le scroll vertical de la page passe via `touch-action: pan-y`.
-  // Thumb et libellés partagent le même repère → alignement exact des crans.
+  // Bloc S (Conv #45) — curseur sur-mesure, refondu : le POUCE (thumb) est
+  // l'unique poignée de drag. La piste est totalement inerte au pointeur — un
+  // tap ne pose plus aucune valeur, et le scroll vertical de la page passe
+  // librement par-dessus la barre. Pour régler sa Réserve, l'utilisateur
+  // attrape le pouce là où il est et le glisse jusqu'au cran voulu. Le pouce
+  // porte `touch-action: none` (drag fluide, jamais hijacké par le scroll) et
+  // une zone de prise élargie (~44 px, pseudo `before`) sans grossir son rendu.
+  // L'`<input type=range>` natif reste caché (`pointer-events:none`) pour
+  // l'a11y clavier (flèches) + le pilotage e2e (`fill`). Thumb et libellés
+  // partagent le même repère % → alignement exact des crans.
   const rpe = value ?? DEFAULT_RPE;
   const pct = ((rpe - RPE_MIN) / (RPE_MAX - RPE_MIN)) * 100;
 
   const trackRef = useRef<HTMLDivElement | null>(null);
-  const dragRef = useRef<{ startX: number; engaged: boolean } | null>(null);
-  const DRAG_PX = 4;
+  const draggingRef = useRef(false);
 
   function valueFromClientX(clientX: number): number {
     const el = trackRef.current;
@@ -484,36 +486,29 @@ function RpeSlider({ index, value, disabled, onChange }: RpeSliderProps) {
     return Math.min(RPE_MAX, Math.max(RPE_MIN, snapped));
   }
 
-  function onTrackPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
+  function onThumbPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
     if (disabled) return;
-    dragRef.current = { startX: e.clientX, engaged: false };
-  }
-  function onTrackPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
-    const d = dragRef.current;
-    if (d === null || disabled) return;
-    if (!d.engaged) {
-      // Tant que le déplacement horizontal n'est pas franc, on ne fait RIEN :
-      // un tap (≈ 0 px) ou un scroll vertical ne déplacent jamais le curseur.
-      if (Math.abs(e.clientX - d.startX) < DRAG_PX) return;
-      d.engaged = true;
-      try {
-        e.currentTarget.setPointerCapture(e.pointerId);
-      } catch {
-        /* capture best-effort */
-      }
+    draggingRef.current = true;
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* capture best-effort */
     }
+  }
+  function onThumbPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
+    if (disabled || !draggingRef.current) return;
+    // Un tap pur sur le pouce ne bouge rien : valueFromClientX à sa position
+    // courante renvoie ~la valeur actuelle.
     const v = valueFromClientX(e.clientX);
     if (v !== value) onChange(v);
   }
-  function onTrackPointerEnd(e: ReactPointerEvent<HTMLDivElement>) {
-    const d = dragRef.current;
-    dragRef.current = null;
-    if (d?.engaged) {
-      try {
-        e.currentTarget.releasePointerCapture(e.pointerId);
-      } catch {
-        /* noop */
-      }
+  function onThumbPointerEnd(e: ReactPointerEvent<HTMLDivElement>) {
+    if (!draggingRef.current) return;
+    draggingRef.current = false;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* noop */
     }
   }
 
@@ -536,14 +531,9 @@ function RpeSlider({ index, value, disabled, onChange }: RpeSliderProps) {
       <div className={cn('relative px-2.5', disabled && 'opacity-50')}>
         <div
           ref={trackRef}
-          onPointerDown={onTrackPointerDown}
-          onPointerMove={onTrackPointerMove}
-          onPointerUp={onTrackPointerEnd}
-          onPointerCancel={onTrackPointerEnd}
-          style={{ touchAction: 'pan-y' }}
           className={cn(
             'relative h-3 w-full select-none rounded-full border border-anthracite-700',
-            disabled ? 'cursor-not-allowed' : 'cursor-pointer',
+            disabled && 'cursor-not-allowed',
           )}
         >
           {/* Dégradé plein : la couleur à une position donnée ne dépend pas du
@@ -555,12 +545,21 @@ function RpeSlider({ index, value, disabled, onChange }: RpeSliderProps) {
             className="absolute inset-y-0 right-0 rounded-r-full bg-anthracite-800"
             style={{ left: `${pct}%` }}
           />
-          {/* Thumb. */}
+          {/* Thumb = unique poignée de drag (Bloc S). Zone de prise élargie
+              ~44 px via le pseudo `before` transparent (sans grossir le rendu) ;
+              `touch-none` pour un drag fluide. Tout le reste de la barre reste
+              scrollable. */}
           <div
             aria-hidden="true"
+            onPointerDown={disabled ? undefined : onThumbPointerDown}
+            onPointerMove={disabled ? undefined : onThumbPointerMove}
+            onPointerUp={disabled ? undefined : onThumbPointerEnd}
+            onPointerCancel={disabled ? undefined : onThumbPointerEnd}
             className={cn(
-              'absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-sang-600 bg-white shadow-[0_1px_4px_rgba(0,0,0,0.5)]',
-              !disabled && 'transition-transform active:scale-110',
+              "absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-sang-600 bg-white shadow-[0_1px_4px_rgba(0,0,0,0.5)] before:absolute before:-inset-3 before:content-['']",
+              disabled
+                ? 'cursor-not-allowed'
+                : 'cursor-grab touch-none transition-transform active:scale-110 active:cursor-grabbing',
             )}
             style={{ left: `${pct}%` }}
           />

@@ -178,12 +178,12 @@ function WelcomeOverlay({ onStart }: { onStart: () => void }) {
 // Exit demo button (top-right)
 // =============================================================================
 
-function ExitDemoButton() {
+function ExitDemoButton({ onExit }: { onExit: () => void }) {
   return (
     <button
       type="button"
       data-testid="btn-exit-demo"
-      onClick={() => exitDemoMode()}
+      onClick={onExit}
       className="fixed right-3 z-[55] rounded-full bg-sang-600 px-3 py-1.5 text-xs font-medium uppercase tracking-wider text-white shadow-lg hover:bg-sang-500"
       style={{ top: 'max(env(safe-area-inset-top), 0.75rem)' }}
     >
@@ -509,7 +509,11 @@ export function DemoModeProvider() {
       return i - 1;
     });
   }, []);
-  const finish = useCallback(() => {
+  // Bloc S (Conv #45) — sortie de démo UNIQUE : on restaure l'état réel ET on
+  // ramène au planning. Sans la nav, quitter depuis une route comme
+  // `/cycle-bilan` laissait l'utilisateur bloqué sur cette page après la sortie.
+  // Utilisée par le bouton « Quitter » (top-right) ET le dernier step du tour.
+  const exitToProgramme = useCallback(() => {
     exitDemoMode();
     navigate('/programme');
   }, [navigate]);
@@ -521,7 +525,7 @@ export function DemoModeProvider() {
   return (
     <>
       {welcomeOpen && <WelcomeOverlay onStart={closeWelcome} />}
-      <ExitDemoButton />
+      <ExitDemoButton onExit={exitToProgramme} />
       {!welcomeOpen && currentStep !== null && (
         <GuidedTourBanner
           step={currentStep}
@@ -529,7 +533,7 @@ export function DemoModeProvider() {
           total={total}
           onNext={next}
           onPrev={prev}
-          onFinish={finish}
+          onFinish={exitToProgramme}
         />
       )}
     </>

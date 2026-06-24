@@ -18,6 +18,7 @@ import {
   countDoneSets,
   countPlannedSets,
   formatRest,
+  propagateLoadToUpcomingSets,
   recalibrateUpcomingSets,
   type SessionEntries,
   type SetEntry,
@@ -174,6 +175,7 @@ export function SessionRunner({
         return;
       }
       let triggeredIdx = -1;
+      let triggeredSetIdx = -1;
       for (let i = 0; i < next.length && triggeredIdx < 0; i++) {
         const newRow = next[i] ?? [];
         const oldRow = entries[i] ?? [];
@@ -193,6 +195,7 @@ export function SessionRunner({
             isCountableForLiveE1rm(ne) && !isCountableForLiveE1rm(oe);
           if (newDone || newReliable) {
             triggeredIdx = i;
+            triggeredSetIdx = j;
             break;
           }
         }
@@ -210,6 +213,16 @@ export function SessionRunner({
             bodyweightKg: bodyweight,
             e1rmInitial: e1rmInitialRef.current,
             itemIdx: triggeredIdx,
+          });
+        } else {
+          // Bloc S (Conv #45) — exo déjà calibré : on ne recalibre pas en
+          // séance, mais on reporte une charge MODIFIÉE par l'user sur les
+          // séries suivantes (no-op si elle vaut encore la prescription).
+          next = propagateLoadToUpcomingSets({
+            entries: next,
+            plan,
+            itemIdx: triggeredIdx,
+            fromSetIdx: triggeredSetIdx,
           });
         }
       }
@@ -455,7 +468,6 @@ export function SessionRunner({
                           chargeType={chargeType}
                           pdcOnly={pdcOnly}
                           unilateral={ex?.uni ?? false}
-                          checkLocked={j > 0 && !entrySets[j - 1]!.done}
                           onChange={(patch) =>
                             handleEntriesChange(updateSetEntry(entries, i, j, patch))
                           }
