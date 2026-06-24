@@ -29,8 +29,7 @@
 export const EXERCISE_SYNONYMES: Readonly<Record<string, readonly string[]>> = {
   // Pectoraux
   bench_bb: ['DC', 'bench press', 'bench', 'développé barre'],
-  bench_bb_incl30: ['DC incliné', 'incline bench', 'incliné barre', 'développé incliné'],
-  bench_bb_incl45: ['DC très incliné', 'incline 45'],
+  bench_bb_incl30: ['DC incliné', 'incline bench', 'incliné barre', 'développé incliné', 'DC très incliné', 'incline 45', 'incliné barre 30'],
   bench_bb_decl: ['DC décliné', 'decline bench'],
   bench_bb_close: ['DC serré', 'close grip bench', 'CGBP'],
   smith_bench: ['DC smith', 'bench smith', 'smith bench press', 'smith chest press'],
@@ -53,21 +52,24 @@ export const EXERCISE_SYNONYMES: Readonly<Record<string, readonly string[]>> = {
   dips_chest: ['dips pectoraux', 'chest dips'],
   pushup: ['pompes', 'push-up', 'push up'],
   pushup_loaded: ['pompes lestées', 'weighted pushup'],
-  db_fly_flat: ['écarté', 'écarté plat', 'fly', 'dumbbell fly'],
-  db_fly_incl: ['écarté incliné', 'incline fly'],
+  db_fly_flat: ['écarté', 'écarté plat', 'fly', 'dumbbell fly', 'écarté incliné', 'incline fly'],
   pec_deck: [
     'butterfly', 'papillon', 'pec fly', 'machine pectorale',
     'pec fly machine', 'chest fly machine', 'selection pec deck',
     'pectoral machine',
   ],
-  cable_crossover_high: ['crossover', 'crossover haut', 'high cable fly', 'vis-à-vis haut'],
-  cable_crossover_mid: ['crossover milieu', 'mid cable fly', 'vis-à-vis milieu'],
-  cable_crossover_low: ['crossover bas', 'low cable fly', 'vis-à-vis bas'],
+  cable_crossover_mid: [
+    'crossover', 'crossover milieu', 'mid cable fly', 'vis-à-vis milieu',
+    'crossover haut', 'high cable fly', 'vis-à-vis haut',
+    'crossover bas', 'low cable fly', 'vis-à-vis bas',
+  ],
 
   // Dos largeur
-  pullup: ['traction', 'pull-up', 'pull up', 'tractions pronation'],
-  pullup_neutral: ['traction neutre', 'pull-up neutral grip'],
-  chinup: ['chin-up', 'chin up', 'traction supination'],
+  pullup: [
+    'traction', 'pull-up', 'pull up', 'tractions pronation',
+    'traction neutre', 'pull-up neutral grip',
+    'chin-up', 'chin up', 'traction supination',
+  ],
   pullup_assisted: ['traction assistée', 'assisted pullup', 'machine traction assistée'],
   lat_pulldown: [
     'tirage poulie haute', 'lat pulldown', 'pulldown',
@@ -75,26 +77,16 @@ export const EXERCISE_SYNONYMES: Readonly<Record<string, readonly string[]>> = {
     'iso-lateral pulldown', 'selection pulldown', 'lat machine',
     'aura pulldown', 'versa pulldown', 'magnum pulldown',
     'tirage nuque', 'tirage devant',
-  ],
-  lat_pulldown_neutral: [
     'tirage neutre', 'pulldown neutral', 'close grip pulldown',
-    'tirage prise neutre serrée',
-  ],
-  lat_pulldown_supin: [
-    'tirage supination', 'pulldown supinated', 'reverse grip pulldown',
-    'tirage prise inversée',
-  ],
-  lat_pulldown_wide: [
-    'tirage prise large', 'wide pulldown', 'wide grip lat pulldown',
+    'tirage prise neutre serrée', 'tirage supination', 'pulldown supinated',
+    'reverse grip pulldown', 'tirage prise inversée', 'tirage prise large',
+    'wide pulldown', 'wide grip lat pulldown',
   ],
   db_pullover: ['pullover', 'pullover haltère'],
   cable_pullover: [
     'pullover poulie', 'cable pullover', 'standing rope pullover',
-    'straight arm pullover',
-  ],
-  straight_arm_pulldown: [
-    'straight arm pulldown', 'pulldown bras tendus',
-    'tirage bras tendus poulie haute',
+    'straight arm pullover', 'straight arm pulldown', 'pulldown bras tendus',
+    'tirage bras tendus poulie haute', 'tirage bras tendus',
   ],
 
   // Dos épaisseur
@@ -115,9 +107,9 @@ export const EXERCISE_SYNONYMES: Readonly<Record<string, readonly string[]>> = {
   cable_row: [
     'tirage horizontal', 'rowing poulie', 'cable row',
     'tirage poulie basse', 'seated cable row', 'rowing assis poulie',
+    'cable row neutre', 'tirage horizontal neutre', 'narrow grip cable row',
+    'cable row large', 'tirage horizontal large', 'wide grip cable row',
   ],
-  cable_row_neutral: ['cable row neutre', 'tirage horizontal neutre', 'narrow grip cable row'],
-  cable_row_wide: ['cable row large', 'tirage horizontal large', 'wide grip cable row'],
   inverted_row: ['rowing inversé', 'rowing australien', 'australian pullup'],
 
   // Trapèzes
@@ -134,8 +126,7 @@ export const EXERCISE_SYNONYMES: Readonly<Record<string, readonly string[]>> = {
   ],
 
   // Quadriceps / fessiers
-  squat_bb_high: ['squat', 'back squat', 'high bar', 'squat haute'],
-  squat_bb_low: ['low bar squat', 'low bar', 'squat basse'],
+  squat_bb_high: ['squat', 'back squat', 'high bar', 'squat haute', 'low bar squat', 'low bar', 'squat basse'],
   front_squat: ['front squat', 'FS'],
   goblet_squat: ['goblet'],
   smith_squat: ['squat smith', 'smith machine squat'],
@@ -147,11 +138,8 @@ export const EXERCISE_SYNONYMES: Readonly<Record<string, readonly string[]>> = {
     'presse 45', 'presse oblique', 'leg press', 'presse à cuisses',
     'selection leg press', 'iso-lateral leg press', 'plate loaded leg press',
     'aura leg press', 'versa leg press', 'magnum leg press',
-    'presse inclinée',
-  ],
-  leg_press_horizontal: [
-    'presse horizontale', 'horizontal leg press', 'seated leg press',
-    'presse à cuisses assise',
+    'presse inclinée', 'presse horizontale', 'horizontal leg press',
+    'seated leg press', 'presse à cuisses assise',
   ],
   bulgarian_split: ['squat bulgare', 'bulgarian', 'split squat', 'bulgarian split'],
   walking_lunge: ['fente marchée', 'lunges', 'walking lunges'],
@@ -164,8 +152,7 @@ export const EXERCISE_SYNONYMES: Readonly<Record<string, readonly string[]>> = {
   sissy_squat: ['sissy'],
 
   // Ischios / fessiers / lombaires
-  deadlift_conv: ['SDT', 'soulevé terre', 'deadlift', 'DL', 'SDT conventionnel'],
-  deadlift_sumo: ['SDT sumo', 'sumo deadlift'],
+  deadlift_conv: ['SDT', 'soulevé terre', 'deadlift', 'DL', 'SDT conventionnel', 'SDT sumo', 'sumo deadlift'],
   deadlift_trap_bar: ['trap bar', 'hex bar', 'SDT trap bar', 'trap bar deadlift'],
   rdl_bb: ['RDL', 'deadlift roumain', 'romanian deadlift', 'stiff leg deadlift', 'SDT jambes tendues'],
   rdl_db: ['RDL haltères', 'romanian deadlift db'],
@@ -190,30 +177,28 @@ export const EXERCISE_SYNONYMES: Readonly<Record<string, readonly string[]>> = {
     'hip thrust machine', 'HT machine', 'glute drive',
     'nautilus glute drive', 'selection glute', 'machine hip thrust',
   ],
-  glute_bridge: ['glute bridge', 'pont fessier', 'bridge'],
+  glute_bridge: ['glute bridge', 'pont fessier', 'bridge', 'glute bridge barre'],
   single_leg_hip_thrust: ['hip thrust unilatéral', 'single leg hip thrust'],
   cable_kickback: [
     'kickback fessier', 'kickback poulie', 'glute kickback', 'cable glute kickback',
   ],
   cable_pull_through: ['pull through', 'pull-through poulie'],
-  bb_glute_bridge: ['glute bridge barre'],
 
   // Mollets
   calf_standing_machine: [
     'mollets debout', 'standing calf raise', 'extension mollets debout',
-    'standing calf machine', 'machine mollets debout',
+    'standing calf machine', 'machine mollets debout', 'mollets presse',
+    'calf press', 'calf press on leg press',
   ],
   calf_seated_machine: [
     'mollets assis', 'seated calf raise', 'seated calf machine',
     'machine mollets assis',
   ],
-  calf_leg_press: ['mollets presse', 'calf press', 'calf press on leg press'],
   calf_smith: ['mollets smith', 'smith calf raise'],
   calf_db_single: ['mollets haltère', 'mollet unilatéral', 'single leg calf raise'],
 
   // Épaules
-  ohp_bb_standing: ['OHP', 'développé militaire', 'overhead press', 'military press', 'DM', 'développé épaules'],
-  ohp_bb_seated: ['OHP assis', 'développé militaire assis', 'seated overhead press', 'seated barbell military press'],
+  ohp_bb_standing: ['OHP', 'développé militaire', 'overhead press', 'military press', 'DM', 'développé épaules', 'OHP assis', 'développé militaire assis', 'seated overhead press', 'seated barbell military press'],
   ohp_db_seated: ['DDH', 'développé haltères', 'développé épaules haltères', 'seated db press', 'shoulder press'],
   arnold_press: ['arnold', 'arnold dumbbell press'],
   machine_shoulder_press: [
@@ -231,8 +216,7 @@ export const EXERCISE_SYNONYMES: Readonly<Record<string, readonly string[]>> = {
     'selection lateral raise', 'machine side raise',
   ],
   face_pull: ['face pull', 'cable face pull'],
-  rear_delt_db_fly: ['oiseau', 'rear delt fly', 'rear delt', 'élévations buste penché'],
-  chest_supported_rear_fly: ['oiseau torse appuyé', 'chest supported rear delt', 'seated bent over rear delt'],
+  rear_delt_db_fly: ['oiseau', 'rear delt fly', 'rear delt', 'élévations buste penché', 'oiseau torse appuyé', 'chest supported rear delt', 'seated bent over rear delt'],
   cable_rear_delt_fly: ['rear delt poulie', 'cable rear delt', 'cable rear delt fly'],
   reverse_pec_deck: [
     'pec deck inversé', 'reverse pec deck', 'rear pec deck',
@@ -240,7 +224,7 @@ export const EXERCISE_SYNONYMES: Readonly<Record<string, readonly string[]>> = {
   ],
 
   // Biceps
-  bb_curl: ['curl biceps', 'curl barre', 'barbell curl'],
+  bb_curl: ['curl biceps', 'curl barre', 'barbell curl', 'curl EZ', 'EZ curl', 'curl pied', 'ez-bar curl'],
   bicep_curl_machine: [
     'curl machine', 'curl biceps machine', 'machine curl', 'arm curl',
     'iso-lateral bicep curl', 'selection arm curl', 'machine bicep curl',
@@ -264,7 +248,6 @@ export const EXERCISE_SYNONYMES: Readonly<Record<string, readonly string[]>> = {
     'adductor', 'adducteurs machine', 'machine adducteurs',
     'thigh adductor', 'hip adductor',
   ],
-  ez_curl: ['curl EZ', 'EZ curl', 'curl pied', 'ez-bar curl'],
   db_curl_alt: ['curl haltères', 'curl alterné', 'biceps curl', 'db curl', 'alternate dumbbell curl'],
   incline_db_curl: ['curl incliné', 'incline db curl', 'incline dumbbell curl'],
   hammer_curl: ['hammer', 'marteau', 'curl marteau', 'hammer curl'],
@@ -280,26 +263,23 @@ export const EXERCISE_SYNONYMES: Readonly<Record<string, readonly string[]>> = {
     'arm extension', 'iso-lateral tricep extension',
     'selection arm extension',
   ],
-  triceps_pushdown_bar: [
-    'pushdown', 'extension triceps poulie', 'tirage triceps',
-    'triceps pushdown', 'triceps extension cable',
+  triceps_pushdown_rope: [
+    'pushdown corde', 'rope pushdown', 'triceps corde', 'pushdown',
+    'extension triceps poulie', 'tirage triceps', 'triceps pushdown',
+    'triceps extension cable', 'pushdown V-bar', 'V-bar pushdown', 'triceps v-bar',
   ],
-  triceps_pushdown_rope: ['pushdown corde', 'rope pushdown', 'triceps corde'],
   dips_triceps: ['dips', 'dips triceps', 'triceps dips'],
-  close_grip_bench: ['DC serré', 'close grip bench', 'CGBP'],
   overhead_db_extension: ['extension nuque haltères', 'overhead triceps extension', 'french press haltères', 'seated triceps press'],
   overhead_cable_extension: ['extension nuque poulie', 'overhead cable extension', 'cable overhead extension'],
   french_press_ez: ['french press', 'skull crusher', 'skullcrusher', 'lying triceps extension', 'ez-bar skullcrusher'],
   jm_press: ['JM press', 'JM'],
   kickback_db: ['kickback triceps', 'triceps kickback', 'dumbbell kickback'],
-  cable_pushdown_v_bar: ['pushdown V-bar', 'V-bar pushdown', 'triceps v-bar'],
 
   // Abdos / obliques
   cable_crunch: ['crunch poulie', 'cable crunch'],
   crunch_machine: ['crunch machine', 'abdos machine', 'ab crunch machine', 'selection ab crunch'],
   crunch_floor: ['crunch', 'crunches', 'abdos', 'crunch sol'],
-  hanging_leg_raise: ['relevé jambes', 'hanging leg raise', 'abdos suspendu', 'leg raise'],
-  captains_chair_leg_raise: ['chaise romaine', "captain's chair"],
+  hanging_leg_raise: ['relevé jambes', 'hanging leg raise', 'abdos suspendu', 'leg raise', 'chaise romaine', "captain's chair"],
   lying_leg_raise: ['relevé jambes allongé', 'lying leg raise'],
   ab_wheel_rollout: ['ab wheel', 'roulette abdos', 'rollout'],
   sit_up_decline: ['sit-up', 'sit up', 'redressement assis'],
@@ -311,8 +291,8 @@ export const EXERCISE_SYNONYMES: Readonly<Record<string, readonly string[]>> = {
   // Lombaires
   back_extension_45: [
     'hyperextension', 'hyperextension 45', 'lombaires banc', 'back extension',
-    'banc à lombaires', 'roman chair',
+    'banc à lombaires', 'roman chair', 'hyperextension horizontale',
+    'horizontal back extension',
   ],
-  back_extension_horizontal: ['hyperextension horizontale', 'horizontal back extension'],
   reverse_hyper: ['reverse hyper', 'reverse hyperextension'],
 };

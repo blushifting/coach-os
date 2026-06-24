@@ -99,9 +99,11 @@ test('catalogue : bandeaux repliables + favori (Bloc F)', async ({ page }) => {
   await expect(page.getByTestId('catalogue-page')).toBeVisible();
 
   // Bandeau « Machine » replié par défaut → on l'ouvre, ses cartes apparaissent.
-  const machineToggle = page.getByTestId('catalogue-band-toggle-machine_stack');
+  // Bloc Q (Conv #46) : les bandeaux sont regroupés par famille (clé `machine`
+  // qui fond machine guidée + assisté), plus par `ChargeType` brut.
+  const machineToggle = page.getByTestId('catalogue-band-toggle-machine');
   await expect(machineToggle).toBeVisible();
-  const machineBody = page.getByTestId('catalogue-band-body-machine_stack');
+  const machineBody = page.getByTestId('catalogue-band-body-machine');
   await expect(machineBody).toBeHidden();
   await machineToggle.click();
   await expect(machineBody).toBeVisible();

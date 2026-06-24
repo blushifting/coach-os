@@ -34,7 +34,7 @@
   },
   {
     "id": "bench_bb_incl30",
-    "nom_fr": "Développé incliné barre 30°",
+    "nom_fr": "Développé incliné à la barre",
     "synonymes": [],
     "pattern": "push_h",
     "type": "compound",
@@ -65,43 +65,6 @@
     "tags": [
       "incline_30",
       "pec_haut"
-    ],
-    "note": ""
-  },
-  {
-    "id": "bench_bb_incl45",
-    "nom_fr": "Développé incliné barre 45°",
-    "synonymes": [],
-    "pattern": "push_h",
-    "type": "compound",
-    "charge": "barbell",
-    "equip": [
-      "bb_oly",
-      "bench_incl",
-      "rack"
-    ],
-    "uni": false,
-    "muscles": {
-      "pectoraux": 1,
-      "deltos_anterieurs": 0.5,
-      "triceps": 0.5
-    },
-    "subst": "bench_incl",
-    "inc_kg": 1,
-    "reps_hyp": [
-      6,
-      10
-    ],
-    "reps_force": [
-      3,
-      5
-    ],
-    "repos_s": 180,
-    "dif": "élevé",
-    "tags": [
-      "incline_45",
-      "pec_haut",
-      "dlat"
     ],
     "note": ""
   },
@@ -466,7 +429,7 @@
   },
   {
     "id": "db_fly_flat",
-    "nom_fr": "Écarté haltères plat",
+    "nom_fr": "Écarté aux haltères",
     "synonymes": [],
     "pattern": "isolation",
     "type": "isolation",
@@ -490,37 +453,6 @@
     "dif": "moyen",
     "tags": [
       "lengthened_bias"
-    ],
-    "note": ""
-  },
-  {
-    "id": "db_fly_incl",
-    "nom_fr": "Écarté haltères incliné",
-    "synonymes": [],
-    "pattern": "isolation",
-    "type": "isolation",
-    "charge": "dumbbell",
-    "equip": [
-      "db",
-      "bench_incl"
-    ],
-    "uni": false,
-    "muscles": {
-      "pectoraux": 1
-    },
-    "subst": "pec_fly",
-    "inc_kg": 2,
-    "reps_hyp": [
-      10,
-      15
-    ],
-    "reps_force": null,
-    "repos_s": 90,
-    "dif": "moyen",
-    "tags": [
-      "incline",
-      "lengthened_bias",
-      "pec_haut"
     ],
     "note": ""
   },
@@ -553,36 +485,8 @@
     "note": ""
   },
   {
-    "id": "cable_crossover_high",
-    "nom_fr": "Crossover poulie haute",
-    "synonymes": [],
-    "pattern": "isolation",
-    "type": "isolation",
-    "charge": "cable",
-    "equip": [
-      "cable_double"
-    ],
-    "uni": false,
-    "muscles": {
-      "pectoraux": 1
-    },
-    "subst": "pec_fly",
-    "inc_kg": 1,
-    "reps_hyp": [
-      10,
-      15
-    ],
-    "reps_force": null,
-    "repos_s": 90,
-    "dif": "facile",
-    "tags": [
-      "pec_bas"
-    ],
-    "note": ""
-  },
-  {
     "id": "cable_crossover_mid",
-    "nom_fr": "Crossover poulie milieu",
+    "nom_fr": "Crossover à la poulie",
     "synonymes": [],
     "pattern": "isolation",
     "type": "isolation",
@@ -607,36 +511,8 @@
     "note": ""
   },
   {
-    "id": "cable_crossover_low",
-    "nom_fr": "Crossover poulie basse",
-    "synonymes": [],
-    "pattern": "isolation",
-    "type": "isolation",
-    "charge": "cable",
-    "equip": [
-      "cable_double"
-    ],
-    "uni": false,
-    "muscles": {
-      "pectoraux": 1
-    },
-    "subst": "pec_fly",
-    "inc_kg": 1,
-    "reps_hyp": [
-      10,
-      15
-    ],
-    "reps_force": null,
-    "repos_s": 90,
-    "dif": "facile",
-    "tags": [
-      "pec_haut"
-    ],
-    "note": ""
-  },
-  {
     "id": "pullup",
-    "nom_fr": "Traction prise pronation",
+    "nom_fr": "Traction",
     "synonymes": [],
     "pattern": "pull_v",
     "type": "compound",
@@ -664,73 +540,6 @@
     "dif": "élevé",
     "tags": [
       "prise_pronation"
-    ],
-    "note": ""
-  },
-  {
-    "id": "pullup_neutral",
-    "nom_fr": "Traction prise neutre",
-    "synonymes": [],
-    "pattern": "pull_v",
-    "type": "compound",
-    "charge": "bodyweight_loaded",
-    "equip": [
-      "pull_bar"
-    ],
-    "uni": false,
-    "muscles": {
-      "dos_largeur": 1,
-      "biceps": 0.5,
-      "dos_epaisseur": 0.5
-    },
-    "subst": "pull_v",
-    "inc_kg": 1,
-    "reps_hyp": [
-      5,
-      12
-    ],
-    "reps_force": [
-      3,
-      6
-    ],
-    "repos_s": 180,
-    "dif": "élevé",
-    "tags": [
-      "prise_neutre"
-    ],
-    "note": ""
-  },
-  {
-    "id": "chinup",
-    "nom_fr": "Traction prise supination",
-    "synonymes": [],
-    "pattern": "pull_v",
-    "type": "compound",
-    "charge": "bodyweight_loaded",
-    "equip": [
-      "pull_bar"
-    ],
-    "uni": false,
-    "muscles": {
-      "dos_largeur": 1,
-      "biceps": 0.5,
-      "dos_epaisseur": 0.5
-    },
-    "subst": "pull_v",
-    "inc_kg": 1,
-    "reps_hyp": [
-      5,
-      12
-    ],
-    "reps_force": [
-      3,
-      6
-    ],
-    "repos_s": 180,
-    "dif": "élevé",
-    "tags": [
-      "prise_supination",
-      "biceps+"
     ],
     "note": ""
   },
@@ -764,7 +573,7 @@
   },
   {
     "id": "lat_pulldown",
-    "nom_fr": "Tirage vertical poulie haute",
+    "nom_fr": "Tirage vertical à la poulie",
     "synonymes": [],
     "pattern": "pull_v",
     "type": "compound",
@@ -792,105 +601,6 @@
     "dif": "facile",
     "tags": [
       "prise_pronation"
-    ],
-    "note": ""
-  },
-  {
-    "id": "lat_pulldown_neutral",
-    "nom_fr": "Tirage vertical prise neutre",
-    "synonymes": [],
-    "pattern": "pull_v",
-    "type": "compound",
-    "charge": "machine_stack",
-    "equip": [
-      "lat_pulldown"
-    ],
-    "uni": false,
-    "muscles": {
-      "dos_largeur": 1,
-      "biceps": 0.5,
-      "dos_epaisseur": 0.5
-    },
-    "subst": "pull_v",
-    "inc_kg": 1,
-    "reps_hyp": [
-      8,
-      12
-    ],
-    "reps_force": [
-      4,
-      6
-    ],
-    "repos_s": 120,
-    "dif": "facile",
-    "tags": [
-      "prise_neutre"
-    ],
-    "note": ""
-  },
-  {
-    "id": "lat_pulldown_supin",
-    "nom_fr": "Tirage vertical prise supination",
-    "synonymes": [],
-    "pattern": "pull_v",
-    "type": "compound",
-    "charge": "machine_stack",
-    "equip": [
-      "lat_pulldown"
-    ],
-    "uni": false,
-    "muscles": {
-      "dos_largeur": 1,
-      "biceps": 0.5,
-      "dos_epaisseur": 0.5
-    },
-    "subst": "pull_v",
-    "inc_kg": 1,
-    "reps_hyp": [
-      8,
-      12
-    ],
-    "reps_force": [
-      4,
-      6
-    ],
-    "repos_s": 120,
-    "dif": "facile",
-    "tags": [
-      "prise_supination"
-    ],
-    "note": ""
-  },
-  {
-    "id": "lat_pulldown_wide",
-    "nom_fr": "Tirage prise large pronation",
-    "synonymes": [],
-    "pattern": "pull_v",
-    "type": "compound",
-    "charge": "machine_stack",
-    "equip": [
-      "lat_pulldown"
-    ],
-    "uni": false,
-    "muscles": {
-      "dos_largeur": 1,
-      "dos_epaisseur": 0.5,
-      "biceps": 0.5
-    },
-    "subst": "pull_v",
-    "inc_kg": 1,
-    "reps_hyp": [
-      8,
-      12
-    ],
-    "reps_force": [
-      4,
-      6
-    ],
-    "repos_s": 120,
-    "dif": "facile",
-    "tags": [
-      "prise_large"
     ],
     "note": ""
   },
@@ -926,7 +636,7 @@
   },
   {
     "id": "cable_pullover",
-    "nom_fr": "Pullover poulie haute",
+    "nom_fr": "Pullover à la poulie",
     "synonymes": [],
     "pattern": "isolation",
     "type": "isolation",
@@ -938,32 +648,6 @@
     "muscles": {
       "dos_largeur": 1,
       "pectoraux": 0.5
-    },
-    "subst": "pullover",
-    "inc_kg": 1,
-    "reps_hyp": [
-      10,
-      15
-    ],
-    "reps_force": null,
-    "repos_s": 90,
-    "dif": "facile",
-    "tags": [],
-    "note": ""
-  },
-  {
-    "id": "straight_arm_pulldown",
-    "nom_fr": "Tirage bras tendus poulie",
-    "synonymes": [],
-    "pattern": "isolation",
-    "type": "isolation",
-    "charge": "cable",
-    "equip": [
-      "cable_high"
-    ],
-    "uni": false,
-    "muscles": {
-      "dos_largeur": 1
     },
     "subst": "pullover",
     "inc_kg": 1,
@@ -1143,7 +827,7 @@
   },
   {
     "id": "cable_row",
-    "nom_fr": "Tirage horizontal poulie basse",
+    "nom_fr": "Tirage horizontal à la poulie",
     "synonymes": [],
     "pattern": "pull_h",
     "type": "compound",
@@ -1170,74 +854,6 @@
     "repos_s": 120,
     "dif": "facile",
     "tags": [],
-    "note": ""
-  },
-  {
-    "id": "cable_row_neutral",
-    "nom_fr": "Cable row prise neutre étroite",
-    "synonymes": [],
-    "pattern": "pull_h",
-    "type": "compound",
-    "charge": "cable",
-    "equip": [
-      "cable_low"
-    ],
-    "uni": false,
-    "muscles": {
-      "dos_epaisseur": 1,
-      "dos_largeur": 0.5,
-      "biceps": 0.5
-    },
-    "subst": "row_h_cable",
-    "inc_kg": 1,
-    "reps_hyp": [
-      8,
-      12
-    ],
-    "reps_force": [
-      4,
-      6
-    ],
-    "repos_s": 120,
-    "dif": "facile",
-    "tags": [
-      "prise_neutre"
-    ],
-    "note": ""
-  },
-  {
-    "id": "cable_row_wide",
-    "nom_fr": "Cable row prise large pronation",
-    "synonymes": [],
-    "pattern": "pull_h",
-    "type": "compound",
-    "charge": "cable",
-    "equip": [
-      "cable_low"
-    ],
-    "uni": false,
-    "muscles": {
-      "dos_epaisseur": 1,
-      "deltos_posterieurs": 0.5,
-      "dos_largeur": 0.5,
-      "biceps": 0.5
-    },
-    "subst": "row_h_cable",
-    "inc_kg": 1,
-    "reps_hyp": [
-      8,
-      12
-    ],
-    "reps_force": [
-      4,
-      6
-    ],
-    "repos_s": 120,
-    "dif": "facile",
-    "tags": [
-      "prise_large",
-      "dpost+"
-    ],
     "note": ""
   },
   {
@@ -1443,7 +1059,7 @@
   },
   {
     "id": "squat_bb_high",
-    "nom_fr": "Squat barre haute",
+    "nom_fr": "Squat à la barre",
     "synonymes": [],
     "pattern": "squat",
     "type": "compound",
@@ -1472,41 +1088,6 @@
     "repos_s": 240,
     "dif": "élevé",
     "tags": [],
-    "note": ""
-  },
-  {
-    "id": "squat_bb_low",
-    "nom_fr": "Squat barre basse",
-    "synonymes": [],
-    "pattern": "squat",
-    "type": "compound",
-    "charge": "barbell",
-    "equip": [
-      "bb_oly",
-      "rack"
-    ],
-    "uni": false,
-    "muscles": {
-      "quadriceps": 1,
-      "fessiers": 0.5,
-      "ischios": 0.5,
-      "lombaires": 0.5
-    },
-    "subst": "squat_bb",
-    "inc_kg": 1,
-    "reps_hyp": [
-      5,
-      10
-    ],
-    "reps_force": [
-      3,
-      5
-    ],
-    "repos_s": 240,
-    "dif": "élevé",
-    "tags": [
-      "hinge_compose"
-    ],
     "note": ""
   },
   {
@@ -1643,40 +1224,7 @@
   },
   {
     "id": "leg_press_45",
-    "nom_fr": "Presse à jambes 45°",
-    "synonymes": [],
-    "pattern": "squat",
-    "type": "compound",
-    "charge": "machine_stack",
-    "equip": [
-      "leg_press"
-    ],
-    "uni": false,
-    "muscles": {
-      "quadriceps": 1,
-      "fessiers": 0.5,
-      "ischios": 0.5
-    },
-    "subst": "squat_machine",
-    "inc_kg": 1,
-    "reps_hyp": [
-      8,
-      15
-    ],
-    "reps_force": [
-      5,
-      8
-    ],
-    "repos_s": 180,
-    "dif": "facile",
-    "tags": [
-      "guide"
-    ],
-    "note": ""
-  },
-  {
-    "id": "leg_press_horizontal",
-    "nom_fr": "Presse à jambes horizontale",
+    "nom_fr": "Presse à jambes",
     "synonymes": [],
     "pattern": "squat",
     "type": "compound",
@@ -1882,7 +1430,7 @@
   },
   {
     "id": "deadlift_conv",
-    "nom_fr": "Soulevé de terre conventionnel",
+    "nom_fr": "Soulevé de terre",
     "synonymes": [],
     "pattern": "hinge",
     "type": "compound",
@@ -1912,40 +1460,6 @@
     "dif": "élevé",
     "tags": [
       "technique_++"
-    ],
-    "note": ""
-  },
-  {
-    "id": "deadlift_sumo",
-    "nom_fr": "Soulevé de terre sumo",
-    "synonymes": [],
-    "pattern": "hinge",
-    "type": "compound",
-    "charge": "barbell",
-    "equip": [
-      "bb_oly"
-    ],
-    "uni": false,
-    "muscles": {
-      "ischios": 1,
-      "fessiers": 1,
-      "quadriceps": 0.5,
-      "dos_epaisseur": 0.5
-    },
-    "subst": "hinge_deadlift",
-    "inc_kg": 1,
-    "reps_hyp": [
-      3,
-      6
-    ],
-    "reps_force": [
-      1,
-      5
-    ],
-    "repos_s": 240,
-    "dif": "élevé",
-    "tags": [
-      "quad+"
     ],
     "note": ""
   },
@@ -2401,38 +1915,8 @@
     "note": ""
   },
   {
-    "id": "bb_glute_bridge",
-    "nom_fr": "Glute bridge barre lourde",
-    "synonymes": [],
-    "pattern": "hinge",
-    "type": "compound",
-    "charge": "barbell",
-    "equip": [
-      "bb_oly"
-    ],
-    "uni": false,
-    "muscles": {
-      "fessiers": 1,
-      "ischios": 0.5
-    },
-    "subst": "hip_thrust",
-    "inc_kg": 1,
-    "reps_hyp": [
-      6,
-      10
-    ],
-    "reps_force": [
-      3,
-      5
-    ],
-    "repos_s": 150,
-    "dif": "moyen",
-    "tags": [],
-    "note": ""
-  },
-  {
     "id": "calf_standing_machine",
-    "nom_fr": "Calf raise debout machine",
+    "nom_fr": "Mollets debout",
     "synonymes": [],
     "pattern": "isolation",
     "type": "isolation",
@@ -2483,34 +1967,6 @@
     "dif": "facile",
     "tags": [
       "soleus"
-    ],
-    "note": ""
-  },
-  {
-    "id": "calf_leg_press",
-    "nom_fr": "Calf raise sur leg press",
-    "synonymes": [],
-    "pattern": "isolation",
-    "type": "isolation",
-    "charge": "machine_stack",
-    "equip": [
-      "leg_press"
-    ],
-    "uni": false,
-    "muscles": {
-      "mollets": 1
-    },
-    "subst": "calf_raise",
-    "inc_kg": 1,
-    "reps_hyp": [
-      10,
-      20
-    ],
-    "reps_force": null,
-    "repos_s": 90,
-    "dif": "facile",
-    "tags": [
-      "gastrocnemien"
     ],
     "note": ""
   },
@@ -2570,7 +2026,7 @@
   },
   {
     "id": "ohp_bb_standing",
-    "nom_fr": "Développé militaire debout",
+    "nom_fr": "Développé militaire à la barre",
     "synonymes": [],
     "pattern": "push_v",
     "type": "compound",
@@ -2601,38 +2057,6 @@
     "tags": [
       "gainage"
     ],
-    "note": ""
-  },
-  {
-    "id": "ohp_bb_seated",
-    "nom_fr": "Développé militaire assis",
-    "synonymes": [],
-    "pattern": "push_v",
-    "type": "compound",
-    "charge": "barbell",
-    "equip": [
-      "bb_oly",
-      "bench_incl"
-    ],
-    "uni": false,
-    "muscles": {
-      "deltos_anterieurs": 1,
-      "deltos_lateraux": 1,
-      "triceps": 0.5
-    },
-    "subst": "ohp_bb",
-    "inc_kg": 1,
-    "reps_hyp": [
-      6,
-      10
-    ],
-    "reps_force": [
-      3,
-      5
-    ],
-    "repos_s": 150,
-    "dif": "moyen",
-    "tags": [],
     "note": ""
   },
   {
@@ -2846,7 +2270,7 @@
   },
   {
     "id": "rear_delt_db_fly",
-    "nom_fr": "Oiseau haltères buste penché",
+    "nom_fr": "Oiseau",
     "synonymes": [],
     "pattern": "isolation",
     "type": "isolation",
@@ -2869,37 +2293,6 @@
     "repos_s": 60,
     "dif": "facile",
     "tags": [],
-    "note": ""
-  },
-  {
-    "id": "chest_supported_rear_fly",
-    "nom_fr": "Oiseau torse appuyé incliné",
-    "synonymes": [],
-    "pattern": "isolation",
-    "type": "isolation",
-    "charge": "dumbbell",
-    "equip": [
-      "db",
-      "bench_incl"
-    ],
-    "uni": false,
-    "muscles": {
-      "deltos_posterieurs": 1,
-      "dos_epaisseur": 0.5
-    },
-    "subst": "rear_delt",
-    "inc_kg": 2,
-    "reps_hyp": [
-      12,
-      20
-    ],
-    "reps_force": null,
-    "repos_s": 60,
-    "dif": "facile",
-    "tags": [
-      "torse_appuye",
-      "lengthened_bias"
-    ],
     "note": ""
   },
   {
@@ -2960,7 +2353,7 @@
   },
   {
     "id": "bb_curl",
-    "nom_fr": "Curl barre",
+    "nom_fr": "Curl à la barre",
     "synonymes": [],
     "pattern": "isolation",
     "type": "isolation",
@@ -2985,37 +2378,6 @@
     "repos_s": 90,
     "dif": "facile",
     "tags": [],
-    "note": ""
-  },
-  {
-    "id": "ez_curl",
-    "nom_fr": "Curl barre EZ",
-    "synonymes": [],
-    "pattern": "isolation",
-    "type": "isolation",
-    "charge": "barbell",
-    "equip": [
-      "bb_oly"
-    ],
-    "uni": false,
-    "muscles": {
-      "biceps": 1
-    },
-    "subst": "curl_bb",
-    "inc_kg": 1,
-    "reps_hyp": [
-      8,
-      12
-    ],
-    "reps_force": [
-      5,
-      8
-    ],
-    "repos_s": 90,
-    "dif": "facile",
-    "tags": [
-      "poignets"
-    ],
     "note": ""
   },
   {
@@ -3249,39 +2611,8 @@
     "note": ""
   },
   {
-    "id": "triceps_pushdown_bar",
-    "nom_fr": "Pushdown poulie barre",
-    "synonymes": [],
-    "pattern": "isolation",
-    "type": "isolation",
-    "charge": "cable",
-    "equip": [
-      "cable_high"
-    ],
-    "uni": false,
-    "muscles": {
-      "triceps": 1
-    },
-    "subst": "triceps_pushdown",
-    "inc_kg": 1,
-    "reps_hyp": [
-      10,
-      15
-    ],
-    "reps_force": [
-      6,
-      10
-    ],
-    "repos_s": 60,
-    "dif": "facile",
-    "tags": [
-      "tension_constante"
-    ],
-    "note": ""
-  },
-  {
     "id": "triceps_pushdown_rope",
-    "nom_fr": "Pushdown poulie corde",
+    "nom_fr": "Extension triceps à la poulie",
     "synonymes": [],
     "pattern": "isolation",
     "type": "isolation",
@@ -3338,39 +2669,6 @@
     "tags": [
       "torse_droit"
     ],
-    "note": ""
-  },
-  {
-    "id": "close_grip_bench",
-    "nom_fr": "Développé couché prise serrée",
-    "synonymes": [],
-    "pattern": "push_h",
-    "type": "compound",
-    "charge": "barbell",
-    "equip": [
-      "bb_oly",
-      "bench_flat",
-      "rack"
-    ],
-    "uni": false,
-    "muscles": {
-      "triceps": 1,
-      "pectoraux": 0.5,
-      "deltos_anterieurs": 0.5
-    },
-    "subst": "triceps_dips_close",
-    "inc_kg": 1,
-    "reps_hyp": [
-      6,
-      10
-    ],
-    "reps_force": [
-      3,
-      5
-    ],
-    "repos_s": 150,
-    "dif": "élevé",
-    "tags": [],
     "note": ""
   },
   {
@@ -3529,32 +2827,6 @@
     "note": ""
   },
   {
-    "id": "cable_pushdown_v_bar",
-    "nom_fr": "Pushdown V-bar",
-    "synonymes": [],
-    "pattern": "isolation",
-    "type": "isolation",
-    "charge": "cable",
-    "equip": [
-      "cable_high"
-    ],
-    "uni": false,
-    "muscles": {
-      "triceps": 1
-    },
-    "subst": "triceps_pushdown",
-    "inc_kg": 1,
-    "reps_hyp": [
-      10,
-      15
-    ],
-    "reps_force": null,
-    "repos_s": 60,
-    "dif": "facile",
-    "tags": [],
-    "note": ""
-  },
-  {
     "id": "cable_crunch",
     "nom_fr": "Crunch poulie haute",
     "synonymes": [],
@@ -3660,31 +2932,6 @@
     "tags": [
       "lengthened_bias"
     ],
-    "note": ""
-  },
-  {
-    "id": "captains_chair_leg_raise",
-    "nom_fr": "Relevé de jambes chaise romaine",
-    "synonymes": [],
-    "pattern": "core",
-    "type": "isolation",
-    "charge": "bodyweight_loaded",
-    "equip": [],
-    "uni": false,
-    "muscles": {
-      "abdos": 1,
-      "obliques": 0.5
-    },
-    "subst": "leg_raise",
-    "inc_kg": 1,
-    "reps_hyp": [
-      10,
-      15
-    ],
-    "reps_force": null,
-    "repos_s": 90,
-    "dif": "moyen",
-    "tags": [],
     "note": ""
   },
   {
@@ -3874,35 +3121,7 @@
   },
   {
     "id": "back_extension_45",
-    "nom_fr": "Hyperextension 45°",
-    "synonymes": [],
-    "pattern": "hinge",
-    "type": "compound",
-    "charge": "bodyweight_loaded",
-    "equip": [
-      "back_extension"
-    ],
-    "uni": false,
-    "muscles": {
-      "lombaires": 1,
-      "fessiers": 0.5,
-      "ischios": 0.5
-    },
-    "subst": "back_extension",
-    "inc_kg": 1,
-    "reps_hyp": [
-      10,
-      15
-    ],
-    "reps_force": null,
-    "repos_s": 90,
-    "dif": "facile",
-    "tags": [],
-    "note": ""
-  },
-  {
-    "id": "back_extension_horizontal",
-    "nom_fr": "Hyperextension horizontale",
+    "nom_fr": "Hyperextension",
     "synonymes": [],
     "pattern": "hinge",
     "type": "compound",
@@ -3999,7 +3218,7 @@
     "muscles": {
       "triceps": 1
     },
-    "subst": "triceps_pushdown_bar",
+    "subst": "triceps_pushdown_rope",
     "inc_kg": 1,
     "reps_hyp": [
       8,

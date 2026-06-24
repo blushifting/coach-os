@@ -14,12 +14,11 @@ import { ExType, MUSCLES } from '@/engine/models';
 // =============================================================================
 
 describe('loadExercises', () => {
-  it('charge tous les exos du JSON embarqué', () => {
-    const exos = loadExercises();
-    // Conv #23 — 10 exos retirés du catalogue (variantes/niches sans
-    // photo dispo), passé de 141 à 131.
-    expect(exos.length).toBeGreaterThanOrEqual(130);
-  });
+  // Bloc Q (Conv #46) — l'ancien test de TAILLE du catalogue (plancher ≥130) a
+  // été retiré : le dédoublonnage agressif descend le compte (~113) et l'import
+  // free-exercise-db reporté le regonflera. Le nombre exact n'a plus de sens à
+  // figer ; l'assertion relationnelle `cat.length === loadExercises().length`
+  // (plus bas) reste le garde-fou.
 
   it('chaque exo a un ID non vide', () => {
     for (const ex of loadExercises()) {

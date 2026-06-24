@@ -3,7 +3,6 @@ import { Card } from '@/components/Card';
 import { ChargeType, type Exercise } from '@/engine/models';
 import {
   applyFilters,
-  CHARGE_LABEL_FR,
   EMPTY_FILTERS,
   hasActiveFilters,
   type CatalogFilters,
@@ -20,23 +19,40 @@ import { FavoriteStar } from './catalogue/FavoriteStar';
 import { FiltersSheet } from './catalogue/FiltersSheet';
 
 /**
- * Bloc F (Conv #31) — ordre des bandeaux par type d'équipement (machines
- * d'abord, poids libres ensuite, dérivés du poids du corps en dernier).
+ * Bloc Q (Conv #46) — bandeaux regroupés par famille d'équipement. Un bandeau
+ * peut couvrir plusieurs `ChargeType` : « Assisté » est fondu dans **Machine**
+ * (catégorie déjà large) et « Lesté » dans **Poids du corps / Lesté**, pour
+ * alléger le menu du catalogue. Chaque carte garde son badge réel (Assisté /
+ * Lesté restent lisibles par exercice). Ordre : machines, poulies, poids libres,
+ * dérivés du poids du corps en dernier.
  */
-const CHARGE_ORDER: readonly ChargeType[] = [
-  ChargeType.MACHINE_STACK,
-  ChargeType.CABLE,
-  ChargeType.BARBELL,
-  ChargeType.DUMBBELL,
-  ChargeType.BODYWEIGHT,
-  ChargeType.BODYWEIGHT_LOADED,
-  ChargeType.BODYWEIGHT_ASSISTED,
+const CHARGE_BANDS: readonly {
+  readonly key: string;
+  readonly label: string;
+  readonly badge: ChargeType;
+  readonly charges: readonly ChargeType[];
+}[] = [
+  {
+    key: 'machine',
+    label: 'Machine',
+    badge: ChargeType.MACHINE_STACK,
+    charges: [ChargeType.MACHINE_STACK, ChargeType.BODYWEIGHT_ASSISTED],
+  },
+  { key: 'cable', label: 'Poulie', badge: ChargeType.CABLE, charges: [ChargeType.CABLE] },
+  { key: 'barbell', label: 'Barre', badge: ChargeType.BARBELL, charges: [ChargeType.BARBELL] },
+  { key: 'dumbbell', label: 'Haltères', badge: ChargeType.DUMBBELL, charges: [ChargeType.DUMBBELL] },
+  {
+    key: 'bodyweight',
+    label: 'Poids du corps / Lesté',
+    badge: ChargeType.BODYWEIGHT,
+    charges: [ChargeType.BODYWEIGHT, ChargeType.BODYWEIGHT_LOADED],
+  },
 ] as const;
 
 /**
  * Onglet Catalogue (Conv #6b).
  *
- * Liste filtrable des ~141 exos. Recherche fuzzy (id / nom_fr / synonymes) +
+ * Liste filtrable des ~113 exos. Recherche fuzzy (id / nom_fr / synonymes) +
  * filtres (muscle / pattern / équipement / type / tag étirement). Card → sheet
  * de détail avec descriptif 1-2 phrases (cf. `buildDescription`).
  */
@@ -111,9 +127,9 @@ export default function CataloguePage() {
   // les bandeaux non vides sont forcés ouverts (cf. `active` ci-dessous), les
   // vides masqués.
   const favItems = results.filter((ex) => favoriteIds.has(ex.id));
-  const groups = CHARGE_ORDER.map((charge) => ({
-    charge,
-    items: [...results.filter((ex) => ex.charge === charge)].sort(
+  const groups = CHARGE_BANDS.map((band) => ({
+    band,
+    items: [...results.filter((ex) => band.charges.includes(ex.charge))].sort(
       (a, b) => (favoriteIds.has(a.id) ? 0 : 1) - (favoriteIds.has(b.id) ? 0 : 1),
     ),
   })).filter((g) => g.items.length > 0);
@@ -187,7 +203,7 @@ export default function CataloguePage() {
                 data-testid="catalogue-clear"
                 className="underline hover:text-white"
               >
-                Réinitialiser
+                Effacer les filtres
               </button>
             )}
           </div>
@@ -232,13 +248,13 @@ export default function CataloguePage() {
           )}
           {groups.map((g) => (
             <CatalogueBand
-              key={g.charge}
-              id={g.charge}
-              label={CHARGE_LABEL_FR[g.charge]}
+              key={g.band.key}
+              id={g.band.key}
+              label={g.band.label}
               count={g.items.length}
-              open={active ? true : (openBands[g.charge] ?? false)}
-              onToggle={() => toggleBand(g.charge)}
-              leading={<ChargeBadge charge={g.charge} size={22} />}
+              open={active ? true : (openBands[g.band.key] ?? false)}
+              onToggle={() => toggleBand(g.band.key)}
+              leading={<ChargeBadge charge={g.band.badge} size={22} />}
             >
               {g.items.map(renderCard)}
             </CatalogueBand>

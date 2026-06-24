@@ -178,6 +178,10 @@ export function CustomExerciseSheet({
       const existingIds = new Set(catalog.all().map((e) => e.id));
       const dict = buildExerciseDict(draft, existingIds);
       await engine.addCustomExercise(dict);
+      // Bloc Q (Conv #46) — un exo créé par l'user devient d'office favori : il
+      // réapparaît étoilé dans le bandeau Favoris. L'id est neuf → `toggleFavorite`
+      // ne peut qu'ajouter (jamais retirer).
+      await engine.toggleFavorite(dict.id);
       onCreated?.(dict.id);
       close();
     } catch (e) {
