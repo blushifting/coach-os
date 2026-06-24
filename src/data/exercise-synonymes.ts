@@ -284,9 +284,19 @@ export const EXERCISE_SYNONYMES: Readonly<Record<string, readonly string[]>> = {
   ab_wheel_rollout: ['ab wheel', 'roulette abdos', 'rollout'],
   sit_up_decline: ['sit-up', 'sit up', 'redressement assis'],
   db_side_bend: ['inclinaison latérale', 'side bend'],
-  side_plank_loaded: ['planche latérale', 'side plank'],
   russian_twist: ['russian twist', 'rotation russe'],
   oblique_crunch: ['crunch oblique'],
+
+  // Bloc Q-3 — import free-exercise-db (alias regroupés ici)
+  dips_assisted: ['dips assistés', 'dips machine', 'dips guidés', 'assisted dips'],
+  bodyweight_squat: ['squat poids du corps', 'air squat', 'squat sans charge', 'bodyweight squat'],
+  pallof_press: ['pallof', 'pallof press', 'anti-rotation', 'gainage anti-rotation'],
+  cable_wood_chop: ['bûcheron', 'wood chop', 'woodchopper', 'chop poulie', 'rotation poulie'],
+  reverse_crunch: ['crunch inversé', 'reverse crunch', 'relevé de bassin', 'crunch jambes'],
+  bicycle_crunch: ['bicyclette', 'crunch bicyclette', 'vélo', 'air bike', 'bicycle crunch'],
+  sit_up: ['sit-up', 'sit up', 'redressement assis', 'relevé de buste'],
+  glute_bridge_bw: ['pont fessier', 'pont', 'pont de hanche', 'glute bridge', 'bridge'],
+  dead_bug: ['dead bug', 'bug mort', 'gainage dynamique'],
 
   // Lombaires
   back_extension_45: [

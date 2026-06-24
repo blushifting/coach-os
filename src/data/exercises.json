@@ -3042,32 +3042,6 @@
     "note": ""
   },
   {
-    "id": "side_plank_loaded",
-    "nom_fr": "Side plank lesté",
-    "synonymes": [],
-    "pattern": "core",
-    "type": "isolation",
-    "charge": "bodyweight_loaded",
-    "equip": [],
-    "uni": true,
-    "muscles": {
-      "obliques": 1
-    },
-    "subst": "oblique_lateral_flexion",
-    "inc_kg": 1,
-    "reps_hyp": [
-      20,
-      60
-    ],
-    "reps_force": null,
-    "repos_s": 60,
-    "dif": "moyen",
-    "tags": [
-      "isometrique_secondaire"
-    ],
-    "note": ""
-  },
-  {
     "id": "russian_twist",
     "nom_fr": "Russian twist",
     "synonymes": [],
@@ -3380,5 +3354,248 @@
     "dif": "facile",
     "tags": [],
     "note": "Cible les adducteurs (groupe interne cuisse) ; rattaché ici aux ischios médiaux dans le modèle 15 muscles."
+  },
+  {
+    "id": "dips_assisted",
+    "nom_fr": "Dips assistés",
+    "synonymes": [],
+    "pattern": "push_h",
+    "type": "compound",
+    "charge": "bodyweight_assisted",
+    "equip": [
+      "assisted_pullup"
+    ],
+    "uni": false,
+    "muscles": {
+      "pectoraux": 1,
+      "triceps": 0.5,
+      "deltos_anterieurs": 0.5
+    },
+    "subst": "bench_h_bw",
+    "inc_kg": 1,
+    "reps_hyp": [
+      6,
+      12
+    ],
+    "reps_force": null,
+    "repos_s": 150,
+    "dif": "facile",
+    "tags": [
+      "accessible"
+    ],
+    "note": ""
+  },
+  {
+    "id": "bodyweight_squat",
+    "nom_fr": "Squat au poids du corps",
+    "synonymes": [],
+    "pattern": "squat",
+    "type": "compound",
+    "charge": "bodyweight",
+    "equip": [],
+    "uni": false,
+    "muscles": {
+      "quadriceps": 1,
+      "fessiers": 0.5,
+      "ischios": 0.5
+    },
+    "subst": "squat_bw",
+    "inc_kg": 0,
+    "reps_hyp": [
+      15,
+      25
+    ],
+    "reps_force": null,
+    "repos_s": 90,
+    "dif": "facile",
+    "tags": [
+      "accessible"
+    ],
+    "note": ""
+  },
+  {
+    "id": "pallof_press",
+    "nom_fr": "Pallof press",
+    "synonymes": [],
+    "pattern": "core",
+    "type": "isolation",
+    "charge": "cable",
+    "equip": [
+      "cable_low"
+    ],
+    "uni": true,
+    "muscles": {
+      "obliques": 1,
+      "abdos": 0.5
+    },
+    "subst": "oblique_rotation",
+    "inc_kg": 1,
+    "reps_hyp": [
+      10,
+      15
+    ],
+    "reps_force": null,
+    "repos_s": 60,
+    "dif": "moyen",
+    "tags": [
+      "rotation"
+    ],
+    "note": ""
+  },
+  {
+    "id": "cable_wood_chop",
+    "nom_fr": "Bûcheron à la poulie",
+    "synonymes": [],
+    "pattern": "core",
+    "type": "isolation",
+    "charge": "cable",
+    "equip": [
+      "cable_high"
+    ],
+    "uni": true,
+    "muscles": {
+      "obliques": 1,
+      "abdos": 0.5
+    },
+    "subst": "oblique_rotation",
+    "inc_kg": 1,
+    "reps_hyp": [
+      10,
+      15
+    ],
+    "reps_force": null,
+    "repos_s": 60,
+    "dif": "moyen",
+    "tags": [
+      "rotation"
+    ],
+    "note": ""
+  },
+  {
+    "id": "reverse_crunch",
+    "nom_fr": "Crunch inversé",
+    "synonymes": [],
+    "pattern": "core",
+    "type": "isolation",
+    "charge": "bodyweight",
+    "equip": [],
+    "uni": false,
+    "muscles": {
+      "abdos": 1
+    },
+    "subst": "leg_raise",
+    "inc_kg": 0,
+    "reps_hyp": [
+      12,
+      20
+    ],
+    "reps_force": null,
+    "repos_s": 60,
+    "dif": "facile",
+    "tags": [],
+    "note": ""
+  },
+  {
+    "id": "bicycle_crunch",
+    "nom_fr": "Crunch bicyclette",
+    "synonymes": [],
+    "pattern": "core",
+    "type": "isolation",
+    "charge": "bodyweight",
+    "equip": [],
+    "uni": false,
+    "muscles": {
+      "obliques": 1,
+      "abdos": 0.5
+    },
+    "subst": "oblique_rotation",
+    "inc_kg": 0,
+    "reps_hyp": [
+      15,
+      25
+    ],
+    "reps_force": null,
+    "repos_s": 60,
+    "dif": "facile",
+    "tags": [
+      "rotation"
+    ],
+    "note": ""
+  },
+  {
+    "id": "sit_up",
+    "nom_fr": "Sit-up au sol",
+    "synonymes": [],
+    "pattern": "core",
+    "type": "isolation",
+    "charge": "bodyweight",
+    "equip": [],
+    "uni": false,
+    "muscles": {
+      "abdos": 1,
+      "obliques": 0.5
+    },
+    "subst": "crunch",
+    "inc_kg": 0,
+    "reps_hyp": [
+      10,
+      20
+    ],
+    "reps_force": null,
+    "repos_s": 60,
+    "dif": "facile",
+    "tags": [],
+    "note": ""
+  },
+  {
+    "id": "glute_bridge_bw",
+    "nom_fr": "Pont fessier au poids du corps",
+    "synonymes": [],
+    "pattern": "hinge",
+    "type": "compound",
+    "charge": "bodyweight",
+    "equip": [],
+    "uni": false,
+    "muscles": {
+      "fessiers": 1,
+      "ischios": 0.5
+    },
+    "subst": "hip_thrust",
+    "inc_kg": 0,
+    "reps_hyp": [
+      12,
+      20
+    ],
+    "reps_force": null,
+    "repos_s": 60,
+    "dif": "facile",
+    "tags": [
+      "accessible"
+    ],
+    "note": ""
+  },
+  {
+    "id": "dead_bug",
+    "nom_fr": "Dead bug",
+    "synonymes": [],
+    "pattern": "core",
+    "type": "isolation",
+    "charge": "bodyweight",
+    "equip": [],
+    "uni": false,
+    "muscles": {
+      "abdos": 1
+    },
+    "subst": "crunch",
+    "inc_kg": 0,
+    "reps_hyp": [
+      10,
+      16
+    ],
+    "reps_force": null,
+    "repos_s": 60,
+    "dif": "facile",
+    "tags": [],
+    "note": ""
   }
 ]

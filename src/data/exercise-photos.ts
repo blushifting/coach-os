@@ -14,10 +14,11 @@
  * composant `ExercisePhoto` alterne entre les 2 pour donner un effet
  * GIF-like du mouvement.
  *
- * Couverture : 106/113 exos Coach OS mappés. Conv #23 avait retiré 10 exos
- * sans photo ; Bloc Q (Conv #46) a fusionné 25 variantes redondantes (prise /
- * angle / stance), dont les entrées photo ont été supprimées ici. Restent ~7
- * exos sans image free-db disponible.
+ * Couverture : **121/121 exos Coach OS mappés** (tous ont une photo). Bloc Q-3
+ * (import free-exercise-db) a ajouté 9 exos et retiré `side_plank_loaded`. Conv
+ * #23 avait retiré 10 exos sans photo ; Bloc Q (Conv #46) a fusionné 25 variantes
+ * redondantes (prise / angle / stance), dont les entrées photo avaient été
+ * supprimées ici.
  */
 
 const FREE_DB_BASE =
@@ -59,7 +60,7 @@ const FREE_DB_MAP: Readonly<Record<string, string>> = {
   calf_seated_machine: 'Seated_Calf_Raise',
   calf_smith: 'Smith_Machine_Calf_Raise',
   calf_standing_machine: 'Standing_Calf_Raises',
-  chest_press_incl_machine: 'Smith_Machine_Incline_Bench_Press',
+  chest_press_incl_machine: 'Leverage_Incline_Chest_Press',
   chest_press_machine: 'Machine_Bench_Press',
   chest_supported_db_row: 'Bent_Over_Two-Dumbbell_Row',
   concentration_curl: 'Concentration_Curls',
@@ -101,7 +102,7 @@ const FREE_DB_MAP: Readonly<Record<string, string>> = {
   lying_leg_raise: 'Flat_Bench_Lying_Leg_Raise',
   machine_lateral_raise: 'Side_Lateral_Raise',
   machine_shoulder_press: 'Machine_Shoulder_Military_Press',
-  machine_shrug: 'Smith_Machine_Behind_the_Back_Shrug',
+  machine_shrug: 'Leverage_Shrug',
   oblique_crunch: 'Oblique_Crunches',
   ohp_bb_standing: 'Standing_Military_Press',
   ohp_db_seated: 'Seated_Dumbbell_Press',
@@ -122,7 +123,15 @@ const FREE_DB_MAP: Readonly<Record<string, string>> = {
   reverse_pec_deck: 'Reverse_Machine_Flyes',
   russian_twist: 'Russian_Twist',
   seated_row_machine: 'Seated_Cable_Rows',
-  side_plank_loaded: 'Side_Bridge',
+  dips_assisted: 'Dip_Machine',
+  bodyweight_squat: 'Bodyweight_Squat',
+  pallof_press: 'Pallof_Press',
+  cable_wood_chop: 'Standing_Cable_Wood_Chop',
+  reverse_crunch: 'Reverse_Crunch',
+  bicycle_crunch: 'Air_Bike',
+  sit_up: 'Sit-Up',
+  glute_bridge_bw: 'Butt_Lift_Bridge',
+  dead_bug: 'Dead_Bug',
   single_leg_hip_thrust: 'Barbell_Hip_Thrust',
   single_leg_rdl: 'Romanian_Deadlift',
   sissy_squat: 'Weighted_Sissy_Squat',
