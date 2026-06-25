@@ -39,7 +39,6 @@ import {
 } from '@/components/AnatomicalSilhouette';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { HelpButton } from '@/components/HelpButton';
 import { cn } from '@/lib/cn';
 import { muscleLabel } from '@/lib/balance-reasons';
 import {
@@ -196,37 +195,34 @@ export function Step2Muscles({ draft, onChange, onPresetApplied }: Step2Props) {
     draft.priorities.length > 0 || draft.maintenance.size > 0;
 
   return (
-    <div className="flex flex-col gap-3 p-3">
+    <div className="flex flex-col gap-3 p-4">
       <header className="flex flex-col gap-2">
-        <h1 className="flex items-center gap-2 font-display text-2xl leading-tight tracking-wide text-white">
+        <h1 className="font-display text-3xl leading-tight tracking-wide text-white">
           Tes muscles cibles
-          <HelpButton topic="deltoides" label="Aide : deltoïdes" />
         </h1>
-        <p className="text-[12px] leading-relaxed text-anthracite-200">
-          Choisis un objectif ci-dessous, puis touche les muscles sur la
-          silhouette. Le premier muscle choisi compte le plus.
+        <p className="text-sm leading-relaxed text-anthracite-300">
+          Choisis les muscles à faire progresser, et l'objectif de chacun.
         </p>
-        <details className="rounded-xl border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-[12px] leading-relaxed text-anthracite-200">
+        <details className="rounded-xl border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-xs leading-relaxed text-anthracite-200">
           <summary className="cursor-pointer text-white">
-            Quel objectif choisir ?
+            Quel objectif choisir&nbsp;?
           </summary>
           <ul className="mt-3 space-y-1.5 pl-1 text-anthracite-300">
             <li>
               <strong className="text-white">Hypertrophie</strong> — faire
-              grossir le muscle. Le choix le plus courant : si tu hésites,
-              prends ça.
+              grossir le muscle. Le plus courant.
             </li>
             <li>
-              <strong className="text-white">Force</strong> — soulever lourd
-              (reps basses, repos longs). Le muscle grossit aussi, mais moins.
+              <strong className="text-white">Force</strong> — soulever lourd,
+              grossit un peu moins.
             </li>
             <li>
-              <strong className="text-white">Endurance</strong> — tenir long
-              sans fatigue (reps hautes, charges légères).
+              <strong className="text-white">Endurance</strong> — tenir
+              longtemps sans fatiguer.
             </li>
             <li>
               <strong className="text-white">Maintien</strong> — entretenir
-              sans développer : juste assez de volume pour ne pas perdre.
+              sans faire grossir.
             </li>
           </ul>
         </details>
@@ -304,14 +300,14 @@ export function Step2Muscles({ draft, onChange, onPresetApplied }: Step2Props) {
           testId="onboarding-silhouette"
         />
         <p className="text-center text-[10px] leading-tight text-anthracite-300">
-          Touche un muscle pour lui appliquer l'objectif choisi ; retouche-le
-          pour le retirer.
+          Touche un muscle pour lui appliquer l'objectif&nbsp;; retouche pour le
+          retirer.
         </p>
       </Card>
 
       <Card className="min-w-0">
         <div className="mb-2 flex items-center justify-between">
-          <span className="text-sm font-medium text-white">Tous les muscles</span>
+          <span className="text-sm font-medium text-white">Ordre de priorité</span>
           <span className="text-xs text-anthracite-300 tabular-nums">
             {draft.priorities.length + draft.maintenance.size} / {MUSCLES.length}
           </span>

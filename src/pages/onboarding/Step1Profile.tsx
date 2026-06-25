@@ -29,80 +29,78 @@ export function Step1Profile({ draft, onChange }: Step1Props) {
     <div className="flex flex-col gap-5 p-4">
       <header className="flex flex-col gap-2">
         <h1 className="font-display text-3xl leading-tight tracking-wide text-white">
-          On commence par toi
+          Commençons par toi
         </h1>
-        <p className="text-sm leading-relaxed text-anthracite-200">
-          Ces infos servent à fixer un point de départ raisonnable pour ton
-          volume d'entraînement et tes charges. Kotsh affine ensuite ton
-          programme cycle après cycle, selon ce que tu fais en vrai.
-        </p>
       </header>
 
       <Card>
-        <div className="mb-1 text-sm font-medium text-white">Sexe</div>
-        <p className="mb-3 text-xs leading-relaxed text-anthracite-300">
-          Sert à ajuster les volumes recommandés (les études montrent que les
-          femmes tolèrent mieux un volume hebdo un peu plus haut sur le haut
-          du corps).
-        </p>
-        <div className="flex gap-2" role="radiogroup" aria-label="Sexe">
-          <ChipRadio
-            label="Homme"
-            selected={draft.sex === Sex.HOMME}
-            onClick={() => onChange({ sex: Sex.HOMME })}
-            testId="sex-homme"
-          />
-          <ChipRadio
-            label="Femme"
-            selected={draft.sex === Sex.FEMME}
-            onClick={() => onChange({ sex: Sex.FEMME })}
-            testId="sex-femme"
-          />
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm font-medium text-white">Sexe</span>
+          <div className="flex gap-2" role="radiogroup" aria-label="Sexe">
+            <ChipRadio
+              label="Homme"
+              selected={draft.sex === Sex.HOMME}
+              onClick={() => onChange({ sex: Sex.HOMME })}
+              testId="sex-homme"
+            />
+            <ChipRadio
+              label="Femme"
+              selected={draft.sex === Sex.FEMME}
+              onClick={() => onChange({ sex: Sex.FEMME })}
+              testId="sex-femme"
+            />
+          </div>
         </div>
-      </Card>
-
-      <Card>
-        <div className="mb-1 text-sm font-medium text-white">Âge</div>
-        <p className="mb-3 text-xs leading-relaxed text-anthracite-300">
-          Au-delà de 50 ans, Kotsh prévoit un peu plus de récupération et
-          plafonne le volume max — la progression reste réelle mais plus
-          progressive.
+        <p className="mt-2 text-xs leading-relaxed text-anthracite-300">
+          Pour ajuster le volume recommandé.
         </p>
-        <Stepper
-          value={draft.age}
-          onChange={(v) => onChange({ age: v })}
-          min={14}
-          max={100}
-          suffix=" ans"
-        />
       </Card>
 
       <Card>
-        <div className="mb-1 text-sm font-medium text-white">Poids</div>
-        <p className="mb-3 text-xs leading-relaxed text-anthracite-300">
-          Sert à estimer une charge de départ réaliste sur les exercices au
-          poids du corps (tractions, dips, pompes) et à fixer un Plafond
-          initial sur les exercices chargés.
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm font-medium text-white">Âge</span>
+          <div className="w-44">
+            <Stepper
+              value={draft.age}
+              onChange={(v) => onChange({ age: v })}
+              min={14}
+              max={100}
+              suffix=" ans"
+            />
+          </div>
+        </div>
+        <p className="mt-2 text-xs leading-relaxed text-anthracite-300">
+          Pour adapter ta récupération.
         </p>
-        <Stepper
-          value={draft.bodyweightKg}
-          onChange={(v) => onChange({ bodyweightKg: v })}
-          min={35}
-          max={200}
-          suffix=" kg"
-        />
       </Card>
 
       <Card>
-        <div className="mb-1 text-sm font-medium text-white">
-          Tes machines
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm font-medium text-white">Poids</span>
+          <div className="w-44">
+            <Stepper
+              value={draft.bodyweightKg}
+              onChange={(v) => onChange({ bodyweightKg: v })}
+              min={35}
+              max={200}
+              suffix=" kg"
+            />
+          </div>
+        </div>
+        <p className="mt-2 text-xs leading-relaxed text-anthracite-300">
+          Pour estimer tes charges de départ.
+        </p>
+      </Card>
+
+      <Card>
+        <div className="mb-1 flex items-center justify-between">
+          <span className="text-sm font-medium text-white">Tes machines</span>
+          <span className="rounded-full border border-anthracite-600 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-anthracite-400">
+            Optionnel
+          </span>
         </div>
         <p className="mb-3 text-xs leading-relaxed text-anthracite-300">
-          Si tu connais la marque des machines que tu utilises, indique-la
-          ici. Les noms des exercices sur machine s'afficheront alors avec
-          leur libellé commercial — celui que tu vois étiqueté sur la
-          machine. Tu peux changer plus tard. Aucune incidence sur les
-          exercices prescrits.
+          Pour afficher les exercices avec le nom écrit sur tes machines.
         </p>
         <label className="sr-only" htmlFor="onboarding-gym-brand">
           Marque des machines
@@ -141,7 +139,7 @@ function ChipRadio({ label, selected, onClick, testId }: ChipRadioProps) {
       data-testid={testId}
       onClick={onClick}
       className={cn(
-        'flex-1 rounded-xl border px-3 py-2 text-sm font-medium transition',
+        'rounded-xl border px-3 py-2 text-sm font-medium transition',
         selected
           ? 'border-sang-600 bg-sang-900/30 text-white'
           : 'border-anthracite-700 bg-anthracite-900 text-anthracite-300 hover:text-white',

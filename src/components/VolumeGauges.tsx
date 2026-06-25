@@ -79,10 +79,12 @@ export function VolumeGauges({ template, state, catalog }: Props) {
 
   return (
     <Card className="flex flex-col gap-2" data-testid="volume-gauges">
-      <div className="text-sm font-medium text-white">Séries par semaine</div>
+      <div className="text-xs uppercase tracking-wide text-anthracite-300">
+        Volume hebdomadaire par muscle
+      </div>
       <p className="text-[11px] leading-relaxed text-anthracite-300">
-        Chaque barre montre tes séries par muscle. Ajoute des exercices
-        pour atteindre la zone verte.
+        Une barre par muscle. Ajoute des exercices pour amener chacun dans sa
+        cible.
       </p>
       <ul className="flex flex-col gap-2.5">
         {rows.map((r) => (

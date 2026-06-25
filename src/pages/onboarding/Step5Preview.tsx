@@ -147,8 +147,8 @@ export function Step5Preview({
     return (
       <div className="flex flex-col gap-3 p-4" data-testid="step5-blocking">
         <h1 className="text-xl font-semibold text-white">Programme non compatible</h1>
-        <p className="text-sm text-anthracite-300">
-          Ton équipement ne couvre pas tous les exercices de ce programme :
+        <p className="text-sm text-anthracite-300 text-justify">
+          Ton équipement ne couvre pas tous les exercices de ce programme&nbsp;:
         </p>
         <Card className="border-sang-700/60 bg-sang-900/20">
           <ul className="flex flex-col gap-1 text-sm text-sang-500">
@@ -157,10 +157,6 @@ export function Step5Preview({
             ))}
           </ul>
         </Card>
-        <p className="text-xs text-anthracite-300">
-          Reviens à l'étape précédente pour choisir un autre programme ou
-          une sélection d'exercices sur mesure.
-        </p>
       </div>
     );
   }
@@ -194,12 +190,12 @@ export function Step5Preview({
     <div className="flex flex-col gap-4 p-4" data-testid="step5-preview">
       <header className="flex flex-col gap-2">
         <h1 className="font-display text-3xl leading-tight tracking-wide text-white">
-          Ton programme
+          Tes séances
         </h1>
-        <p className="text-sm leading-relaxed text-anthracite-300">
+        <p className="text-sm leading-relaxed text-anthracite-300 text-justify">
           {isManual
-            ? 'Tu pars de séances vides : ajoute tes exercices. Les barres de progression te disent si chaque muscle est assez travaillé.'
-            : 'Voici les séances générées d\'après tes choix. Touche un exercice pour le remplacer, retire ou ajoute ce que tu veux, renomme une séance.'}
+            ? 'Pars de séances vides et ajoute tes exercices.'
+            : 'Ajuste-les si tu veux, ou démarre tel quel.'}
         </p>
       </header>
 
@@ -467,9 +463,9 @@ function TensionPanel({ tension }: { readonly tension: ProgramTension }) {
       </header>
       {tension.tooLong ? (
         <>
-          <p className="text-xs leading-relaxed text-sang-200">
+          <p className="text-xs leading-relaxed text-sang-200 text-justify">
             Au moins une séance dépasse {SESSION_DURATION_WARN_MIN} min
-            (max ~{max} min). Pour rester dans tes créneaux, tu peux :
+            (max ~{max} min). Pour rester dans tes créneaux, tu peux&nbsp;:
           </p>
           <ul className="ml-4 flex list-disc flex-col gap-1 text-xs leading-relaxed text-anthracite-100">
             <li>
@@ -486,12 +482,7 @@ function TensionPanel({ tension }: { readonly tension: ProgramTension }) {
             </li>
           </ul>
         </>
-      ) : (
-        <p className="text-xs leading-relaxed text-anthracite-300">
-          La séance la plus chargée tient en {max} min max. Cohérent avec
-          ton rythme de séances par semaine.
-        </p>
-      )}
+      ) : null}
     </Card>
   );
 }
@@ -504,7 +495,7 @@ function VolumeRecap({ volumeByMuscle }: { readonly volumeByMuscle: Record<strin
   return (
     <Card className="flex flex-col gap-2" data-testid="volume-recap">
       <header className="text-xs uppercase tracking-wide text-anthracite-300">
-        Volume hebdomadaire par muscle (semaine 1)
+        Volume hebdomadaire par muscle
       </header>
       <ul className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-anthracite-100">
         {entries.map(([muscle, n]) => (
@@ -536,31 +527,19 @@ function PedagogyPanel({
         data-testid="btn-pedagogy-toggle"
         className="flex items-center justify-between text-left text-xs uppercase tracking-wide text-violet-300 hover:text-violet-200"
       >
-        <span>Comment ça marche ?</span>
+        <span>Comment ça marche&nbsp;?</span>
         <span aria-hidden="true">{open ? '−' : '+'}</span>
       </button>
       {open && (
-        <div className="flex flex-col gap-2 text-xs leading-relaxed text-anthracite-100">
+        <div className="flex flex-col gap-2 text-xs leading-relaxed text-anthracite-100 text-justify">
           <p>
-            Chaque séance cible plusieurs muscles avec un nombre de séries
-            calculé pour rester dans une zone de progression efficace : ni
-            trop peu, ni trop. À chaque série, tu notes ta{' '}
-            <strong>Réserve</strong> — le nombre de reps que tu aurais encore
-            pu faire — et Kotsh ajuste les charges et le Volume hebdo pour
-            la suite.
+            Ce qui fait progresser un muscle, c'est surtout le nombre de séries
+            que tu lui consacres chaque semaine. Kotsh le calcule pour
+            chacun&nbsp;: assez pour progresser, pas trop pour bien récupérer.
           </p>
           <p>
-            Le Cycle dure 5 semaines : 4 semaines où on monte
-            progressivement en volume, puis 1 semaine de Récupération plus
-            légère pour laisser la fatigue redescendre. Cette Récupération
-            n'est pas un cadeau, c'est ce qui fait que ton corps
-            progresse.
-          </p>
-          <p>
-            Tu peux à tout moment remplacer un exercice pendant une séance — par
-            exemple si la machine est prise. Kotsh reporte ce qui n'a pas
-            été fait sur les autres séances de la semaine quand c'est
-            possible.
+            Tu avances par cycles de 5 semaines&nbsp;: les charges montent au fil
+            des séances, et Kotsh les ajuste selon tes résultats.
           </p>
         </div>
       )}

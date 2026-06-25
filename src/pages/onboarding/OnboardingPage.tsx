@@ -67,7 +67,7 @@ import { Step5Preview } from './Step5Preview';
 const LAST_STEP = 4;
 
 /** Étapes nommées du stepper (Conv #28). Index = step - 1. */
-const STEP_LABELS = ['Profil', 'Muscles', 'Programme', 'Récap'] as const;
+const STEP_LABELS = ['Profil', 'Muscles', 'Programme', 'Séances'] as const;
 
 export default function OnboardingPage() {
   const navigate = useNavigate();

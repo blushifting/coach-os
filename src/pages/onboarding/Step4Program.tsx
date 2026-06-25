@@ -30,27 +30,23 @@ export function Step4Program({ draft, onChange }: Step4Props) {
         <h1 className="font-display text-3xl leading-tight tracking-wide text-white">
           Ton programme
         </h1>
-        <p className="text-sm leading-relaxed text-anthracite-300">
-          Quelques réglages, puis le mode de construction. Dans tous les cas,
-          Kotsh suit tes performances séance après séance et ajuste les charges.
-        </p>
       </header>
 
       <Card>
-        <div className="mb-1 text-sm font-medium text-white">
-          Combien de séances par semaine ?
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm font-medium text-white">Séances par semaine</span>
+          <div className="w-44">
+            <Stepper
+              value={draft.sessionsPerWeek}
+              onChange={(v) => onChange({ sessionsPerWeek: v })}
+              min={2}
+              max={6}
+            />
+          </div>
         </div>
-        <p className="mb-3 text-[12px] leading-relaxed text-anthracite-300">
-          3 à 4 est un bon point d'équilibre pour la plupart : assez pour
-          étaler du volume, assez de repos pour récupérer.
+        <p className="mt-2 text-[12px] leading-relaxed text-anthracite-300">
+          Si tu hésites, 3 ou 4 est un bon repère.
         </p>
-        <Stepper
-          value={draft.sessionsPerWeek}
-          onChange={(v) => onChange({ sessionsPerWeek: v })}
-          min={2}
-          max={6}
-          suffix=" / sem"
-        />
       </Card>
 
       {/* Conv #22 — Préférence d'équipement : oriente le choix auto des exos. */}
@@ -58,10 +54,6 @@ export function Step4Program({ draft, onChange }: Step4Props) {
         <div className="mb-1 text-sm font-medium text-white">
           Tes préférences d'équipement
         </div>
-        <p className="mb-3 text-[12px] leading-relaxed text-anthracite-300">
-          On choisit tes exercices à ta place pour démarrer ; tu pourras tout
-          modifier au récap final.
-        </p>
         <div className="flex flex-col gap-2">
           {[
             {
@@ -72,7 +64,7 @@ export function Step4Program({ draft, onChange }: Step4Props) {
             {
               v: EquipmentPreference.FREE_WEIGHTS,
               label: 'Poids libres uniquement',
-              sub: 'Haltères et barre — mouvement plus naturel, un peu plus technique',
+              sub: 'Haltères et barre — naturel, un peu plus technique',
             },
             {
               v: EquipmentPreference.BODYWEIGHT,
@@ -112,12 +104,8 @@ export function Step4Program({ draft, onChange }: Step4Props) {
       {/* Conv #22 — Durée limite par séance, sert au dimensionnement co-construit. */}
       <Card>
         <div className="mb-1 text-sm font-medium text-white">
-          Combien de temps maximum par séance ?
+          Combien de temps maximum par séance&nbsp;?
         </div>
-        <p className="mb-3 text-[12px] leading-relaxed text-anthracite-300">
-          C'est ta <strong className="text-white">limite haute</strong> :
-          Kotsh dimensionne en dessous, selon tes priorités.
-        </p>
         <div className="grid grid-cols-3 gap-2">
           {[
             { v: DurationCategory.SHORT, label: '≤ 1h', sub: '~4 exercices max' },
@@ -151,7 +139,7 @@ export function Step4Program({ draft, onChange }: Step4Props) {
       {/* Bloc O — choix du mode de construction (sur-mesure vs à la main). */}
       <div role="radiogroup" aria-label="Mode de construction">
         <div className="mb-2 text-xs uppercase tracking-wider text-anthracite-300">
-          Comment veux-tu construire ton programme ?
+          Comment veux-tu construire ton programme&nbsp;?
         </div>
         <div className="flex flex-col gap-2">
           <ModeCard
@@ -159,14 +147,14 @@ export function Step4Program({ draft, onChange }: Step4Props) {
             onSelect={() => onChange({ buildMode: 'auto' })}
             testId="program-custom"
             title="Sur-mesure (recommandé)"
-            desc="Kotsh construit ton programme d'après ce que tu veux travailler et le temps que tu as."
+            desc="Kotsh construit ton programme automatiquement."
           />
           <ModeCard
             selected={draft.buildMode === 'manual'}
             onSelect={() => onChange({ buildMode: 'manual' })}
             testId="program-manual"
             title="Programme libre"
-            desc="Tu pars de séances vides et choisis tes exercices toi-même. Des barres de progression t'indiquent si chaque muscle est assez travaillé."
+            desc="Tu choisis tes exercices toi-même."
           />
         </div>
       </div>

@@ -82,10 +82,10 @@ export default function WelcomeScreen() {
             <KotshLogo />
           </h1>
           <p className="text-lg font-medium text-anthracite-100">
-            Ta muscu, ajustée à ton effort réel.
+            Ton programme de muscu sur mesure.
           </p>
           <p className="text-sm leading-relaxed text-anthracite-300">
-            Programme autorégulé qui calibre les charges séance après séance.
+            Il s'adapte à toi, séance après séance.
           </p>
         </div>
       </div>
