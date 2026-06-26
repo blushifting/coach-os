@@ -32,8 +32,6 @@ import {
   startUser,
   updateProfile,
 } from '@/hooks/useEngine';
-import { enterDemoMode } from '@/lib/demo';
-import { resetDemoDismissals } from '@/components/DemoMode';
 import {
   PRESET_DEFAULT_MAINTENANCE,
   PRESET_DEFAULT_PRIORITIES,
@@ -454,14 +452,6 @@ export default function OnboardingPage() {
         }
       }
       navigate('/programme', { replace: true });
-      try {
-        if (localStorage.getItem('coach-os.skip-auto-demo') !== '1') {
-          resetDemoDismissals();
-          void enterDemoMode().catch(() => {});
-        }
-      } catch {
-        /* LS indispo */
-      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Quelque chose s\'est mal passé. Réessaie.';
       setError(msg);

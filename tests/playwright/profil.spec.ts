@@ -77,7 +77,7 @@ test('profil : édition poids persistante + reload', async ({ page }) => {
   await setBodyweight(page, 80);
 
   // Reload SPA via re-navigation (le bug bootstrap au reload direct est traité en Conv #9)
-  await page.getByRole('link', { name: 'Séances' }).click();
+  await page.getByRole('link', { name: 'Accueil' }).click();
   await page.getByRole('link', { name: 'Profil' }).click();
   await expect(page.getByTestId('profil-identity-summary')).toContainText('80 kg');
 });

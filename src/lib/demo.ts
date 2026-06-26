@@ -47,7 +47,11 @@ export async function loadDemoSnapshot(): Promise<DemoSnapshot> {
   if (_cachedSnapshot !== null) return _cachedSnapshot;
   const base = import.meta.env.BASE_URL ?? '/';
   const url = `${base.replace(/\/$/, '')}/demo/alex.json`;
-  const res = await fetch(url, { cache: 'force-cache' });
+  // Conv #49 — `default` (et non `force-cache`) : la revalidation HTTP (ETag/
+  // Last-Modified) fait remonter une mise à jour de `alex.json` au lieu de
+  // resservir indéfiniment l'ancienne copie. L'offline reste couvert par le
+  // précache du service worker (PWA), pas par ce mode de fetch.
+  const res = await fetch(url);
   if (!res.ok) {
     throw new Error(
       `Échec chargement snapshot démo (${res.status}) — vérifie public/demo/alex.json`,

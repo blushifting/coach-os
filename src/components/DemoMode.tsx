@@ -18,10 +18,11 @@
  * écriture DB Dexie.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from './Button';
 import { Card } from './Card';
+import { Concept } from './Concept';
 import { useDemoMode, useDemoSnapshot } from '@/store/selectors';
 import { exitDemoMode } from '@/lib/demo';
 
@@ -38,7 +39,7 @@ interface TourStep {
   /** Titre court de l'étape (titre du bandeau). */
   title: string;
   /** 1-3 phrases. Évite le jargon — explique avec les mots de l'utilisateur. */
-  body: string;
+  body: ReactNode;
   /**
    * Sélecteur CSS de l'élément central à pointer (optionnel). Le bandeau
    * affichera une flèche pointant vers cet élément. Si l'élément n'existe
@@ -71,7 +72,7 @@ const TOUR_STEPS: readonly TourStep[] = [
     route: '/programme',
     title: "Le programme d'Alex",
     body:
-      "Alex est mardi de la semaine 4 de son 2ᵉ cycle (les cycles font 5 semaines : 4 d'entraînement + 1 de déload). Hier il a fait la séance A (Upper), aujourd'hui c'est la séance B (Lower). Le calendrier ci-dessous montre les semaines du cycle en cours, avec les séances faites en vert, prévues en bleu et le repos en grisé.",
+      "On est mardi, semaine 4 du cycle d'Alex. Hier, séance A (Upper) ; aujourd'hui, la B (Lower). Sur le calendrier : fait en vert, prévu en bleu, repos en gris.",
     pointTo: '[data-testid="condensed-calendar"]',
     bannerSide: 'top',
   },
@@ -80,7 +81,7 @@ const TOUR_STEPS: readonly TourStep[] = [
     route: '/seance/runner',
     title: 'Sa séance du jour',
     body:
-      "Voici l'interface séance. Les valeurs pré-remplies (reps, charge) sont des objectifs à viser — si en réalité tu fais plus ou moins, modifie les chiffres avant de cocher. Kotsh ajuste ensuite tes objectifs en fonction de tes retours.",
+      "Voici une séance en cours. Les reps et la charge proposées sont des objectifs : si tu fais plus ou moins, corrige les chiffres avant de valider la série. Kotsh recale alors les charges suivantes sur ton niveau réel.",
     pointTo: '[data-testid="set-row-0"]',
     highlight: {
       selector: '[data-testid="set-row-0"]',
@@ -93,17 +94,25 @@ const TOUR_STEPS: readonly TourStep[] = [
   {
     id: 'effort',
     route: '/seance/runner',
-    title: 'La Réserve, le cœur du système',
+    title: 'La Réserve',
     body:
-      "À la fin de chaque série, note combien de reps tu aurais encore pu faire : c'est ta Réserve. Repère : 4+ = encore très facile. 2 = dur, tu aurais pu en faire 2 de plus. Échec = tu ne peux plus. Kotsh s'en sert pour ajuster automatiquement tes charges à la séance suivante — c'est ce qui rend le programme autorégulé.",
+      "À la fin d'une série, note combien de reps tu aurais encore pu faire : c'est ta Réserve. 4+ = encore très facile. 2 = il te restait 2 reps. Échec = tu ne peux plus. C'est grâce à cette mesure que Kotsh règle tes charges, séance après séance.",
     pointTo: '[data-testid="input-rpe-0"]',
   },
   {
     id: 'progres-force',
     route: '/progres',
-    title: 'Ses plafonds qui montent',
-    body:
-      "Voici la progression d'Alex sur ses gros exercices. Les étoiles ★ marquent les records personnels (plafond battu d'au moins 2 kg). Les plateaux ou petits creux ponctuels correspondent à une semaine plus dure (peu de reps en réserve, fatigue accumulée) ; les semaines de déload réduisent volontairement les charges pour récupérer, sans qu'elles n'apparaissent comme du recul.",
+    title: "L'évolution des Plafonds",
+    body: (
+      <>
+        La progression d'Alex sur ses gros exercices. Les étoiles ★ marquent
+        les records perso (<Concept topic="plafond">Plafond</Concept> battu
+        d'au moins 2 kg). Quand la courbe creuse, ce n'est pas un recul&nbsp;:
+        soit la semaine a été plus dure (peu de Réserve, fatigue accumulée),
+        soit c'est une semaine de récupération — Kotsh allège alors les charges
+        exprès pour faire redescendre la fatigue.
+      </>
+    ),
     pointTo: '[data-testid="force-view"]',
     clickOnEnter: '[data-testid="tab-force"]',
   },
@@ -112,7 +121,7 @@ const TOUR_STEPS: readonly TourStep[] = [
     route: '/cycle-bilan',
     title: 'Le bilan de cycle',
     body:
-      "À la fin du cycle, Kotsh résume tes progrès muscle par muscle et te suggère comment programmer ton cycle suivant : continuer pareil, ajuster les objectifs, ou déloader.",
+      "À la fin d'un cycle, Kotsh résume tes progrès muscle par muscle. Il te propose la suite : repartir sur le même programme, ou ajuster tes objectifs.",
     pointTo: '[data-testid="cycle-bilan-page"]',
   },
   // Conv #15-3 — étape 'profil' retirée : le profil est déjà fixé par
@@ -123,7 +132,7 @@ const TOUR_STEPS: readonly TourStep[] = [
     route: '/programme',
     title: 'À toi de jouer',
     body:
-      "Tu as vu la boucle complète. Quitte la démo pour revenir à ton profil et reprendre ton entraînement — le reste des fonctionnalités viendra naturellement.",
+      "Tu as vu la boucle complète : séance, progression, bilan. Quitte la démo et lance ta première séance — tu découvriras le reste au fil des séances.",
   },
 ];
 
@@ -153,11 +162,6 @@ function WelcomeOverlay({ onStart }: { onStart: () => void }) {
         </h2>
         <p className="mt-3 text-justify text-sm leading-relaxed text-anthracite-200 hyphens-auto">
           {snap.persona.summary}
-        </p>
-        <p className="mt-3 text-justify text-xs leading-relaxed text-anthracite-300 hyphens-auto">
-          Tu peux quitter à tout moment via le bouton{' '}
-          <span className="text-sang-400">Quitter la démo</span> en haut à
-          droite. Tes vraies données ne sont jamais modifiées.
         </p>
         <div className="mt-5 flex flex-col gap-2">
           <Button

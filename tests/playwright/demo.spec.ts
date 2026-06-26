@@ -1,8 +1,5 @@
 import { expect, test } from '@playwright/test';
-import {
-  runOnboardingMinimal,
-  runOnboardingMinimalWithAutoDemo,
-} from './_helpers';
+import { runOnboardingMinimal } from './_helpers';
 
 /**
  * E2E mode démo persona Alex — Conv #13e (refonte tour guidé),
@@ -125,21 +122,25 @@ test('démo Alex : Quitter la démo à mi-parcours restaure l\'état', async ({
 
   await expect(page.getByTestId('btn-exit-demo')).toBeHidden();
   // Une relance redémarre à l'étape 1 (pas de reprise mi-parcours)
-  await page.getByRole('link', { name: 'Séances' }).click();
+  await page.getByRole('link', { name: 'Accueil' }).click();
   await expect(page).toHaveURL(/\/programme$/);
   await page.getByTestId('btn-start-demo-from-welcome').click();
   await page.getByTestId('btn-demo-start').click();
   await expect(page.getByTestId('demo-tour-step-programme')).toBeVisible();
 });
 
-test('démo Alex : auto-lancée à la fin de l\'onboarding (Conv #15-7)', async ({
+test('démo : pas de lancement auto en fin d\'onboarding, accessible via le bandeau (Conv #49)', async ({
   page,
 }) => {
-  await runOnboardingMinimalWithAutoDemo(page);
-  // La welcome overlay démo apparaît automatiquement (sans clic sur le
-  // WelcomeBanner) puisque l'onboarding vient de se terminer.
+  await runOnboardingMinimal(page);
+  // Conv #49 — la démo n'est PLUS auto-lancée en sortie d'onboarding : on
+  // atterrit sur l'Accueil sans overlay.
+  await expect(page.getByTestId('demo-welcome-overlay')).toBeHidden();
+  // Elle reste accessible en un clic via le bandeau d'accueil.
+  await page.getByTestId('btn-start-demo-from-welcome').click();
   await expect(page.getByTestId('demo-welcome-overlay')).toBeVisible();
-  await expect(page.getByTestId('btn-exit-demo')).toBeVisible();
+  await page.getByTestId('btn-demo-start').click();
+  await expect(page.getByTestId('demo-tour-step-programme')).toBeVisible();
 });
 
 test('démo Alex : relance depuis Profil > Aide', async ({ page }) => {

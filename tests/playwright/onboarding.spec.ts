@@ -19,11 +19,6 @@ test.beforeEach(async ({ context }) => {
     } catch {
       /* noop */
     }
-    try {
-      localStorage.setItem('coach-os.skip-auto-demo', '1');
-    } catch {
-      /* noop */
-    }
   });
 });
 

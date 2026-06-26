@@ -749,9 +749,9 @@ function main(): void {
   const snapshot: DemoSnapshot = {
     persona: {
       id: 'alex',
-      label: "Découvre Kotsh via le profil d'Alex",
+      label: "Découvre Kotsh en pratique",
       summary:
-        "Pour te montrer comment l'app marche en pratique, on va parcourir ensemble le profil d'Alex — un utilisateur fictif. Tu verras un programme actif, des séances passées, des plafonds qui progressent, et un bilan de cycle — tout ce que tu auras toi-même dans quelques semaines.",
+        "Alex est un utilisateur fictif. On parcourt son programme ensemble pour voir l'app en vrai : des séances passées, des Plafonds qui montent, un bilan de cycle. Tout ça, tu l'auras toi-même dans quelques semaines.",
     },
     generated_at: DEMO_TODAY,
     user_state: serializeUserState(state),

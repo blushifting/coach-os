@@ -73,30 +73,32 @@ export function WelcomeBanner({ feedbackCount }: WelcomeBannerProps) {
         Bienvenue
       </span>
       <h2 className="pr-8 font-display text-2xl leading-tight tracking-wide text-white">
-        Ton cycle commence aujourd'hui
+        Ton programme est prêt
       </h2>
       <p className="text-justify text-sm leading-relaxed text-anthracite-200 hyphens-auto">
-        Pour démarrer ta 1re séance, tape la case{' '}
+        Pour lancer ta première séance, tape la case{' '}
         <span className="font-medium text-white">d'aujourd'hui</span> dans le
-        calendrier ci-dessous (entourée en rouge). Tu peux aussi taper une
-        autre case pour planifier la séance d'un autre jour. Tes Plafonds
-        s'apprennent automatiquement au fil des séries, sans test préalable.
+        calendrier (en rouge).
       </p>
       <p className="text-justify rounded-lg border border-sang-800/50 bg-sang-900/15 px-3 py-2 text-[12px] leading-relaxed text-anthracite-100 hyphens-auto">
-        <span className="font-medium text-sang-300">Comment ça marche : </span>
-        Kotsh te suggère <span className="font-medium text-white">charge et reps</span> pour chaque série,
-        c'est un <span className="italic">objectif</span>, pas une obligation. Si tu fais plus ou moins en
-        réalité, modifie le résultat saisi : Kotsh apprend de ton vrai
-        ressenti et ajuste les séries suivantes.
+        <span className="font-medium text-sang-300">Comment ça marche&nbsp;: </span>
+        Kotsh te suggère une charge et des reps à chaque série.{' '}
+        <span className="font-medium text-white">C'est un objectif, pas une obligation.</span>{' '}
+        Note ce que tu as vraiment fait&nbsp;: ton programme se règle alors tout
+        seul sur ton niveau réel — la bonne charge à chaque séance, sans avoir
+        à la deviner.
       </p>
-      <div className="mt-2">
+      <div className="mt-2 flex flex-col gap-1.5">
         <Button
           variant="secondary"
           onClick={() => void startDemo()}
           data-testid="btn-start-demo-from-welcome"
         >
-          Revoir la démo
+          Voir la démo
         </Button>
+        <p className="px-1 text-xs text-anthracite-300">
+          Un exemple&nbsp;: une séance et un bilan déjà remplis.
+        </p>
       </div>
     </Card>
   );

@@ -35,7 +35,7 @@ test.beforeEach(async ({ context }) => {
 test('catalogue : recherche, filtre, détail', async ({ page }) => {
   await runOnboardingMinimal(page);
 
-  await page.getByRole('link', { name: 'Catalogue' }).click();
+  await page.getByRole('link', { name: 'Exercices' }).click();
   await expect(page).toHaveURL(/\/catalogue$/);
   await expect(page.getByTestId('catalogue-page')).toBeVisible();
 
@@ -95,7 +95,7 @@ test('catalogue : recherche, filtre, détail', async ({ page }) => {
 test('catalogue : bandeaux repliables + favori (Bloc F)', async ({ page }) => {
   await runOnboardingMinimal(page);
 
-  await page.getByRole('link', { name: 'Catalogue' }).click();
+  await page.getByRole('link', { name: 'Exercices' }).click();
   await expect(page.getByTestId('catalogue-page')).toBeVisible();
 
   // Bandeau « Machine » replié par défaut → on l'ouvre, ses cartes apparaissent.

@@ -6,10 +6,12 @@ interface TabDef {
   readonly label: string;
 }
 
+// Conv #49 — onglets renommés : « Séances »→« Accueil », « Catalogue »→« Exercices »
+// (titres d'en-tête synchronisés dans `Header.tsx`).
 const TABS: readonly TabDef[] = [
-  { to: '/programme', label: 'Séances' },
+  { to: '/programme', label: 'Accueil' },
   { to: '/progres', label: 'Progrès' },
-  { to: '/catalogue', label: 'Catalogue' },
+  { to: '/catalogue', label: 'Exercices' },
   { to: '/profil', label: 'Profil' },
 ];
 

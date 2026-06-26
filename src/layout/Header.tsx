@@ -1,11 +1,11 @@
 import { useLocation } from 'react-router-dom';
 
 const TITLES: Record<string, string> = {
-  '/programme': 'Séances',
+  '/programme': 'Accueil',
   '/cycle-bilan': 'Bilan de cycle',
   '/seance': 'Séance',
   '/progres': 'Progrès',
-  '/catalogue': 'Catalogue',
+  '/catalogue': 'Exercices',
   '/profil': 'Profil',
 };
 
