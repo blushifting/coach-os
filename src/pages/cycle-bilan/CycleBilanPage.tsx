@@ -57,8 +57,8 @@ export default function CycleBilanPage() {
       {review === null ? (
         <Card data-testid="bilan-empty">
           <p className="text-sm text-anthracite-300">
-            Aucun bilan disponible pour le moment. Termine un cycle complet pour
-            voir s'afficher tes Plafonds, tes records et ton assiduité.
+            Aucun bilan disponible. Termine un cycle complet pour voir s'afficher
+            tes Plafonds, tes records et ton assiduité.
           </p>
           <div className="mt-3">
             <Link to="/programme">
@@ -95,7 +95,7 @@ function ReviewKeyMetrics({ review }: { review: CycleReview }) {
   return (
     <Card data-testid="bilan-key-metrics" className="grid grid-cols-3 gap-3">
       <Metric
-        label="Adhérence"
+        label="Assiduité"
         helpTopic="adherence"
         value={`${Math.round(review.adherence_pct * 100)} %`}
         delay={0}

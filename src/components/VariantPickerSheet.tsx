@@ -42,19 +42,16 @@ export function VariantPickerSheet({
   return (
     <>
       <Sheet open={open} onClose={onClose} title={title}>
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <span className="text-xs text-anthracite-300">
-            {expanded
-              ? 'Tous les exercices ciblant le(s) même(s) muscle(s).'
-              : 'Variantes proches (même mouvement).'}
-          </span>
+        <div className="mb-3 flex justify-end">
           <button
             type="button"
             onClick={onToggleExpand}
             data-testid="btn-toggle-expand"
             className="rounded-lg border border-anthracite-700 px-2 py-1 text-xs text-anthracite-300 hover:text-white"
           >
-            {expanded ? 'Voir seulement les variantes' : 'Voir tous les exercices ciblant ce muscle'}
+            {expanded
+              ? 'Voir seulement les variantes'
+              : 'Voir tous les exercices ciblant les mêmes muscles'}
           </button>
         </div>
         {alternatives.length === 0 ? (

@@ -28,7 +28,10 @@ export function suggestedActionLabel(action: SuggestedAction): string {
     case 'ajuster':
       return 'Ajuster les objectifs';
     case 'tourner':
-      return 'Tourner l\'emphasis';
+      // Bloc B1 — plus de 3ᵉ libellé distinct : « tourner » se présente comme
+      // « Ajuster les objectifs » (pas de différence nette côté utilisateur, et
+      // seuls « Continuer pareil » / « Ajuster les objectifs » ont un bouton).
+      return 'Ajuster les objectifs';
     default:
       return 'Continuer pareil';
   }

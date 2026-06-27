@@ -106,9 +106,15 @@ export function CalibrationBanner({
             {isStale ? 'À recalibrer' : 'On apprend ta charge'}
           </span>{' '}
           —{' '}
-          {isStale
-            ? 'Plafond pas mesuré depuis 8 semaines, cette série va le rafraîchir.'
-            : "garde 2 à 3 reps en réserve (pousse vraiment). C'est cette intensité qui permet à Kotsh d'apprendre ton Plafond — fais 3-12 reps puis renseigne reps + réserve."}
+          {isStale ? (
+            "Ton Plafond n'a pas été mesuré depuis un moment, on va le rafraîchir."
+          ) : (
+            <>
+              pour mesurer ton Plafond, approche-toi le plus possible de
+              l'<Concept topic="echec">échec</Concept> sur cette série. C'est
+              cette intensité qui permet à Kotsh de l'apprendre.
+            </>
+          )}
         </p>
       )}
     </div>

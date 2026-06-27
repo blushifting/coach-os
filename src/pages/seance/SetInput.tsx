@@ -520,7 +520,13 @@ function RpeSlider({ index, value, disabled, onChange }: RpeSliderProps) {
         </span>
         <span
           data-testid={`rpe-value-${index}`}
-          className="font-display text-base leading-none tabular-nums tracking-wide text-white"
+          className={cn(
+            'font-display leading-none tabular-nums tracking-wide text-white',
+            // Bloc B1 — « ECHEC » (5 lettres) paraissait énorme à côté des
+            // valeurs courtes (4+, 3, 2, 1) : on le réduit d'un cran, sans
+            // toucher la taille des autres valeurs.
+            reserveLabel(rpe) === 'ECHEC' ? 'text-sm' : 'text-base',
+          )}
         >
           {reserveLabel(rpe)}
         </span>

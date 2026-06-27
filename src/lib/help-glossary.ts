@@ -15,7 +15,8 @@ export type HelpTopic =
   | 'vsSem1'
   | 'prDuJour'
   | 'deltoides'
-  | 'adherence';
+  | 'adherence'
+  | 'echec';
 
 export interface HelpEntry {
   readonly title: string;
@@ -111,11 +112,11 @@ export const HELP_GLOSSARY: Readonly<Record<HelpTopic, HelpEntry>> = {
     body: "Record personnel de la séance : meilleure performance (charge × reps × effort) atteinte aujourd'hui sur un exercice, comparée à toutes les séances précédentes. Représenté par une étoile sur les courbes de force.",
   },
   adherence: {
-    title: 'Adhérence',
+    title: 'Assiduité',
     body:
       "Pourcentage de séances effectivement faites sur les séances planifiées du cycle (5 semaines). " +
       "100 % = tu as fait toutes les séances prévues. 60 % = tu en as raté 4 sur 10. " +
-      "Plus l'adhérence est haute, plus les ajustements de Kotsh (charges, volume, déload) reflètent ta réalité — " +
+      "Plus ton assiduité est haute, plus les ajustements de Kotsh (charges, volume, déload) reflètent ta réalité — " +
       "et plus tu progresses. C'est l'indicateur le plus simple pour suivre ta régularité.",
   },
   deltoides: {
@@ -131,5 +132,12 @@ export const HELP_GLOSSARY: Readonly<Record<HelpTopic, HelpEntry>> = {
       "que tu travailles pectoraux, deltos latéraux ou triceps (règle " +
       "scientifique R4, Cools 2014 — prévention du conflit sous-acromial, " +
       "blessure d'épaule la plus fréquente en muscu).",
+  },
+  echec: {
+    title: 'Échec',
+    body:
+      "Le point où tu ne peux plus faire une seule rep de plus, malgré l'effort — la barre ne monte plus. " +
+      "C'est l'intensité maximale d'une série : 0 rep en réserve. " +
+      "En calibration, c'est ce qui permet de mesurer ton vrai Plafond.",
   },
 };

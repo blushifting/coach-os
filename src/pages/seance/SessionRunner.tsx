@@ -273,7 +273,7 @@ export function SessionRunner({
             {sessionDisplayName(plan)}
           </span>
           <span className="flex items-center gap-1.5 text-xs text-anthracite-300">
-            Cycle {plan.cycle_index} · S{plan.week_in_cycle}
+            Cycle {plan.cycle_index} · Semaine {plan.week_in_cycle}
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-3">
@@ -514,15 +514,14 @@ export function SessionRunner({
         description={
           incomplete ? (
             <>
-              Tu as coché <strong>{done}/{total}</strong> séries. Une fois
-              terminée, tu ne pourras plus modifier la séance — les séries non
-              cochées comptent comme non faites. Kotsh rattrapera ce volume
-              manquant plus tard.
+              Tu as coché <strong>{done}/{total}</strong> séries. En terminant,
+              les séries non cochées comptent comme non faites, et tu ne pourras
+              plus modifier la séance.
             </>
           ) : (
             <>
-              Toutes les séries sont cochées. La séance sera enregistrée et
-              tes Plafonds seront mis à jour.
+              Toutes tes séries sont cochées. Kotsh enregistre la séance et met
+              à jour tes Plafonds.
             </>
           )
         }
@@ -641,8 +640,8 @@ export function SessionRunner({
             );
           }
           return (
-            <>L'exercice sera retiré de la séance en cours. Tu peux le
-            rajouter via "+ Ajouter un exercice" si tu changes d'avis.</>
+            <>L'exercice quitte la séance en cours. Tu peux le remettre à tout
+            moment.</>
           );
         })()}
         confirmLabel="Retirer"

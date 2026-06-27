@@ -28,6 +28,7 @@ import {
   VMAX_UP_DELTA,
   countWeeklyVolume,
 } from './volume';
+import { muscleLabel } from '@/lib/progress';
 import { autoGenerateCyclePlanV3, rotateEmphasis } from './cycle_planner';
 
 // =============================================================================
@@ -214,7 +215,7 @@ export function generateCycleReview(state: UserState, catalog: Catalog): CycleRe
       if (catalog.has(exId)) {
         const ex = catalog.get(exId);
         review.warnings.push(
-          `Plafond ${ex.nom_fr} en baisse, vérifier récupération/sommeil`,
+          `Plafond en baisse sur ${ex.nom_fr}. Pense à ta récupération et à ton sommeil.`,
         );
       }
     }
@@ -270,7 +271,7 @@ export function adjustVolumeBoundsAtCycleEnd(
     if (muscle in state.volume_min) {
       state.volume_min[muscle] = Math.max(2, state.volume_min[muscle]! - 1);
       review.warnings.push(
-        `Volume minimum réduit sur ${muscle} — tes séances sont peut-être trop courtes.`,
+        `Volume minimum réduit sur ${muscleLabel(muscle)} — tes séances sont peut-être trop courtes.`,
       );
     }
   }

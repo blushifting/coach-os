@@ -48,7 +48,10 @@ export function formatRest(seconds: number): string {
   const m = Math.floor(total / 60);
   const s = total - m * 60;
   if (s === 0) return `${m} min`;
-  return `${m} min ${s} s`;
+  // Bloc B1 — pas de « s » après les secondes en format composite : « 1 min 30 »
+  // est déjà clair et le « s » orphelin passait à la ligne. Le « s » reste sur
+  // le format secondes seules (« 45 s ») où il lève l'ambiguïté.
+  return `${m} min ${s}`;
 }
 
 // =============================================================================
