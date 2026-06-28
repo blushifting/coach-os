@@ -29,14 +29,14 @@ const TABS: ReadonlyArray<{ readonly id: Tab; readonly label: string }> = [
 const VOLUME_HISTORY_WEEKS = 8;
 
 /**
- * Onglet Progrès — Conv #6a.
+ * Onglet Progrès — Conv #6a, fusion Couverture+Volume Conv #17.
  *
  * 3 vues navigables par tabs :
- * - Couverture : heatmap muscles touchés cette semaine (placeholder grille,
- *   silhouette propre prévue Conv #8).
- * - Volume : barres hebdo par muscle avec bandes V_min/V_max grises.
- * - Cycles : historique nommé par programme + dates, comparaison plafonds /
- *   volumes inter-cycles.
+ * - Volume : silhouette hebdo cliquable + courbes d'évolution du volume par
+ *   muscle (bandes V_min/V_max).
+ * - Force : courbe d'évolution du Plafond (e1RM) par exercice.
+ * - Cycles : historique des cycles + dates, comparaison plafonds / volumes
+ *   inter-cycles.
  */
 export default function ProgresPage() {
   const userState = useCoachOsStore((s) => s.userState);

@@ -372,7 +372,7 @@ function FreeFutureBlock({
         {isDeload && (
           <span className="text-sang-500">
             {' '}
-            (semaine de <Concept topic="deload">Déload</Concept>)
+            (semaine de <Concept topic="deload">Récupération</Concept>)
           </span>
         )}
         .
@@ -508,7 +508,7 @@ function CompletedSessionBlock({
         est faite.{' '}
         {day.isDeload && (
           <span className="text-sang-500">
-            (<Concept topic="deload">Déload</Concept>)
+            (<Concept topic="deload">Récupération</Concept>)
           </span>
         )}
       </p>
@@ -525,7 +525,7 @@ function CompletedSessionBlock({
         {day.isDeload && (
           <span className="text-sang-500">
             {' '}
-            (<Concept topic="deload">Déload</Concept>)
+            (<Concept topic="deload">Récupération</Concept>)
           </span>
         )}
         .
@@ -593,7 +593,7 @@ function RestSuggestion({ recentLabels }: { readonly recentLabels: readonly stri
     >
       <p className="text-sm text-anthracite-100">
         <strong>Repos conseillé.</strong> {multiple ? 'Tu as enchaîné' : 'Tu viens de faire'}{' '}
-        <strong className="text-white">{enchaine}</strong> : une pause aiderait
+        <strong className="text-white">{enchaine}</strong>&nbsp;: une pause aiderait
         tes muscles à récupérer. Tu peux quand même lancer une séance si tu te
         sens en forme.
       </p>

@@ -442,7 +442,7 @@ export function formatCycleDates(start: string, end: string | null): string {
   return `${startStr} – ${endStr}`;
 }
 
-/** "lun. 11 mai" pour un YYYY-MM-DD. */
+/** "11 mai" pour un YYYY-MM-DD. */
 export function formatWeekLabel(weekStart: string): string {
   return parseDateKey(weekStart).toLocaleDateString('fr-FR', {
     day: 'numeric',

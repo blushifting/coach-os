@@ -219,7 +219,7 @@ function NextBilanWidget({
   const pct = hasCycle ? Math.max(0, Math.min(100, time.pct)) : 0;
   const daysLeftLabel = (() => {
     if (!hasCycle) return 'cycle non démarré';
-    if (time.daysLeft === 0) return 'aujourd’hui';
+    if (time.daysLeft === 0) return "aujourd'hui";
     if (time.daysLeft === 1) return 'dans 1 jour';
     return `dans ${time.daysLeft} jours`;
   })();

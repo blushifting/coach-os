@@ -112,10 +112,10 @@ export function EditProfileSheet({
             <div className="mb-1 text-sm font-medium text-white">
               Tes machines
             </div>
-            <p className="mb-3 text-xs leading-relaxed text-anthracite-300">
+            <p className="mb-3 text-justify text-xs leading-relaxed text-anthracite-300">
               Marque des machines que tu utilises. Sert juste à afficher
-              les noms commerciaux à l'écran (par ex. « Aura Pulldown » au
-              lieu de « Tirage vertical poulie haute »). Aucun effet sur
+              les noms commerciaux à l'écran (par ex. «&nbsp;Aura Pulldown&nbsp;» au
+              lieu de «&nbsp;Tirage vertical poulie haute&nbsp;»). Aucun effet sur
               les exos prescrits.
             </p>
             <label className="sr-only" htmlFor="profil-gym-brand">

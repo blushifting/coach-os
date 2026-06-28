@@ -298,8 +298,8 @@ export function CreateSessionSheet({
           </div>
 
           {presetId === null ? (
-            <p className="text-sm leading-relaxed text-anthracite-400">
-              Choisis un point de départ : un groupe musculaire, corps entier, ou une
+            <p className="text-justify text-sm leading-relaxed text-anthracite-400">
+              Choisis un point de départ&nbsp;: un groupe musculaire, corps entier, ou une
               séance libre à composer toi-même.
             </p>
           ) : (
@@ -324,14 +324,14 @@ export function CreateSessionSheet({
               </div>
               <p className="-mt-2 text-xs text-anthracite-400">
                 {slots.length === 0
-                  ? 'Aucun exercice — pars d’une feuille blanche.'
+                  ? "Aucun exercice — pars d'une feuille blanche."
                   : `${slots.length} exercices · ${totalSets} séries · ~${estMin} min`}
               </p>
 
               {veilleMuscles.length > 0 && (
                 <p
                   data-testid="create-warn-veille"
-                  className="rounded-lg border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-xs leading-snug text-amber-200"
+                  className="rounded-lg border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-justify text-xs leading-snug text-amber-200"
                 >
                   Tu as travaillé{' '}
                   <strong className="text-amber-100">
@@ -345,7 +345,7 @@ export function CreateSessionSheet({
               {overshoot.length > 0 && (
                 <p
                   data-testid="create-warn-hebdo"
-                  className="rounded-lg border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-xs leading-snug text-amber-200"
+                  className="rounded-lg border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-justify text-xs leading-snug text-amber-200"
                 >
                   <strong className="text-amber-100">Volume élevé.</strong> Ces séries
                   poussent {overshoot.map((o) => muscleLabel(o.muscle)).join(', ')}{' '}

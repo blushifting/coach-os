@@ -64,36 +64,36 @@ const KNOWN_EQUIP: ReadonlyArray<{ id: string; label: string }> = [
   { id: 'bb_oly', label: 'Barre olympique' },
   { id: 'rack', label: 'Rack à squat' },
   { id: 'bench_flat', label: 'Banc plat' },
-  { id: 'bench_incl', label: 'Banc incliné' },
-  { id: 'bench_decl', label: 'Banc décliné' },
+  { id: 'bench_incl', label: 'Banc inclinable' },
+  { id: 'bench_decl', label: 'Banc déclinable' },
   { id: 'smith', label: 'Smith machine' },
   { id: 't_bar', label: 'Barre en T' },
   { id: 'trap_bar', label: 'Barre Trap (hexagonale)' },
   { id: 'db', label: 'Haltères' },
-  { id: 'preacher', label: 'Banc Larry Scott (preacher)' },
-  { id: 'cable_double', label: 'Poulie double' },
+  { id: 'preacher', label: 'Banc Scott' },
+  { id: 'cable_double', label: 'Poulies doubles' },
   { id: 'cable_high', label: 'Poulie haute' },
   { id: 'cable_low', label: 'Poulie basse' },
   { id: 'lat_pulldown', label: 'Tirage poulie haute' },
   { id: 'seated_row', label: 'Tirage horizontal assis' },
-  { id: 'chest_press', label: 'Pec press machine' },
+  { id: 'chest_press', label: 'Développé pectoraux machine' },
   { id: 'pec_deck', label: 'Pec deck' },
   { id: 'lateral_machine', label: 'Machine élévations latérales' },
   { id: 'leg_press', label: 'Presse à cuisses' },
   { id: 'hack_squat', label: 'Hack squat' },
   { id: 'leg_extension', label: 'Leg extension' },
-  { id: 'leg_curl_lying', label: 'Leg curl allongé' },
+  { id: 'leg_curl_lying', label: 'Leg curl couché' },
   { id: 'leg_curl_seated', label: 'Leg curl assis' },
   { id: 'glute_machine', label: 'Machine fessiers' },
   { id: 'glute_ham', label: 'Glute-ham raise' },
   { id: 'calf_standing', label: 'Mollets debout' },
   { id: 'calf_seated', label: 'Mollets assis' },
-  { id: 'back_extension', label: 'Lombaires (banc romain)' },
+  { id: 'back_extension', label: 'Banc à lombaires' },
   { id: 'reverse_hyper', label: 'Reverse hyper' },
   { id: 'pull_bar', label: 'Barre de traction' },
   { id: 'dip_bar', label: 'Barres parallèles (dips)' },
-  { id: 'assisted_pullup', label: 'Machine d\'assistance traction/dips' },
-  { id: 'ab_wheel', label: 'Roue abdo' },
+  { id: 'assisted_pullup', label: 'Machine de traction assistée' },
+  { id: 'ab_wheel', label: 'Roue abdominale' },
 ];
 
 export function CustomExerciseSheet({
@@ -327,7 +327,7 @@ export function CustomExerciseSheet({
           <Field
             label="Muscles travaillés *"
             error={errorsByField['muscles']}
-            help="1er muscle tapé = principal, les suivants = secondaires. Tap secondaire : retire ; tap principal : passe en secondaire. Bouton ★ pour promouvoir un secondaire en principal."
+            help={"Touche les muscles travaillés : le premier est le principal, les suivants secondaires. Re-touche pour retirer ; le ★ change le muscle principal."}
           >
             <div className="flex flex-wrap gap-1.5">
               {PICKER_MUSCLES.map((m) => {
@@ -406,7 +406,7 @@ export function CustomExerciseSheet({
             <input
               data-testid="custom-equip-other"
               type="text"
-              placeholder="Autre (séparé par virgules) — ex : barre ezx, sangles"
+              placeholder={"Autre (séparé par virgules) — ex : barre EZ, sangles"}
               value={equipOther}
               onChange={(e) => onEquipOtherChange(e.target.value)}
               className="mt-2 w-full rounded-lg border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-sm text-white outline-none focus:border-sang-700/60"
@@ -432,7 +432,7 @@ export function CustomExerciseSheet({
               className="rounded-lg border border-amber-700/60 bg-amber-900/20 p-3 text-sm text-amber-200"
             >
               <p className="font-semibold">
-                Ressemble à : {confirmDuplicate.exercise.nom_fr}
+                Ressemble à&nbsp;: {confirmDuplicate.exercise.nom_fr}
               </p>
               <p className="mt-1 text-xs text-amber-300/80">
                 {confirmDuplicate.kind === 'exact-name'

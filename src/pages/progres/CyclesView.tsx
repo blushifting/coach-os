@@ -74,7 +74,7 @@ function CycleCard({ item, catalog }: CycleCardProps) {
           unit="kg"
         />
         <Metric
-          label="Meilleur Plafond"
+          label="Meilleure progression"
           value={
             item.plafondsTop.length > 0
               ? `${formatDelta(item.plafondsTop[0]![1])} kg`
@@ -135,6 +135,7 @@ function CycleCard({ item, catalog }: CycleCardProps) {
 const OBJECTIVE_LABEL: Readonly<Record<string, string>> = {
   hypertrophie: 'Hypertrophie',
   force: 'Force',
+  endurance: 'Endurance',
   maintien: 'Maintien',
 };
 

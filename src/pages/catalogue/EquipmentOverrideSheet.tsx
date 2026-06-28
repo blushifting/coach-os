@@ -121,10 +121,10 @@ export function EquipmentOverrideSheet({
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title="Bornes d'équipement">
+    <Sheet open={open} onClose={onClose} title="Charges de ta salle">
       <div className="flex flex-col gap-3" data-testid="equip-override-sheet">
-        <p className="text-sm text-anthracite-300">
-          Personnalise les bornes pour <strong className="text-white">{exercise.nom_fr}</strong>{' '}
+        <p className="text-justify text-sm text-anthracite-300">
+          Ajuste les charges disponibles pour <strong className="text-white">{exercise.nom_fr}</strong>{' '}
           si ton matériel diffère du catalogue (haltères par 2 kg, machine
           plafonnée…). Laisse une case décochée pour garder la valeur par
           défaut.
@@ -133,7 +133,7 @@ export function EquipmentOverrideSheet({
         <FieldRow
           label="Palier d'incrément"
           suffix=" kg"
-          hint={`Catalogue : ${exercise.inc_kg} kg`}
+          hint={`Catalogue : ${exercise.inc_kg} kg`}
           field={incField}
           onChange={setIncField}
           testId="override-inc"

@@ -148,19 +148,19 @@ test('profil : sheet Aide affiche les 15 entrées du glossaire', async ({
   const topics = [
     'plafond',
     'reserve',
+    'echec',
     'cycle',
     'deload',
     'poly',
     'iso',
     'etire',
     'volumeHebdo',
+    'volumeTotalCycle',
     'vminmax',
-    'amplitude',
     'hypertrophie',
     'adherence',
     'vsSem1',
     'prDuJour',
-    'deltoides',
   ];
   for (const t of topics) {
     await expect(page.getByTestId(`aide-glossaire-${t}`)).toBeVisible();

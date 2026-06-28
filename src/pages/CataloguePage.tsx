@@ -111,7 +111,7 @@ export default function CataloguePage() {
   if (catalog === null) {
     return (
       <Card>
-        <p className="text-sm text-anthracite-300">Catalogue en chargement…</p>
+        <p className="text-sm text-anthracite-300">Chargement des exercices…</p>
       </Card>
     );
   }

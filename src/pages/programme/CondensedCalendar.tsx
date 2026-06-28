@@ -59,7 +59,7 @@ function Legend() {
         />
       </div>
       <span className="text-[10px] text-anthracite-300">
-        D = semaine de <Concept topic="deload">Déload</Concept> (charges réduites)
+        R = semaine de <Concept topic="deload">Récupération</Concept> (charges réduites)
       </span>
     </div>
   );

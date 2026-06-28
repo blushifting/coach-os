@@ -35,8 +35,9 @@ export function ForceView({ series }: ForceViewProps) {
     return (
       <Card data-testid="force-empty">
         <p className="text-sm text-anthracite-300">
-          Pas encore assez de données. Termine 2 séances avec un même exercice
-          pour voir ta courbe de <Concept topic="plafond">Plafond</Concept>.
+          Pas encore assez de données. Dès qu'un exercice a été fait sur
+          2&nbsp;séances, sa courbe de{' '}
+          <Concept topic="plafond">Plafond</Concept> apparaît ici.
         </p>
       </Card>
     );

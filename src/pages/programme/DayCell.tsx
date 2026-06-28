@@ -39,14 +39,14 @@ export function DayCell({ day, onClick }: DayCellProps) {
         day.isToday && 'ring-2 ring-sang-500',
         day.isDeload && 'opacity-90',
       )}
-      aria-label={`${day.date} — ${day.isDeload ? 'semaine allégée' : STATUS_BADGE_LABEL[day.status]}`}
+      aria-label={`${day.date} — ${day.isDeload ? 'semaine de récupération' : STATUS_BADGE_LABEL[day.status]}`}
     >
       <span className="text-[10px] uppercase tracking-wide leading-none">
         {WEEKDAY_LABELS[day.dayOfWeek]}
       </span>
       <span className="text-sm font-semibold tabular-nums leading-none">{dayOfMonth}</span>
       {day.isDeload && day.status !== 'completed' && (
-        <span className="text-[9px] uppercase tracking-wide text-sang-500 leading-none">D</span>
+        <span className="text-[9px] uppercase tracking-wide text-sang-500 leading-none">R</span>
       )}
     </button>
   );

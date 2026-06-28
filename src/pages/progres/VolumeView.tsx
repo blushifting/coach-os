@@ -190,7 +190,7 @@ function Legend() {
     <div className="flex flex-wrap justify-center gap-3 text-[10px] text-anthracite-300">
       <LegendItem dotClass="bg-sang-900" label="sous le minimum" />
       <LegendItem dotClass="bg-sang-600" label="dans la cible" />
-      <LegendItem dotClass="bg-sang-400" label="au-dessus" />
+      <LegendItem dotClass="bg-sang-400" label="au-dessus de la cible" />
     </div>
   );
 }
@@ -290,7 +290,7 @@ function MuscleVolumeCard({
       ) : (
         <p className="text-[11px] leading-snug text-anthracite-300">
           Pas dans tes objectifs. Pour suivre ce muscle, ajoute-le depuis{' '}
-          <span className="text-anthracite-100">Profil → Priorités &amp; programme</span>.
+          <span className="text-anthracite-100">Profil → Objectifs musculaires</span>.
         </p>
       )}
       {series !== null && series.points.length > 0 && (

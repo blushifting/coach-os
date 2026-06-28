@@ -97,9 +97,6 @@ export function CatalogueDetailSheet({
     else if (coef >= 0.5) highlights[m] = 'synergist';
   }
 
-  const repsRange = exercise.reps_hyp;
-  const repsForce = exercise.reps_force;
-
   return (
     <Sheet open={open} onClose={onClose} title={displayName}>
       <div className="flex flex-col gap-4" data-testid="catalogue-detail-content">
@@ -144,7 +141,7 @@ export function CatalogueDetailSheet({
         </button>
 
         <p
-          className="text-sm leading-relaxed text-anthracite-100"
+          className="text-justify text-sm leading-relaxed text-anthracite-100"
           data-testid="catalogue-detail-description"
         >
           {buildDescription(exercise)}
@@ -215,8 +212,8 @@ export function CatalogueDetailSheet({
           onClick={() => setOverrideOpen(true)}
         >
           {hasOverride
-            ? 'Bornes d\'équipement personnalisées ✓'
-            : 'Personnaliser les bornes d\'équipement'}
+            ? 'Charges adaptées à ma salle ✓'
+            : 'Adapter les charges à ma salle'}
         </Button>
 
         <EquipmentOverrideSheet
@@ -255,34 +252,14 @@ export function CatalogueDetailSheet({
           </Section>
         )}
 
-        <Section label="Recommandations">
-          <ul
-            className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-anthracite-100"
+        <Section label="Repos conseillé">
+          <p
+            className="flex justify-between text-xs text-anthracite-100"
             data-testid="catalogue-recommandations"
           >
-            <li className="flex justify-between">
-              <span className="text-anthracite-300">Reps hypertrophie</span>
-              <span className="tabular-nums">
-                {repsRange[0]}–{repsRange[1]}
-              </span>
-            </li>
-            {repsForce !== null && (
-              <li className="flex justify-between">
-                <span className="text-anthracite-300">Reps force</span>
-                <span className="tabular-nums">
-                  {repsForce[0]}–{repsForce[1]}
-                </span>
-              </li>
-            )}
-            <li className="flex justify-between">
-              <span className="text-anthracite-300">Repos</span>
-              <span className="tabular-nums">{formatRest(exercise.repos_s)}</span>
-            </li>
-            {/* Conv #20 — "Difficulté" retirée : étiquette subjective qui
-                n'aide pas l'user à choisir. Le champ data `dif` reste pour
-                le tie-break interne de `selection.ts` (préférence aux exos
-                faciles à équivalence de couverture). */}
-          </ul>
+            <span className="text-anthracite-300">Entre séries</span>
+            <span className="tabular-nums">{formatRest(exercise.repos_s)}</span>
+          </p>
         </Section>
 
         {exercise.equip.length > 0 && (
@@ -324,7 +301,7 @@ export function CatalogueDetailSheet({
             className="mt-2 border-t border-anthracite-700 pt-3"
             data-testid="catalogue-detail-custom-actions"
           >
-            <p className="mb-2 text-[11px] leading-snug text-anthracite-400">
+            <p className="mb-2 text-justify text-[11px] leading-snug text-anthracite-400">
               Cet exercice a été ajouté par toi. Tu peux le retirer du
               catalogue — tes séances passées resteront, mais l'exercice
               s'affichera sous son code.
@@ -345,7 +322,7 @@ export function CatalogueDetailSheet({
 
       <Dialog
         open={confirmDelete}
-        title="Supprimer cet exercice ?"
+        title={"Supprimer cet exercice ?"}
         description={
           <>
             L'exercice <strong>{displayName}</strong> sera retiré du
@@ -371,10 +348,10 @@ export function CatalogueDetailSheet({
 
       <Dialog
         open={confirmReset}
-        title="Réinitialiser ce Plafond ?"
+        title={"Réinitialiser ce Plafond ?"}
         description={
           <>
-            Coach OS efface le{' '}
+            Kotsh efface le{' '}
             <Concept topic="plafond">Plafond</Concept> de{' '}
             <strong>{displayName}</strong> et toutes ses mesures passées.
             À ta prochaine séance, l'app re-mesurera ta charge de départ,

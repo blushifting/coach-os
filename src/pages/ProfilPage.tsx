@@ -6,7 +6,7 @@
  *   2. **Priorités & programme** — ouvre l'onboarding partiel (Step2→5)
  *      qui refait priorités + équilibre + programme + aperçu, puis termine
  *      prématurément le cycle en cours et démarre un nouveau cycle (Conv #18).
- *   3. **Aide** — tutos prise en main + glossaire 13 termes (sheet).
+ *   3. **Aide** — tutos prise en main + glossaire 15 termes (sheet).
  *   4. **Données** — boutons Exporter / Importer / Réinitialiser.
  *
  * Toute mutation passe par `useEngine` (jamais d'écriture directe au store).
@@ -59,7 +59,7 @@ export default function ProfilPage() {
     return (
       <section className="p-2">
         <p className="text-sm text-anthracite-300">
-          Profil non initialisé. Lance l'onboarding pour démarrer.
+          Profil pas encore configuré. Crée ton programme pour démarrer.
         </p>
       </section>
     );
@@ -145,7 +145,7 @@ export default function ProfilPage() {
           className="border-amber-700/40 bg-amber-900/20"
           data-testid="profil-demo-banner"
         >
-          <p className="text-xs text-amber-100">
+          <p className="text-justify text-xs text-amber-100">
             Mode démo actif — les modifications de profil et l'import sont
             désactivés pour préserver les données d'Alex. Sors de la démo
             depuis l'accueil pour reprendre la main sur ton propre compte.
@@ -202,7 +202,7 @@ export default function ProfilPage() {
             Modifier
           </Button>
         </div>
-        <p className="mb-3 text-xs leading-relaxed text-anthracite-400">
+        <p className="mb-3 text-justify text-xs leading-relaxed text-anthracite-400">
           Changer tes priorités ou ton rythme recompose ton programme et démarre
           un nouveau cycle.
         </p>
@@ -239,7 +239,7 @@ export default function ProfilPage() {
             className="mt-3 text-xs text-anthracite-300"
             data-testid="profil-suggested-summary"
           >
-            Équilibre : {[...goalsDraft.acceptedSuggestions].map(muscleLabel).join(', ')}.
+            Équilibre&nbsp;: {[...goalsDraft.acceptedSuggestions].map(muscleLabel).join(', ')}.
           </div>
         )}
       </Card>
@@ -261,8 +261,12 @@ export default function ProfilPage() {
             Modifier
           </Button>
         </div>
+        <p className="mb-3 text-justify text-xs leading-relaxed text-anthracite-400">
+          Ajoute ou retire des exercices du cycle en cours sans perdre ta
+          progression ni relancer un cycle.
+        </p>
         <div
-          className="mb-3 flex items-baseline justify-between rounded-lg bg-anthracite-900 px-3 py-2 text-sm"
+          className="flex items-baseline justify-between rounded-lg bg-anthracite-900 px-3 py-2 text-sm"
           data-testid="profil-programme-summary"
         >
           <span className="text-anthracite-300">Programme</span>
@@ -273,11 +277,6 @@ export default function ProfilPage() {
             </span>
           </span>
         </div>
-        <p className="text-xs leading-relaxed text-anthracite-400">
-          Ajoute ou retire des exercices de ton cycle en cours (les 5 semaines
-          actives). Ta progression (charges, Plafonds, historique) est conservée —
-          pas de nouveau cycle.
-        </p>
       </Card>
 
       {/* Conv #17 — Card "Aide / Ouvrir" peu ergonomique → gros bouton
@@ -285,30 +284,21 @@ export default function ProfilPage() {
           sous le bouton pour donner du contexte. Les HelpButton "?" répartis
           dans l'app (ForceView, VolumeView, Widgets, Step2…) restent en place
           comme entrée contextuelle ; ce bouton-ci est l'entrée principale. */}
-      <div className="flex flex-col gap-1.5">
-        <Button
-          variant="secondary"
-          size="lg"
-          fullWidth
-          onClick={() => setAideOpen(true)}
-          data-testid="profil-open-aide"
-        >
-          <span aria-hidden className="mr-2 text-xl leading-none">?</span>
-          Aide &amp; glossaire
-        </Button>
-        <p className="px-1 text-xs text-anthracite-300">
-          Tutos de prise en main + glossaire des termes utilisés dans l'app.
-        </p>
-      </div>
+      <Button
+        variant="secondary"
+        size="lg"
+        fullWidth
+        onClick={() => setAideOpen(true)}
+        data-testid="profil-open-aide"
+      >
+        <span aria-hidden className="mr-2 text-xl leading-none">?</span>
+        Aide &amp; glossaire
+      </Button>
 
       <Card>
-        <div className="mb-2 text-sm font-semibold text-white">
+        <div className="mb-3 text-sm font-semibold text-white">
           Mes données
         </div>
-        <p className="mb-3 text-xs text-anthracite-300">
-          Tout reste sur ton téléphone. Exporte régulièrement pour ne rien
-          perdre.
-        </p>
         <div className="flex flex-col gap-2">
           <Button
             variant="secondary"
@@ -317,7 +307,7 @@ export default function ProfilPage() {
             disabled={busy !== null}
             data-testid="profil-export"
           >
-            Exporter mes données (JSON)
+            Exporter mes données en JSON
           </Button>
           <Button
             variant="secondary"
@@ -370,12 +360,11 @@ export default function ProfilPage() {
 
       <Dialog
         open={confirmReset}
-        title="Réinitialiser l'app ?"
+        title={"Réinitialiser l'app ?"}
         description={
           <>
-            Cette action efface <strong>toutes tes données</strong> (séances,
-            cycles, Plafonds, objectifs). Cette opération est
-            irréversible. Pense à exporter avant.
+            Efface <strong>toutes tes données</strong> (séances, cycles,
+            Plafonds, objectifs). C'est irréversible — pense à exporter avant.
           </>
         }
         confirmLabel="Tout effacer"

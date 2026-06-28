@@ -29,7 +29,7 @@ export const EXTYPE_LABEL_FR: Record<ExType, string> = {
 
 export const PATTERN_LABEL_FR: Record<Pattern, string> = {
   [Pattern.SQUAT]: 'Squat',
-  [Pattern.HINGE]: 'Charnière de hanche',
+  [Pattern.HINGE]: 'Bascule de hanche',
   [Pattern.LUNGE]: 'Fente',
   [Pattern.PUSH_H]: 'Poussée horizontale',
   [Pattern.PUSH_V]: 'Poussée verticale',
@@ -199,14 +199,13 @@ export function buildDescription(ex: Exercise): string {
   }
   const typ = extypeLabel(ex.type);
   const pat = patternLabel(ex.pattern).toLowerCase();
-  // Conv #14c-8 — `muscleLabel` retourne désormais le label Capitalize sans
-  // article ("Pectoraux"). On toLowercase pour insérer dans la phrase sans
-  // article ("Cible pectoraux."). Pas idéal grammaticalement (on aurait
-  // préféré "Cible les pectoraux") mais le bug Conv #10c' nous a appris à
-  // ne pas mêler les articles ici.
+  // Conv #52 — formulation « Muscles ciblés : … » (liste après deux-points) :
+  // aucun article devant les muscles, donc robuste aux libellés singuliers
+  // comme « Grand dorsal » (un « Cible les grand dorsal » serait fautif). On
+  // toLowercase les labels pour les fondre dans la phrase.
   const primaires = exercisePrimaires(ex).map((m) => muscleLabel(m).toLowerCase());
   const cible =
-    primaires.length === 0 ? '' : ` Cible ${joinFr(primaires)}.`;
+    primaires.length === 0 ? '' : ` Muscles ciblés : ${joinFr(primaires)}.`;
   return `${typ} — ${pat}.${cible}`.trim();
 }
 
