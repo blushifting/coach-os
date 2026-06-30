@@ -30,6 +30,7 @@ import {
   MuscleStatus,
   objectiveToMuscleObjective,
 } from './models';
+import { DELOAD_WEEK_IN_CYCLE, DELOAD_LOAD_FACTOR } from './volume';
 
 // Constante d'Epley standard (LeSuer 1997, Wood 2002).
 export const EPLEY_K = 0.0333;
@@ -157,6 +158,20 @@ export function effectivePdcOnly(state: UserState, exercise: Exercise): boolean 
 }
 
 /**
+ * Refonte progression — l'exo est-il piloté par le cliquet de charge
+ * (`prescribed_load_floor`) ? Oui pour les exos à charge externe ADDITIVE
+ * (barre, haltère, machine, lesté). Non pour le poids du corps pur, l'assisté
+ * (charge = assistance, sens inverse) et le mode PDC : ils gardent la voie e1RM.
+ */
+export function exerciseUsesLoadFloor(state: UserState, exercise: Exercise): boolean {
+  if (effectivePdcOnly(state, exercise)) return false;
+  return (
+    exercise.charge !== ChargeType.BODYWEIGHT &&
+    exercise.charge !== ChargeType.BODYWEIGHT_ASSISTED
+  );
+}
+
+/**
  * Conv #20 — Reps nécessaires pour atteindre `e1rmTotal` à `rpeTarget` quand
  * la charge externe est forcée à 0 (mode PDC). On résout Epley inverse :
  *
@@ -222,19 +237,22 @@ export function targetReps(profile: Profile, exercise: Exercise): number {
   return fixedReps(objectiveToMuscleObjective(profile.objective), exercise.type);
 }
 
-// Table RPE cible par semaine du cycle et objectif (legacy, cf. 03_§8.3).
-const RPE_BY_PHASE: Record<Objective, Record<number, number>> = {
-  [Objective.HYPERTROPHIE]: { 1: 7.0, 2: 8.0, 3: 8.5, 4: 9.0, 5: 6.0 },
-  [Objective.FORCE]: { 1: 7.0, 2: 7.5, 3: 8.0, 4: 8.5, 5: 6.0 },
-  [Objective.ENDURANCE]: { 1: 7.0, 2: 7.5, 3: 8.0, 4: 8.0, 5: 6.0 },
+// Refonte progression — plus de rampe RPE intra-cycle (reliquat de la montée de
+// volume Israetel, virée Bloc L). Un RPE de RÉFÉRENCE constant par objectif sert
+// seulement à SEED la charge (le cliquet `prescribed_load_floor` prend ensuite le
+// relais) ; le déload (sem 5) abaisse le RPE. (Voie legacy Profile.objective.)
+const BASE_RPE_LEGACY: Record<Objective, number> = {
+  [Objective.HYPERTROPHIE]: 7.0,
+  [Objective.FORCE]: 7.0,
+  [Objective.ENDURANCE]: 7.0,
 };
 
-/** RPE cible global pour cette semaine du cycle (voie legacy). */
+/** RPE de référence (constant, déload mis à part) pour cette semaine (voie legacy). */
 export function targetRpe(objective: Objective, weekInCycle: number): number {
   if (!(weekInCycle >= 1 && weekInCycle <= 5)) {
     throw new Error(`Semaine hors plage 1..5 : ${weekInCycle}`);
   }
-  return RPE_BY_PHASE[objective][weekInCycle]!;
+  return weekInCycle === DELOAD_WEEK_IN_CYCLE ? DELOAD_RPE : BASE_RPE_LEGACY[objective];
 }
 
 /** Repos en secondes. Le catalogue donne déjà une valeur, on peut la moduler. */
@@ -261,12 +279,13 @@ const HIERARCHY_OBJECTIVE: readonly MuscleObjective[] = [
   MuscleObjective.MAINTIEN,
 ];
 
-// Courbes RPE semaines 1..4 (sem 5 = déload constant). Cf. 09 §9.2.
-const BASE_RPE_CURVES: Record<MuscleObjective, readonly number[]> = {
-  [MuscleObjective.FORCE]: [7.0, 7.5, 8.0, 8.0],
-  [MuscleObjective.HYPERTROPHIE]: [7.0, 7.5, 8.0, 9.0],
-  [MuscleObjective.ENDURANCE]: [8.0, 8.0, 8.5, 9.0],
-  [MuscleObjective.MAINTIEN]: [6.0, 6.0, 7.0, 7.0],
+// Refonte progression — plus de courbe RPE intra-cycle. Un RPE de RÉFÉRENCE
+// constant par objectif (= ex-base de semaine 1) sert à SEED la charge.
+const BASE_RPE: Record<MuscleObjective, number> = {
+  [MuscleObjective.FORCE]: 7.0,
+  [MuscleObjective.HYPERTROPHIE]: 7.0,
+  [MuscleObjective.ENDURANCE]: 8.0,
+  [MuscleObjective.MAINTIEN]: 6.0,
 };
 export const DELOAD_RPE = 6.0;
 export const RECOVERY_RPE_CAP = 7.0; // cf. 09 §8.6
@@ -308,15 +327,15 @@ export function primaryMuscleGoal(
   return candidates[0]!;
 }
 
-/** RPE de base pour cet objectif et cette semaine du cycle (1..5). */
+/** RPE de référence (constant, déload mis à part) pour cet objectif et cette semaine. */
 function baseRpeFromMuscleObjective(objective: MuscleObjective, week: number): number {
   if (!(week >= 1 && week <= 5)) {
     throw new Error(`Semaine hors plage 1..5 : ${week}`);
   }
-  if (week === 5) {
+  if (week === DELOAD_WEEK_IN_CYCLE) {
     return DELOAD_RPE;
   }
-  return BASE_RPE_CURVES[objective][week - 1]!;
+  return BASE_RPE[objective];
 }
 
 /**
@@ -350,6 +369,19 @@ export function targetRepsForExercise(
   const goal = primaryMuscleGoal(exercise, muscleGoals);
   const objective = goal ? goal.objective : MuscleObjective.HYPERTROPHIE;
   return fixedReps(objective, exercise.type);
+}
+
+/**
+ * Reps cibles `R` pour cet exo selon la voie active (muscle_goals si un muscle
+ * primaire y est, sinon legacy Profile.objective). Mutualise la sélection de voie
+ * de `buildPrescription` pour le cliquet de progression (cf. feedback.ts).
+ */
+export function resolveTargetReps(state: UserState, exercise: Exercise): number {
+  const mg = Object.keys(state.muscle_goals).length > 0 ? state.muscle_goals : null;
+  if (mg !== null && primaryMuscleGoal(exercise, mg) !== null) {
+    return targetRepsForExercise(exercise, mg);
+  }
+  return targetReps(state.profile, exercise);
 }
 
 // =============================================================================
@@ -463,6 +495,22 @@ export function buildPrescription(
     extLoad = externalLoadFromE1rm(totalLoad, exercise, profile.bodyweight_kg);
     const inc = state !== null ? effectiveIncrement(state, exercise) : exercise.inc_kg;
     extLoad = roundToIncrement(extLoad, inc);
+    // Refonte progression — cliquet de charge. La charge prescrite vient du
+    // PLANCHER persisté (`prescribed_load_floor`) ; l'e1RM ci-dessus ne sert qu'à
+    // SEED ce plancher la 1re fois (mute `state`, comme le reste du moteur). Exos
+    // sans charge externe additive exclus. Déload : plancher allégé d'un facteur.
+    if (state !== null && exerciseUsesLoadFloor(state, exercise)) {
+      const floor = state.prescribed_load_floor[exercise.id];
+      if (weekInCycle === DELOAD_WEEK_IN_CYCLE) {
+        if (floor !== undefined) {
+          extLoad = roundToIncrement(floor * DELOAD_LOAD_FACTOR, inc);
+        }
+      } else if (floor !== undefined) {
+        extLoad = floor;
+      } else {
+        state.prescribed_load_floor[exercise.id] = extLoad;
+      }
+    }
   }
   const rest = targetRest(exercise, profile.objective);
 

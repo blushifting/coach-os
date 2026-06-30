@@ -35,7 +35,11 @@ import {
   effectiveLoadForE1rm,
   targetRpe,
 } from './prescription';
-import { updateE1rmForExercise, type E1rmUpdate } from './feedback';
+import {
+  updateE1rmForExercise,
+  updatePrescribedLoadFloorForExercise,
+  type E1rmUpdate,
+} from './feedback';
 import {
   advanceWeek,
   aggregateForceIndex,
@@ -565,6 +569,9 @@ export function recordFeedback(
       skipEma,
       prescribed: prescribedByExo.get(exId),
     });
+    // Refonte progression — cliquet de charge (hors déload, géré par le `continue`
+    // ci-dessus). Graduation R+3 / anti-régression / descente sur `prescribed_load_floor`.
+    updatePrescribedLoadFloorForExercise(state, ex, fbs);
   }
 
   if (options.plan) {

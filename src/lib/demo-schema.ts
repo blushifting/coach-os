@@ -152,6 +152,7 @@ const serializedUserStateSchema = z.object({
   recovery_weeks_remaining: z.number().int(),
   equipment_overrides: z.record(z.string(), equipmentOverrideSchema),
   weekly_volume_debt: z.record(z.string(), z.number()).optional(),
+  prescribed_load_floor: z.record(z.string(), z.number()).optional(),
 });
 
 // =============================================================================

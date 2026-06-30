@@ -72,6 +72,8 @@ export interface SerializedUserState {
   equipment_overrides: Record<string, EquipmentOverride>;
   /** Dette de volume non réalisée cette semaine (Conv #11a). Absent sur les anciens blobs. */
   weekly_volume_debt?: Record<string, number>;
+  /** Plancher de charge prescrite par exo (refonte progression). Absent sur anciens blobs. */
+  prescribed_load_floor?: Record<string, number>;
   /** Conv #22 — squelette du cycle courant (path co-construit). Absent sur anciens blobs. */
   current_skeleton?: import('@/engine/models').SkeletonTemplate | null;
   /** Conv #22 — exos préférés par pattern. Absent sur anciens blobs. */

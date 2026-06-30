@@ -141,13 +141,16 @@ describe('roundToIncrement', () => {
 // =============================================================================
 
 describe('targetRpe (legacy)', () => {
-  it('hypertrophie : 7 → 9 → 6 (déload)', () => {
+  // Refonte progression — plus de rampe intra-cycle : RPE de référence CONSTANT
+  // (sem 1..4), seul le déload (sem 5) abaisse à 6.
+  it('constant sem 1..4, déload sem 5 = 6', () => {
     expect(targetRpe(Objective.HYPERTROPHIE, 1)).toBe(7);
-    expect(targetRpe(Objective.HYPERTROPHIE, 4)).toBe(9);
+    expect(targetRpe(Objective.HYPERTROPHIE, 4)).toBe(7);
     expect(targetRpe(Objective.HYPERTROPHIE, 5)).toBe(6);
   });
-  it('force : plus conservateur (8.5 vs 9.0 hyp en sem 4)', () => {
-    expect(targetRpe(Objective.FORCE, 4)).toBe(8.5);
+  it('même valeur quel que soit l’objectif (hors déload)', () => {
+    expect(targetRpe(Objective.FORCE, 4)).toBe(7);
+    expect(targetRpe(Objective.ENDURANCE, 2)).toBe(7);
   });
   it('hors plage → throw', () => {
     expect(() => targetRpe(Objective.HYPERTROPHIE, 6)).toThrow();
@@ -264,14 +267,15 @@ describe('targetRpeForExercise', () => {
     expect(targetRpeForExercise(bench, 1, goals)).toBe(7.0);
   });
 
-  it('Hypertrophie semaine 4 → 9.0', () => {
+  it('Hypertrophie constant (plus de rampe) → 7.0', () => {
     const goals = { pectoraux: prio('pectoraux', MuscleObjective.HYPERTROPHIE, 1) };
-    expect(targetRpeForExercise(bench, 4, goals)).toBe(9.0);
+    expect(targetRpeForExercise(bench, 1, goals)).toBe(7.0);
+    expect(targetRpeForExercise(bench, 4, goals)).toBe(7.0);
   });
 
-  it('Maintien semaine 4 → 7.0', () => {
+  it('Maintien → 6.0', () => {
     const goals = { pectoraux: prio('pectoraux', MuscleObjective.MAINTIEN, 1) };
-    expect(targetRpeForExercise(bench, 4, goals)).toBe(7.0);
+    expect(targetRpeForExercise(bench, 4, goals)).toBe(6.0);
   });
 
   it('Déload semaine 5 → 6.0 quel que soit l’objectif', () => {
@@ -281,9 +285,10 @@ describe('targetRpeForExercise', () => {
     }
   });
 
-  it('recovery_mode plafonne à 7 (Hyp sem 4 = 9.0 → 7.0)', () => {
-    const goals = { pectoraux: prio('pectoraux', MuscleObjective.HYPERTROPHIE, 1) };
-    expect(targetRpeForExercise(bench, 4, goals, true)).toBe(7.0);
+  it('recovery_mode plafonne à 7 (Endurance 8 → 7)', () => {
+    const goals = { pectoraux: prio('pectoraux', MuscleObjective.ENDURANCE, 1) };
+    expect(targetRpeForExercise(bench, 1, goals)).toBe(8.0);
+    expect(targetRpeForExercise(bench, 1, goals, true)).toBe(7.0);
   });
 
   it('fallback Hypertrophie si aucun goal → sem 1 = 7.0', () => {

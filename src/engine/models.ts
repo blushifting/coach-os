@@ -778,6 +778,19 @@ export interface UserState {
    */
   weekly_volume_debt: Record<string, number>;
   /**
+   * Refonte progression — plancher de charge prescrite par exercice (kg externes).
+   *
+   * C'est la SOURCE de la charge prescrite au jour le jour (et non plus l'e1RM ×
+   * RPE) : `buildPrescription` lit ce plancher s'il existe, sinon il le SEED avec
+   * la charge dérivée de l'e1RM. Le plancher monte d'un cran (cliquet) quand la
+   * meilleure série atteint `R + GRADUATION_RESERVE` (cf. feedback.ts), persiste
+   * d'un cycle à l'autre (jamais reset en fin de cycle), et est effacé quand on
+   * réinitialise/repose l'e1RM de l'exo (reset catalogue, plafond manuel,
+   * changement d'objectif). Exos sans charge externe additive (poids du corps,
+   * assisté, PDC) exclus : ils gardent la voie e1RM. Absent sur anciens blobs.
+   */
+  prescribed_load_floor: Record<string, number>;
+  /**
    * Conv #22 — squelette du cycle courant (grille pattern × séance) si on
    * est en mode custom co-construit. Persisté à côté de `current_cycle_plan`
    * pour permettre "Modifier la grille" et la re-distribution des séries
@@ -836,6 +849,7 @@ export function makeUserState(profile: Profile): UserState {
     recovery_weeks_remaining: 0,
     equipment_overrides: {},
     weekly_volume_debt: {},
+    prescribed_load_floor: {},
     current_skeleton: null,
     favorite_exercise_per_pattern: {},
     favorite_exercise_ids: [],

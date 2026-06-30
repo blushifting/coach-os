@@ -18,8 +18,12 @@ import type { Exercise, SetFeedback, UserState } from './models';
 import {
   EPLEY_K,
   e1rmObserved,
+  effectiveIncrement,
   effectiveLoadForE1rm,
+  exerciseUsesLoadFloor,
   nEquiv,
+  resolveTargetReps,
+  roundToIncrement,
 } from './prescription';
 
 /**
@@ -220,4 +224,98 @@ export function updateE1rmForExercise(
 
   state.e1rm[exercise.id] = next;
   return { old, next, definitive };
+}
+
+// =============================================================================
+// 4. Cliquet de charge prescrite (refonte progression)
+// =============================================================================
+
+/**
+ * Réserve de graduation : on monte la charge d'un cran quand la meilleure série
+ * atteint `R + 3` reps-équivalentes (n_équiv), c.-à-d. `R` reps à RIR 3 — juste
+ * avant la zone « 4+ » (RIR ≥ 4) non fiable pour Epley.
+ */
+export const GRADUATION_RESERVE = 3;
+
+/** Meilleur n_équiv (série la plus « facile ») d'un lot de séries + sa charge, ou null. */
+function bestNeq(
+  feedbacks: readonly SetFeedback[],
+): { neq: number; load: number } | null {
+  let neq = -Infinity;
+  let load = 0;
+  for (const f of feedbacks) {
+    if (f.reps_done <= 0) continue;
+    if (!(f.rpe_perceived >= 0.5 && f.rpe_perceived <= 10)) continue;
+    const v = nEquiv(f.reps_done, f.rpe_perceived);
+    if (v > neq) {
+      neq = v;
+      load = f.load_kg;
+    }
+  }
+  return neq === -Infinity ? null : { neq, load };
+}
+
+/** Meilleur n_équiv de la dernière séance ANTÉRIEURE contenant cet exo (ou null). */
+function previousBestNeqForExercise(
+  state: UserState,
+  exerciseId: string,
+): number | null {
+  for (let i = state.history.length - 1; i >= 0; i--) {
+    const exoSets = state.history[i]!.sets.filter(
+      (f) => f.exercise_id === exerciseId,
+    );
+    if (exoSets.length === 0) continue;
+    const best = bestNeq(exoSets);
+    return best === null ? null : best.neq;
+  }
+  return null;
+}
+
+/**
+ * Met à jour `state.prescribed_load_floor[exo]` à partir des séries de cet exo.
+ *
+ * Règles (cf. fiche refonte) :
+ *  - **Graduation** : la MEILLEURE série (n_équiv le plus haut, ≈ la plus
+ *    fraîche) atteint `R + GRADUATION_RESERVE` → plancher +1 incrément. La
+ *    fatigue sur les dernières séries n'empêche donc rien.
+ *  - **Anti-régression** : si la meilleure série a été faite plus lourd que le
+ *    plancher ET reste solide (≥ R reps-équivalentes), on adopte cette charge
+ *    (remplace l'ancien `outperformedLoad`).
+ *  - **Descente** : seulement si CETTE séance ET la précédente de l'exo sont sous
+ *    R reps-équivalentes (charge trop lourde, sous-perf répétée) → plancher −1.
+ *
+ * Cliquet à sens unique sauf descente (hystérésis). Le caller skippe la semaine
+ * de récup. Exos sans charge externe additive ignorés.
+ */
+export function updatePrescribedLoadFloorForExercise(
+  state: UserState,
+  exercise: Exercise,
+  feedbacks: readonly SetFeedback[],
+): void {
+  if (!exerciseUsesLoadFloor(state, exercise)) return;
+  const best = bestNeq(feedbacks);
+  if (best === null) return;
+
+  const targetReps = resolveTargetReps(state, exercise);
+  const inc = effectiveIncrement(state, exercise);
+  const cur = state.prescribed_load_floor[exercise.id] ?? best.load;
+  let next = cur;
+
+  // Anti-régression : charge réelle plus lourde et série solide → on l'adopte.
+  if (best.load > next && best.neq >= targetReps) {
+    next = best.load;
+  }
+
+  if (best.neq >= targetReps + GRADUATION_RESERVE) {
+    // Graduation : +1 incrément.
+    next = roundToIncrement(next + inc, inc);
+  } else if (next === cur && best.neq < targetReps) {
+    // Descente sur sous-perf répétée (2 séances de suite sous R).
+    const prev = previousBestNeqForExercise(state, exercise.id);
+    if (prev !== null && prev < targetReps) {
+      next = Math.max(0, roundToIncrement(cur - inc, inc));
+    }
+  }
+
+  state.prescribed_load_floor[exercise.id] = next;
 }

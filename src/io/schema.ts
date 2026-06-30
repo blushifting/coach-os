@@ -91,6 +91,8 @@ const userStateSchema = z
     ),
     // Conv #11a : optionnel pour rétrocompat avec exports antérieurs.
     weekly_volume_debt: recordOfNumber.optional(),
+    // Refonte progression : optionnel pour rétrocompat exports antérieurs.
+    prescribed_load_floor: recordOfNumber.optional(),
     // Conv #22 — optionnels pour rétrocompat exports antérieurs.
     current_skeleton: z.union([z.null(), z.object({}).passthrough()]).optional(),
     favorite_exercise_per_pattern: recordOfString.optional(),

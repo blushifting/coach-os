@@ -85,6 +85,7 @@ export function serializeUserState(state: UserState): SerializedUserState {
       Object.entries(state.equipment_overrides).map(([k, v]) => [k, { ...v }]),
     ),
     weekly_volume_debt: { ...state.weekly_volume_debt },
+    prescribed_load_floor: { ...state.prescribed_load_floor },
     current_skeleton:
       state.current_skeleton === null || state.current_skeleton === undefined
         ? null
@@ -138,6 +139,8 @@ export function deserializeUserState(s: SerializedUserState): UserState {
     ),
     // Rétrocompat : blobs antérieurs à Conv #11a n'ont pas ce champ.
     weekly_volume_debt: { ...(s.weekly_volume_debt ?? {}) },
+    // Rétrocompat : blobs antérieurs à la refonte progression n'ont pas ce champ.
+    prescribed_load_floor: { ...(s.prescribed_load_floor ?? {}) },
     // Conv #22 — Rétrocompat : blobs antérieurs n'ont pas ces champs.
     current_skeleton: s.current_skeleton ?? null,
     favorite_exercise_per_pattern: { ...(s.favorite_exercise_per_pattern ?? {}) },

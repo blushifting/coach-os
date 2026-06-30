@@ -942,6 +942,9 @@ export async function setManualE1rm(args: SetManualE1rmArgs): Promise<UserState>
     throw new Error(`e1RM invalide : ${e1rmTotal}`);
   }
   next.e1rm[args.exerciseId] = e1rmTotal;
+  // Refonte progression — un plafond posé à la main réamorce la charge : on
+  // efface le plancher du cliquet pour qu'il soit re-seedé depuis ce nouvel e1RM.
+  delete next.prescribed_load_floor[args.exerciseId];
   const today = new Date();
   const dateStr =
     today.getFullYear() +
@@ -1025,6 +1028,9 @@ export async function setManualE1rm(args: SetManualE1rmArgs): Promise<UserState>
 export async function resetE1rm(exerciseId: string): Promise<UserState> {
   const next = requireUserState();
   delete next.e1rm[exerciseId];
+  // Refonte progression — reset du plafond ⇒ reset du plancher de charge
+  // (l'exo repart en calibration, re-seedé au bootstrap).
+  delete next.prescribed_load_floor[exerciseId];
   await txResetE1rm({ state: next, exerciseId });
   useCoachOsStore.setState({ userState: next });
   await refreshHistory();
@@ -1338,6 +1344,9 @@ export async function endOfCycle(args: EndOfCycleArgs = {}) {
         );
         if (primaryChanged) {
           delete next.e1rm[exId];
+          // Refonte progression — l'objectif change ⇒ R change ⇒ le plancher
+          // (lié à R) devient incohérent : on le remet à zéro avec l'e1RM.
+          delete next.prescribed_load_floor[exId];
           resetExoIds.push(exId);
         }
       }
