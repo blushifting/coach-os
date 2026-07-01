@@ -37,9 +37,9 @@ test('parcours custom : préset → récap auto-fillé → /programme', async ({
   await expect(page.getByTestId('balance-dialog')).toHaveCount(0);
   await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '3');
 
-  // Step 3 — Custom (default), MEDIUM, NO_PREFERENCE par défaut.
+  // Step 3 — Custom (default), NO_PREFERENCE par défaut. (Sélecteur de durée
+  // retiré — refonte 09b : l'algo dimensionne sur les priorités.)
   await expect(page.getByTestId('program-custom')).toHaveAttribute('aria-checked', 'true');
-  await expect(page.getByTestId('duration-medium')).toHaveAttribute('aria-checked', 'true');
   await expect(page.getByTestId('equip-pref-no_preference')).toHaveAttribute(
     'aria-checked',
     'true',

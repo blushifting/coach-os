@@ -3211,7 +3211,7 @@
     "id": "pullover_machine",
     "nom_fr": "Pullover machine",
     "synonymes": [],
-    "pattern": "pull_v",
+    "pattern": "isolation",
     "type": "isolation",
     "charge": "machine_stack",
     "equip": [

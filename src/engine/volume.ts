@@ -217,28 +217,42 @@ export function effectiveVolumeBounds(
 }
 
 /**
- * Conv #22.4 — Volume cible pour le cycle = V_min strict (cible 10-12
- * séries/sem pour un muscle prio hypertrophie standard).
+ * Refonte remplissage (recherche/09b, 2026-07) — position de la cible DANS la
+ * bande `[V_min, V_max]`, pour les muscles PRIORITAIRES uniquement.
  *
- * Retour Azur (Conv #22.4) : "il faut viser 10-12 séries par semaine pour
- * un muscle prio, c'est primordial". Visée V_min tout le cycle.
+ * Historique : on visait `V_min` sec (le plancher de la bande sourcée
+ * Schoenfeld). Depuis que la montée de volume intra-cycle a été retirée
+ * (Bloc L, séries fixes), sitter au plancher est trop conservateur → on décolle
+ * de 20 % dans la bande. `V_cible ≈ V_min × 1,16` en hypertrophie. Tunable
+ * 0,15-0,25. Le MAINTIEN n'est PAS relevé (il n'a pas vocation à progresser).
+ */
+export const CYCLE_TARGET_VOLUME_RATIO = 0.2;
+
+/**
+ * Volume cible du cycle pour ce muscle (séries pondérées).
  *
- * Bloc L (Conv #37) : le nb de séries par exo est FIXE sur les 4 semaines du
- * cycle (puis déload) — plus de bump hebdo de séries (cf. `cycleSetProgression`).
- * La progression intra-cycle est portée par l'intensité (charge via
- * recalibration e1RM + RPE cible) et les reps ; le volume monte d'un cycle à
- * l'autre via la recalibration de fin de cycle.
+ * Bloc L (Conv #37) : nb de séries par exo FIXE sur les 4 semaines de travail.
+ * La progression intra-cycle passe par l'intensité (charge/RPE) et les reps ;
+ * le volume monte d'un cycle à l'autre via la recalibration de fin de cycle.
  *
- *   - NON_COUVERT/absent → 0
- *   - SUGGERE (maintien) → V_maintien fixe (~4 séries)
- *   - PRIORITAIRE → V_min
+ *   - NON_COUVERT / absent → 0
+ *   - SUGGERE / MAINTIEN   → borne basse (V_maintien fixe ~4), INCHANGÉ
+ *   - PRIORITAIRE          → V_min + ratio × (V_max − V_min)
  */
 export function effectiveCycleTargetVolume(
   state: UserState,
   muscle: string,
 ): number {
-  const [vMin] = effectiveVolumeBounds(state, muscle);
-  return vMin;
+  const [lo, hi] = effectiveVolumeBounds(state, muscle);
+  const goal = state.muscle_goals[muscle];
+  const isPriority =
+    goal !== undefined &&
+    goal.status === MuscleStatus.PRIORITAIRE &&
+    goal.objective !== MuscleObjective.MAINTIEN;
+  if (isPriority) {
+    return lo + CYCLE_TARGET_VOLUME_RATIO * (hi - lo);
+  }
+  return lo;
 }
 
 /**

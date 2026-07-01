@@ -1,7 +1,7 @@
 /**
  * Étape Programme de l'onboarding (Bloc O).
  *
- * Réglages (séances/sem, préférence d'équipement, durée max) puis choix du
+ * Réglages (séances/sem, préférence d'équipement) puis choix du
  * MODE de construction :
  *  - « Sur-mesure » : Kotsh construit le programme depuis tes muscles cibles.
  *  - « À la main »  : grille vide ; tu ajoutes les exos toi-même, guidé par les
@@ -11,7 +11,7 @@
  * recouvrait déjà, et leurs progressions d'auteur n'étaient pas RPE.
  */
 
-import { DurationCategory, EquipmentPreference } from '@/engine/models';
+import { EquipmentPreference } from '@/engine/models';
 import { Card } from '@/components/Card';
 import { Stepper } from '@/components/Stepper';
 import { cn } from '@/lib/cn';
@@ -101,40 +101,9 @@ export function Step4Program({ draft, onChange }: Step4Props) {
         </div>
       </Card>
 
-      {/* Conv #22 — Durée limite par séance, sert au dimensionnement co-construit. */}
-      <Card>
-        <div className="mb-1 text-sm font-medium text-white">
-          Combien de temps maximum par séance&nbsp;?
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { v: DurationCategory.SHORT, label: '≤ 1h', sub: '~4 exercices max' },
-            { v: DurationCategory.MEDIUM, label: '≤ 1h30', sub: '~6 exercices max' },
-            { v: DurationCategory.LONG, label: '≤ 2h', sub: '~8 exercices max' },
-          ].map((opt) => {
-            const selected = draft.durationCategory === opt.v;
-            return (
-              <button
-                key={opt.v}
-                type="button"
-                onClick={() => onChange({ durationCategory: opt.v })}
-                className={cn(
-                  'rounded-xl border px-3 py-2 text-center transition',
-                  selected
-                    ? 'border-sang-500 bg-sang-900/30 text-white'
-                    : 'border-anthracite-700 bg-anthracite-900 text-anthracite-300 hover:border-anthracite-500',
-                )}
-                data-testid={`duration-${opt.v}`}
-                role="radio"
-                aria-checked={selected}
-              >
-                <div className="text-sm font-semibold">{opt.label}</div>
-                <div className="text-[11px] opacity-80">{opt.sub}</div>
-              </button>
-            );
-          })}
-        </div>
-      </Card>
+      {/* Refonte 09b — sélecteur de durée max RETIRÉ : l'algo dimensionne le
+          programme sur les priorités (le volume est auto-borné). Le levier de
+          l'user devient le nombre de priorités, pas un plafond de durée. */}
 
       {/* Bloc O — choix du mode de construction (sur-mesure vs à la main). */}
       <div role="radiogroup" aria-label="Mode de construction">

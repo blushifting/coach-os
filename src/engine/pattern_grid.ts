@@ -138,6 +138,78 @@ export function getMusclePatterns(muscle: string): MusclePatternMap {
 }
 
 // =============================================================================
+// Refonte remplissage (recherche/09b) — crédit de volume incident + dose→exos
+// =============================================================================
+
+/** Un pattern est un « vrai » compound (crédite des synergistes) hors iso/core. */
+export function isCompoundPattern(p: Pattern): boolean {
+  return p !== Pattern.ISOLATION && p !== Pattern.CORE;
+}
+
+/**
+ * Muscles synergistes crédités (à 0,5/série) par un compound de ce pattern.
+ * Approximation biomécanique au niveau PATTERN (indépendante de l'exo choisi),
+ * qui reflète les coef `ex.muscles` typiques du catalogue. Sert au **crédit
+ * incident** pendant la réalisation : un pressing nourrit déjà les triceps, un
+ * tirage les biceps, etc. → on n'ajoute pas d'iso dédiée à un muscle déjà servi.
+ * Le muscle primaire de la case est exclu au moment du crédit (cf. réalisation).
+ * (deltoïdes antérieurs non trackés → absents ; cf. 09b §11.)
+ */
+// ⚠️ CONSERVATEUR : ne créditer QUE les synergistes que les exos du catalogue
+// délivrent FIABLEMENT pour ce pattern. Sur-créditer = skipper à tort un exo
+// dédié → le muscle finit à 0 (cas rear delts : les rowings ne les touchent pas,
+// c'est le face pull). Sous-créditer est sûr (au pire léger surplus = bonus net).
+//   - Pressing (H/V) → triceps (tout pressing les sollicite).
+//   - Tirage (V/H)   → biceps (toute traction les sollicite).
+//   - Squat/hinge/fente → fessiers (chaîne postérieure).
+// PAS crédités : deltos postérieurs (→ face pull dédié), deltos latéraux
+// (= primaire de l'OHP, pas un synergiste à re-créditer).
+export const PATTERN_SYNERGISTS: Readonly<Record<Pattern, Readonly<Record<string, number>>>> = {
+  [Pattern.PUSH_H]: { triceps: 0.5 },
+  [Pattern.PUSH_V]: { triceps: 0.5 },
+  [Pattern.PULL_V]: { biceps: 0.5 },
+  [Pattern.PULL_H]: { biceps: 0.5 },
+  [Pattern.SQUAT]: { fessiers: 0.5 },
+  [Pattern.HINGE]: { fessiers: 0.5, lombaires: 0.5 },
+  [Pattern.LUNGE]: { fessiers: 0.5 },
+  [Pattern.ISOLATION]: {},
+  [Pattern.CORE]: {},
+};
+
+/** Plancher / plafond de séries par exo (rappel, alignés sur volume.ts). */
+export const REALIZE_MIN_SETS = 3;
+export const REALIZE_MAX_SETS = 5;
+/** Cible séries/exo → nb d'exos pour une dose (recherche/09b §7). */
+export const SETS_PER_EXO = 4;
+
+/**
+ * Nombre d'exos pour une dose de séries dans UNE séance (remplace
+ * `exosCountForCycleTargetVolume`, qui raisonnait sur le volume HEBDO).
+ *   dose ≤ 5 → 1 · 6-10 → 2 · > 10 → 3.
+ * Garde-fou : jamais moins que `ceil(dose / plafond)` — sinon un seul exo
+ * plafonné à 5 séries « perdrait » le surplus (ex. dose 5,8 → 2 exos, pas 1).
+ */
+export function exosForSessionDose(dose: number): number {
+  const byTarget = Math.round(dose / SETS_PER_EXO);
+  const byCap = Math.ceil(dose / REALIZE_MAX_SETS);
+  return Math.max(1, Math.min(3, Math.max(byTarget, byCap)));
+}
+
+/**
+ * Répartit une dose de séries sur `n` exos, chacun borné à [3, 5] séries.
+ * Entiers, somme ≈ dose (arrondi par exo). Ex. 6/2 → [3,3] · 8/2 → [4,4] ·
+ * 12/3 → [4,4,4] · 5/1 → [5].
+ */
+export function distributeSetsForDose(dose: number, n: number): number[] {
+  const per = dose / n;
+  const sets: number[] = [];
+  for (let i = 0; i < n; i += 1) {
+    sets.push(Math.max(REALIZE_MIN_SETS, Math.min(REALIZE_MAX_SETS, Math.round(per))));
+  }
+  return sets;
+}
+
+// =============================================================================
 // Sélection des patterns pour un muscle prio selon V_cible
 // =============================================================================
 
@@ -280,25 +352,27 @@ export function candidatesForCell(
     }
   }
 
+  // Refonte 09b — ordre validé Azur : cohérence de rôle en n°1 (« un compound
+  // dans un slot compound, forcément »), le favori descend en n°4 (nudge, plus
+  // un dictateur : il ne passe jamais par-dessus rôle/équipement/angle).
   filtered.sort((a, b) => {
-    // 1. Favori user toujours en tête.
+    // 1. Cohérence du rôle (compound ↔ slot compound). Priorité absolue.
+    const aRole = matchesRoleHint(a, cell.role_hint) ? 0 : 1;
+    const bRole = matchesRoleHint(b, cell.role_hint) ? 0 : 1;
+    if (aRole !== bRole) return aRole - bRole;
+    // 2. Préférence d'équipement (plus bas = colle mieux à la préférence).
+    const pA = preferenceScore(a, cell, options.equipmentPreference);
+    const pB = preferenceScore(b, cell, options.equipmentPreference);
+    if (pA !== pB) return pA - pB;
+    // 3. Éviter conflit d'angles (diversification vs case sœur).
+    const aClash = a.tags.some((t) => avoidAngles.has(t)) ? 1 : 0;
+    const bClash = b.tags.some((t) => avoidAngles.has(t)) ? 1 : 0;
+    if (aClash !== bClash) return aClash - bClash;
+    // 4. Favori — départage seulement des exos déjà tous pertinents.
     if (favoriteId) {
       if (a.id === favoriteId && b.id !== favoriteId) return -1;
       if (b.id === favoriteId && a.id !== favoriteId) return 1;
     }
-    // 2. Cohérence type / role_hint.
-    const aMatch = matchesRoleHint(a, cell.role_hint) ? 0 : 1;
-    const bMatch = matchesRoleHint(b, cell.role_hint) ? 0 : 1;
-    if (aMatch !== bMatch) return aMatch - bMatch;
-    // 3. Éviter conflit d'angles.
-    const aClash = a.tags.some((t) => avoidAngles.has(t)) ? 1 : 0;
-    const bClash = b.tags.some((t) => avoidAngles.has(t)) ? 1 : 0;
-    if (aClash !== bClash) return aClash - bClash;
-    // 4. Préférence d'équipement utilisateur (Conv #22 refonte).
-    //    Plus la valeur est basse, plus l'exo colle à la préférence.
-    const pA = preferenceScore(a, cell, options.equipmentPreference);
-    const pB = preferenceScore(b, cell, options.equipmentPreference);
-    if (pA !== pB) return pA - pB;
     // 5. Polyarticularité (selon role_hint).
     const aN = Object.keys(a.muscles).length;
     const bN = Object.keys(b.muscles).length;

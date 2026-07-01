@@ -604,6 +604,13 @@ export interface PatternCell {
   primary_muscle: string;
   role_hint: RoleHint;
   chosen_exercise_id: string | null;
+  /**
+   * Refonte remplissage (recherche/09b) — séries planifiées pour cette case,
+   * posées par le plan de volume (`buildSkeleton`). L'allocation lit ce champ
+   * directement (plus de bump glouton). Optionnel : une case construite hors
+   * nouveau path retombe sur le plancher `MIN_SETS_PER_EXERCISE`.
+   */
+  planned_sets?: number;
 }
 
 /** Un jour de la grille : N cases à remplir, plus métadonnées du jour. */

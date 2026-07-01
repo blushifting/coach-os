@@ -56,11 +56,13 @@ describe('constantes splits', () => {
     expect(SPLIT_PPL_6X.slots.length).toBe(6);
   });
 
-  it('ALL_SPLITS index complet (6 canoniques + 9 additionnelles Conv #39)', () => {
+  it('ALL_SPLITS index complet (refonte 09b : ul_5x_spec retiré → 14)', () => {
     expect(ALL_SPLITS).toContain(SPLIT_FB_2X);
     expect(ALL_SPLITS).toContain(SPLIT_PPL_6X);
-    // 6 canoniques + Push/Pull 2/4/6× + ULF 3× + PPL+UL 5× + U/L 6× + FB 4/5/6×.
-    expect(ALL_SPLITS.length).toBe(15);
+    // 5 canoniques (ul_5x_spec/Focus retiré) + Push/Pull 2/4/6× + ULF 3× +
+    // PPL+UL 5× + U/L 6× + FB 4/5/6× = 14.
+    expect(ALL_SPLITS.length).toBe(14);
+    expect(ALL_SPLITS.some((s) => s.id === 'ul_5x_spec')).toBe(false);
   });
 
   it('FB 3× n\'a que des slots full body', () => {

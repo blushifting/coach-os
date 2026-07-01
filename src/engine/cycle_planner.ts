@@ -37,7 +37,6 @@ import {
   DELOAD_FACTOR,
 } from './volume';
 import { pickIsolationsForMuscle } from './selection';
-import { rebalanceCycleDurations } from './rebalance';
 
 // =============================================================================
 // 2. Progression de séries sur le cycle (Bloc L — séries fixes)
@@ -131,8 +130,17 @@ export function enforceLengthenedBias(
     }).filter((x) => x.tags.includes('lengthened_bias'));
     if (lbCands.length === 0) continue;
     const replacement = lbCands[0]!;
-    const isoOcc = occurrences.filter(([, , ex]) => ex.type === ExType.ISOLATION);
-    const target = isoOcc.length > 0 ? isoOcc[isoOcc.length - 1]! : occurrences[occurrences.length - 1]!;
+    // Refonte 09b — ne remplacer QU'un exo mono-muscle (ce muscle en unique
+    // primaire) : sinon on volerait le volume d'un autre muscle servi par un
+    // compound partagé (ex. remplacer un trap-bar quad+ischios par un exo quad
+    // étiré prive les ischios). Priorité aux isolations, puis compounds dédiés.
+    const single = occurrences.filter(
+      ([, , ex]) => exercisePrimaires(ex).length === 1,
+    );
+    if (single.length === 0) continue;
+    const isoOcc = single.filter(([, , ex]) => ex.type === ExType.ISOLATION);
+    const target =
+      isoOcc.length > 0 ? isoOcc[isoOcc.length - 1]! : single[single.length - 1]!;
     const [di, pi] = target;
     const old = weeklyTemplate.days[di]!.exercises[pi]!;
     weeklyTemplate.days[di]!.exercises[pi] = makePlannedExercise({
@@ -368,78 +376,18 @@ export function generateCyclePlanV3(
     days: alloc.days,
     warnings: [...filledSkeleton.warnings, ...alloc.warnings],
   });
-  // Post-pass : merge équivalents, enforce lengthened bias, rééquilibrage
-  // durée (Conv #16-2, branché Conv #22 dans le path V2 pour atténuer
-  // l'écart entre séances en FB 5×), order neuro.
+  // Post-pass : enforce lengthened bias + merge équivalents. Refonte 09b :
+  // `rebalanceCycleDurations` retiré — les séances sœurs sont équilibrées PAR
+  // CONSTRUCTION (répartition égale du volume dans `buildVolumePlan`).
   enforceLengthenedBias(weekly, state, catalog);
   mergeEquivalentExercisesInPlan(weekly, catalog);
-  // Rééquilibrage durée par groupes slot_kind. En path V2, tous les jours
-  // d'un FB sont kind FULL, donc rééquilibrés entre eux.
-  try {
-    const slotKinds = inferSlotKindsFromSplitName(
-      filledSkeleton.split_name,
-      filledSkeleton.days.length,
-    );
-    if (slotKinds.length === weekly.days.length) {
-      const { template: rebalanced } = rebalanceCycleDurations(
-        weekly,
-        slotKinds,
-        state,
-        catalog,
-      );
-      weekly.days = rebalanced.days;
-      weekly.warnings = rebalanced.warnings;
-    }
-  } catch {
-    // best-effort : si le rééquilibrage échoue, on garde la version brute.
-  }
-  // Conv #39 — plus de tri neuro : l'ordre canonique du split est conservé
-  // (préserve l'alternance U/L/U/L, etc.).
+  // Conv #39 — l'ordre canonique du split est conservé (alternance U/L/U/L…).
   renumberSessionLabels(weekly);
   // Conv #30 — en DERNIER : la préférence d'équipement stricte prime sur les
   // swaps précédents (lengthened bias en poids libre, etc.). Corrige les fuites
   // de charge dans le plan final.
   enforceEquipmentPreference(weekly, state, catalog);
   return weekly;
-}
-
-/**
- * Conv #22 — Heuristique pour inférer les `SlotKind` à partir du nom du
- * split du squelette. Sert au rééquilibrage durée qui rebalance intra-
- * groupe slot_kind (cf. `rebalanceCycleDurations`).
- */
-function inferSlotKindsFromSplitName(
-  splitName: string,
-  nDays: number,
-): import('./split').SlotKind[] {
-  const name = splitName.toLowerCase();
-  const result: import('./split').SlotKind[] = [];
-  if (/full body/i.test(name)) {
-    for (let i = 0; i < nDays; i += 1) {
-      result.push('full' as import('./split').SlotKind);
-    }
-    return result;
-  }
-  if (/upper\/lower|u\/l/i.test(name)) {
-    for (let i = 0; i < nDays; i += 1) {
-      result.push(
-        (i % 2 === 0 ? 'upper' : 'lower') as import('./split').SlotKind,
-      );
-    }
-    return result;
-  }
-  if (/ppl/i.test(name)) {
-    const kinds = ['push', 'pull', 'legs'] as const;
-    for (let i = 0; i < nDays; i += 1) {
-      result.push(kinds[i % 3]! as import('./split').SlotKind);
-    }
-    return result;
-  }
-  // Inconnu : on traite tout comme full → rebalance global.
-  for (let i = 0; i < nDays; i += 1) {
-    result.push('full' as import('./split').SlotKind);
-  }
-  return result;
 }
 
 /**
@@ -477,7 +425,15 @@ export function autoGenerateCyclePlanV3(
         state.profile.equipment_preference !== EquipmentPreference.BODYWEIGHT
           ? inPattern
           : pool;
-      const fit = usable.find((c) => !sameSeen.has(c.id)) ?? usable[0];
+      // Refonte 09b — cohérence de rôle d'abord (un compound dans un slot
+      // compound), comme `candidatesForCell`. Le filtre par pattern ne suffit
+      // pas (ex. pullover_machine, pattern pull_v mais type iso).
+      const wantType =
+        cell.role_hint === 'compound' ? ExType.COMPOUND : ExType.ISOLATION;
+      const ordered = [...usable].sort(
+        (a, b) => (a.type === wantType ? 0 : 1) - (b.type === wantType ? 0 : 1),
+      );
+      const fit = ordered.find((c) => !sameSeen.has(c.id)) ?? ordered[0];
       cell.chosen_exercise_id = fit?.id ?? null;
     }
   }

@@ -87,23 +87,23 @@ const catalog = new Catalog();
 // =============================================================================
 
 describe('Conv #22.4 — V_cible et fréquence', () => {
-  it('V_cible = V_min strict pour PRIORITAIRE (cible 10-12 séries/sem)', () => {
+  it('V_cible = V_min + 0,2×(V_max−V_min) pour PRIORITAIRE (refonte 09b)', () => {
     const state = makeStateForGoals({
       sessions_per_week: 4,
       prios: [['pectoraux', MuscleObjective.HYPERTROPHIE]],
     });
     const v = effectiveCycleTargetVolume(state, 'pectoraux');
-    // pec intermédiaire homme : vMin=10. Conv #22.4 retour à V_min strict.
-    expect(v).toBe(10);
+    // pec inter homme : vMin=10, vMax=18 → 10 + 0,2×8 = 11,6.
+    expect(v).toBeCloseTo(11.6, 5);
   });
 
-  it('targetFrequencyV2 = ceil(V_min / 5), capée à sessions/sem', () => {
+  it('targetFrequencyV2 = ceil(V_cible / 5), capée à sessions/sem', () => {
     const state = makeStateForGoals({
       sessions_per_week: 4,
       prios: [['pectoraux', MuscleObjective.HYPERTROPHIE]],
     });
-    // V_min 10 / 5 = 2 → ceil = 2.
-    expect(targetFrequencyV2('pectoraux', state)).toBe(2);
+    // V_cible 11,6 / 5 = 2,32 → ceil = 3.
+    expect(targetFrequencyV2('pectoraux', state)).toBe(3);
   });
 
   it('SUGGERE → freq 1, V_target = V_maintien fixe', () => {
@@ -182,9 +182,11 @@ describe('Conv #22 — Profil 2 (Inter 3× SHORT, full body diffuse)', () => {
     expect(skeleton.days).toHaveLength(3);
   });
 
-  it('chaque séance ≤ 4 patterns (SHORT plafond)', () => {
+  it('chaque séance est non vide (plafond durée retiré — refonte 09b)', () => {
+    // Le plafond de patterns/séance (SHORT=4) a été supprimé : les séances sont
+    // dimensionnées par le volume des muscles, plus par une contrainte de durée.
     for (const day of skeleton.days) {
-      expect(day.cells.length).toBeLessThanOrEqual(4);
+      expect(day.cells.length).toBeGreaterThanOrEqual(1);
     }
   });
 
@@ -227,11 +229,11 @@ describe('Conv #22 — Profil 3 (Inter 5× MEDIUM, upper-heavy)', () => {
 });
 
 // =============================================================================
-// Cas under-fill : peu de prios + 5 séances longues
+// Peu de prios + beaucoup de séances (refonte 09b : plus d'alerte under-fill)
 // =============================================================================
 
-describe('Conv #22 — Under-fill : warn si capacité >> demande', () => {
-  it('alerte si 2 prios + 5 séances LONG', () => {
+describe('Refonte 09b — peu de prios + 5 séances', () => {
+  it('génère 5 jours, prios couvertes, sans crash', () => {
     const state = makeStateForGoals({
       sessions_per_week: 5,
       prios: [
@@ -241,12 +243,13 @@ describe('Conv #22 — Under-fill : warn si capacité >> demande', () => {
       suggested: ['deltos_posterieurs', 'abdos', 'lombaires'],
     });
     const skeleton = buildSkeleton(state, DurationCategory.LONG);
-    // Conv #22.3 — message d'alerte refondu : "ton programme tient en …%".
-    expect(
-      skeleton.warnings.some((w) =>
-        /tient en \d+\s*% du temps que tu as/i.test(w),
-      ),
-    ).toBe(true);
+    expect(skeleton.days).toHaveLength(5);
+    for (const m of ['pectoraux', 'quadriceps']) {
+      const covered = skeleton.days.some((d) =>
+        d.cells.some((c) => c.primary_muscle === m),
+      );
+      expect(covered).toBe(true);
+    }
   });
 });
 
@@ -464,7 +467,7 @@ describe('Conv #22.5 — buildSessionLabel simplifié', () => {
       }),
     ).toBe('Lower B');
   });
-  it('Full Body : "Full Body" + lettre par day_index', () => {
+  it('Full : "Full" + lettre par day_index (refonte 09b : plus "Full Body")', () => {
     expect(
       buildSessionLabel({
         day_index: 0,
@@ -472,7 +475,7 @@ describe('Conv #22.5 — buildSessionLabel simplifié', () => {
         focus_muscles: [],
         cells: [],
       }),
-    ).toBe('Full Body A');
+    ).toBe('Full A');
     expect(
       buildSessionLabel({
         day_index: 2,
@@ -480,18 +483,9 @@ describe('Conv #22.5 — buildSessionLabel simplifié', () => {
         focus_muscles: [],
         cells: [],
       }),
-    ).toBe('Full Body C');
+    ).toBe('Full C');
   });
-  it('"Spec" renommé "Focus" (Conv #28)', () => {
-    expect(
-      buildSessionLabel({
-        day_index: 4,
-        split_label: 'Spec',
-        focus_muscles: [],
-        cells: [],
-      }),
-    ).toBe('Focus');
-  });
+  // Test « Spec → Focus » retiré (09b) : la séance Focus/ul_5x_spec n'existe plus.
 });
 
 // =============================================================================
@@ -515,7 +509,7 @@ describe('Conv #22 — Sanity', () => {
       suggested: ['abdos', 'lombaires'],
     });
     const demands = computeMuscleDemands(state);
-    const best = selectBestSplit(demands, 4, 6);
+    const best = selectBestSplit(demands, 4);
     expect(best.split.id).toBe('ul_4x');
   });
 

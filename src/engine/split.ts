@@ -59,14 +59,14 @@ function makeSlot(label: string, kind: SlotKind): SplitSlot {
 
 export const SPLIT_FB_2X: SplitTemplate = {
   id: 'fb_2x',
-  name: 'Full Body 2×',
+  name: 'Full 2×',
   sessions_per_week: 2,
   slots: [makeSlot('Full A', SlotKind.FULL), makeSlot('Full B', SlotKind.FULL)],
 };
 
 export const SPLIT_FB_3X: SplitTemplate = {
   id: 'fb_3x',
-  name: 'Full Body 3×',
+  name: 'Full 3×',
   sessions_per_week: 3,
   slots: [
     makeSlot('Full A', SlotKind.FULL),
@@ -221,7 +221,7 @@ function fullBodySplit(n: number): SplitTemplate {
   const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
   return {
     id: `fb_${n}x`,
-    name: `Full Body ${n}×`,
+    name: `Full ${n}×`,
     sessions_per_week: n,
     slots: Array.from({ length: n }, (_, i) =>
       makeSlot(`Full ${letters[i] ?? String(i + 1)}`, SlotKind.FULL),
@@ -238,7 +238,9 @@ export const ALL_SPLITS: readonly SplitTemplate[] = [
   SPLIT_FB_3X,
   SPLIT_PPL_3X,
   SPLIT_UL_4X,
-  SPLIT_UL_5X_SPEC,
+  // Refonte remplissage (09b) — `SPLIT_UL_5X_SPEC` (séance « Focus »/Full
+  // esseulée) RETIRÉ du catalogue : le 5 séances bascule sur `ppl_ul_5x`.
+  // Le const reste défini/exporté (rétro-compat import) mais hors sélection.
   SPLIT_PPL_6X,
   // Conv #39 — additionnelles.
   SPLIT_PUSH_PULL_2X,

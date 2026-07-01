@@ -3,16 +3,16 @@
  *
  * Convention (Bloc K, Conv #36) : le mot « Séance » appartient à l'**UI**
  * (étiquette de section, en-tête, mot de liaison dans une phrase), PAS au nom.
- * Le nom affiché est donc « A — Full Body », « B — Lower », « Push »… — jamais
- * « Séance A — Full Body ».
+ * Le nom affiché est donc « A — Full », « B — Lower », « Push »… — jamais
+ * « Séance A — Full ».
  *
  * Transformation **à l'affichage uniquement** : les labels stockés (cycle_plan,
- * feedbacks, démo Alex) gardent leur format moteur (« Full Body A », « Push »,
+ * feedbacks, démo Alex) gardent leur format moteur (« Full A », « Push »,
  * « Workout A2 »…). Avantages : s'applique immédiatement aux plans existants,
  * aucune migration de données, pas de parité Python à maintenir.
  *
  * Règles :
- *  - « Full Body A » (préfixe + lettre A-F finale) → « A — Full Body ».
+ *  - « Full A » (préfixe + lettre A-F finale) → « A — Full ».
  *    Depuis Conv #28, `renumberSessionLabels` lettre TOUTES les séances custom
  *    avec une lettre globale unique (« Upper A / Lower B / Focus E ») ; ce cas
  *    couvre donc tous les plans custom.

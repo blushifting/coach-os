@@ -140,7 +140,10 @@ describe('autoGenerateCyclePlanV3 — haut du corps seul (4×)', () => {
 
   it('chaque muscle prioritaire est couvert ≥ 1 fois', () => {
     const plan = autoGenerateCyclePlanV3(upperOnly, catalog);
-    for (const muscle of Object.keys(upperOnly.muscle_goals)) {
+    // Refonte 09b : seuls les PRIORITAIRES sont garantis en primaire ≥ 1× ; les
+    // muscles de maintien peuvent être couverts par le seul volume incident.
+    for (const [muscle, goal] of Object.entries(upperOnly.muscle_goals)) {
+      if (goal.status !== MuscleStatus.PRIORITAIRE) continue;
       const covered = plan.days.some((d) =>
         d.exercises.some(
           (p) =>
@@ -184,8 +187,6 @@ describe('splitAlternationOk', () => {
 
 const DUR = DurationCategory.MEDIUM;
 const CORE = new Set(['abdos', 'obliques', 'lombaires']);
-const isPrio = (state: UserState, m: string): boolean =>
-  state.muscle_goals[m]?.status === MuscleStatus.PRIORITAIRE;
 
 function groupIdxByKind(
   days: ReadonlyArray<{ split_label?: string; label?: string }>,
@@ -201,23 +202,20 @@ function groupIdxByKind(
 }
 
 describe('Temps-2 polish — remplissage (Conv #40)', () => {
-  it('#1 préset 5× : la séance Focus ne contient QUE des prios', () => {
-    const state = balancedState(5, PRESET);
-    const sk = buildSkeleton(state, DUR);
-    const focus = sk.days.find((d: SkeletonDay) =>
-      /focus|full/i.test(d.split_label),
-    );
-    expect(focus).toBeDefined();
-    expect(focus!.cells.length).toBeGreaterThan(0);
-    for (const c of focus!.cells) {
-      expect(isPrio(state, c.primary_muscle)).toBe(true);
-    }
+  it('#1 préset 5× : split spécialisé sans séance Full esseulée (Focus retiré 09b)', () => {
+    const sk = buildSkeleton(balancedState(5, PRESET), DUR);
+    expect(sk.days).toHaveLength(5);
+    // ul_5x_spec (séance Focus/Full esseulée) retiré → PPL+UL, aucune séance Full.
+    const hasFull = sk.days.some((d: SkeletonDay) => /full/i.test(d.split_label));
+    expect(hasFull).toBe(false);
   });
 
-  it('#2 préset 6× : core en variable d\'ajustement, aucune séance famélique', () => {
+  it('#2 préset 6× : aucune séance vide', () => {
     const sk = buildSkeleton(balancedState(6, PRESET), DUR);
     const minCells = Math.min(...sk.days.map((d) => d.cells.length));
-    expect(minCells).toBeGreaterThanOrEqual(3);
+    // Refonte 09b : plus de core-padding « anti-famélique » ; l'invariant dur
+    // reste « aucune séance vide » (garanti par selectBestSplit).
+    expect(minCells).toBeGreaterThanOrEqual(1);
   });
 
   it('#2 core jamais empilé en double dans une même séance', () => {
