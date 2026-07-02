@@ -146,6 +146,24 @@ function eligibleCount(muscle: string, split: SplitTemplate): number {
   return n;
 }
 
+/**
+ * Muscles « universels » : hébergeables par TOUS les slots non-FULL (le core —
+ * abdos/lombaires/obliques). Comme ils tiennent dans n'importe quelle séance,
+ * ils ne doivent pas à eux seuls sauver une séance de la vacuité : sinon un
+ * programme « haut du corps + abdos en maintien » justifie à tort des séances
+ * Lower/Legs qui ne contiendront qu'un exo d'abdos… ou rien (bug refonte 09b).
+ */
+const NON_FULL_KINDS: readonly SlotKind[] = [
+  SlotKind.UPPER,
+  SlotKind.LOWER,
+  SlotKind.PUSH,
+  SlotKind.PULL,
+  SlotKind.LEGS,
+];
+function isUniversalMuscle(muscle: string): boolean {
+  return NON_FULL_KINDS.every((k) => muscleBelongsToSlot(muscle, k));
+}
+
 function scoreSplit(
   split: SplitTemplate,
   demands: readonly MuscleDemand[],
@@ -154,9 +172,18 @@ function scoreSplit(
   const warnings: string[] = [];
   let empty = false;
 
-  // Séance vide = aucun muscle couvert éligible à ce type de séance.
+  // Séance « substantiellement » vide = aucun muscle NON universel éligible à
+  // ce type de séance. Le core tient dans tous les slots ; l'ignorer ici évite
+  // qu'un abdos de maintien fasse passer une séance Lower pour « remplie ».
+  // Fallback : si le programme n'a QUE des muscles universels, on garde
+  // l'ancienne détection (sinon toutes les séances seraient jugées vides).
+  const hasNonUniversal = demands.some((d) => !isUniversalMuscle(d.muscle));
   for (const slot of split.slots) {
-    const hosted = demands.some((d) => muscleBelongsToSlot(d.muscle, slot.kind));
+    const hosted = demands.some(
+      (d) =>
+        muscleBelongsToSlot(d.muscle, slot.kind) &&
+        (!hasNonUniversal || !isUniversalMuscle(d.muscle)),
+    );
     if (!hosted) {
       score += SCORE_EMPTY_SESSION;
       empty = true;

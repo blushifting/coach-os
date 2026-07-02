@@ -502,10 +502,19 @@ describe('Conv #22 — Sanity', () => {
     expect(demands.find((d) => d.muscle === 'pectoraux')).toBeDefined();
   });
 
-  it('selectBestSplit choisit U/L 4× quand 4 séances', () => {
+  it('selectBestSplit choisit U/L 4× pour un programme équilibré haut+bas', () => {
+    // Programme équilibré (haut ET bas demandés) → U/L 4× est le choix canonique.
+    // NB : avec un programme haut-du-corps seul + core, U/L serait au contraire
+    // rejeté (séances Lower vides, seulement des abdos) → bascule Push/Pull ou
+    // Full ; cf. split-selection-v3.test.ts « haut du corps + core en maintien ».
     const state = makeStateForGoals({
       sessions_per_week: 4,
-      prios: [['pectoraux', MuscleObjective.HYPERTROPHIE]],
+      prios: [
+        ['pectoraux', MuscleObjective.HYPERTROPHIE],
+        ['dos_largeur', MuscleObjective.HYPERTROPHIE],
+        ['quadriceps', MuscleObjective.HYPERTROPHIE],
+        ['ischios', MuscleObjective.HYPERTROPHIE],
+      ],
       suggested: ['abdos', 'lombaires'],
     });
     const demands = computeMuscleDemands(state);

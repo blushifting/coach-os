@@ -111,6 +111,16 @@ synthétiques, vérifiée par `tools/parity-check.ts`.
   nul, assurance non-nulle.
 - **Commits** : atomiques par tâche, messages **en français**, pas de
   force-push sur `main`.
+- **Protocole commit léger (économie de tokens)** : pour préparer un commit,
+  ne PAS relire le diff complet (`git diff`) ni relire les fichiers déjà
+  édités dans la conv (le harness suit l'état). Utiliser `git status --short`
+  + `git diff --stat` pour la volumétrie ; le message se rédige de mémoire des
+  edits effectués.
+- **Itération tests (économie de tokens)** : pendant le dev, cibler les
+  fichiers touchés (`npx vitest run --reporter=dot <chemin>`) ; suite
+  **complète une seule fois** avant le commit final. Toujours via l'agent
+  `test-runner`, qui utilise le reporter compact `dot` (pas la liste
+  exhaustive des 500+ tests du reporter par défaut).
 
 ## 8. Anti-compaction (règles à appliquer dans chaque conv)
 

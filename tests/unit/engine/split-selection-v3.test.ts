@@ -157,6 +157,45 @@ describe('autoGenerateCyclePlanV3 — haut du corps seul (4×)', () => {
 });
 
 // =============================================================================
+// 2bis. Haut du corps seul AVEC balance rules (flux réel : core en maintien)
+// -----------------------------------------------------------------------------
+// Régression Conv #53 : les balance rules ajoutent abdos/lombaires (R3 core) en
+// maintien. Le core tient dans TOUS les slots → il faisait passer une séance
+// Lower/Legs pour « remplie », d'où un U/L/U/L aux jambes quasi vides (un exo
+// d'abdos, voire rien) en 4×, et un PPL+U/L au lieu de Full 5× en 5×. La
+// détection de séance vide doit ignorer les muscles universels (core).
+// =============================================================================
+
+describe('autoGenerateCyclePlanV3 — haut du corps + core en maintien (flux réel)', () => {
+  const UPPER_PRIOS = ['pectoraux', 'dos_largeur', 'deltos_lateraux', 'biceps', 'triceps'];
+
+  it('garde-fou : le core est bien présent en maintien (sinon le test ne teste rien)', () => {
+    expect(balancedState(4, UPPER_PRIOS).muscle_goals['abdos']).toBeDefined();
+  });
+
+  for (const sessions of [4, 5]) {
+    it(`${sessions}× : aucune séance vide`, () => {
+      const plan = autoGenerateCyclePlanV3(balancedState(sessions, UPPER_PRIOS), catalog);
+      for (const day of plan.days) {
+        expect(day.exercises.length).toBeGreaterThan(0);
+      }
+    });
+
+    it(`${sessions}× : aucun jour « lower/legs » (pas de muscle de jambe demandé)`, () => {
+      const kinds = autoGenerateCyclePlanV3(balancedState(sessions, UPPER_PRIOS), catalog)
+        .days.map((d) => kindOf(d.label));
+      expect(kinds).not.toContain('lower');
+      expect(kinds).not.toContain('legs');
+    });
+  }
+
+  it('5× : bascule sur Full 5× (aucun split spécialisé sans séance vide)', () => {
+    const sk = buildSkeleton(balancedState(5, UPPER_PRIOS), DurationCategory.MEDIUM);
+    expect(sk.days.every((d) => /full/i.test(d.split_label))).toBe(true);
+  });
+});
+
+// =============================================================================
 // 3. Déterminisme : régénération fin de cycle == structure onboarding
 // =============================================================================
 
