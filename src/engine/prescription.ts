@@ -30,7 +30,7 @@ import {
   MuscleStatus,
   objectiveToMuscleObjective,
 } from './models';
-import { DELOAD_WEEK_IN_CYCLE, DELOAD_LOAD_FACTOR } from './volume';
+import { DELOAD_LOAD_FACTOR } from './volume';
 
 // Constante d'Epley standard (LeSuer 1997, Wood 2002).
 export const EPLEY_K = 0.0333;
@@ -247,12 +247,18 @@ const BASE_RPE_LEGACY: Record<Objective, number> = {
   [Objective.ENDURANCE]: 7.0,
 };
 
-/** RPE de référence (constant, déload mis à part) pour cette semaine (voie legacy). */
-export function targetRpe(objective: Objective, weekInCycle: number): number {
+/** RPE de référence (constant, déload mis à part) pour cette semaine (voie legacy).
+ *  Chantier B — l'abaissement déload dépend de `deloadActive` (semaine 5 acceptée),
+ *  plus du numéro de semaine : une semaine 5 refusée garde le RPE normal. */
+export function targetRpe(
+  objective: Objective,
+  weekInCycle: number,
+  deloadActive = false,
+): number {
   if (!(weekInCycle >= 1 && weekInCycle <= 5)) {
     throw new Error(`Semaine hors plage 1..5 : ${weekInCycle}`);
   }
-  return weekInCycle === DELOAD_WEEK_IN_CYCLE ? DELOAD_RPE : BASE_RPE_LEGACY[objective];
+  return deloadActive ? DELOAD_RPE : BASE_RPE_LEGACY[objective];
 }
 
 /** Repos en secondes. Le catalogue donne déjà une valeur, on peut la moduler. */
@@ -288,7 +294,6 @@ const BASE_RPE: Record<MuscleObjective, number> = {
   [MuscleObjective.MAINTIEN]: 6.0,
 };
 export const DELOAD_RPE = 6.0;
-export const RECOVERY_RPE_CAP = 7.0; // cf. 09 §8.6
 
 /**
  * Retourne le MuscleGoal du muscle PRIMAIRE de plus haut rang.
@@ -327,12 +332,17 @@ export function primaryMuscleGoal(
   return candidates[0]!;
 }
 
-/** RPE de référence (constant, déload mis à part) pour cet objectif et cette semaine. */
-function baseRpeFromMuscleObjective(objective: MuscleObjective, week: number): number {
+/** RPE de référence (constant, déload mis à part) pour cet objectif et cette semaine.
+ *  Chantier B — l'abaissement déload dépend de `deloadActive`, plus du n° de semaine. */
+function baseRpeFromMuscleObjective(
+  objective: MuscleObjective,
+  week: number,
+  deloadActive: boolean,
+): number {
   if (!(week >= 1 && week <= 5)) {
     throw new Error(`Semaine hors plage 1..5 : ${week}`);
   }
-  if (week === DELOAD_WEEK_IN_CYCLE) {
+  if (deloadActive) {
     return DELOAD_RPE;
   }
   return BASE_RPE[objective];
@@ -341,21 +351,17 @@ function baseRpeFromMuscleObjective(objective: MuscleObjective, week: number): n
 /**
  * RPE cible pour cet exo, dérivé de l'objectif du muscle primaire #1.
  * Si aucun muscle primaire n'est dans muscle_goals → fallback Hypertrophie.
- * Si recovery_mode → cap à RECOVERY_RPE_CAP (7.0).
+ * Récupération effective (semaine 5 acceptée, `deloadActive`) → RPE abaissé (6).
  */
 export function targetRpeForExercise(
   exercise: Exercise,
   weekInCycle: number,
   muscleGoals: Record<string, MuscleGoal>,
-  recoveryMode = false,
+  deloadActive = false,
 ): number {
   const goal = primaryMuscleGoal(exercise, muscleGoals);
   const objective = goal ? goal.objective : MuscleObjective.HYPERTROPHIE;
-  const rpe = baseRpeFromMuscleObjective(objective, weekInCycle);
-  if (recoveryMode) {
-    return Math.min(RECOVERY_RPE_CAP, rpe);
-  }
-  return rpe;
+  return baseRpeFromMuscleObjective(objective, weekInCycle, deloadActive);
 }
 
 /**
@@ -435,7 +441,13 @@ export function externalLoadFromE1rm(
 export interface BuildPrescriptionOptions {
   k?: number;
   muscleGoals?: Record<string, MuscleGoal> | null;
-  recoveryMode?: boolean;
+  /**
+   * Récupération EFFECTIVE (semaine 5 + déload accepté par l'user). Calculé par
+   * les appelants moteur via `isDeloadActive(state)`. Abaisse le RPE à 6 et la
+   * charge prescrite au plancher × DELOAD_LOAD_FACTOR. Une semaine 5 refusée
+   * (ou non décidée) laisse ce booléen à false → prescription normale.
+   */
+  deloadActive?: boolean;
   state?: UserState | null;
 }
 
@@ -462,7 +474,7 @@ export function buildPrescription(
 ): SetPrescription {
   const k = options.k ?? EPLEY_K;
   const muscleGoals = options.muscleGoals ?? null;
-  const recoveryMode = options.recoveryMode ?? false;
+  const deloadActive = options.deloadActive ?? false;
   const state = options.state ?? null;
 
   const useMuscleGoals =
@@ -471,14 +483,11 @@ export function buildPrescription(
   let rpe: number;
   let reps: number;
   if (useMuscleGoals) {
-    rpe = targetRpeForExercise(exercise, weekInCycle, muscleGoals, recoveryMode);
+    rpe = targetRpeForExercise(exercise, weekInCycle, muscleGoals, deloadActive);
     reps = targetRepsForExercise(exercise, muscleGoals);
   } else {
-    rpe = targetRpe(profile.objective, weekInCycle);
+    rpe = targetRpe(profile.objective, weekInCycle, deloadActive);
     reps = targetReps(profile, exercise);
-    if (recoveryMode) {
-      rpe = Math.min(RECOVERY_RPE_CAP, rpe);
-    }
   }
 
   // Conv #20 — mode PDC sticky : charge externe forcée à 0, reps recalculés
@@ -501,7 +510,7 @@ export function buildPrescription(
     // sans charge externe additive exclus. Déload : plancher allégé d'un facteur.
     if (state !== null && exerciseUsesLoadFloor(state, exercise)) {
       const floor = state.prescribed_load_floor[exercise.id];
-      if (weekInCycle === DELOAD_WEEK_IN_CYCLE) {
+      if (deloadActive) {
         if (floor !== undefined) {
           extLoad = roundToIncrement(floor * DELOAD_LOAD_FACTOR, inc);
         }

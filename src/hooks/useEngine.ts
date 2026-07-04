@@ -34,7 +34,11 @@ import {
   rotateEmphasis,
 } from '@/engine/cycle_planner';
 import { carryOverManualPlan } from '@/lib/manual-plan';
-import { initialVolumeBounds } from '@/engine/volume';
+import {
+  DELOAD_WEEK_IN_CYCLE,
+  initialVolumeBounds,
+  isDeloadActive,
+} from '@/engine/volume';
 import { SuggestedAction, DurationCategory } from '@/engine/models';
 import type {
   EquipmentOverride,
@@ -649,7 +653,7 @@ export async function addExerciseToCurrentSession(
     {
       muscleGoals:
         Object.keys(next.muscle_goals).length > 0 ? next.muscle_goals : null,
-      recoveryMode: next.recovery_mode,
+      deloadActive: isDeloadActive(next),
       state: next,
     },
   );
@@ -894,6 +898,48 @@ export async function setCycleDayExerciseSets(
 }
 
 /**
+ * Chantier B — persiste la décision de récupération (déload opt-in) du cycle
+ * courant. À appeler AVANT de générer la séance de semaine 5 : la prescription
+ * (RPE, charge, nombre de séries) dépend de cette décision.
+ */
+export async function setDeloadDecision(
+  decision: 'accepted' | 'declined',
+): Promise<UserState> {
+  const catalog = requireCatalog();
+  const next = requireUserState();
+  next.deload_decision = decision;
+  await txSaveUserStateOnly(next);
+
+  // Chantier B — les séances de la semaine de récupération déjà PLANIFIÉES (non
+  // démarrées) ont pu être générées AVANT cette décision (numéros de séries/
+  // charges/RPE figés « semaine normale »). On régénère leur prescription pour
+  // qu'elle reflète le choix : déload accepté → allégé (÷2 séries, ×0,9, RPE 6),
+  // refusé → normal. Les séances non issues d'un jour du cycle (custom) sont
+  // laissées intactes. Une séance planifiée n'est jamais éditée avant démarrage,
+  // donc rien à préserver.
+  const plan = next.current_cycle_plan;
+  if (plan !== null) {
+    const db = getDb();
+    const planned = await db.sessions
+      .where('[cycle_index+week_in_cycle]')
+      .equals([next.cycle_index, DELOAD_WEEK_IN_CYCLE])
+      .and((s) => s.status === 'planned')
+      .toArray();
+    for (const row of planned) {
+      if (row.id === undefined) continue;
+      const dayIndex = plan.days.findIndex((d) => d.label === row.plan.label);
+      if (dayIndex < 0) continue;
+      const fresh = engine.generateSession(next, catalog, dayIndex, row.seance_date);
+      await txUpdateSessionPlan(row.id, fresh, next);
+    }
+  }
+
+  useCoachOsStore.setState({ userState: next });
+  await refreshHistory();
+  return next;
+}
+
+/**
  * Bloc G (Conv #32) — Remplace `current_cycle_plan` par un template déjà édité
  * (récap d'onboarding : swaps + ajouts/retraits + renommages appliqués sur un
  * snapshot). Fusionne les doublons équivalents avant de persister, pour qu'on
@@ -980,7 +1026,7 @@ export async function setManualE1rm(args: SetManualE1rmArgs): Promise<UserState>
       {
         muscleGoals:
           Object.keys(next.muscle_goals).length > 0 ? next.muscle_goals : null,
-        recoveryMode: next.recovery_mode,
+        deloadActive: isDeloadActive(next),
         state: next,
       },
     );
@@ -1094,9 +1140,8 @@ export async function recordFeedbackAndCommit(
 // =============================================================================
 
 export async function endOfWeek(): Promise<engine.EndOfWeekResult> {
-  const catalog = requireCatalog();
   const next = requireUserState();
-  const result = engine.endOfWeek(next, catalog);
+  const result = engine.endOfWeek(next);
   await txEndOfWeek(next);
   useCoachOsStore.setState({
     userState: next,
@@ -1281,7 +1326,7 @@ export async function importDataFromJson(json: string): Promise<void> {
  *      - `TOURNER_EMPHASIS` : permute les emphasis sur les priorités.
  *      - `CONTINUER_PAREIL` (défaut) : rien à modifier.
  *   3. Bump `cycle_index += 1`, reset `current_week_in_cycle = 1`,
- *      vide `plateau_counter`.
+ *      remet `deload_decision` à null.
  *   4. Régénère `current_cycle_plan` :
  *      - « à la main » : reconduit le plan manuel (`carryOverManualPlan`).
  *      - custom : `autoGenerateCyclePlanV3`.
@@ -1365,7 +1410,9 @@ export async function endOfCycle(args: EndOfCycleArgs = {}) {
   //    `cycle_index` (Conv A, plan 11 : branche w=5 retirée).
   next.cycle_index = closedCycleIndex + 1;
   next.current_week_in_cycle = 1;
-  next.plateau_counter = {};
+  // Chantier B — nouveau cycle : la décision de récupération (déload opt-in)
+  // repart à zéro (re-proposée en semaine 5 du nouveau cycle si l'assiduité est haute).
+  next.deload_decision = null;
   next.weekly_volume_debt = {};
 
   // 4. Régénère le plan du nouveau cycle.
@@ -1462,6 +1509,8 @@ export interface EngineApi {
   removeExerciseFromCycleDay: typeof removeExerciseFromCycleDay;
   /** Bloc I (Conv #34) — change le nombre de séries d'un exo du cycle en cours. */
   setCycleDayExerciseSets: typeof setCycleDayExerciseSets;
+  /** Chantier B — persiste la décision de récupération (déload opt-in) du cycle. */
+  setDeloadDecision: typeof setDeloadDecision;
   /** Bloc G (Conv #32) — persiste le template édité du récap d'onboarding. */
   setCurrentCyclePlan: typeof setCurrentCyclePlan;
 }
@@ -1506,6 +1555,7 @@ export function useEngine(): EngineApi {
       addExerciseToCycleDay,
       removeExerciseFromCycleDay,
       setCycleDayExerciseSets,
+      setDeloadDecision,
       setCurrentCyclePlan,
     }),
     [],

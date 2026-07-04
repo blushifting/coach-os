@@ -751,7 +751,6 @@ export interface UserState {
   volume_max: Record<string, number>;
   current_week_in_cycle: number;
   cycle_index: number;
-  plateau_counter: Record<string, number>;
   history: SessionFeedback[];
   last_used_for_muscle: Record<string, string>;
   // --- algo de programmation (cf. 09 §2.6) ---
@@ -765,8 +764,6 @@ export interface UserState {
    *    (default `'auto'` à la désérialisation).
    */
   build_mode?: 'auto' | 'manual';
-  recovery_mode: boolean;
-  recovery_weeks_remaining: number;
   // --- override équipement par exo ---
   equipment_overrides: Record<string, EquipmentOverride>;
   /**
@@ -823,13 +820,16 @@ export interface UserState {
    */
   exercise_pick_counts?: Record<string, number>;
   /**
-   * Conv #22 — Stratégie de déload pour la semaine 5 du cycle courant
-   * (item H, calculée à l'entrée en sem 5 selon l'adhérence sem 1-4).
-   * Valeur typée `string` ici pour découpler `models.ts` de `volume.ts`
-   * (qui définit l'enum DeloadStrategy = 'none'|'shortened'|'normal').
-   * null/undefined hors sem 5.
+   * Chantier B (plan 11) — décision de l'utilisateur sur la semaine de
+   * récupération (déload opt-in) du cycle courant :
+   *  - `'accepted'` : semaine 5 allégée (volume ÷2, charge ×0,9, RPE 6, aucune
+   *    mesure) — cf. `isDeloadActive` (volume.ts).
+   *  - `'declined'` : semaine 5 = semaine NORMALE (progression + mesures actives).
+   *  - `null`       : pas encore décidé (défaut ; hors semaine 5, ou proposition
+   *    pas encore présentée). Reset à `null` à chaque nouveau cycle.
+   * Absent sur anciens blobs (default `null`).
    */
-  deload_strategy?: string | null;
+  deload_decision?: 'accepted' | 'declined' | null;
 }
 
 export function makeUserState(profile: Profile): UserState {
@@ -841,14 +841,11 @@ export function makeUserState(profile: Profile): UserState {
     volume_max: {},
     current_week_in_cycle: 1,
     cycle_index: 1,
-    plateau_counter: {},
     history: [],
     last_used_for_muscle: {},
     muscle_goals: {},
     current_cycle_plan: null,
     build_mode: 'auto',
-    recovery_mode: false,
-    recovery_weeks_remaining: 0,
     equipment_overrides: {},
     weekly_volume_debt: {},
     prescribed_load_floor: {},
@@ -856,6 +853,6 @@ export function makeUserState(profile: Profile): UserState {
     favorite_exercise_per_pattern: {},
     favorite_exercise_ids: [],
     exercise_pick_counts: {},
-    deload_strategy: null,
+    deload_decision: null,
   };
 }

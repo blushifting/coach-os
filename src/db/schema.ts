@@ -57,7 +57,6 @@ export interface SerializedUserState {
   volume_max: Record<string, number>;
   current_week_in_cycle: number;
   cycle_index: number;
-  plateau_counter: Record<string, number>;
   history: SessionFeedback[];
   last_used_for_muscle: Record<string, string>;
   muscle_goals: Record<
@@ -67,8 +66,6 @@ export interface SerializedUserState {
   current_cycle_plan: import('@/engine/models').WeeklyTemplate | null;
   /** Bloc O — mode de construction ('auto'|'manual'). Absent sur anciens blobs (default 'auto'). */
   build_mode?: 'auto' | 'manual';
-  recovery_mode: boolean;
-  recovery_weeks_remaining: number;
   equipment_overrides: Record<string, EquipmentOverride>;
   /** Dette de volume non réalisée cette semaine (Conv #11a). Absent sur les anciens blobs. */
   weekly_volume_debt?: Record<string, number>;
@@ -82,8 +79,8 @@ export interface SerializedUserState {
   favorite_exercise_ids?: string[];
   /** Bloc F (Conv #31) — compteur d'ajouts ad-hoc/variante par exo (prompt favoris à 3). Absent sur anciens blobs. */
   exercise_pick_counts?: Record<string, number>;
-  /** Conv #22 (H) — stratégie de déload pour la sem 5. Absent sur anciens blobs. */
-  deload_strategy?: string | null;
+  /** Chantier B (plan 11) — décision déload opt-in du cycle courant. Absent sur anciens blobs (default null). */
+  deload_decision?: 'accepted' | 'declined' | null;
 }
 
 // =============================================================================

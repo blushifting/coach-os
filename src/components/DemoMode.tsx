@@ -109,8 +109,8 @@ const TOUR_STEPS: readonly TourStep[] = [
         les records perso (<Concept topic="plafond">Plafond</Concept> battu
         d'au moins 2 kg). Quand la courbe creuse, ce n'est pas un recul&nbsp;:
         soit la semaine a été plus dure (peu de Réserve, fatigue accumulée),
-        soit c'est une semaine de récupération — Kotsh allège alors les charges
-        exprès pour faire redescendre la fatigue.
+        soit c'est une semaine de récupération qu'Alex a acceptée — Kotsh allège
+        alors les charges exprès pour faire redescendre la fatigue.
       </>
     ),
     pointTo: '[data-testid="force-view"]',

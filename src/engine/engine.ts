@@ -22,7 +22,6 @@ import type {
 import {
   ChargeType,
   ExType,
-  MUSCLES,
   MuscleStatus,
   exercisePrimaires,
   makeMuscleGoal,
@@ -33,7 +32,6 @@ import {
   buildPrescription,
   e1rmObserved,
   effectiveLoadForE1rm,
-  targetRpe,
 } from './prescription';
 import {
   updateE1rmForExercise,
@@ -42,14 +40,13 @@ import {
 } from './feedback';
 import {
   advanceWeek,
-  aggregateForceIndex,
   DELOAD_WEEK_IN_CYCLE,
   initialVolumeBounds,
+  isDeloadActive,
 } from './volume';
 import { applyBalanceRules } from './balance';
 import {
   adjustVolumeBoundsAtCycleEnd,
-  decrementRecoveryWeek,
   generateCycleReview,
 } from './lifecycle';
 
@@ -74,9 +71,6 @@ export function startUser(
   const state = makeUserState(profile);
   state.volume_min = vMin;
   state.volume_max = vMax;
-  for (const m of MUSCLES) {
-    state.plateau_counter[m] = 0;
-  }
 
   if (muscleGoals && Object.keys(muscleGoals).length > 0) {
     state.muscle_goals = { ...muscleGoals };
@@ -304,16 +298,20 @@ export function generateSession(
   const day: DayTemplate = days[dayIndex]!;
   const items: SessionItem[] = [];
 
-  // Nb de séries par exo selon la phase du cycle (lit progression[])
+  // Nb de séries par exo selon la phase du cycle (lit progression[]).
+  // Chantier B — semaine 5 REFUSÉE (déload non actif) = semaine NORMALE : on
+  // retombe sur le compte de séries de la semaine 4 (progression[3]) au lieu du
+  // compte déload (progression[4], ÷2). Semaine 5 acceptée → compte déload.
   let weekIdx = state.current_week_in_cycle - 1;
   weekIdx = Math.max(0, Math.min(4, weekIdx));
+  const effWeekIdx = weekIdx === 4 && !isDeloadActive(state) ? 3 : weekIdx;
 
   const rpeTargets: number[] = [];
   for (const planned of day.exercises) {
     const ex = catalog.get(planned.exercise_id);
     let nSets =
-      planned.progression && planned.progression.length > weekIdx
-        ? planned.progression[weekIdx]!
+      planned.progression && planned.progression.length > effWeekIdx
+        ? planned.progression[effWeekIdx]!
         : planned.base_sets;
     nSets = Math.max(1, nSets);
 
@@ -331,7 +329,7 @@ export function generateSession(
       {
         muscleGoals:
           Object.keys(state.muscle_goals).length > 0 ? state.muscle_goals : null,
-        recoveryMode: state.recovery_mode,
+        deloadActive: isDeloadActive(state),
         state,
       },
     );
@@ -403,7 +401,7 @@ export function buildCustomSessionPlan(
       {
         muscleGoals:
           Object.keys(state.muscle_goals).length > 0 ? state.muscle_goals : null,
-        recoveryMode: state.recovery_mode,
+        deloadActive: isDeloadActive(state),
         state,
       },
     );
@@ -459,7 +457,7 @@ export function replaceSessionItem(
     {
       muscleGoals:
         Object.keys(state.muscle_goals).length > 0 ? state.muscle_goals : null,
-      recoveryMode: state.recovery_mode,
+      deloadActive: isDeloadActive(state),
       state,
     },
   );
@@ -532,7 +530,11 @@ export function recordFeedback(
   // Catalogue afficherait une "régression" qui n'en est pas une. On skip
   // donc l'update e1RM pour la semaine 5. La courbe Force exclut aussi ces
   // points (cf. `computeE1rmHistory`).
-  const skipE1rmEntirely = sessionFeedback.week_in_cycle === DELOAD_WEEK_IN_CYCLE;
+  // Chantier B — déload opt-in : on ne skip QUE si la récup a été ACCEPTÉE.
+  // Une semaine 5 refusée est une semaine normale → e1RM et cliquet tournent.
+  const skipE1rmEntirely =
+    sessionFeedback.week_in_cycle === DELOAD_WEEK_IN_CYCLE &&
+    state.deload_decision === 'accepted';
 
   const calibrated = options.calibratedExoIds ?? null;
 
@@ -587,76 +589,27 @@ export function recordFeedback(
 
 export interface EndOfWeekResult {
   event: string;
-  plateau_detected: Record<string, boolean>;
-  rpe_means: Record<string, number>;
-  force_index: Record<string, number>;
   week_before: number;
   cycle_before: number;
   current_week: number;
   cycle_index: number;
 }
 
-export function endOfWeek(state: UserState, catalog: Catalog): EndOfWeekResult {
-  const musclesOf: Record<string, Record<string, number>> = {};
-  for (const x of catalog.all()) {
-    musclesOf[x.id] = x.muscles;
-  }
-
-  const currentIndex: Record<string, number> = {};
-  for (const m of MUSCLES) {
-    currentIndex[m] = aggregateForceIndex(state, m, musclesOf);
-  }
-
-  const lastWeekSessions = state.history.filter(
-    (s) =>
-      s.cycle_index === state.cycle_index &&
-      s.week_in_cycle === state.current_week_in_cycle,
-  );
-
-  const rpeMeansByMuscle: Record<string, number> = {};
-  for (const m of MUSCLES) {
-    const rpes: number[] = [];
-    for (const s of lastWeekSessions) {
-      for (const f of s.sets) {
-        const coef = musclesOf[f.exercise_id]?.[m] ?? 0;
-        if (coef >= 1.0) rpes.push(f.rpe_perceived);
-      }
-    }
-    if (rpes.length > 0) {
-      rpeMeansByMuscle[m] = rpes.reduce((a, b) => a + b, 0) / rpes.length;
-    }
-  }
-
-  const rpeTgt = targetRpe(state.profile.objective, state.current_week_in_cycle);
-  const plateauNow: Record<string, boolean> = {};
-  for (const m of MUSCLES) {
-    const rpeObs = rpeMeansByMuscle[m];
-    if (rpeObs === undefined) continue;
-    if (rpeObs >= rpeTgt + 0.5) {
-      state.plateau_counter[m] = (state.plateau_counter[m] ?? 0) + 1;
-    } else {
-      state.plateau_counter[m] = 0;
-    }
-    plateauNow[m] = (state.plateau_counter[m] ?? 0) >= 2;
-  }
-
-  const plateauAny = Object.values(plateauNow).some(Boolean);
-
+/**
+ * Passe à la semaine suivante du cycle. Chantier B — plus de détection de
+ * plateau ni de mode récupération : la bascule est un simple `advanceWeek`
+ * (le plateau est indicatif, calculé au bilan de cycle). Reset de la dette
+ * de volume qui ne traverse pas la frontière hebdo (Conv #11a).
+ */
+export function endOfWeek(state: UserState): EndOfWeekResult {
   const weekBefore = state.current_week_in_cycle;
   const cycleBefore = state.cycle_index;
-  const event = advanceWeek(state, plateauAny);
+  const event = advanceWeek(state);
 
-  decrementRecoveryWeek(state);
-
-  // Conv #11a : la dette de volume ne traverse pas la frontière hebdo —
-  // un manque ponctuel n'est pas grave en RPE-based, on repart propre.
   state.weekly_volume_debt = {};
 
   return {
     event,
-    plateau_detected: plateauNow,
-    rpe_means: rpeMeansByMuscle,
-    force_index: currentIndex,
     week_before: weekBefore,
     cycle_before: cycleBefore,
     current_week: state.current_week_in_cycle,

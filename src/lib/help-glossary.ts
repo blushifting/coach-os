@@ -43,12 +43,12 @@ export const HELP_GLOSSARY: Readonly<Record<HelpTopic, HelpEntry>> = {
   },
   cycle: {
     title: 'Cycle',
-    body: "Bloc de 4 semaines de progression + 1 semaine de récupération. Au bout de chaque cycle, Kotsh te propose un bilan.",
+    body: "Bloc de 4 semaines de progression + 1 semaine où Kotsh peut te proposer une récupération. Au bout de chaque cycle, tu fais le bilan.",
   },
   deload: {
     title: 'Récupération (semaine allégée)',
     body:
-      "Dernière semaine de chaque cycle : moitié moins de séries et au moins 4 reps en réserve (rien de poussé). " +
+      "En fin de cycle, si tu as bien suivi tes séances, Kotsh te propose une semaine allégée : moitié moins de séries et au moins 4 reps en réserve (rien de poussé). " +
       "Sert à faire redescendre la fatigue accumulée sans perdre les gains. " +
       "C'est volontairement facile — l'objectif est de récupérer pour repartir frais au cycle suivant. " +
       "(Aussi appelée « déload » dans le jargon muscu.)",

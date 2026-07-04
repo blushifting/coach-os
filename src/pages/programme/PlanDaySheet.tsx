@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { Concept } from '@/components/Concept';
 import { Sheet } from '@/components/Sheet';
 import { useEngine } from '@/hooks/useEngine';
 import { getDb } from '@/db';
@@ -203,7 +202,6 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
               catalog={catalog}
               isToday={isToday}
               seanceDate={day.date}
-              isDeload={day.isDeload}
               pending={pending}
               suggestion={suggestion?.kind === 'session' ? suggestion : null}
               onPick={(dayIndex) => planSession(dayIndex, isToday)}
@@ -337,7 +335,6 @@ function FreeFutureBlock({
   catalog,
   isToday,
   seanceDate,
-  isDeload,
   pending,
   suggestion,
   onPick,
@@ -347,7 +344,6 @@ function FreeFutureBlock({
   readonly catalog: Catalog | null;
   readonly isToday: boolean;
   readonly seanceDate: string;
-  readonly isDeload: boolean;
   readonly pending: number | null;
   readonly suggestion: {
     readonly dayIndex: number;
@@ -369,12 +365,6 @@ function FreeFutureBlock({
         {isToday
           ? 'Choisis la séance à démarrer maintenant'
           : 'Choisis la séance à programmer ce jour'}
-        {isDeload && (
-          <span className="text-sang-500">
-            {' '}
-            (semaine de <Concept topic="deload">Récupération</Concept>)
-          </span>
-        )}
         .
       </p>
       {suggestion !== null && suggestion.previousLabel !== null && (
@@ -505,12 +495,7 @@ function CompletedSessionBlock({
             <strong className="text-white">{formatSessionLabel(day.sessionLabel)}</strong>{' '}
           </>
         )}
-        est faite.{' '}
-        {day.isDeload && (
-          <span className="text-sang-500">
-            (<Concept topic="deload">Récupération</Concept>)
-          </span>
-        )}
+        est faite.
       </p>
     );
   }
@@ -521,14 +506,7 @@ function CompletedSessionBlock({
     <div className="flex flex-col gap-3" data-testid="day-status-text">
       <p className="text-sm text-anthracite-100">
         La séance <strong className="text-white">{sessionDisplayName(feedback)}</strong> est
-        faite
-        {day.isDeload && (
-          <span className="text-sang-500">
-            {' '}
-            (<Concept topic="deload">Récupération</Concept>)
-          </span>
-        )}
-        .
+        faite.
       </p>
       {rollups.length > 0 && (
         <Card className="flex flex-col gap-1.5" data-testid="completed-session-rollup">

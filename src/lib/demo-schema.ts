@@ -143,16 +143,15 @@ const serializedUserStateSchema = z.object({
   volume_max: z.record(z.string(), z.number()),
   current_week_in_cycle: z.number().int(),
   cycle_index: z.number().int(),
-  plateau_counter: z.record(z.string(), z.number()),
   history: z.array(sessionFeedbackSchema),
   last_used_for_muscle: z.record(z.string(), z.string()),
   muscle_goals: z.record(z.string(), muscleGoalSchema),
   current_cycle_plan: weeklyTemplateSchema.nullable(),
-  recovery_mode: z.boolean(),
-  recovery_weeks_remaining: z.number().int(),
   equipment_overrides: z.record(z.string(), equipmentOverrideSchema),
   weekly_volume_debt: z.record(z.string(), z.number()).optional(),
   prescribed_load_floor: z.record(z.string(), z.number()).optional(),
+  // Chantier B — déload opt-in (absent des anciens snapshots, default null).
+  deload_decision: z.enum(['accepted', 'declined']).nullable().optional(),
 });
 
 // =============================================================================

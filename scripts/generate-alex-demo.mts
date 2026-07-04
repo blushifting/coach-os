@@ -595,15 +595,13 @@ function serializeUserState(state: UserState): SerializedUserState {
     volume_max: { ...state.volume_max },
     current_week_in_cycle: state.current_week_in_cycle,
     cycle_index: state.cycle_index,
-    plateau_counter: { ...state.plateau_counter },
     history: state.history,
     last_used_for_muscle: { ...state.last_used_for_muscle },
     muscle_goals: { ...state.muscle_goals },
     current_cycle_plan: state.current_cycle_plan,
-    recovery_mode: state.recovery_mode,
-    recovery_weeks_remaining: state.recovery_weeks_remaining,
     equipment_overrides: { ...state.equipment_overrides },
     weekly_volume_debt: { ...state.weekly_volume_debt },
+    deload_decision: state.deload_decision ?? null,
   };
 }
 

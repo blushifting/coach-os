@@ -32,14 +32,6 @@ import { muscleLabel } from '@/lib/progress';
 import { autoGenerateCyclePlanV3, rotateEmphasis } from './cycle_planner';
 
 // =============================================================================
-// Constantes recovery mode (cf. 09 §8.6)
-// =============================================================================
-
-export const RECOVERY_VOLUME_FACTOR = 0.5;
-export const RECOVERY_RPE_CAP = 7.0;
-export const RECOVERY_DURATION_WEEKS = 2;
-
-// =============================================================================
 // 1. Helpers d'analyse
 // =============================================================================
 
@@ -121,13 +113,9 @@ function classifyMusclesOutcome(
     }
   }
 
-  // Plateau marqué : muscles avec plateau_counter ≥ 2
-  for (const [muscle, count] of Object.entries(state.plateau_counter)) {
-    if (count >= 2 && !plateau.includes(muscle)) {
-      plateau.push(muscle);
-    }
-  }
-
+  // Chantier B — plateau purement INDICATIF : `plateau` n'est plus alimenté que
+  // par le critère Δe1RM moyen < −0,5 (ci-dessus). Plus de `plateau_counter`
+  // (compteur RPE supprimé) ni de déclenchement d'action automatique.
   return { progresses, plateau, undertrained, overshoot };
 }
 
@@ -277,34 +265,7 @@ export function adjustVolumeBoundsAtCycleEnd(
 }
 
 // =============================================================================
-// 5. Recovery mode (cf. 09 §8.6)
-// =============================================================================
-
-export function enterRecoveryMode(
-  state: UserState,
-  weeks: number = RECOVERY_DURATION_WEEKS,
-): void {
-  state.recovery_mode = true;
-  state.recovery_weeks_remaining = weeks;
-}
-
-export function maybeExitRecoveryMode(state: UserState): boolean {
-  if (state.recovery_mode && state.recovery_weeks_remaining <= 0) {
-    state.recovery_mode = false;
-    return true;
-  }
-  return false;
-}
-
-export function decrementRecoveryWeek(state: UserState): void {
-  if (state.recovery_mode) {
-    state.recovery_weeks_remaining = Math.max(0, state.recovery_weeks_remaining - 1);
-  }
-  maybeExitRecoveryMode(state);
-}
-
-// =============================================================================
-// 6. applyUserActionAfterCycle (cf. 09 §9.2)
+// 5. applyUserActionAfterCycle (cf. 09 §9.2)
 // =============================================================================
 
 export function applyUserActionAfterCycle(
@@ -329,5 +290,4 @@ export function applyUserActionAfterCycle(
 
   state.cycle_index += 1;
   state.current_week_in_cycle = 1;
-  maybeExitRecoveryMode(state);
 }

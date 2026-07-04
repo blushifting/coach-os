@@ -17,6 +17,12 @@ interface SessionSummaryProps {
   readonly customName?: string | null;
   readonly data: SessionSummaryData;
   readonly catalog: Catalog | null;
+  /**
+   * Chantier B — la séance a été enregistrée en semaine de récupération EFFECTIVE
+   * (semaine 5 + déload accepté). Aucune mesure de plafond n'est faite : on
+   * l'explique au lieu du message « aucune série assez intense ».
+   */
+  readonly deloadActive?: boolean;
   readonly onClose: () => void;
 }
 
@@ -24,7 +30,14 @@ interface SessionSummaryProps {
  * Écran "État C" — bilan post-séance (cf. 08 §199).
  * Volume du jour, comparaison à la semaine dernière (même `label`), PR.
  */
-export function SessionSummary({ label, customName, data, catalog, onClose }: SessionSummaryProps) {
+export function SessionSummary({
+  label,
+  customName,
+  data,
+  catalog,
+  deloadActive = false,
+  onClose,
+}: SessionSummaryProps) {
   const brand = useGymBrand() ?? undefined;
   return (
     <div className="flex flex-col gap-3" data-testid="session-summary">
@@ -67,8 +80,9 @@ export function SessionSummary({ label, customName, data, catalog, onClose }: Se
         </h3>
         {data.plafondChanges.length === 0 ? (
           <p className="text-xs text-anthracite-300">
-            Aucune série assez intense cette séance pour mettre à jour tes
-            Plafonds.
+            {deloadActive
+              ? 'Semaine de récupération : on ne mesure pas tes Plafonds cette semaine. Tu reprends la progression au prochain cycle.'
+              : 'Aucune série assez intense cette séance pour mettre à jour tes Plafonds.'}
           </p>
         ) : (
           <ul className="flex flex-col gap-1">

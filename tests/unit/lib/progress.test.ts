@@ -90,7 +90,6 @@ function makeState(overrides: Partial<UserState> = {}): UserState {
     volume_max: { pectoraux: 18, biceps: 14, quadriceps: 18 },
     current_week_in_cycle: 2,
     cycle_index: 1,
-    plateau_counter: {},
     history: [],
     last_used_for_muscle: {},
     muscle_goals: {
@@ -114,8 +113,6 @@ function makeState(overrides: Partial<UserState> = {}): UserState {
       },
     },
     current_cycle_plan: null,
-    recovery_mode: false,
-    recovery_weeks_remaining: 0,
     equipment_overrides: {},
     weekly_volume_debt: {},
     prescribed_load_floor: {},

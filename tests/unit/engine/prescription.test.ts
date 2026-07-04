@@ -141,12 +141,14 @@ describe('roundToIncrement', () => {
 // =============================================================================
 
 describe('targetRpe (legacy)', () => {
-  // Refonte progression — plus de rampe intra-cycle : RPE de référence CONSTANT
-  // (sem 1..4), seul le déload (sem 5) abaisse à 6.
-  it('constant sem 1..4, déload sem 5 = 6', () => {
+  // Chantier B — RPE de référence CONSTANT ; l'abaissement déload dépend de
+  // `deloadActive` (semaine 5 acceptée), plus du numéro de semaine : une
+  // semaine 5 refusée garde le RPE normal.
+  it('constant sem 1..5 hors déload ; déload actif = 6', () => {
     expect(targetRpe(Objective.HYPERTROPHIE, 1)).toBe(7);
     expect(targetRpe(Objective.HYPERTROPHIE, 4)).toBe(7);
-    expect(targetRpe(Objective.HYPERTROPHIE, 5)).toBe(6);
+    expect(targetRpe(Objective.HYPERTROPHIE, 5)).toBe(7);
+    expect(targetRpe(Objective.HYPERTROPHIE, 5, true)).toBe(6);
   });
   it('même valeur quel que soit l’objectif (hors déload)', () => {
     expect(targetRpe(Objective.FORCE, 4)).toBe(7);
@@ -256,7 +258,7 @@ describe('primaryMuscleGoal', () => {
 });
 
 // =============================================================================
-// 9. targetRpeForExercise — courbes par MuscleObjective + déload + recovery
+// 9. targetRpeForExercise — courbes par MuscleObjective + déload opt-in
 // =============================================================================
 
 describe('targetRpeForExercise', () => {
@@ -278,17 +280,16 @@ describe('targetRpeForExercise', () => {
     expect(targetRpeForExercise(bench, 4, goals)).toBe(6.0);
   });
 
-  it('Déload semaine 5 → 6.0 quel que soit l’objectif', () => {
+  it('Déload actif (semaine 5 acceptée) → 6.0 quel que soit l’objectif', () => {
     for (const obj of Object.values(MuscleObjective)) {
       const goals = { pectoraux: prio('pectoraux', obj, 1) };
-      expect(targetRpeForExercise(bench, 5, goals)).toBe(6.0);
+      expect(targetRpeForExercise(bench, 5, goals, true)).toBe(6.0);
     }
   });
 
-  it('recovery_mode plafonne à 7 (Endurance 8 → 7)', () => {
+  it('semaine 5 refusée (déload non actif) → RPE normal de l’objectif', () => {
     const goals = { pectoraux: prio('pectoraux', MuscleObjective.ENDURANCE, 1) };
-    expect(targetRpeForExercise(bench, 1, goals)).toBe(8.0);
-    expect(targetRpeForExercise(bench, 1, goals, true)).toBe(7.0);
+    expect(targetRpeForExercise(bench, 5, goals)).toBe(8.0);
   });
 
   it('fallback Hypertrophie si aucun goal → sem 1 = 7.0', () => {
@@ -379,18 +380,19 @@ describe('buildPrescription', () => {
     expect(pres.reps).toBe(5);
   });
 
-  it('recovery_mode plafonne RPE à 7 même via muscle_goals', () => {
+  it('déload actif via buildPrescription → RPE 6 + charge plancher ×0,9', () => {
     const bench = catalog.get('bench_bb');
     const p = profile();
     const state = makeUserState(p);
-    state.recovery_mode = true;
+    state.prescribed_load_floor[bench.id] = 100;
     const goals = { pectoraux: prio('pectoraux', MuscleObjective.HYPERTROPHIE, 1) };
-    const pres = buildPrescription(bench, 100, p, 4, {
+    const pres = buildPrescription(bench, 100, p, 5, {
       muscleGoals: goals,
       state,
-      recoveryMode: true,
+      deloadActive: true,
     });
-    expect(pres.rpe_target).toBeLessThanOrEqual(7.0);
+    expect(pres.rpe_target).toBe(6.0);
+    expect(pres.load_kg).toBeCloseTo(90, 0);
   });
 
   it('override inc_kg=5 → charge multiple de 5', () => {

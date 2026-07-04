@@ -52,7 +52,6 @@ export const SENIOR_FACTOR = 0.8;
 export const SENIOR_VMAX_FACTOR = 1.5;
 
 export const DEFAULT_VMAX_FACTOR = 1.8;
-export const DELTA_V_PER_WEEK = 2;
 export const DELOAD_FACTOR = 0.5;
 /**
  * Refonte progression — facteur d'allègement de la CHARGE en semaine de
@@ -125,42 +124,6 @@ export function initialVolumeBounds(
   }
   return [vMin, vMax];
 }
-
-// =============================================================================
-// 4. Volume cible pour la semaine courante (legacy, cf. 03_§5.1)
-// =============================================================================
-
-/** Volume cible (séries pondérées) pour ce muscle cette semaine. Voie legacy. */
-export function targetVolume(state: UserState, muscle: string): number {
-  const w = state.current_week_in_cycle;
-  const vMin = state.volume_min[muscle]!;
-  const vMax = state.volume_max[muscle]!;
-  if (w === 5) {
-    // Conv #22 (H) — déload conditionnel selon adhérence du cycle. Le
-    // champ `deload_strategy` est posé par `advanceWeek` à l'entrée en
-    // sem 5. NORMAL = comportement legacy. SHORTENED = allègement
-    // intermédiaire (facteur 0.7). NONE = pas de déload, sem 5 ≈ sem 4+1
-    // progressive (cycle prolongé d'1 sem).
-    const strategy = state.deload_strategy ?? DeloadStrategy.NORMAL;
-    if (strategy === DeloadStrategy.NONE) {
-      const target = vMin + 4 * DELTA_V_PER_WEEK;
-      return Math.min(target, vMax);
-    }
-    if (strategy === DeloadStrategy.SHORTENED) {
-      return vMin * SHORTENED_DELOAD_FACTOR;
-    }
-    return vMin * DELOAD_FACTOR;
-  }
-  const target = vMin + (w - 1) * DELTA_V_PER_WEEK;
-  return Math.min(target, vMax);
-}
-
-/**
- * Conv #22 (H) — Facteur d'allègement intermédiaire (déload raccourci).
- * Cible : ~70 % du V_min sur sem 5 en cas d'adhérence partielle (50-75 %).
- * Plus généreux que NORMAL (50 %), moins que sem 4 (100 %).
- */
-export const SHORTENED_DELOAD_FACTOR = 0.7;
 
 // =============================================================================
 // 5. Voie muscle_goals : effectiveVolumeBounds + targetFrequencyV2 (cf. 09 §4.5)
@@ -268,32 +231,27 @@ export function targetFrequencyV2(muscle: string, state: UserState): number {
 }
 
 // =============================================================================
-// Conv #22 — Déload conditionnel selon adhérence (item H du backlog)
+// Déload opt-in (chantier B, plan 11) — cf. recherche/09c_deload_optin.md
 // =============================================================================
 
 /**
- * Stratégie de déload pour la semaine 5 du cycle, selon le pourcentage de
- * séances effectuées sur les 4 semaines de progression :
- *  - ≥ 75 % → NORMAL (semaine 5 entière allégée, volume × 0.5, RPE ≤ 6)
- *  - 50-75 % → SHORTENED (1re séance de sem 5 allégée, suivantes en
- *     progression continue, cycle bouclé sur 5 sem)
- *  - < 50 % → NONE (pas de déload, on prolonge d'une 5e sem de progression
- *     normale et on lance le bilan dès cette semaine bouclée — adhérence
- *     faible signalée dans le bilan, action probable AJUSTER_OBJECTIFS)
+ * Seuil d'assiduité (semaines 1-4) au-dessus duquel l'app PROPOSE la semaine de
+ * récupération. En-dessous, peu de charge encaissée → pas de fatigue accumulée
+ * → pas de proposition (semaine 5 = semaine normale). Proxy de fatigue = nombre
+ * de séances réellement faites (cf. 09c §3.1).
  */
-export enum DeloadStrategy {
-  NONE = 'none',
-  SHORTENED = 'shortened',
-  NORMAL = 'normal',
-}
+export const PROPOSE_DELOAD_MIN_ADHERENCE = 0.75;
 
-export const DELOAD_ADHERENCE_FULL = 0.75;
-export const DELOAD_ADHERENCE_PARTIAL = 0.5;
-
-export function computeDeloadStrategy(adherence: number): DeloadStrategy {
-  if (adherence >= DELOAD_ADHERENCE_FULL) return DeloadStrategy.NORMAL;
-  if (adherence >= DELOAD_ADHERENCE_PARTIAL) return DeloadStrategy.SHORTENED;
-  return DeloadStrategy.NONE;
+/**
+ * La semaine de récupération est-elle EFFECTIVE (semaine 5 + acceptée par
+ * l'utilisateur) ? Pilote l'allègement volume/charge/RPE et le gel des mesures.
+ * Semaine 5 refusée (ou non décidée) → semaine normale, ce helper renvoie false.
+ */
+export function isDeloadActive(state: UserState): boolean {
+  return (
+    state.current_week_in_cycle === DELOAD_WEEK_IN_CYCLE &&
+    state.deload_decision === 'accepted'
+  );
 }
 
 // =============================================================================
@@ -352,125 +310,34 @@ export function countWeeklyVolume(
 }
 
 // =============================================================================
-// 7. Détection de plateau (cf. 03_§7.1)
+// 7. Avancement hebdomadaire
+//    (Chantier B — plus de détection de plateau ici : le plateau est désormais
+//     purement indicatif, calculé au bilan de cycle via le Δe1RM moyen, cf.
+//     lifecycle.classifyMusclesOutcome. Ni déload anticipé, ni saut de semaine.)
 // =============================================================================
 
 /**
- * Indice de force agrégée pour un muscle = moyenne pondérée des e1RM des
- * exos qui ont ce muscle en primaire (coef ≥ 1.0).
+ * Décide la semaine suivante. Renvoie un libellé d'événement.
+ *
+ * Chantier B — forme finale (plus de plateau ni de stratégie de déload) :
+ *   w ∈ [1..3] → w+1
+ *   w === 4    → 5 (entrée en semaine de récupération potentielle, opt-in)
+ *   w === 5    → no-op : la bascule de cycle est faite exclusivement par
+ *               `endOfCycle` (bilan validé par l'user, bump `cycle_index`) ;
+ *               `tickWeekIfNeeded` plafonne à 5 → branche jamais atteinte en
+ *               flux réel.
  */
-export function aggregateForceIndex(
-  state: UserState,
-  muscle: string,
-  musclesOf: Readonly<Record<string, Readonly<Record<string, number>>>>,
-): number {
-  const e1rms: number[] = [];
-  const weights: number[] = [];
-  for (const [exId, e1rm] of Object.entries(state.e1rm)) {
-    const coef = musclesOf[exId]?.[muscle] ?? 0;
-    if (coef >= 1.0) {
-      e1rms.push(e1rm);
-      weights.push(coef);
-    }
-  }
-  if (e1rms.length === 0) {
-    return 0;
-  }
-  const sumW = weights.reduce((a, b) => a + b, 0);
-  return e1rms.reduce((acc, e, i) => acc + e * weights[i]!, 0) / sumW;
-}
-
-/**
- * Plateau détecté si pendant 2 semaines consécutives :
- * Δ(indice force) ≤ deltaThreshold ET RPE moyen ≥ RPE cible + 0.5.
- */
-export function isPlateau(
-  weekSummaryCurrent: Readonly<Record<string, number>>,
-  weekSummaryPrevious: Readonly<Record<string, number>> | null,
-  muscle: string,
-  rpeTarget: number,
-  rpeMeanCurrent: number,
-  rpeMeanPrevious: number | null,
-  deltaThreshold = 0.0,
-  rpeOvershoot = 0.5,
-): boolean {
-  if (weekSummaryPrevious === null || rpeMeanPrevious === null) {
-    return false;
-  }
-  const fc = weekSummaryCurrent[muscle] ?? 0;
-  const fp = weekSummaryPrevious[muscle] ?? 0;
-  const deltaNow = fc - fp;
-  const rpeHighNow = rpeMeanCurrent >= rpeTarget + rpeOvershoot;
-  const rpeHighPrev = rpeMeanPrevious >= rpeTarget + rpeOvershoot;
-  return deltaNow <= deltaThreshold && rpeHighNow && rpeHighPrev;
-}
-
-// =============================================================================
-// 8. Avancement hebdomadaire et déload
-// =============================================================================
-
-/** Décide la semaine suivante. Renvoie un libellé d'événement. */
-export function advanceWeek(
-  state: UserState,
-  plateauDetected = false,
-): string {
+export function advanceWeek(state: UserState): string {
   const w = state.current_week_in_cycle;
-  let event = '';
   if (w === 5) {
-    // Conv A (plan 11) — la bascule de cycle est faite exclusivement par
-    // `endOfCycle` (bilan validé par l'user), qui bump `cycle_index`. Ici,
-    // à w=5, `advanceWeek` est un no-op : `tickWeekIfNeeded` plafonne à la
-    // semaine 5 et n'appelle donc jamais cette branche en flux réel.
-    event = 'semaine_5_stable';
-  } else if (plateauDetected || w === 4) {
-    if (plateauDetected) {
-      for (const [muscle, count] of Object.entries(state.plateau_counter)) {
-        if (count >= 2) {
-          state.volume_max[muscle] = Math.max(
-            state.volume_min[muscle] ?? 0,
-            (state.volume_max[muscle] ?? 0) - VMAX_DOWN_DELTA,
-          );
-          state.plateau_counter[muscle] = 0;
-        }
-      }
-      event = 'deload_anticipe_plateau';
-    } else {
-      event = 'deload_fin_de_cycle';
-    }
+    return 'semaine_5_stable';
+  }
+  if (w === 4) {
     state.current_week_in_cycle = 5;
-    // Conv #22 (H) — déload conditionnel : calcule l'adhérence du cycle
-    // (sem 1-4) et stocke la stratégie pour `targetVolume`.
-    state.deload_strategy = computeDeloadStrategy(
-      computeCycleAdherence(state),
-    );
-  } else {
-    state.current_week_in_cycle = w + 1;
-    event = `semaine_suivante_${state.current_week_in_cycle}`;
+    return 'deload_fin_de_cycle';
   }
-  return event;
-}
-
-/**
- * Conv #22 (H) — calcule l'adhérence du cycle courant : ratio des séances
- * effectivement enregistrées dans l'historique sur les 4 semaines de
- * progression vs le nb prévu par le plan.
- *
- *   adherence = sessions_done(cycle, w<=4) / (days.length × 4)
- *
- * Sans plan ou plan vide → 0 (sécurité, traité comme NONE).
- */
-export function computeCycleAdherence(state: UserState): number {
-  const plan = state.current_cycle_plan;
-  if (plan === null || plan.days.length === 0) return 0;
-  const planned = plan.days.length * 4;
-  if (planned === 0) return 0;
-  let done = 0;
-  for (const s of state.history) {
-    if (s.cycle_index !== state.cycle_index) continue;
-    if (s.week_in_cycle > 4) continue;
-    done += 1;
-  }
-  return done / planned;
+  state.current_week_in_cycle = w + 1;
+  return `semaine_suivante_${state.current_week_in_cycle}`;
 }
 
 /**

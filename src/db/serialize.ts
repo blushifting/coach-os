@@ -70,7 +70,6 @@ export function serializeUserState(state: UserState): SerializedUserState {
     volume_max: { ...state.volume_max },
     current_week_in_cycle: state.current_week_in_cycle,
     cycle_index: state.cycle_index,
-    plateau_counter: { ...state.plateau_counter },
     history: state.history.map((h) => structuredClone(h)),
     last_used_for_muscle: { ...state.last_used_for_muscle },
     muscle_goals: Object.fromEntries(
@@ -79,8 +78,6 @@ export function serializeUserState(state: UserState): SerializedUserState {
     current_cycle_plan:
       state.current_cycle_plan === null ? null : structuredClone(state.current_cycle_plan),
     build_mode: state.build_mode ?? 'auto',
-    recovery_mode: state.recovery_mode,
-    recovery_weeks_remaining: state.recovery_weeks_remaining,
     equipment_overrides: Object.fromEntries(
       Object.entries(state.equipment_overrides).map(([k, v]) => [k, { ...v }]),
     ),
@@ -93,7 +90,7 @@ export function serializeUserState(state: UserState): SerializedUserState {
     favorite_exercise_per_pattern: { ...(state.favorite_exercise_per_pattern ?? {}) },
     favorite_exercise_ids: [...(state.favorite_exercise_ids ?? [])],
     exercise_pick_counts: { ...(state.exercise_pick_counts ?? {}) },
-    deload_strategy: state.deload_strategy ?? null,
+    deload_decision: state.deload_decision ?? null,
   };
 }
 
@@ -106,7 +103,6 @@ export function deserializeUserState(s: SerializedUserState): UserState {
     volume_max: { ...s.volume_max },
     current_week_in_cycle: s.current_week_in_cycle,
     cycle_index: s.cycle_index,
-    plateau_counter: { ...s.plateau_counter },
     history: s.history.map((h) => structuredClone(h)),
     last_used_for_muscle: { ...s.last_used_for_muscle },
     muscle_goals: Object.fromEntries(
@@ -123,8 +119,6 @@ export function deserializeUserState(s: SerializedUserState): UserState {
     current_cycle_plan:
       s.current_cycle_plan === null ? null : structuredClone(s.current_cycle_plan),
     build_mode: s.build_mode ?? 'auto',
-    recovery_mode: s.recovery_mode,
-    recovery_weeks_remaining: s.recovery_weeks_remaining,
     equipment_overrides: Object.fromEntries(
       Object.entries(s.equipment_overrides).map(([k, v]) => [
         k,
@@ -152,6 +146,7 @@ export function deserializeUserState(s: SerializedUserState): UserState {
         ? [...s.favorite_exercise_ids]
         : Array.from(new Set(Object.values(s.favorite_exercise_per_pattern ?? {}))),
     exercise_pick_counts: { ...(s.exercise_pick_counts ?? {}) },
-    deload_strategy: s.deload_strategy ?? null,
+    // Chantier B — rétrocompat : blobs antérieurs n'ont pas ce champ (default null).
+    deload_decision: s.deload_decision ?? null,
   };
 }

@@ -29,13 +29,8 @@ import {
 } from '@/engine/skeleton_builder';
 import {
   advanceWeek,
-  computeCycleAdherence,
-  computeDeloadStrategy,
-  DeloadStrategy,
   effectiveCycleTargetVolume,
-  SHORTENED_DELOAD_FACTOR,
   targetFrequencyV2,
-  targetVolume,
 } from '@/engine/volume';
 import { autoGenerateCyclePlanV3 } from '@/engine/cycle_planner';
 import { EQUIP_FULL } from './_helpers';
@@ -306,134 +301,43 @@ describe('Conv #22 — sets_allocator (étape F)', () => {
 });
 
 // =============================================================================
-// Déload conditionnel H
+// advanceWeek — forme finale (chantier B : plus de plateau ni de stratégie de
+// déload ; la semaine de récupération est opt-in, pilotée par deload_decision)
 // =============================================================================
 
-describe('Conv #22 — computeDeloadStrategy (item H)', () => {
-  it('adhérence ≥ 75 % → déload NORMAL', () => {
-    expect(computeDeloadStrategy(0.75)).toBe(DeloadStrategy.NORMAL);
-    expect(computeDeloadStrategy(1.0)).toBe(DeloadStrategy.NORMAL);
-  });
-  it('adhérence 50-75 % → déload SHORTENED', () => {
-    expect(computeDeloadStrategy(0.5)).toBe(DeloadStrategy.SHORTENED);
-    expect(computeDeloadStrategy(0.6)).toBe(DeloadStrategy.SHORTENED);
-  });
-  it('adhérence < 50 % → pas de déload (NONE)', () => {
-    expect(computeDeloadStrategy(0.4)).toBe(DeloadStrategy.NONE);
-    expect(computeDeloadStrategy(0)).toBe(DeloadStrategy.NONE);
-  });
-});
-
-describe('Conv #22 — advanceWeek pose deload_strategy à l\'entrée sem 5', () => {
-  it('aucune session → adhérence 0 → NONE', () => {
+describe('advanceWeek — avancement du cycle', () => {
+  function stateInWeek(w: number) {
     const state = makeStateForGoals({
       sessions_per_week: 4,
       prios: [['pectoraux', MuscleObjective.HYPERTROPHIE]],
     });
-    state.current_cycle_plan = {
-      cycle_index: 1,
-      rationale: 'test',
-      days: Array.from({ length: 4 }).map((_, i) => ({
-        day_index: i,
-        label: `Jour ${i}`,
-        target_muscles_focus: [],
-        exercises: [],
-      })),
-      warnings: [],
-    };
-    state.current_week_in_cycle = 4;
-    advanceWeek(state);
+    state.current_week_in_cycle = w;
+    state.cycle_index = 1;
+    return state;
+  }
+
+  it('w=1..3 → w+1', () => {
+    const state = stateInWeek(2);
+    const ev = advanceWeek(state);
+    expect(state.current_week_in_cycle).toBe(3);
+    expect(ev).toBe('semaine_suivante_3');
+  });
+
+  it('w=4 → entrée en semaine 5 (deload_fin_de_cycle)', () => {
+    const state = stateInWeek(4);
+    const ev = advanceWeek(state);
     expect(state.current_week_in_cycle).toBe(5);
-    expect(state.deload_strategy).toBe(DeloadStrategy.NONE);
+    expect(ev).toBe('deload_fin_de_cycle');
   });
 
   it('semaine 5 → no-op : advanceWeek ne bascule plus le cycle', () => {
     // Conv A (plan 11) — branche w=5 retirée : la bascule de cycle passe
     // exclusivement par endOfCycle. À w=5, advanceWeek ne touche à rien.
-    const state = makeStateForGoals({
-      sessions_per_week: 4,
-      prios: [['pectoraux', MuscleObjective.HYPERTROPHIE]],
-    });
-    state.current_week_in_cycle = 5;
-    state.cycle_index = 1;
+    const state = stateInWeek(5);
     const ev = advanceWeek(state);
     expect(state.current_week_in_cycle).toBe(5);
     expect(state.cycle_index).toBe(1);
     expect(ev).toBe('semaine_5_stable');
-  });
-});
-
-describe('Conv #22 — targetVolume applique la stratégie de déload', () => {
-  function stateInWeek5(strategy: DeloadStrategy) {
-    const s = makeStateForGoals({
-      sessions_per_week: 4,
-      prios: [['pectoraux', MuscleObjective.HYPERTROPHIE]],
-    });
-    s.current_week_in_cycle = 5;
-    s.deload_strategy = strategy;
-    return s;
-  }
-
-  it('NORMAL : V cible = V_min × 0.5', () => {
-    const s = stateInWeek5(DeloadStrategy.NORMAL);
-    const vMin = s.volume_min['pectoraux']!;
-    expect(targetVolume(s, 'pectoraux')).toBeCloseTo(vMin * 0.5, 2);
-  });
-
-  it('SHORTENED : V cible = V_min × 0.7', () => {
-    const s = stateInWeek5(DeloadStrategy.SHORTENED);
-    const vMin = s.volume_min['pectoraux']!;
-    expect(targetVolume(s, 'pectoraux')).toBeCloseTo(vMin * SHORTENED_DELOAD_FACTOR, 2);
-  });
-
-  it('NONE : pas de déload, progression continue (≈ sem 5 progressive)', () => {
-    const s = stateInWeek5(DeloadStrategy.NONE);
-    const vMin = s.volume_min['pectoraux']!;
-    const vMax = s.volume_max['pectoraux']!;
-    const v = targetVolume(s, 'pectoraux');
-    expect(v).toBeGreaterThan(vMin * 0.5); // pas un déload
-    expect(v).toBeLessThanOrEqual(vMax);
-  });
-});
-
-describe('Conv #22 — computeCycleAdherence', () => {
-  it('plan inexistant → 0', () => {
-    const s = makeStateForGoals({
-      sessions_per_week: 4,
-      prios: [['pectoraux', MuscleObjective.HYPERTROPHIE]],
-    });
-    expect(computeCycleAdherence(s)).toBe(0);
-  });
-
-  it('compte sessions cycle courant, week 1-4 seulement', () => {
-    const s = makeStateForGoals({
-      sessions_per_week: 4,
-      prios: [['pectoraux', MuscleObjective.HYPERTROPHIE]],
-    });
-    s.current_cycle_plan = {
-      cycle_index: 1,
-      rationale: 't',
-      days: Array.from({ length: 4 }).map((_, i) => ({
-        day_index: i,
-        label: `J${i}`,
-        target_muscles_focus: [],
-        exercises: [],
-      })),
-      warnings: [],
-    };
-    // 8 séances sur 16 = 0.5
-    for (let i = 0; i < 8; i += 1) {
-      s.history.push({
-        seance_date: `2026-01-0${1 + i}`,
-        week_in_cycle: 1 + (i % 4),
-        cycle_index: 1,
-        rpe_target: 8,
-        sets: [],
-        label: 'x',
-      });
-    }
-    expect(computeCycleAdherence(s)).toBeCloseTo(0.5, 2);
-    expect(computeDeloadStrategy(computeCycleAdherence(s))).toBe(DeloadStrategy.SHORTENED);
   });
 });
 

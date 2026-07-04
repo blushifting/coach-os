@@ -186,13 +186,24 @@ describe('exos sans charge externe additive', () => {
 });
 
 describe('déload (semaine 5) — charge allégée d’un facteur', () => {
-  it('charge = plancher × 0,9 arrondie', () => {
+  it('déload actif → charge = plancher × 0,9 arrondie', () => {
+    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    s.prescribed_load_floor[BENCH] = 50;
+    const pres = buildPrescription(catalog.get(BENCH), 100, s.profile, 5, {
+      muscleGoals: s.muscle_goals,
+      state: s,
+      deloadActive: true,
+    });
+    expect(pres.load_kg).toBe(45);
+  });
+
+  it('semaine 5 REFUSÉE (déload non actif) → charge = plancher (pas de ×0,9)', () => {
     const s = stateFor(MuscleObjective.HYPERTROPHIE);
     s.prescribed_load_floor[BENCH] = 50;
     const pres = buildPrescription(catalog.get(BENCH), 100, s.profile, 5, {
       muscleGoals: s.muscle_goals,
       state: s,
     });
-    expect(pres.load_kg).toBe(45);
+    expect(pres.load_kg).toBe(50);
   });
 });

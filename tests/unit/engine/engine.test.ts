@@ -72,7 +72,7 @@ describe('Engine e2e', () => {
         recordFeedback(state, catalog, sf);
         curDate = addDays(curDate, 1);
       }
-      endOfWeek(state, catalog);
+      endOfWeek(state);
     }
 
     expect([1, 5]).toContain(state.current_week_in_cycle);
@@ -95,7 +95,7 @@ describe('Engine e2e', () => {
         recordFeedback(state, catalog, sf);
         curDate = addDays(curDate, 1);
       }
-      endOfWeek(state, catalog);
+      endOfWeek(state);
     }
 
     endOfCycle(state, catalog);
@@ -230,7 +230,7 @@ describe('weekly_volume_debt', () => {
     state.current_cycle_plan = autoGenerateCyclePlanV3(state, catalog);
     state.weekly_volume_debt = { pectoraux: 4, biceps: 2 };
 
-    endOfWeek(state, catalog);
+    endOfWeek(state);
 
     expect(state.weekly_volume_debt).toEqual({});
   });

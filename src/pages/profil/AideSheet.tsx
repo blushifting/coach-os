@@ -50,7 +50,7 @@ const TUTORIALS: readonly Tutorial[] = [
     id: 'cycle',
     title: 'Comprendre le cycle 4+1',
     body:
-      'Un cycle = 4 semaines de montée progressive + 1 semaine de récupération. ' +
+      'Un cycle = 4 semaines de progression en intensité (le volume reste fixe) + 1 semaine où Kotsh peut proposer une récupération. ' +
       'À la fin du cycle, Kotsh te propose un bilan : muscles qui ont progressé, ' +
       "ceux qui ont plafonné, et te suggère de continuer ou d'ajuster tes " +
       'objectifs.',
@@ -125,7 +125,7 @@ const FAQ: readonly FaqItem[] = [
       "MEV/MAV/MRV). Sur 4 semaines de montée progressive en intensité, " +
       "la fatigue résiduelle s'accumule et finit par masquer les gains. Une semaine " +
       "à ~50 % du volume habituel laisse la récupération rattraper, et tu repars " +
-      "frais pour le cycle suivant — souvent avec un Plafond plus haut.",
+      "frais pour le cycle suivant — souvent avec un Plafond plus haut. Kotsh ne te l'impose plus — il te la propose seulement si tu as bien suivi tes séances, et tu choisis de l'accepter ou de continuer.",
   },
   {
     id: 'plafond-baisse',

@@ -14,7 +14,6 @@ import {
   weekKeyFor,
   weekStartFor,
   isCycleFinished,
-  isDeloadWeek,
   nextCycleReviewDate,
   computeCycleTimeProgress,
   parseDateKey,
@@ -62,13 +61,10 @@ function makeState(overrides: Partial<UserState> = {}): UserState {
     volume_max: {},
     current_week_in_cycle: 1,
     cycle_index: 1,
-    plateau_counter: {},
     history: [],
     last_used_for_muscle: {},
     muscle_goals: {},
     current_cycle_plan: null,
-    recovery_mode: false,
-    recovery_weeks_remaining: 0,
     equipment_overrides: {},
     weekly_volume_debt: {},
     prescribed_load_floor: {},
@@ -303,17 +299,8 @@ describe('computeWeekSessions', () => {
 });
 
 // =============================================================================
-// isDeloadWeek / nextCycleReviewDate / isCycleFinished
+// nextCycleReviewDate / isCycleFinished
 // =============================================================================
-
-describe('isDeloadWeek', () => {
-  it('vrai en S5, faux ailleurs', () => {
-    expect(isDeloadWeek(1)).toBe(false);
-    expect(isDeloadWeek(4)).toBe(false);
-    expect(isDeloadWeek(5)).toBe(true);
-    expect(isDeloadWeek(6)).toBe(false);
-  });
-});
 
 describe('nextCycleReviewDate', () => {
   it('null si pas de cycle correspondant', () => {
@@ -496,14 +483,14 @@ describe('buildCalendarMatrix', () => {
     expect(m!.weeks[0]![4]!.status).toBe('free-future'); // vendredi
   });
 
-  it('marque isDeload sur les 7 cases de la semaine 5', () => {
+  it('les 7 cases de la semaine 5 portent weekInCycle=5', () => {
     const state = makeState({ cycle_index: 1 });
     const cycles: CycleRow[] = [
       { cycle_index: 1, start_date: '2026-05-11', end_date: null, review: null },
     ];
     const m = buildCalendarMatrix(state, cycles, [], [], parseDateKey('2026-05-13'));
-    expect(m!.weeks[4]!.every((c) => c.isDeload)).toBe(true);
-    expect(m!.weeks[0]!.every((c) => !c.isDeload)).toBe(true);
+    expect(m!.weeks[4]!.every((c) => c.weekInCycle === 5)).toBe(true);
+    expect(m!.weeks[0]!.every((c) => c.weekInCycle === 1)).toBe(true);
   });
 
   it('marque isToday sur la bonne case', () => {

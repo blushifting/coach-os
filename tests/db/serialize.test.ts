@@ -17,7 +17,7 @@ describe('serialize.ts — round-trip UserState ↔ SerializedUserState', () => 
     expect(restored.profile.bodyweight_kg).toBe(state.profile.bodyweight_kg);
     expect(restored.cycle_index).toBe(state.cycle_index);
     expect(restored.current_week_in_cycle).toBe(state.current_week_in_cycle);
-    expect(restored.recovery_mode).toBe(state.recovery_mode);
+    expect(restored.deload_decision ?? null).toBe(state.deload_decision ?? null);
   });
 
   it('convertit Profile.available_equip Set ↔ string[] sans perte', () => {

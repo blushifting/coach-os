@@ -211,10 +211,6 @@ export function computeCycleTimeProgress(
   return { daysTotal, daysElapsed, daysLeft, pct };
 }
 
-export function isDeloadWeek(weekInCycle: number): boolean {
-  return weekInCycle === DELOAD_WEEK_INDEX;
-}
-
 export function plannedSessionsForCycle(plan: WeeklyTemplate | null): number {
   if (plan === null) return 0;
   return plan.days.length * CYCLE_LENGTH_WEEKS;
@@ -240,7 +236,6 @@ export interface CalendarDay {
   readonly dayOfWeek: number; // 0 = lun, 6 = dim
   readonly status: DayStatus;
   readonly isToday: boolean;
-  readonly isDeload: boolean;
   readonly sessionLabel: string | null;
   readonly sessionId: number | null;
 }
@@ -334,7 +329,6 @@ export function buildCalendarMatrix(
         dayOfWeek: (date.getDay() + 6) % 7,
         status,
         isToday: key === todayKey,
-        isDeload: w + 1 === DELOAD_WEEK_INDEX,
         sessionLabel,
         sessionId,
       });

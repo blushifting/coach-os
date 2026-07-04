@@ -18,7 +18,6 @@ import {
   advanceWeek,
   cycleAdherence,
   initialVolumeBounds,
-  targetVolume,
 } from '@/engine/volume';
 
 import { startUserStub } from './_helpers';
@@ -66,22 +65,6 @@ describe('initialVolumeBounds', () => {
 });
 
 // =============================================================================
-// targetVolume — progression hebdo legacy
-// =============================================================================
-
-describe('targetVolume (legacy)', () => {
-  it('5 semaines : 10, 12, 14, 16, 5 (déload)', () => {
-    const state = startUserStub(profile());
-    const seq: number[] = [];
-    for (const w of [1, 2, 3, 4, 5]) {
-      state.current_week_in_cycle = w;
-      seq.push(targetVolume(state, 'pectoraux'));
-    }
-    expect(seq).toEqual([10, 12, 14, 16, 5]);
-  });
-});
-
-// =============================================================================
 // advanceWeek
 // =============================================================================
 
@@ -115,13 +98,12 @@ describe('advanceWeek', () => {
     expect(ev).toBe('semaine_5_stable');
   });
 
-  it('plateau détecté → déload anticipé', () => {
+  it('w=4 → entrée en semaine 5 (deload_fin_de_cycle), sans stratégie', () => {
     const state = startUserStub(profile());
-    state.current_week_in_cycle = 2;
-    state.plateau_counter['pectoraux'] = 2;
-    const ev = advanceWeek(state, true);
+    state.current_week_in_cycle = 4;
+    const ev = advanceWeek(state);
     expect(state.current_week_in_cycle).toBe(5);
-    expect(ev).toContain('plateau');
+    expect(ev).toBe('deload_fin_de_cycle');
   });
 });
 

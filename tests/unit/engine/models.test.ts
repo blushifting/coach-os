@@ -219,8 +219,7 @@ describe('UserState', () => {
     const state = makeUserState(buildProfile());
     expect(state.muscle_goals).toEqual({});
     expect(state.current_cycle_plan).toBeNull();
-    expect(state.recovery_mode).toBe(false);
-    expect(state.recovery_weeks_remaining).toBe(0);
+    expect(state.deload_decision ?? null).toBeNull();
     expect(state.equipment_overrides).toEqual({});
   });
 
@@ -235,12 +234,11 @@ describe('UserState', () => {
     expect(state.muscle_goals['pectoraux']!.priority_rank).toBe(1);
   });
 
-  it('mode recovery activable', () => {
+  it('déload opt-in : deload_decision par défaut null, modifiable', () => {
     const state = makeUserState(buildProfile());
-    state.recovery_mode = true;
-    state.recovery_weeks_remaining = 2;
-    expect(state.recovery_mode).toBe(true);
-    expect(state.recovery_weeks_remaining).toBe(2);
+    expect(state.deload_decision ?? null).toBeNull();
+    state.deload_decision = 'accepted';
+    expect(state.deload_decision).toBe('accepted');
   });
 
   it('equipment_overrides indexable par exo', () => {

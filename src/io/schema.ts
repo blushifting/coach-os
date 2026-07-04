@@ -65,7 +65,9 @@ const userStateSchema = z
     volume_max: recordOfNumber,
     current_week_in_cycle: z.number().int().min(1).max(5),
     cycle_index: z.number().int().min(1),
-    plateau_counter: recordOfNumber,
+    // Chantier B — plateau désormais purement indicatif : champ toléré
+    // (optionnel) pour accepter les anciens exports, mais ignoré à l'import.
+    plateau_counter: recordOfNumber.optional(),
     history: z.array(z.object({}).passthrough()),
     last_used_for_muscle: recordOfString,
     muscle_goals: z.record(z.string(), muscleGoalSchema),
@@ -75,8 +77,10 @@ const userStateSchema = z
     active_guided_program_id: z.union([z.null(), z.string()]).optional(),
     // Bloc O — optionnel pour rétrocompat exports antérieurs.
     build_mode: z.enum(['auto', 'manual']).optional(),
-    recovery_mode: z.boolean(),
-    recovery_weeks_remaining: z.number().int().min(0),
+    // Chantier B — recovery mode supprimé : champs tolérés (optionnels) pour
+    // accepter les anciens exports, mais ignorés à l'import.
+    recovery_mode: z.boolean().optional(),
+    recovery_weeks_remaining: z.number().int().min(0).optional(),
     equipment_overrides: z.record(
       z.string(),
       z
@@ -98,7 +102,10 @@ const userStateSchema = z
     favorite_exercise_per_pattern: recordOfString.optional(),
     favorite_exercise_ids: z.array(z.string()).optional(),
     exercise_pick_counts: recordOfNumber.optional(),
+    // Chantier B — deload_strategy remplacé par deload_decision. L'ancien champ
+    // reste toléré (optionnel, ignoré) pour accepter les exports antérieurs.
     deload_strategy: z.union([z.null(), z.string()]).optional(),
+    deload_decision: z.enum(['accepted', 'declined']).nullable().optional(),
   })
   .strict();
 

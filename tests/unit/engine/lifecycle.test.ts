@@ -5,13 +5,9 @@
 import { describe, expect, it } from 'vitest';
 import { Catalog } from '@/engine/catalog';
 import {
-  RECOVERY_RPE_CAP,
   adjustVolumeBoundsAtCycleEnd,
   applyUserActionAfterCycle,
-  decrementRecoveryWeek,
-  enterRecoveryMode,
   generateCycleReview,
-  maybeExitRecoveryMode,
   suggestNextAction,
 } from '@/engine/lifecycle';
 import {
@@ -157,42 +153,6 @@ describe('adjustVolumeBoundsAtCycleEnd', () => {
 });
 
 // =============================================================================
-// 4. Recovery mode
-// =============================================================================
-
-describe('Recovery mode', () => {
-  it('enterRecoveryMode active le flag', () => {
-    const state = stateWithPlan();
-    enterRecoveryMode(state, 2);
-    expect(state.recovery_mode).toBe(true);
-    expect(state.recovery_weeks_remaining).toBe(2);
-  });
-
-  it('decrementRecoveryWeek décrémente', () => {
-    const state = stateWithPlan();
-    enterRecoveryMode(state, 2);
-    decrementRecoveryWeek(state);
-    expect(state.recovery_weeks_remaining).toBe(1);
-    expect(state.recovery_mode).toBe(true);
-  });
-
-  it('decrementRecoveryWeek sort à 0', () => {
-    const state = stateWithPlan();
-    enterRecoveryMode(state, 1);
-    decrementRecoveryWeek(state);
-    expect(state.recovery_weeks_remaining).toBe(0);
-    expect(state.recovery_mode).toBe(false);
-  });
-
-  it('maybeExit ne sort pas si remaining > 0', () => {
-    const state = stateWithPlan();
-    enterRecoveryMode(state, 2);
-    expect(maybeExitRecoveryMode(state)).toBe(false);
-    expect(state.recovery_mode).toBe(true);
-  });
-});
-
-// =============================================================================
 // 5. applyUserActionAfterCycle
 // =============================================================================
 
@@ -241,17 +201,6 @@ describe('generateSession', () => {
     const state = startUser(p, catalog);
     expect(state.current_cycle_plan).toBeNull();
     expect(() => generateSession(state, catalog, 0, '2026-01-05')).toThrow();
-  });
-
-  it('en recovery_mode, RPE cible ≤ 7', () => {
-    const state = stateWithPlan();
-    enterRecoveryMode(state, 2);
-    const plan = generateSession(state, catalog, 0, '2026-01-05');
-    for (const item of plan.items) {
-      for (const s of item.sets) {
-        expect(s.rpe_target).toBeLessThanOrEqual(RECOVERY_RPE_CAP + 0.001);
-      }
-    }
   });
 });
 

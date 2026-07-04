@@ -4,6 +4,7 @@ import { Card } from '@/components/Card';
 import { ChevronRight } from '@/components/icons';
 import { useCoachOsStore } from '@/store';
 import { useDemoMode } from '@/store/selectors';
+import { useEngine } from '@/hooks/useEngine';
 import { parseDateKey } from '@/lib/dashboard';
 import {
   buildCalendarMatrix,
@@ -11,11 +12,14 @@ import {
   computeCycleTimeProgress,
   computeStreak,
   computeWeekSessions,
+  DELOAD_WEEK_INDEX,
   isCycleFinished,
   nextCycleReviewDate,
   type CalendarDay,
 } from '@/lib/dashboard';
+import { cycleAdherence, PROPOSE_DELOAD_MIN_ADHERENCE } from '@/engine/volume';
 import { CondensedCalendar } from './CondensedCalendar';
+import { DeloadProposalSheet } from './DeloadProposalSheet';
 import { PlanDaySheet } from './PlanDaySheet';
 import { WelcomeBanner } from './WelcomeBanner';
 import { Widgets } from './Widgets';
@@ -36,7 +40,9 @@ export default function ProgrammePage() {
   const currentSessionPlan = useCoachOsStore((s) => s.currentSessionPlan);
   const currentSessionId = useCoachOsStore((s) => s.currentSessionId);
   const navigate = useNavigate();
+  const engine = useEngine();
   const [openDay, setOpenDay] = useState<CalendarDay | null>(null);
+  const [deloadPromptDay, setDeloadPromptDay] = useState<CalendarDay | null>(null);
 
   // Conv #15 vague 2 — si l'utilisateur clique sur la case du jour ET qu'une
   // séance est déjà en cours pour cette date, on saute la sheet "Démarrer"
@@ -51,7 +57,30 @@ export default function ProgrammePage() {
       navigate('/seance/runner');
       return;
     }
+    // Chantier B — proposition de récupération (déload opt-in). À la 1re fois
+    // qu'on engage un jour en semaine 5 sans décision prise : si l'assiduité
+    // S1-4 est haute (fatigue accumulée), on propose ; sinon on décline en
+    // silence. La décision est persistée AVANT toute génération de séance.
+    if (
+      !demoActive &&
+      userState !== null &&
+      userState.current_week_in_cycle === DELOAD_WEEK_INDEX &&
+      (userState.deload_decision ?? null) === null
+    ) {
+      if (cycleAdherence(userState, 4) >= PROPOSE_DELOAD_MIN_ADHERENCE) {
+        setDeloadPromptDay(day);
+        return;
+      }
+      void engine.setDeloadDecision('declined');
+    }
     setOpenDay(day);
+  }
+
+  async function handleDeloadChoice(decision: 'accepted' | 'declined') {
+    const day = deloadPromptDay;
+    setDeloadPromptDay(null);
+    await engine.setDeloadDecision(decision);
+    if (day !== null) setOpenDay(day);
   }
 
   const dashboard = useMemo(() => {
@@ -143,6 +172,13 @@ export default function ProgrammePage() {
         day={openDay}
         cyclePlan={userState.current_cycle_plan}
         onClose={() => setOpenDay(null)}
+      />
+
+      <DeloadProposalSheet
+        open={deloadPromptDay !== null}
+        onAccept={() => void handleDeloadChoice('accepted')}
+        onDecline={() => void handleDeloadChoice('declined')}
+        onClose={() => setDeloadPromptDay(null)}
       />
     </section>
   );

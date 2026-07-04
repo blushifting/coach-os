@@ -88,23 +88,6 @@
     },
     "current_week_in_cycle": 4,
     "cycle_index": 2,
-    "plateau_counter": {
-      "pectoraux": 0,
-      "dos_largeur": 0,
-      "dos_epaisseur": 0,
-      "trapezes_hauts": 0,
-      "quadriceps": 0,
-      "ischios": 0,
-      "fessiers": 0,
-      "mollets": 0,
-      "deltos_lateraux": 0,
-      "deltos_posterieurs": 0,
-      "biceps": 0,
-      "triceps": 0,
-      "abdos": 0,
-      "obliques": 0,
-      "lombaires": 0
-    },
     "history": [
       {
         "seance_date": "2026-03-23",
@@ -2531,10 +2514,9 @@
       ],
       "warnings": []
     },
-    "recovery_mode": false,
-    "recovery_weeks_remaining": 0,
     "equipment_overrides": {},
-    "weekly_volume_debt": {}
+    "weekly_volume_debt": {},
+    "deload_decision": null
   },
   "history": {
     "sessions": [

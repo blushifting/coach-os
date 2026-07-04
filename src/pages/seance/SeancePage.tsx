@@ -12,6 +12,7 @@ import {
   type SessionSummaryData,
 } from '@/lib/session-runner';
 import { e1rmConfidenceFor } from '@/lib/calibration-status';
+import { DELOAD_WEEK_IN_CYCLE } from '@/engine/volume';
 import { ChevronLeft } from '@/components/icons';
 import { SessionRunner } from './SessionRunner';
 import { SessionSummary } from './SessionSummary';
@@ -51,6 +52,7 @@ export default function SeancePage() {
     label: string;
     customName?: string | null;
     data: SessionSummaryData;
+    deloadActive?: boolean;
   } | null>(null);
 
   // Source de vérité : store. Si le store n'a pas encore d'entries (1er render
@@ -218,6 +220,7 @@ export default function SeancePage() {
             customName={summary.customName}
             data={summary.data}
             catalog={catalog}
+            deloadActive={summary.deloadActive}
             onClose={() => setSummary(null)}
           />
         </main>
@@ -292,7 +295,18 @@ export default function SeancePage() {
                 previousFeedbacks,
                 previouslyCalibrated,
               );
-              setSummary({ label: fb.label, customName: fb.custom_name, data });
+              // Chantier B — la séance vient d'être jouée en récupération
+              // effective (semaine 5 + déload accepté) : le bilan l'explique
+              // au lieu du message « aucune série assez intense ».
+              const deloadActive =
+                fb.week_in_cycle === DELOAD_WEEK_IN_CYCLE &&
+                userState?.deload_decision === 'accepted';
+              setSummary({
+                label: fb.label,
+                customName: fb.custom_name,
+                data,
+                deloadActive,
+              });
             } finally {
               setFinishing(false);
             }
