@@ -27,6 +27,7 @@ export const HELP_GLOSSARY: Readonly<Record<HelpTopic, HelpEntry>> = {
       "Charge max estimée pour 1 répétition sur un exo donné — aussi appelée 1RM ou e1RM dans le jargon muscu. " +
       "Calculée automatiquement par Kotsh à partir de tes meilleures séries (formule d'Epley étendue) : " +
       "pas besoin de tester un vrai 1RM à chaque fois, c'est plus sûr et tout aussi précis. " +
+      "Sur les exos au poids du corps (tractions, dips…), le plafond inclut ton poids de corps, pas juste la charge ajoutée. " +
       "Le plafond se met à jour à chaque séance et sert à calculer tes charges de travail.",
   },
   reserve: {

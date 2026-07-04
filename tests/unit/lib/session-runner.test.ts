@@ -216,6 +216,10 @@ describe('buildSessionFeedback', () => {
 // computeSessionVolume / computeSessionSummary
 // =============================================================================
 
+// 'a'/'b'/'bench_press'/'shoulder_press'/'squat'/'curl' n'existent pas dans le
+// catalog réel (`catalog`, déclaré plus bas dans ce fichier, cf. Calibration
+// intra-séance) → fallback load_kg brut (identité), résultats inchangés par
+// la charge totale (Chantier C) sauf mention contraire.
 describe('computeSessionVolume', () => {
   it('Σ reps × load', () => {
     const fb: SessionFeedback = {
@@ -230,7 +234,21 @@ describe('computeSessionVolume', () => {
         { exercise_id: 'b', reps_done: 8, load_kg: 40, rpe_perceived: 8 },
       ],
     };
-    expect(computeSessionVolume(fb)).toBe(5 * 80 + 5 * 80 + 8 * 40); // 1120
+    expect(computeSessionVolume(fb, catalog, 80)).toBe(5 * 80 + 5 * 80 + 8 * 40); // 1120
+  });
+
+  // Chantier C (plan 11) — exo bodyweight_loaded réel du catalog : le volume
+  // doit inclure le poids du corps, pas seulement le lest.
+  it('bodyweight_loaded : volume en charge totale (lest + poids du corps)', () => {
+    const fb: SessionFeedback = {
+      seance_date: '2026-05-13',
+      week_in_cycle: 1,
+      cycle_index: 1,
+      rpe_target: 8,
+      label: 'Pull',
+      sets: [{ exercise_id: 'pullup', reps_done: 5, load_kg: 10, rpe_perceived: 8 }],
+    };
+    expect(computeSessionVolume(fb, catalog, 80)).toBe(5 * (10 + 80));
   });
 });
 
@@ -246,7 +264,7 @@ describe('computeSessionSummary', () => {
 
   it('volume du jour, pas de comparaison si pas d\'historique', () => {
     const summary: RecordFeedbackResult = {};
-    const r = computeSessionSummary(fb, summary, []);
+    const r = computeSessionSummary(fb, summary, [], catalog, 80);
     expect(r.volumeKgToday).toBe(400);
     expect(r.volumeKgLastSameLabel).toBeNull();
     expect(r.volumeDeltaPct).toBeNull();
@@ -256,7 +274,7 @@ describe('computeSessionSummary', () => {
     const prev = makeFeedbackRow('Push', 1, 1, [
       { exercise_id: 'bench_press', reps_done: 5, load_kg: 70 },
     ]);
-    const r = computeSessionSummary(fb, {}, [prev]);
+    const r = computeSessionSummary(fb, {}, [prev], catalog, 80);
     expect(r.volumeKgLastSameLabel).toBe(350);
     expect(r.volumeDeltaPct).toBeCloseTo(((400 - 350) / 350) * 100, 1);
   });
@@ -268,7 +286,7 @@ describe('computeSessionSummary', () => {
     const otherLabel = makeFeedbackRow('Pull', 1, 1, [
       { exercise_id: 'b', reps_done: 10, load_kg: 100 },
     ]);
-    const r = computeSessionSummary(fb, {}, [sameWeek, otherLabel]);
+    const r = computeSessionSummary(fb, {}, [sameWeek, otherLabel], catalog, 80);
     expect(r.volumeKgLastSameLabel).toBeNull();
   });
 
@@ -282,7 +300,7 @@ describe('computeSessionSummary', () => {
     // Sans ce set, ils seraient classés en "première calibration" et n'iraient
     // pas dans `prs`.
     const calibrated = new Set(['bench_press', 'shoulder_press', 'curl']);
-    const r = computeSessionSummary(fb, summary, [], calibrated);
+    const r = computeSessionSummary(fb, summary, [], catalog, 80, calibrated);
     expect(r.prs).toHaveLength(1);
     expect(r.prs[0]!.exerciseId).toBe('bench_press');
     expect(r.prs[0]!.deltaKg).toBeCloseTo(1.5, 2);
@@ -296,7 +314,7 @@ describe('computeSessionSummary', () => {
       pullup: { old: 60, next: 70, definitive: true }, // 1re calibration
     };
     const calibrated = new Set(['bench_press', 'shoulder_press', 'squat']);
-    const r = computeSessionSummary(fb, summary, [], calibrated);
+    const r = computeSessionSummary(fb, summary, [], catalog, 80, calibrated);
     expect(r.plafondChanges).toHaveLength(4);
     const byId = new Map(r.plafondChanges.map((c) => [c.exerciseId, c]));
     expect(byId.get('pullup')!.oldE).toBeNull();

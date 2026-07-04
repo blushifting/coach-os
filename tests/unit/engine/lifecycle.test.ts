@@ -24,6 +24,7 @@ import {
   makeMuscleGoal,
 } from '@/engine/models';
 import type { Profile, SessionFeedback, UserState } from '@/engine/models';
+import { e1rmObserved, effectiveLoadForE1rm } from '@/engine/prescription';
 import { profile } from './_helpers';
 
 const catalog = new Catalog();
@@ -57,9 +58,9 @@ describe('suggestNextAction', () => {
     );
   });
 
-  it('cycle réussi → TOURNER_EMPHASIS', () => {
+  it('cycle réussi → CONTINUER_PAREIL (TOURNER_EMPHASIS retiré, Chantier C)', () => {
     expect(suggestNextAction(['pec', 'dos', 'quad'], [], [], 0.9)).toBe(
-      SuggestedAction.TOURNER_EMPHASIS,
+      SuggestedAction.CONTINUER_PAREIL,
     );
   });
 
@@ -107,6 +108,62 @@ describe('generateCycleReview', () => {
     const review = generateCycleReview(state, catalog);
     expect(review.adherence_pct).toBeGreaterThan(0);
     expect(review.volume_total_kg).toBeGreaterThan(0);
+  });
+
+  // Chantier C (plan 11) — Δ plafonds en charge TOTALE (poids du corps
+  // compris) pour les exos bodyweight_loaded, pas en charge externe brute.
+  it('traction lestée : Δ plafond calculé en charge totale (bw + lest)', () => {
+    const state = stateWithPlan();
+    const bw = state.profile.bodyweight_kg;
+    const pullup = catalog.get('pullup');
+    const lestKg = 10;
+    const sf: SessionFeedback = {
+      seance_date: '2026-01-05',
+      week_in_cycle: 1,
+      cycle_index: state.cycle_index,
+      rpe_target: 8,
+      sets: [{ exercise_id: 'pullup', reps_done: 5, load_kg: lestKg, rpe_perceived: 8 }],
+      label: '',
+    };
+    state.history.push(sf);
+    // e1rm stocké par le moteur = charge TOTALE (cf. engine.ts `effectiveLoadForE1rm`).
+    const currentTotal = bw + 20;
+    state.e1rm['pullup'] = currentTotal;
+
+    const review = generateCycleReview(state, catalog);
+
+    const baselineTotal = e1rmObserved(
+      effectiveLoadForE1rm(lestKg, pullup, bw),
+      5,
+      8,
+    );
+    expect(review.plafonds_progression['pullup']).toBeCloseTo(
+      currentTotal - baselineTotal,
+      6,
+    );
+    // Preuve que le calcul n'utilise plus le `load_kg` brut (bug d'origine) :
+    // avec load_kg brut, la baseline serait ~8× plus petite (10 kg vs 90 kg).
+    const buggyBaseline = e1rmObserved(lestKg, 5, 8);
+    expect(review.plafonds_progression['pullup']).not.toBeCloseTo(
+      currentTotal - buggyBaseline,
+      0,
+    );
+  });
+
+  it('volume_total_kg en charge totale (poids du corps compris)', () => {
+    const state = stateWithPlan();
+    const bw = state.profile.bodyweight_kg;
+    const sf: SessionFeedback = {
+      seance_date: '2026-01-05',
+      week_in_cycle: 1,
+      cycle_index: state.cycle_index,
+      rpe_target: 8,
+      sets: [{ exercise_id: 'pullup', reps_done: 5, load_kg: 10, rpe_perceived: 8 }],
+      label: '',
+    };
+    state.history.push(sf);
+    const review = generateCycleReview(state, catalog);
+    expect(review.volume_total_kg).toBeCloseTo(5 * (10 + bw), 6);
   });
 });
 
@@ -164,15 +221,6 @@ describe('applyUserActionAfterCycle', () => {
     expect(state.cycle_index).toBe(cycleAvant + 1);
     expect(state.current_week_in_cycle).toBe(1);
     expect(state.current_cycle_plan).not.toBeNull();
-  });
-
-  it('TOURNER → permute pec ↔ dos_largeur', () => {
-    const state = stateWithPlan();
-    const rPec = state.muscle_goals['pectoraux']!.priority_rank;
-    const rDos = state.muscle_goals['dos_largeur']!.priority_rank;
-    applyUserActionAfterCycle(state, catalog, SuggestedAction.TOURNER_EMPHASIS);
-    expect(state.muscle_goals['pectoraux']!.priority_rank).toBe(rDos);
-    expect(state.muscle_goals['dos_largeur']!.priority_rank).toBe(rPec);
   });
 
   it('AJUSTER → pas de regen automatique', () => {

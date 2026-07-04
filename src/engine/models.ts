@@ -145,7 +145,6 @@ export enum ProgressionRule {
 export enum SuggestedAction {
   CONTINUER_PAREIL = 'continuer',
   AJUSTER_OBJECTIFS = 'ajuster',
-  TOURNER_EMPHASIS = 'tourner',
 }
 
 export enum Pattern {

@@ -277,7 +277,7 @@ export default function SeancePage() {
           finishing={finishing}
           onFinish={async () => {
             const fb = buildSessionFeedback(currentSessionPlan, entries);
-            if (fb === null) return;
+            if (fb === null || catalog === null) return;
             setFinishing(true);
             try {
               const previousFeedbacks = feedbacks;
@@ -293,6 +293,8 @@ export default function SeancePage() {
                 fb,
                 result,
                 previousFeedbacks,
+                catalog,
+                userState.profile.bodyweight_kg,
                 previouslyCalibrated,
               );
               // Chantier B — la séance vient d'être jouée en récupération

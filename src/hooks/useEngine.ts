@@ -31,7 +31,6 @@ import {
   autoGenerateCyclePlanV3,
   generateCyclePlanV3,
   mergeEquivalentExercisesInPlan,
-  rotateEmphasis,
 } from '@/engine/cycle_planner';
 import { carryOverManualPlan } from '@/lib/manual-plan';
 import {
@@ -1323,7 +1322,6 @@ export async function importDataFromJson(json: string): Promise<void> {
  *      (`engine.endOfCycle`).
  *   2. Applique les changements liés à `args.action` :
  *      - `AJUSTER_OBJECTIFS` : remplace `muscle_goals` (R1-R4 par-dessus).
- *      - `TOURNER_EMPHASIS` : permute les emphasis sur les priorités.
  *      - `CONTINUER_PAREIL` (défaut) : rien à modifier.
  *   3. Bump `cycle_index += 1`, reset `current_week_in_cycle = 1`,
  *      remet `deload_decision` à null.
@@ -1342,7 +1340,6 @@ export async function endOfCycle(args: EndOfCycleArgs = {}) {
   if (before === null) throw new Error('userState non initialisé');
   const closedCycleIndex = before.cycle_index;
   const next = cloneState(before);
-  const action = args.action ?? SuggestedAction.CONTINUER_PAREIL;
 
   // 1. Bilan + ajustement V_min/V_max sur le cycle qui se ferme.
   const review = engine.endOfCycle(next, catalog);
@@ -1400,10 +1397,6 @@ export async function endOfCycle(args: EndOfCycleArgs = {}) {
   if (args.nextBuildMode !== undefined) {
     next.build_mode = args.nextBuildMode;
   }
-  if (action === SuggestedAction.TOURNER_EMPHASIS) {
-    rotateEmphasis(next.muscle_goals);
-  }
-
   // 3. Bump cycle_index + reset state hebdo. On bump explicitement à
   //    `closedCycleIndex+1` (plutôt que `+= 1`) : la bascule de cycle passe
   //    exclusivement par ici — `advanceWeek` ne touche plus jamais au

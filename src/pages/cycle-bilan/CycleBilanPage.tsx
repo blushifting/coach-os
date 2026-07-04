@@ -57,8 +57,8 @@ export default function CycleBilanPage() {
       {review === null ? (
         <Card data-testid="bilan-empty">
           <p className="text-sm text-anthracite-300">
-            Aucun bilan disponible. Termine un cycle complet pour voir s'afficher
-            tes Plafonds, tes records et ton assiduité.
+            Aucun bilan disponible. Termine un cycle complet pour voir ta
+            progression et ton assiduité s'afficher.
           </p>
           <div className="mt-3">
             <Link to="/programme">
@@ -90,10 +90,12 @@ export default function CycleBilanPage() {
 }
 
 function ReviewKeyMetrics({ review }: { review: CycleReview }) {
-  // Conv #11i — animation reveal-up staggered (cascade 0 / 80 / 160 ms).
+  // Conv #11i — animation reveal-up staggered (cascade 0 / 80 ms).
   // Conv #15-6 — HelpButton sur Adhérence (notion peu intuitive).
+  // Chantier C (plan 11) — tuile "Records" supprimée : la Progression sur
+  // le cycle (ReviewPlafonds ci-dessous) en tient lieu.
   return (
-    <Card data-testid="bilan-key-metrics" className="grid grid-cols-3 gap-3">
+    <Card data-testid="bilan-key-metrics" className="grid grid-cols-2 gap-3">
       <Metric
         label="Assiduité"
         helpTopic="adherence"
@@ -106,8 +108,6 @@ function ReviewKeyMetrics({ review }: { review: CycleReview }) {
         value={`${Math.round(review.volume_total_kg).toLocaleString('fr-FR')} kg`}
         delay={80}
       />
-      {/* Conv #15 vague 3 — "PR" → "Records" (terme FR explicite). */}
-      <Metric label="Records" value={`${review.PRs.length}`} delay={160} />
     </Card>
   );
 }
@@ -133,8 +133,7 @@ function Metric({
       style={{ animationDelay: `${delay}ms` }}
     >
       {/* Conv #18 — min-h-5 réserve la hauteur du HelpButton (h-5) sur tous
-          les labels, pour aligner les baselines de "Records" (sans HelpButton)
-          avec "Adhérence" et "Volume" (avec HelpButton). */}
+          les labels, pour aligner les baselines même sans HelpButton. */}
       <span className="flex min-h-5 items-center gap-1 text-xs uppercase tracking-wide text-anthracite-300">
         {label}
         {helpTopic && <HelpButton topic={helpTopic} label={`Aide : ${label}`} />}
@@ -159,16 +158,20 @@ function ReviewPlafonds({
   if (entries.length === 0) {
     return (
       <Card data-testid="bilan-plafonds">
-        <h2 className="mb-1 text-sm font-semibold text-white"><Concept topic="plafond">Plafonds</Concept></h2>
+        <h2 className="mb-1 text-sm font-semibold text-white">
+          Progression sur le cycle
+        </h2>
         <p className="text-xs text-anthracite-300">Aucune variation enregistrée.</p>
       </Card>
     );
   }
   return (
     <Card data-testid="bilan-plafonds" className="flex flex-col gap-2">
-      {/* Conv #15-5 — "Δ sur le cycle" → "Évolution sur le cycle" (mot FR). */}
+      {/* Chantier C (plan 11) — "Records" retiré du bilan : cette section de
+          deltas par exo (ex-"Évolution sur le cycle") devient LE bilan des
+          progressions. */}
       <h2 className="text-sm font-semibold text-white">
-        <Concept topic="plafond">Plafonds</Concept> — Évolution sur le cycle
+        Progression sur le cycle (<Concept topic="plafond">Plafonds</Concept>)
       </h2>
       <ul className="flex flex-col gap-1">
         {entries.slice(0, 6).map(([exId, delta], i) => {

@@ -16,7 +16,6 @@ import type {
 import type {
   DayTemplate,
   Exercise,
-  MuscleGoal,
   PlannedExercise,
   SkeletonTemplate,
   UserState,
@@ -26,7 +25,6 @@ import {
   EquipmentPreference,
   ExType,
   MuscleObjective,
-  MuscleStatus,
   chargesForPreference,
   exercisePrimaires,
   makePlannedExercise,
@@ -153,43 +151,7 @@ export function enforceLengthenedBias(
 }
 
 // =============================================================================
-// 7. Rotation d'emphasis (cf. 09 §8.4)
-// =============================================================================
-
-export const EMPHASIS_PAIRS: ReadonlyArray<readonly [string, string]> = [
-  ['pectoraux', 'dos_largeur'],
-  ['pectoraux', 'dos_epaisseur'],
-  ['quadriceps', 'ischios'],
-  ['biceps', 'triceps'],
-  ['deltos_lateraux', 'deltos_posterieurs'],
-];
-
-/**
- * Permute les rangs des PRIORITAIRES par paires antagonistes.
- * Modifie `muscleGoals` in-place ET le retourne.
- */
-export function rotateEmphasis(
-  muscleGoals: Record<string, MuscleGoal>,
-): Record<string, MuscleGoal> {
-  for (const [m1, m2] of EMPHASIS_PAIRS) {
-    const g1 = muscleGoals[m1];
-    const g2 = muscleGoals[m2];
-    if (
-      g1 &&
-      g2 &&
-      g1.status === MuscleStatus.PRIORITAIRE &&
-      g2.status === MuscleStatus.PRIORITAIRE
-    ) {
-      const tmp = g1.priority_rank;
-      g1.priority_rank = g2.priority_rank;
-      g2.priority_rank = tmp;
-    }
-  }
-  return muscleGoals;
-}
-
-// =============================================================================
-// 7.5 Fusion d'exercices équivalents (Conv #19)
+// 7. Fusion d'exercices équivalents (Conv #19)
 // =============================================================================
 
 /**

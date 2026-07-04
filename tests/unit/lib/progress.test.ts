@@ -43,13 +43,14 @@ import {
 function makeExercise(
   id: string,
   muscles: Record<string, number>,
+  charge: ChargeType = ChargeType.BARBELL,
 ): Exercise {
   return exerciseFromDict({
     id,
     nom_fr: `Exo ${id}`,
     pattern: Pattern.PUSH_H,
     type: ExType.COMPOUND,
-    charge: ChargeType.BARBELL,
+    charge,
     equip: [],
     uni: false,
     muscles,
@@ -477,7 +478,7 @@ describe('computeE1rmHistory', () => {
         { exercise_id: 'bp', reps_done: 5, load_kg: 80, rpe_perceived: 8 },
       ]),
     ];
-    expect(computeE1rmHistory(fbs, cat)).toEqual([]);
+    expect(computeE1rmHistory(fbs, cat, 75)).toEqual([]);
   });
 
   it('garde le max e1rm par date et trie chronologiquement', () => {
@@ -491,7 +492,7 @@ describe('computeE1rmHistory', () => {
         { exercise_id: 'bp', reps_done: 5, load_kg: 75, rpe_perceived: 8 },
       ]),
     ];
-    const series = computeE1rmHistory(fbs, cat);
+    const series = computeE1rmHistory(fbs, cat, 75);
     expect(series).toHaveLength(1);
     expect(series[0]!.exercise_id).toBe('bp');
     expect(series[0]!.points).toHaveLength(2);
@@ -511,7 +512,7 @@ describe('computeE1rmHistory', () => {
         { exercise_id: 'bp', reps_done: 5, load_kg: 85, rpe_perceived: 8 },
       ]),
     ];
-    const series = computeE1rmHistory(fbs, cat);
+    const series = computeE1rmHistory(fbs, cat, 75);
     expect(series).toHaveLength(1);
     expect(series[0]!.points).toHaveLength(2);
   });
@@ -525,7 +526,29 @@ describe('computeE1rmHistory', () => {
         { exercise_id: 'inconnu', reps_done: 5, load_kg: 55, rpe_perceived: 8 },
       ]),
     ];
-    expect(computeE1rmHistory(fbs, cat)).toEqual([]);
+    expect(computeE1rmHistory(fbs, cat, 75)).toEqual([]);
+  });
+
+  // Chantier C (plan 11) — charge TOTALE (poids du corps compris) pour les
+  // exos bodyweight_loaded, cohérente avec le Plafond de la fiche catalogue.
+  it('bodyweight_loaded : la courbe utilise la charge totale (lest + poids du corps)', () => {
+    const bwCat = new Catalog([
+      makeExercise('traction_lestee', { dos_largeur: 1.0 }, ChargeType.BODYWEIGHT_LOADED),
+    ]);
+    const bw = 80;
+    const fbs = [
+      makeFbCustom('2026-05-01', [
+        { exercise_id: 'traction_lestee', reps_done: 5, load_kg: 10, rpe_perceived: 8 },
+      ]),
+      makeFbCustom('2026-05-08', [
+        { exercise_id: 'traction_lestee', reps_done: 5, load_kg: 15, rpe_perceived: 8 },
+      ]),
+    ];
+    const series = computeE1rmHistory(fbs, bwCat, bw);
+    expect(series).toHaveLength(1);
+    // Sans le fix, le point vaudrait e1rmObserved(10, 5, 8) ≈ 12,5 kg — bien
+    // en-dessous du poids du corps, ce qui n'a aucun sens physiologique.
+    expect(series[0]!.points[0]!.e1rm).toBeGreaterThan(bw);
   });
 });
 

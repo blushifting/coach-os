@@ -1,11 +1,10 @@
 /**
- * Lifecycle de cycle : bilan, suggestion d'action, ajustement V, recovery mode.
+ * Lifecycle de cycle : bilan, suggestion d'action, ajustement V.
  *
- *
- * Pipeline en fin de cycle (semaine 5 = déload terminée) :
- *   1. generateCycleReview → CycleReview (progression, plateaux, adhérence, PRs)
+ * Pipeline en fin de cycle :
+ *   1. generateCycleReview → CycleReview (progression, plateaux, adhérence)
  *   2. adjustVolumeBoundsAtCycleEnd → modifie state.volume_min/max in-place
- *   3. suggestNextAction → SuggestedAction (continuer / ajuster / tourner / changer)
+ *   3. suggestNextAction → SuggestedAction (continuer / ajuster)
  *   4. applyUserActionAfterCycle (après choix utilisateur) → re-génère plan
  */
 
@@ -21,7 +20,7 @@ import {
   exercisePrimaires,
   makeCycleReview,
 } from './models';
-import { e1rmObserved } from './prescription';
+import { e1rmObserved, effectiveLoadForE1rm } from './prescription';
 import {
   VMAX_DOWN_DELTA,
   VMAX_UP_DELTA,
@@ -29,7 +28,7 @@ import {
   cycleAdherence,
 } from './volume';
 import { muscleLabel } from '@/lib/progress';
-import { autoGenerateCyclePlanV3, rotateEmphasis } from './cycle_planner';
+import { autoGenerateCyclePlanV3 } from './cycle_planner';
 
 // =============================================================================
 // 1. Helpers d'analyse
@@ -38,13 +37,16 @@ import { autoGenerateCyclePlanV3, rotateEmphasis } from './cycle_planner';
 function computeE1rmDeltaPerExercise(
   state: UserState,
   cycleSessions: readonly SessionFeedback[],
+  catalog: Catalog,
+  bw: number,
 ): Record<string, number> {
   const firstE1rm: Record<string, number> = {};
   for (const s of cycleSessions) {
     for (const f of s.sets) {
-      if (!(f.exercise_id in firstE1rm)) {
+      if (!(f.exercise_id in firstE1rm) && catalog.has(f.exercise_id)) {
         try {
-          const baseline = e1rmObserved(f.load_kg, f.reps_done, f.rpe_perceived);
+          const totalLoad = effectiveLoadForE1rm(f.load_kg, catalog.get(f.exercise_id), bw);
+          const baseline = e1rmObserved(totalLoad, f.reps_done, f.rpe_perceived);
           firstE1rm[f.exercise_id] = baseline;
         } catch {
           // reps/rpe hors plage : on ignore
@@ -119,30 +121,18 @@ function classifyMusclesOutcome(
   return { progresses, plateau, undertrained, overshoot };
 }
 
-function detectPrs(
-  state: UserState,
+function sumVolumeKg(
   cycleSessions: readonly SessionFeedback[],
-): Array<[string, number]> {
-  const seen = new Set<string>();
-  const prs: Array<[string, number]> = [];
-  for (const s of cycleSessions) {
-    for (const f of s.sets) {
-      if (seen.has(f.exercise_id)) continue;
-      seen.add(f.exercise_id);
-      const current = state.e1rm[f.exercise_id];
-      if (current !== undefined && current > 0) {
-        prs.push([f.exercise_id, current]);
-      }
-    }
-  }
-  return prs;
-}
-
-function sumVolumeKg(cycleSessions: readonly SessionFeedback[]): number {
+  catalog: Catalog,
+  bw: number,
+): number {
   let total = 0;
   for (const s of cycleSessions) {
     for (const f of s.sets) {
-      total += f.load_kg * f.reps_done;
+      const totalLoad = catalog.has(f.exercise_id)
+        ? effectiveLoadForE1rm(f.load_kg, catalog.get(f.exercise_id), bw)
+        : f.load_kg;
+      total += totalLoad * f.reps_done;
     }
   }
   return total;
@@ -157,7 +147,8 @@ export function generateCycleReview(state: UserState, catalog: Catalog): CycleRe
     (s) => s.cycle_index === state.cycle_index,
   );
 
-  const plafondsProgression = computeE1rmDeltaPerExercise(state, cycleSessions);
+  const bw = state.profile.bodyweight_kg;
+  const plafondsProgression = computeE1rmDeltaPerExercise(state, cycleSessions, catalog, bw);
   const { progresses, plateau, undertrained, overshoot } = classifyMusclesOutcome(
     state, cycleSessions, catalog, plafondsProgression,
   );
@@ -166,8 +157,7 @@ export function generateCycleReview(state: UserState, catalog: Catalog): CycleRe
   // partout ailleurs (5 semaines du cycle, séances libres comprises).
   const adherence = cycleAdherence(state, 5);
 
-  const prs = detectPrs(state, cycleSessions);
-  const volumeTotal = sumVolumeKg(cycleSessions);
+  const volumeTotal = sumVolumeKg(cycleSessions, catalog, bw);
 
   const action = suggestNextAction(progresses, plateau, undertrained, adherence);
 
@@ -189,16 +179,19 @@ export function generateCycleReview(state: UserState, catalog: Catalog): CycleRe
     muscles_overshoot: overshoot,
     adherence_pct: adherence,
     volume_total_kg: volumeTotal,
-    PRs: prs,
+    PRs: [],
     suggested_action: action,
     warnings: [],
     muscle_goals_snapshot: muscleGoalsSnapshot,
   });
 
-  // Vigilance : plafond chute > 5 % sur le cycle
+  // Vigilance : plafond chute > 5 % sur le cycle (par rapport à la baseline
+  // de début de cycle, pas au plafond actuel — sinon la division sous-estime
+  // la baisse relative).
   for (const [exId, delta] of Object.entries(plafondsProgression)) {
     const current = state.e1rm[exId] ?? 0;
-    if (current > 0 && delta / current < -0.05) {
+    const baseline = current - delta;
+    if (baseline > 0 && delta / baseline < -0.05) {
       if (catalog.has(exId)) {
         const ex = catalog.get(exId);
         review.warnings.push(
@@ -216,7 +209,7 @@ export function generateCycleReview(state: UserState, catalog: Catalog): CycleRe
 // =============================================================================
 
 export function suggestNextAction(
-  musclesProgresses: readonly string[],
+  _musclesProgresses: readonly string[],
   musclesPlateau: readonly string[],
   _musclesUndertrained: readonly string[],
   adherence: number,
@@ -225,9 +218,8 @@ export function suggestNextAction(
   // Conv #44 — plateau sur ≥3 muscles : on suggère d'ajuster les objectifs/volume
   // (l'ancienne action « changer de programme » a disparu avec les programmes guidés).
   if (musclesPlateau.length >= 3) return SuggestedAction.AJUSTER_OBJECTIFS;
-  if (musclesProgresses.length >= musclesPlateau.length + 2 && adherence > 0.85) {
-    return SuggestedAction.TOURNER_EMPHASIS;
-  }
+  // Chantier C (plan 11) — `TOURNER_EMPHASIS` retiré : un cycle qui progresse
+  // bien avec une bonne assiduité reste sur `CONTINUER_PAREIL`.
   return SuggestedAction.CONTINUER_PAREIL;
 }
 
@@ -281,9 +273,6 @@ export function applyUserActionAfterCycle(
       state.profile.duration_category ?? DurationCategory.MEDIUM,
     );
   if (action === SuggestedAction.CONTINUER_PAREIL) {
-    state.current_cycle_plan = regen();
-  } else if (action === SuggestedAction.TOURNER_EMPHASIS) {
-    rotateEmphasis(state.muscle_goals);
     state.current_cycle_plan = regen();
   }
   // AJUSTER_OBJECTIFS : interaction UX, regen plan plus tard.

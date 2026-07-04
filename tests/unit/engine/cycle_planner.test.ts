@@ -2,7 +2,7 @@
  * Tests du planificateur de cycle (voie unique V3, Conv #39).
  * Couvre : effectiveVolumeBounds (extension MuscleGoal), targetFrequencyV2,
  * cycleSetProgression, autoGenerateCyclePlanV3 (invariants globaux),
- * enforceLengthenedBias, rotateEmphasis, orderSession.
+ * enforceLengthenedBias, orderSession.
  *
  * NB : les tests des internes legacy (parameterizeSplit, composeSession,
  * exosCountForVolume, compoundCountForObjective, generateCyclePlan) ont été
@@ -17,7 +17,6 @@ import {
   autoGenerateCyclePlanV3,
   cycleSetProgression,
   enforceLengthenedBias,
-  rotateEmphasis,
 } from '@/engine/cycle_planner';
 import {
   MuscleObjective,
@@ -297,41 +296,7 @@ describe('enforceLengthenedBias', () => {
 });
 
 // =============================================================================
-// 6. rotateEmphasis
-// =============================================================================
-
-describe('rotateEmphasis', () => {
-  it('permute pec/dos_largeur', () => {
-    const goals: Record<string, MuscleGoal> = {
-      pectoraux: prio('pectoraux', MuscleObjective.HYPERTROPHIE, 1),
-      dos_largeur: prio('dos_largeur', MuscleObjective.HYPERTROPHIE, 2),
-    };
-    rotateEmphasis(goals);
-    expect(goals.pectoraux!.priority_rank).toBe(2);
-    expect(goals.dos_largeur!.priority_rank).toBe(1);
-  });
-
-  it('un seul du couple → pas de permutation', () => {
-    const goals: Record<string, MuscleGoal> = {
-      pectoraux: prio('pectoraux', MuscleObjective.HYPERTROPHIE, 1),
-    };
-    rotateEmphasis(goals);
-    expect(goals.pectoraux!.priority_rank).toBe(1);
-  });
-
-  it('SUGGERE non affecté', () => {
-    const goals: Record<string, MuscleGoal> = {
-      biceps: prio('biceps', MuscleObjective.HYPERTROPHIE, 1),
-      triceps: suggested('triceps'),
-    };
-    rotateEmphasis(goals);
-    expect(goals.biceps!.priority_rank).toBe(1);
-    expect(goals.triceps!.priority_rank).toBe(99);
-  });
-});
-
-// =============================================================================
-// 7. orderSession (cf. selection.ts) — sanity
+// 6. orderSession (cf. selection.ts) — sanity
 // =============================================================================
 
 describe('orderSession — compounds avant iso', () => {

@@ -454,19 +454,34 @@ export interface PlafondChange {
 }
 
 /**
- * Volume = Σ reps × load_kg sur tous les sets d'une séance.
+ * Volume = Σ reps × charge TOTALE sur tous les sets d'une séance. Chantier C
+ * (plan 11) — la charge totale inclut le poids du corps pour les exos
+ * bodyweight (`effectiveLoadForE1rm`), cohérente avec le Plafond affiché
+ * ailleurs. Fallback `load_kg` brut si l'exo n'est plus dans le catalog
+ * (exo custom supprimé).
  */
-export function computeSessionVolume(feedback: SessionFeedback): number {
+export function computeSessionVolume(
+  feedback: SessionFeedback,
+  catalog: Catalog,
+  bodyweightKg: number,
+): number {
   let v = 0;
   for (const s of feedback.sets) {
-    v += s.reps_done * s.load_kg;
+    const totalLoad = catalog.has(s.exercise_id)
+      ? effectiveLoadForE1rm(s.load_kg, catalog.get(s.exercise_id), bodyweightKg)
+      : s.load_kg;
+    v += s.reps_done * totalLoad;
   }
   return v;
 }
 
 /** Volume cumulé sur une `FeedbackRow`. */
-export function feedbackRowVolume(row: FeedbackRow): number {
-  return computeSessionVolume(row.feedback);
+export function feedbackRowVolume(
+  row: FeedbackRow,
+  catalog: Catalog,
+  bodyweightKg: number,
+): number {
+  return computeSessionVolume(row.feedback, catalog, bodyweightKg);
 }
 
 /**
@@ -479,9 +494,11 @@ export function computeSessionSummary(
   feedback: SessionFeedback,
   summary: RecordFeedbackResult,
   previousFeedbacks: ReadonlyArray<FeedbackRow>,
+  catalog: Catalog,
+  bodyweightKg: number,
   previouslyCalibratedExoIds: ReadonlySet<string> = new Set(),
 ): SessionSummaryData {
-  const volumeKgToday = computeSessionVolume(feedback);
+  const volumeKgToday = computeSessionVolume(feedback, catalog, bodyweightKg);
 
   // Cherche la séance la plus récente avec le même label, dans une semaine
   // strictement antérieure (même cycle ou cycle précédent).
@@ -499,7 +516,8 @@ export function computeSessionSummary(
         : b.week_in_cycle - a.week_in_cycle,
     );
   const previous = candidates[0] ?? null;
-  const volumeKgLastSameLabel = previous === null ? null : feedbackRowVolume(previous);
+  const volumeKgLastSameLabel =
+    previous === null ? null : feedbackRowVolume(previous, catalog, bodyweightKg);
   const volumeDeltaPct =
     volumeKgLastSameLabel === null || volumeKgLastSameLabel === 0
       ? null

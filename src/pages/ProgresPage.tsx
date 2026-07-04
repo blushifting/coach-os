@@ -72,7 +72,7 @@ export default function ProgresPage() {
         cycleStart,
       ),
       cycles: buildCycleHistory(history.cycles),
-      force: computeE1rmHistory(history.feedbacks, catalog),
+      force: computeE1rmHistory(history.feedbacks, catalog, userState.profile.bodyweight_kg),
     };
   }, [userState, catalog, history]);
 

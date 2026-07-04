@@ -6,7 +6,7 @@
  * retombe sur le dernier `CycleRow.review` non-null en DB.
  */
 
-import type { CycleReview, SuggestedAction } from '@/engine/models';
+import type { CycleReview } from '@/engine/models';
 import type { CycleRow } from '@/db/schema';
 
 export function pickReviewToDisplay(
@@ -21,16 +21,21 @@ export function pickReviewToDisplay(
   return null;
 }
 
-export function suggestedActionLabel(action: SuggestedAction): string {
+/**
+ * `action` est typé `string` (pas `SuggestedAction`) : les bilans de cycle
+ * archivés avant Chantier C (plan 11) peuvent contenir `'tourner'` ou
+ * `'changer'`, des valeurs retirées de l'enum mais encore présentes en DB.
+ */
+export function suggestedActionLabel(action: string): string {
   switch (action) {
     case 'continuer':
       return 'Continuer pareil';
     case 'ajuster':
       return 'Ajuster les objectifs';
     case 'tourner':
-      // Bloc B1 — plus de 3ᵉ libellé distinct : « tourner » se présente comme
-      // « Ajuster les objectifs » (pas de différence nette côté utilisateur, et
-      // seuls « Continuer pareil » / « Ajuster les objectifs » ont un bouton).
+    case 'changer':
+      // Actions retirées du produit — les bilans archivés se présentent comme
+      // « Ajuster les objectifs » (pas de différence nette côté utilisateur).
       return 'Ajuster les objectifs';
     default:
       return 'Continuer pareil';

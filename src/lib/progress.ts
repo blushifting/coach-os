@@ -23,7 +23,7 @@ import type {
   UserState,
 } from '@/engine/models';
 import { exercisePrimaires } from '@/engine/models';
-import { e1rmObserved } from '@/engine/prescription';
+import { e1rmObserved, effectiveLoadForE1rm } from '@/engine/prescription';
 import { effectiveVolumeBounds } from '@/engine/volume';
 import {
   addDays,
@@ -549,6 +549,7 @@ export interface ExerciseE1rmSeries {
 export function computeE1rmHistory(
   feedbacks: ReadonlyArray<FeedbackRow>,
   catalog: Catalog,
+  bodyweightKg: number,
   topN: number = 8,
 ): ExerciseE1rmSeries[] {
   const byExo = new Map<string, Map<string, number>>();
@@ -566,9 +567,14 @@ export function computeE1rmHistory(
       // Conv #15 — filet de sécurité résiduel : un set RPE < 6.5 n'est pas
       // fiable pour Epley (formule calibrée 6.5+).
       if (s.rpe_perceived < 6.5) continue;
+      // Chantier C (plan 11) — charge TOTALE (poids du corps compris pour les
+      // exos bodyweight), cohérente avec le Plafond affiché ailleurs.
+      const totalLoad = catalog.has(s.exercise_id)
+        ? effectiveLoadForE1rm(s.load_kg, catalog.get(s.exercise_id), bodyweightKg)
+        : s.load_kg;
       let e: number;
       try {
-        e = e1rmObserved(s.load_kg, s.reps_done, s.rpe_perceived);
+        e = e1rmObserved(totalLoad, s.reps_done, s.rpe_perceived);
       } catch {
         continue;
       }
