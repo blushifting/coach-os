@@ -574,11 +574,6 @@ export function makeWeeklyTemplate(input: WeeklyTemplateInput): WeeklyTemplate {
   };
 }
 
-/** Nb séances prévues sur les 5 semaines du cycle. */
-export function weeklyTemplateSessionsPlanned(wt: WeeklyTemplate): number {
-  return wt.days.length * 5;
-}
-
 // =============================================================================
 // Skeleton (Conv #22) — grille pattern × séance issue de l'étape D, remplie
 // par l'user à l'étape E. Persiste à côté du WeeklyTemplate final pour

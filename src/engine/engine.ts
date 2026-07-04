@@ -45,7 +45,6 @@ import {
   aggregateForceIndex,
   DELOAD_WEEK_IN_CYCLE,
   initialVolumeBounds,
-  targetVolume,
 } from './volume';
 import { applyBalanceRules } from './balance';
 import {
@@ -643,21 +642,9 @@ export function endOfWeek(state: UserState, catalog: Catalog): EndOfWeekResult {
 
   const plateauAny = Object.values(plateauNow).some(Boolean);
 
-  const hitVmaxOk: Record<string, boolean> = {};
-  for (const m of MUSCLES) {
-    const v = targetVolume(state, m);
-    if (
-      state.volume_max[m] !== undefined &&
-      v >= state.volume_max[m]! - 0.001 &&
-      (state.plateau_counter[m] ?? 0) === 0
-    ) {
-      hitVmaxOk[m] = true;
-    }
-  }
-
   const weekBefore = state.current_week_in_cycle;
   const cycleBefore = state.cycle_index;
-  const event = advanceWeek(state, plateauAny, hitVmaxOk);
+  const event = advanceWeek(state, plateauAny);
 
   decrementRecoveryWeek(state);
 

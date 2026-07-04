@@ -76,7 +76,7 @@ export default function ProgrammePage() {
       weekSessions: computeWeekSessions(userState, history.feedbacks),
       nextBilanDate: nextCycleReviewDate(userState, history.cycles),
       cycleTime: computeCycleTimeProgress(userState, history.cycles, now),
-      cycleFinished: isCycleFinished(userState, history.feedbacks),
+      cycleFinished: isCycleFinished(userState, history.feedbacks, history.cycles, now),
       matrix: buildCalendarMatrix(
         userState,
         history.cycles,

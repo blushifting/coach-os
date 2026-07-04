@@ -413,22 +413,15 @@ export function isPlateau(
 export function advanceWeek(
   state: UserState,
   plateauDetected = false,
-  hitVMaxWithoutPlateau: Record<string, boolean> | null = null,
 ): string {
   const w = state.current_week_in_cycle;
   let event = '';
   if (w === 5) {
-    state.cycle_index += 1;
-    state.current_week_in_cycle = 1;
-    state.deload_strategy = null;
-    if (hitVMaxWithoutPlateau) {
-      for (const [muscle, ok] of Object.entries(hitVMaxWithoutPlateau)) {
-        if (ok) {
-          state.volume_max[muscle] = (state.volume_max[muscle] ?? 0) + VMAX_UP_DELTA;
-        }
-      }
-    }
-    event = 'fin_deload_nouveau_cycle';
+    // Conv A (plan 11) — la bascule de cycle est faite exclusivement par
+    // `endOfCycle` (bilan validé par l'user), qui bump `cycle_index`. Ici,
+    // à w=5, `advanceWeek` est un no-op : `tickWeekIfNeeded` plafonne à la
+    // semaine 5 et n'appelle donc jamais cette branche en flux réel.
+    event = 'semaine_5_stable';
   } else if (plateauDetected || w === 4) {
     if (plateauDetected) {
       for (const [muscle, count] of Object.entries(state.plateau_counter)) {
@@ -478,6 +471,23 @@ export function computeCycleAdherence(state: UserState): number {
     done += 1;
   }
   return done / planned;
+}
+
+/**
+ * Assiduité du cycle courant (Conv A, plan 11) — métrique UNIFIÉE pour toute
+ * l'app : séances faites (TOUTES, séances libres comprises — on mesure un
+ * épuisement global) / séances prévues sur les semaines 1..`throughWeek`.
+ *
+ * La valeur brute peut dépasser 1 (séances libres qui gonflent le numérateur) ;
+ * c'est voulu au niveau du calcul, l'affichage plafonne à 100 %.
+ */
+export function cycleAdherence(state: UserState, throughWeek: number): number {
+  const plan = state.current_cycle_plan;
+  if (plan === null || plan.days.length === 0) return 0;
+  const done = state.history.filter(
+    (s) => s.cycle_index === state.cycle_index && s.week_in_cycle <= throughWeek,
+  ).length;
+  return done / (plan.days.length * throughWeek);
 }
 
 // Re-export (Muscle est défini dans models).

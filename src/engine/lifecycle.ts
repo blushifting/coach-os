@@ -20,13 +20,13 @@ import {
   SuggestedAction,
   exercisePrimaires,
   makeCycleReview,
-  weeklyTemplateSessionsPlanned,
 } from './models';
 import { e1rmObserved } from './prescription';
 import {
   VMAX_DOWN_DELTA,
   VMAX_UP_DELTA,
   countWeeklyVolume,
+  cycleAdherence,
 } from './volume';
 import { muscleLabel } from '@/lib/progress';
 import { autoGenerateCyclePlanV3, rotateEmphasis } from './cycle_planner';
@@ -174,10 +174,9 @@ export function generateCycleReview(state: UserState, catalog: Catalog): CycleRe
     state, cycleSessions, catalog, plafondsProgression,
   );
 
-  const sessionsPlanned = state.current_cycle_plan
-    ? weeklyTemplateSessionsPlanned(state.current_cycle_plan)
-    : 0;
-  const adherence = sessionsPlanned > 0 ? cycleSessions.length / sessionsPlanned : 0;
+  // Conv A (plan 11) — assiduité unifiée : mêmes séances/dénominateur que
+  // partout ailleurs (5 semaines du cycle, séances libres comprises).
+  const adherence = cycleAdherence(state, 5);
 
   const prs = detectPrs(state, cycleSessions);
   const volumeTotal = sumVolumeKg(cycleSessions);

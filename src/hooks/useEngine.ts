@@ -1360,8 +1360,9 @@ export async function endOfCycle(args: EndOfCycleArgs = {}) {
   }
 
   // 3. Bump cycle_index + reset state hebdo. On bump explicitement à
-  //    `closedCycleIndex+1` plutôt que `+= 1` pour rester robuste si un
-  //    bump avait déjà eu lieu côté `advanceWeek` (cas semaine 5 finie).
+  //    `closedCycleIndex+1` (plutôt que `+= 1`) : la bascule de cycle passe
+  //    exclusivement par ici — `advanceWeek` ne touche plus jamais au
+  //    `cycle_index` (Conv A, plan 11 : branche w=5 retirée).
   next.cycle_index = closedCycleIndex + 1;
   next.current_week_in_cycle = 1;
   next.plateau_counter = {};

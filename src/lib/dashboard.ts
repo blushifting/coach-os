@@ -355,19 +355,35 @@ export function buildCalendarMatrix(
 // =============================================================================
 
 /**
- * Le cycle est considéré "terminé" quand toutes ses séances ont un feedback
- * **ou** que `current_week_in_cycle` dépasse 5 (cas où `endOfWeek` a fait
- * avancer mais `endOfCycle` n'a pas encore été appelé).
+ * Le cycle est considéré "terminé" — donc le bilan proposé — dans deux cas :
+ *   1. **Par le travail** : toutes ses séances ont un feedback (celui qui finit
+ *      en avance).
+ *   2. **Par la date** : la fin de cycle (`start_date + 35 j`) est dépassée ET
+ *      le cycle a démarré (≥1 séance faite). Sans cette 2ᵉ porte, rater UNE
+ *      séance laissait l'utilisateur coincé en semaine 5 sans jamais atteindre
+ *      le bilan (Conv A, plan 11). Le garde "cycle démarré" évite de proposer
+ *      un bilan vide, cohérent avec `tickWeekIfNeeded` qui n'avance pas tant
+ *      qu'aucune séance n'est faite.
  */
 export function isCycleFinished(
-  state: Pick<UserState, 'cycle_index' | 'current_week_in_cycle' | 'current_cycle_plan'>,
+  state: Pick<UserState, 'cycle_index' | 'current_cycle_plan'>,
   feedbacks: ReadonlyArray<Pick<FeedbackRow, 'cycle_index' | 'feedback'>>,
+  cycles: ReadonlyArray<Pick<CycleRow, 'cycle_index' | 'start_date'>>,
+  now: Date,
 ): boolean {
-  if (state.current_week_in_cycle > CYCLE_LENGTH_WEEKS) return true;
   const planned = plannedSessionsForCycle(state.current_cycle_plan);
   if (planned === 0) return false;
   const done = feedbacks.filter(
     (f) => f.cycle_index === state.cycle_index,
   ).length;
-  return done >= planned;
+  // Porte 1 — toutes les séances faites.
+  if (done >= planned) return true;
+  // Porte 2 — date de fin dépassée, cycle démarré.
+  if (done === 0) return false;
+  const cycle = cycles.find((c) => c.cycle_index === state.cycle_index);
+  if (cycle === undefined) return false;
+  const cycleEnd = dateKey(
+    addDays(parseDateKey(cycle.start_date), CYCLE_LENGTH_WEEKS * 7 - 1),
+  );
+  return dateKey(now) > cycleEnd;
 }

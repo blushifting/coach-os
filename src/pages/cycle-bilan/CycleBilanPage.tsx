@@ -97,7 +97,7 @@ function ReviewKeyMetrics({ review }: { review: CycleReview }) {
       <Metric
         label="Assiduité"
         helpTopic="adherence"
-        value={`${Math.round(review.adherence_pct * 100)} %`}
+        value={`${Math.round(Math.min(1, review.adherence_pct) * 100)} %`}
         delay={0}
       />
       <Metric

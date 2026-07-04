@@ -347,16 +347,19 @@ describe('Conv #22 — advanceWeek pose deload_strategy à l\'entrée sem 5', ()
     expect(state.deload_strategy).toBe(DeloadStrategy.NONE);
   });
 
-  it('après nouvelle semaine 1 cycle suivant, deload_strategy reset à null', () => {
+  it('semaine 5 → no-op : advanceWeek ne bascule plus le cycle', () => {
+    // Conv A (plan 11) — branche w=5 retirée : la bascule de cycle passe
+    // exclusivement par endOfCycle. À w=5, advanceWeek ne touche à rien.
     const state = makeStateForGoals({
       sessions_per_week: 4,
       prios: [['pectoraux', MuscleObjective.HYPERTROPHIE]],
     });
     state.current_week_in_cycle = 5;
-    state.deload_strategy = DeloadStrategy.NORMAL;
-    advanceWeek(state);
-    expect(state.current_week_in_cycle).toBe(1);
-    expect(state.deload_strategy).toBeNull();
+    state.cycle_index = 1;
+    const ev = advanceWeek(state);
+    expect(state.current_week_in_cycle).toBe(5);
+    expect(state.cycle_index).toBe(1);
+    expect(ev).toBe('semaine_5_stable');
   });
 });
 

@@ -26,7 +26,6 @@ import {
   makeMuscleGoal,
   makePlannedExercise,
   makeWeeklyTemplate,
-  weeklyTemplateSessionsPlanned,
   makeCycleReview,
   makeEquipmentOverride,
   makeUserState,
@@ -141,17 +140,6 @@ describe('PlannedExercise', () => {
 });
 
 describe('WeeklyTemplate', () => {
-  it('sessions_planned = 5 semaines × n_jours', () => {
-    const days = [0, 1, 2, 3].map((i) => ({
-      day_index: i,
-      label: `Jour ${i + 1}`,
-      target_muscles_focus: [] as string[],
-      exercises: [],
-    }));
-    const wt = makeWeeklyTemplate({ cycle_index: 1, rationale: 'U/L 4×', days });
-    expect(weeklyTemplateSessionsPlanned(wt)).toBe(20);
-  });
-
   it('warnings vide par défaut', () => {
     const wt = makeWeeklyTemplate({ cycle_index: 1, rationale: 'test' });
     expect(wt.warnings).toEqual([]);

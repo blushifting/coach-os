@@ -372,29 +372,51 @@ describe('computeCycleTimeProgress', () => {
 });
 
 describe('isCycleFinished', () => {
+  // start 2026-05-04 → fin de cycle = start + 34 j = 2026-06-07.
+  const cycles: CycleRow[] = [
+    { cycle_index: 1, start_date: '2026-05-04', end_date: null, review: null },
+  ];
+  const dansLeCycle = new Date(2026, 4, 10); // 2026-05-10
+  const apresLaFin = new Date(2026, 5, 8); // 2026-06-08 > 2026-06-07
+
   it('faux si plan null', () => {
     const state = makeState();
-    expect(isCycleFinished(state, [])).toBe(false);
+    expect(isCycleFinished(state, [], cycles, apresLaFin)).toBe(false);
   });
 
-  it('vrai si week_in_cycle > 5', () => {
-    const state = makeState({
-      current_week_in_cycle: 6,
-      current_cycle_plan: makeWeekly(3),
-    });
-    expect(isCycleFinished(state, [])).toBe(true);
-  });
-
-  it('vrai si toutes les séances ont un feedback', () => {
+  // Porte 1 — travail : toutes les séances faites, même avant la fin de date.
+  it('vrai si toutes les séances ont un feedback (avant la date de fin)', () => {
     const state = makeState({ current_cycle_plan: makeWeekly(3) });
-    const fbs = Array.from({ length: 15 }, (_, i) => makeFeedback(`2026-05-${String(i + 1).padStart(2, '0')}`, 1, 1));
-    expect(isCycleFinished(state, fbs)).toBe(true);
+    const fbs = Array.from({ length: 15 }, (_, i) =>
+      makeFeedback(`2026-05-${String(i + 1).padStart(2, '0')}`, 1, 1),
+    );
+    expect(isCycleFinished(state, fbs, cycles, dansLeCycle)).toBe(true);
   });
 
-  it('faux si seulement quelques séances faites', () => {
+  // Porte 2 — date : fin dépassée + cycle démarré (séances manquantes).
+  it('vrai si date dépassée et ≥1 séance faite (séances ratées)', () => {
     const state = makeState({ current_cycle_plan: makeWeekly(3) });
-    const fbs = [makeFeedback('2026-05-01', 1, 1)];
-    expect(isCycleFinished(state, fbs)).toBe(false);
+    const fbs = Array.from({ length: 14 }, (_, i) =>
+      makeFeedback(`2026-05-${String(i + 1).padStart(2, '0')}`, 1, 1),
+    );
+    expect(isCycleFinished(state, fbs, cycles, apresLaFin)).toBe(true);
+  });
+
+  it('faux si date dépassée mais aucune séance faite (cycle pas démarré)', () => {
+    const state = makeState({ current_cycle_plan: makeWeekly(3) });
+    expect(isCycleFinished(state, [], cycles, apresLaFin)).toBe(false);
+  });
+
+  it('faux si séances manquantes et date non dépassée', () => {
+    const state = makeState({ current_cycle_plan: makeWeekly(3) });
+    const fbs = [makeFeedback('2026-05-05', 1, 1)];
+    expect(isCycleFinished(state, fbs, cycles, dansLeCycle)).toBe(false);
+  });
+
+  it('faux si date dépassée, démarré, mais aucun CycleRow correspondant', () => {
+    const state = makeState({ current_cycle_plan: makeWeekly(3) });
+    const fbs = [makeFeedback('2026-05-05', 1, 1)];
+    expect(isCycleFinished(state, fbs, [], apresLaFin)).toBe(false);
   });
 });
 
