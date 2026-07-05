@@ -161,6 +161,15 @@ export default function SeancePage() {
       prev.items.every((it, i) => it.exercise_id === currentSessionPlan.items[i]!.exercise_id);
     if (sameShape) return; // rien à faire — le store garde les entries.
 
+    // Ajout/retrait d'exo en cours de séance (le nb d'items change) :
+    // `addExerciseToCurrentSession` / `removeExerciseFromCurrentSession` ont
+    // DÉJÀ mis à jour `currentSessionEntries` en lockstep avec le plan. On ne
+    // re-dérive rien ici — la fusion positionnelle ci-dessous compare le nouveau
+    // plan à l'ancien `prev` décalé d'un cran et EFFACERAIT la progression des
+    // exos situés après celui retiré (bug #8). On ne garde la fusion que pour le
+    // remplacement d'exo (même nb d'items, un slot change d'`exercise_id`).
+    if (prev.items.length !== currentSessionPlan.items.length) return;
+
     const current = storedEntries ?? [];
     const merged: SessionEntries = currentSessionPlan.items.map((item, i) => {
       const prevItem = prev.items[i];
@@ -268,7 +277,7 @@ export default function SeancePage() {
       <main className="flex-1 overflow-y-auto px-4 py-3 pb-32">
         <SessionRunner
           // Conv #15 vague 2 — key sur sessionId pour garantir le remount à
-          // chaque vraie nouvelle session (snapshot e1rmInitialRef refait).
+          // chaque vraie nouvelle session (reset de l'état local du runner).
           key={currentSessionId ?? 'no-session'}
           plan={currentSessionPlan}
           catalog={catalog}

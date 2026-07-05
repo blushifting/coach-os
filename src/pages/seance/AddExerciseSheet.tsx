@@ -31,7 +31,6 @@ import {
 } from '@/lib/progress';
 import { useCoachOsStore } from '@/store';
 import { useGymBrand } from '@/store/selectors';
-import { cn } from '@/lib/cn';
 import { favoritesFirst } from '@/lib/custom-session';
 import { ExerciseEyeButton } from '@/pages/catalogue/ExerciseEyeButton';
 
@@ -47,7 +46,8 @@ function normalize(s: string): string {
 interface AddExerciseSheetProps {
   readonly open: boolean;
   readonly catalog: Catalog | null;
-  /** Ids d'exos déjà présents dans la séance — affichés mais grisés. */
+  /** Ids d'exos déjà présents dans la séance — signalés mais ré-ajoutables
+   *  (#7 : un doublon crée des séries en plus qui nourrissent le même plafond). */
   readonly existingExerciseIds: ReadonlySet<string>;
   readonly onClose: () => void;
   /** Optionnel — appelé après ajout réussi avec l'id de l'exo ajouté. */
@@ -205,18 +205,15 @@ export function AddExerciseSheet({
                       <button
                         type="button"
                         data-testid={`add-exo-pick-${ex.id}`}
-                        disabled={already}
                         onClick={() => setPicked(ex)}
-                        className={cn(
-                          'flex min-w-0 flex-1 rounded-lg border px-3 py-2 text-left text-sm transition',
-                          already
-                            ? 'cursor-not-allowed border-anthracite-800 bg-anthracite-900/40 text-anthracite-500'
-                            : 'border-anthracite-700 bg-anthracite-900 text-white hover:border-sang-700/50',
-                        )}
+                        className="flex min-w-0 flex-1 rounded-lg border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-left text-sm text-white transition hover:border-sang-700/50"
                       >
                         <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
                           <span className="truncate">{displayExerciseName(ex, brand)}</span>
                           {already ? (
+                            // #7 — exo déjà en séance : ré-ajoutable (le doublon
+                            // crée une 2e instance = des séries en plus, qui
+                            // nourrissent le même plafond). Simple info, plus un blocage.
                             <span className="shrink-0 text-[10px] uppercase tracking-wide text-anthracite-400">
                               déjà dans la séance
                             </span>

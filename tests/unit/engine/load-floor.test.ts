@@ -13,6 +13,7 @@ import {
   exerciseUsesLoadFloor,
 } from '@/engine/prescription';
 import {
+  ADOPTION_RESERVE,
   GRADUATION_RESERVE,
   updatePrescribedLoadFloorForExercise,
 } from '@/engine/feedback';
@@ -62,6 +63,12 @@ const inc = (s = stateFor(MuscleObjective.HYPERTROPHIE)) =>
 describe('GRADUATION_RESERVE', () => {
   it('vaut 3 (R reps à RIR 3, juste avant la zone « 4+ »)', () => {
     expect(GRADUATION_RESERVE).toBe(3);
+  });
+});
+
+describe('ADOPTION_RESERVE', () => {
+  it('vaut 2 (RIR ≥ 2 exigé pour adopter une charge plus lourde comme plancher)', () => {
+    expect(ADOPTION_RESERVE).toBe(2);
   });
 });
 
@@ -124,12 +131,30 @@ describe('graduation R+3 (hypertrophie compound, R=10 → seuil n_équiv 13)', (
 });
 
 describe('anti-régression (charge réelle plus lourde)', () => {
-  it('plus lourd + série solide (≥ R) → plancher adopte la charge', () => {
+  it('plus lourd + charge de croisière (RIR 2 = n_équiv R+2) → plancher adopte la charge', () => {
     const s = stateFor(MuscleObjective.HYPERTROPHIE);
     s.prescribed_load_floor[BENCH] = 50;
-    // 60 kg × 10 reps RIR 2 → n_équiv 12 : solide (≥10) mais sous le seuil 13.
+    // 60 kg × 10 reps RIR 2 → n_équiv 12 = R(10) + ADOPTION_RESERVE(2) : tout
+    // juste assez de réserve pour être adoptée comme plancher tenable.
     updatePrescribedLoadFloorForExercise(s, catalog.get(BENCH), [fb(60, 10, 8)]);
     expect(s.prescribed_load_floor[BENCH]).toBe(60);
+  });
+
+  it('plus lourd mais menée à l’échec au nombre cible (RIR 0 = n_équiv R) → NON adoptée', () => {
+    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    s.prescribed_load_floor[BENCH] = 50;
+    // 60 kg × 10 reps à l'échec (rpe 10) → n_équiv 10 = R, sous R+ADOPTION_RESERVE :
+    // une série à l'échec n'est pas un plancher tenable → le plancher ne bouge pas.
+    updatePrescribedLoadFloorForExercise(s, catalog.get(BENCH), [fb(60, 10, 10)]);
+    expect(s.prescribed_load_floor[BENCH]).toBe(50);
+  });
+
+  it('plus lourd à RIR 1 (n_équiv R+1) → encore trop juste, NON adoptée', () => {
+    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    s.prescribed_load_floor[BENCH] = 50;
+    // 60 kg × 10 reps RIR 1 (rpe 9) → n_équiv 11 < 12 → non adoptée.
+    updatePrescribedLoadFloorForExercise(s, catalog.get(BENCH), [fb(60, 10, 9)]);
+    expect(s.prescribed_load_floor[BENCH]).toBe(50);
   });
 
   it('plus lourd mais série ratée (< R) → on n’adopte pas', () => {

@@ -283,8 +283,9 @@ function previousBestNeqForExercise(
  *    fraîche) atteint `R + GRADUATION_RESERVE` → plancher +1 incrément. La
  *    fatigue sur les dernières séries n'empêche donc rien.
  *  - **Anti-régression** : si la meilleure série a été faite plus lourd que le
- *    plancher ET reste solide (≥ R reps-équivalentes), on adopte cette charge
- *    (remplace l'ancien `outperformedLoad`).
+ *    plancher ET reste une charge de croisière (n_équiv ≥ `R + ADOPTION_RESERVE`,
+ *    donc menée à RIR ≥ 2, pas à l'échec), on adopte cette charge (remplace
+ *    l'ancien `outperformedLoad`).
  *  - **Descente** : seulement si CETTE séance ET la précédente de l'exo sont sous
  *    R reps-équivalentes (charge trop lourde, sous-perf répétée) → plancher −1.
  *
@@ -305,8 +306,10 @@ export function updatePrescribedLoadFloorForExercise(
   const cur = state.prescribed_load_floor[exercise.id] ?? best.load;
   let next = cur;
 
-  // Anti-régression : charge réelle plus lourde et série solide → on l'adopte.
-  if (best.load > next && best.neq >= targetReps) {
+  // Anti-régression : charge réelle plus lourde ET série de croisière (n_équiv
+  // ≥ R + ADOPTION_RESERVE, soit RIR ≥ 2 — une série à l'échec ne fait pas un
+  // plancher tenable) → on l'adopte.
+  if (best.load > next && best.neq >= targetReps + ADOPTION_RESERVE) {
     next = best.load;
   }
 
@@ -332,8 +335,9 @@ export function updatePrescribedLoadFloorForExercise(
  * Marge de réserve exigée pour ADOPTER une performance meilleure que le plancher
  * (anti-régression) : la meilleure série doit rester à RIR ≥ ADOPTION_RESERVE
  * au-delà du plancher — une série menée à l'échec n'est pas un régime de
- * croisière. Distinct de GRADUATION_RESERVE (3). Chantier E réutilisera cette
- * même constante pour le cliquet de charge.
+ * croisière. Distinct de GRADUATION_RESERVE (3). Partagée par les deux cliquets :
+ * le cliquet de charge (`updatePrescribedLoadFloorForExercise`) et le cliquet de
+ * reps (`updatePrescribedRepsFloorForExercise`).
  */
 export const ADOPTION_RESERVE = 2;
 

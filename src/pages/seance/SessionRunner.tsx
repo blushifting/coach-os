@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -27,7 +27,6 @@ import {
   updateSetEntry,
 } from '@/lib/session-runner';
 import { e1rmConfidenceFor } from '@/lib/calibration-status';
-import { bootstrapE1rmIfMissing } from '@/engine/engine';
 import { ChargeBadge } from '@/pages/catalogue/ChargeBadge';
 import { AddExerciseSheet } from './AddExerciseSheet';
 import { CalibrationBanner } from './CalibrationBanner';
@@ -137,26 +136,6 @@ export function SessionRunner({
   }, [plan.items, userState?.e1rm, snapshots]);
   const bodyweight = userState?.profile.bodyweight_kg ?? 75;
 
-  // Conv #15 vague 2/3 — snapshot des e1RM au mount du runner (figé pour
-  // toute la séance). Sert de baseline pour `recalibrateUpcomingSets`.
-  // Inclut le bootstrap heuristique des exos non encore calibrés (pour
-  // un fresh user post-onboarding, `state.e1rm` est vide — sans bootstrap
-  // le ratio serait toujours undefined et le recalibrage no-op). Le
-  // remount à chaque sessionId (key dans SeancePage) rafraîchit ce snapshot.
-  const e1rmInitialRef = useRef<Record<string, number> | null>(null);
-  if (e1rmInitialRef.current === null && userState !== null && catalog !== null) {
-    const snap: Record<string, number> = { ...userState.e1rm };
-    for (const item of plan.items) {
-      if (snap[item.exercise_id] === undefined && catalog.has(item.exercise_id)) {
-        snap[item.exercise_id] = bootstrapE1rmIfMissing(
-          userState,
-          catalog.get(item.exercise_id),
-        );
-      }
-    }
-    e1rmInitialRef.current = snap;
-  }
-
   // Wrap onEntriesChange : à chaque fois qu'une série devient "fiable pour
   // calibration" (cf. `isCountableForLiveE1rm`), on déclenche le recalibrage
   // **uniquement pour les exos en mode calibration** (`confidence !==
@@ -202,7 +181,7 @@ export function SessionRunner({
           }
         }
       }
-      if (triggeredIdx >= 0 && e1rmInitialRef.current !== null) {
+      if (triggeredIdx >= 0) {
         const exId = plan.items[triggeredIdx]?.exercise_id;
         const isCalibrating =
           exId !== undefined &&
@@ -213,7 +192,6 @@ export function SessionRunner({
             plan,
             catalog,
             bodyweightKg: bodyweight,
-            e1rmInitial: e1rmInitialRef.current,
             itemIdx: triggeredIdx,
           });
         } else {

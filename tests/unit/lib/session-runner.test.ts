@@ -457,11 +457,11 @@ describe('suggestNextLoadAfterTooEasy', () => {
   });
 });
 
-describe('recalibrateUpcomingSets', () => {
-  it('ajuste les charges des séries non-cochées proportionnellement', () => {
+describe('recalibrateUpcomingSets (chantier E — dérivation directe du e1RM live)', () => {
+  it('série lourde en calibration → re-dérive les charges suivantes vers le HAUT', () => {
     const plan = makeCalibPlan();
-    // Bootstrap : 50 kg → e1RM initial estimé ~75 (calculé par bootstrap).
-    // L'user a fait série 1 à 80 kg × 10 RPE 7 → e1rm_obs ≈ 113.
+    // Bootstrap prescrit 50 kg. L'user fait série 1 à 80 kg × 10 RPE 7 → e1RM
+    // live ≈ 115 → charge cible (8 reps RPE 7) nettement > 50.
     const entries: SessionEntries = [
       [
         { reps: 10, load_kg: 80, rpe: 7, done: true },
@@ -474,15 +474,37 @@ describe('recalibrateUpcomingSets', () => {
       plan,
       catalog,
       bodyweightKg: 75,
-      e1rmInitial: { leg_press_45: 75 },
       itemIdx: 0,
     });
-    // Séries 2 et 3 : load doit avoir augmenté (ratio ≈ 1.5).
     expect(next[0]![1]!.load_kg).toBeGreaterThan(50);
     expect(next[0]![2]!.load_kg).toBeGreaterThan(50);
-    // Et leurs reps sont pré-remplies avec la cible programme (8).
+    // reps pré-remplies avec la cible programme (8) + charge posée par l'algo.
     expect(next[0]![1]!.reps).toBe(8);
     expect(next[0]![2]!.reps).toBe(8);
+    expect(next[0]![1]!.loadAuto).toBe(true);
+  });
+
+  it('série plus légère que le bootstrap → re-dérive vers le BAS (fix #6, plus de gel)', () => {
+    const plan = makeCalibPlan();
+    // Bootstrap prescrit 50 kg, trop optimiste. L'user peine à 30 kg × 8 RPE 8
+    // → e1RM live ≈ 40 → charge cible (8 reps RPE 7) < 50. L'ancien ratio
+    // pouvait rester ≈ 1 et ne rien bouger ; ici ça descend systématiquement.
+    const entries: SessionEntries = [
+      [
+        { reps: 8, load_kg: 30, rpe: 8, done: true },
+        { reps: null, load_kg: 50, rpe: null, done: false },
+      ],
+    ];
+    const next = recalibrateUpcomingSets({
+      entries,
+      plan,
+      catalog,
+      bodyweightKg: 75,
+      itemIdx: 0,
+    });
+    expect(next[0]![1]!.load_kg).toBeLessThan(50);
+    expect(next[0]![1]!.load_kg).toBeGreaterThan(0);
+    expect(next[0]![1]!.loadAuto).toBe(true);
   });
 
   it("ne touche pas aux séries où l'user a déjà modifié la charge", () => {
@@ -499,18 +521,17 @@ describe('recalibrateUpcomingSets', () => {
       plan,
       catalog,
       bodyweightKg: 75,
-      e1rmInitial: { leg_press_45: 75 },
       itemIdx: 0,
     });
     expect(next[0]![1]!.load_kg).toBe(100); // respecté
     expect(next[0]![2]!.load_kg).toBeGreaterThan(50); // ajusté
   });
 
-  it('ne touche pas si écart < 5 %', () => {
+  it('série pile sur la cible (8 reps RPE 7 à 50 kg) → redonne la même charge', () => {
     const plan = makeCalibPlan();
     const entries: SessionEntries = [
       [
-        // 50 kg × 8 RPE 7 → e1rm_obs ≈ 68.3 → si baseline = 68.3, ratio = 1.0.
+        // e1RM live d'une série pile à la cible → charge re-dérivée = prescription.
         { reps: 8, load_kg: 50, rpe: 7, done: true },
         { reps: null, load_kg: 50, rpe: null, done: false },
       ],
@@ -520,19 +541,18 @@ describe('recalibrateUpcomingSets', () => {
       plan,
       catalog,
       bodyweightKg: 75,
-      e1rmInitial: { leg_press_45: 68.3 },
       itemIdx: 0,
     });
     expect(next[0]![1]!.load_kg).toBe(50);
-    // Pré-remplissage des reps reste actif même si charge inchangée.
+    // Pré-remplissage des reps reste actif même si la charge est inchangée.
     expect(next[0]![1]!.reps).toBe(8);
   });
 
-  it('1.17 (D9) — re-pilote une série déjà ajustée par l’algo (recoche corrigée)', () => {
+  it('re-pilote une série déjà posée par l’algo (loadAuto) depuis le e1RM live', () => {
     const plan = makeCalibPlan();
     // Série 2 déjà posée par un précédent recalibrage : charge 60 ≠ prescription
-    // (50) mais `loadAuto: true`. Une nouvelle mesure fiable doit la RE-ajuster
-    // depuis la prescription (50 × ratio), pas la figer comme « touchée user ».
+    // (50) mais `loadAuto: true`. Une nouvelle mesure fiable la RE-dérive (pas
+    // figée comme « touchée user »).
     const entries: SessionEntries = [
       [
         { reps: 10, load_kg: 80, rpe: 7, done: true },
@@ -544,10 +564,8 @@ describe('recalibrateUpcomingSets', () => {
       plan,
       catalog,
       bodyweightKg: 75,
-      e1rmInitial: { leg_press_45: 75 },
       itemIdx: 0,
     });
-    // ratio ≈ 1.5 → 50 × 1.5 ≈ 75 (recalculé depuis 50, pas depuis 60).
     expect(next[0]![1]!.load_kg).toBeGreaterThan(60);
     expect(next[0]![1]!.loadAuto).toBe(true);
   });

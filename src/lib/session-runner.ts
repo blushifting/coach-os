@@ -230,27 +230,34 @@ export function suggestNextLoadAfterTooEasy(args: {
 }
 
 /**
- * Conv #15 vague 2, refondu Conv #16 — Recalibrage continu en cours de séance.
+ * Conv #15 vague 2, refondu Conv #16, corrigé chantier E — recalibrage continu
+ * des exos EN CALIBRATION en cours de séance (le bootstrap est souvent très faux).
  *
  * **Périmètre** : appelé uniquement pour les exos en mode calibration (= pas
  * encore de snapshot e1RM en base, donc 1re séance de cet exo). Le caller
  * (SessionRunner) gate l'appel par `confidence !== 'measured'`.
  *
- * Quand l'utilisateur valide une série fiable (`done=true` ET reps/rpe dans
- * la plage utilisable par Epley), on calcule l'e1RM observé live via moyenne
- * pondérée des séries fiables déjà validées (cf. `computeLiveE1rmFromEntries`,
- * cohérent avec `updateE1rmForExercise` fin de séance) et on ajuste les
- * charges des séries non-cochées du même exo proportionnellement.
+ * Dès qu'une série cochée fournit un e1RM live (`computeLiveE1rmFromEntries`,
+ * moyenne pondérée des séries fiables — cohérent avec `updateE1rmForExercise`),
+ * on RE-DÉRIVE la charge de chaque série suivante encore pilotée par l'algo,
+ * exactement comme `buildPrescription` : `targetLoad(e1rm, reps, rpe)` décline le
+ * plafond estimé au % de 1RM visé (reps + RPE cibles DE CHAQUE série du plan),
+ * `externalLoadFromE1rm` retire le poids du corps, puis arrondi au cran de l'exo.
  *
- * On en profite aussi pour pré-remplir les `reps` des séries non-cochées
- * encore vides avec la cible programme du plan — une fois qu'une 1re série
- * fiable a posé un repère, on bascule en flow normal pour la suite.
+ * Contrairement à l'ancienne version (`charge_d'origine × e1RM_live/e1RM_bootstrap`),
+ * ça ne dépend d'AUCUNE baseline : ça se déclenche à chaque série informative,
+ * dans les deux sens (bootstrap trop bas → on monte ; trop haut → on descend) —
+ * fin du « gel de calibration » (une série bien plus lourde qui ne bougeait rien)
+ * et des valeurs bâtardes issues du ratio.
+ *
+ * On pré-remplit aussi les `reps` des séries non-cochées encore vides avec la
+ * cible du plan.
  *
  * Garde-fous :
- *  - Seuil de variation 5 % : on ne touche pas les charges pour des micro-écarts.
- *  - On n'écrase que les `load_kg` encore identiques à la prescription
- *    originale du plan (heuristique "non touché par l'user").
- *  - Arrondi sur `inc_kg` de l'exo (paliers réels de la machine/barre).
+ *  - On ne re-pilote qu'une série encore « algo » : charge = prescription
+ *    d'origine OU déjà posée par un recalibrage (`loadAuto`). Une série ajustée
+ *    à la main (`loadAuto:false`, charge ≠ prescription) est préservée.
+ *  - Séries déjà cochées (`done`) intactes.
  *  - Aucune mutation : retourne une nouvelle `SessionEntries`.
  */
 export function recalibrateUpcomingSets(args: {
@@ -258,51 +265,54 @@ export function recalibrateUpcomingSets(args: {
   plan: SessionPlan;
   catalog: Catalog;
   bodyweightKg: number;
-  e1rmInitial: Record<string, number>;
   itemIdx: number;
 }): SessionEntries {
-  const { entries, plan, catalog, bodyweightKg, e1rmInitial, itemIdx } = args;
+  const { entries, plan, catalog, bodyweightKg, itemIdx } = args;
   const item = plan.items[itemIdx];
   if (item === undefined) return entries;
   if (!catalog.has(item.exercise_id)) return entries;
   const exo = catalog.get(item.exercise_id);
-  const e1rmStart = e1rmInitial[item.exercise_id];
-  if (e1rmStart === undefined || e1rmStart <= 0) return entries;
 
   const exoEntries = entries[itemIdx] ?? [];
   const liveE1rm = computeLiveE1rmFromEntries(exo, bodyweightKg, exoEntries);
-  if (liveE1rm === null) return entries;
-
-  const ratio = liveE1rm / e1rmStart;
-  const significant = Math.abs(ratio - 1) >= 0.05;
+  if (liveE1rm === null || liveE1rm <= 0) return entries;
 
   const inc = exo.inc_kg > 0 ? exo.inc_kg : 1.25;
   return entries.map((sets, i) => {
     if (i !== itemIdx) return sets;
     return sets.map((s, j) => {
       if (s.done) return s;
-      const planLoad = item.sets[j]?.load_kg ?? null;
-      const planReps = item.sets[j]?.reps ?? null;
+      const planSet = item.sets[j];
+      const planLoad = planSet?.load_kg ?? null;
+      const planReps = planSet?.reps ?? null;
+      const planRpe = planSet?.rpe_target ?? null;
 
-      // 1.17 (D9) — on ajuste une série non cochée si sa charge est encore la
-      // prescription d'origine OU si elle est déjà pilotée par l'algo
-      // (`loadAuto`). Sans le 2e cas, un 1er recalibrage (ex. sur une coche
-      // erronée) figeait la charge : au recalibrage suivant `load != planLoad`
-      // la faisait passer pour « touchée par l'user ». La cible se recalcule
-      // toujours depuis `planLoad` (pas depuis la charge ajustée précédente).
+      // On ne re-pilote qu'une série encore « algo » : charge = prescription
+      // d'origine OU déjà posée par un recalibrage (`loadAuto`). Une série
+      // ajustée à la main par l'user est préservée. La cible est TOUJOURS
+      // re-dérivée du e1RM live (jamais depuis la charge ajustée précédente).
       let nextLoad = s.load_kg;
       let nextLoadAuto = s.loadAuto ?? false;
       const algoOwned = s.load_kg === planLoad || s.loadAuto === true;
-      if (significant && planLoad !== null && algoOwned) {
-        const adjusted = Math.max(
-          0,
-          Math.round((planLoad * ratio) / inc) * inc,
+      if (
+        algoOwned &&
+        planReps !== null &&
+        planReps > 0 &&
+        planRpe !== null &&
+        planRpe >= 0.5 &&
+        planRpe <= 10
+      ) {
+        const totalLoad = targetLoad(liveE1rm, planReps, planRpe);
+        const target = roundToIncrement(
+          externalLoadFromE1rm(totalLoad, exo, bodyweightKg),
+          inc,
         );
-        nextLoad = adjusted;
-        nextLoadAuto = true;
+        if (target !== s.load_kg) {
+          nextLoad = target;
+          nextLoadAuto = true;
+        }
       }
-      // Pré-remplissage reps : on n'écrit que sur les séries où l'user n'a
-      // pas encore touché (reps null).
+      // Pré-remplissage reps : on n'écrit que sur les séries encore vides.
       const nextReps = s.reps === null && planReps !== null ? planReps : s.reps;
 
       if (
