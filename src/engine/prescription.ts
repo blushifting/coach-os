@@ -172,6 +172,18 @@ export function exerciseUsesLoadFloor(state: UserState, exercise: Exercise): boo
 }
 
 /**
+ * Chantier D — l'exo est-il piloté par le cliquet de REPS
+ * (`prescribed_reps_floor`) ? Oui pour le poids du corps PUR
+ * (`ChargeType.BODYWEIGHT`, charge externe = 0) et le mode PDC (`pdc_only`) :
+ * ces exos ne prennent pas de kg, la progression se fait en ajoutant des reps.
+ * Mutuellement exclusif avec `exerciseUsesLoadFloor` (qui exclut déjà ces cas).
+ */
+export function exerciseUsesRepsFloor(state: UserState, exercise: Exercise): boolean {
+  if (effectivePdcOnly(state, exercise)) return true;
+  return exercise.charge === ChargeType.BODYWEIGHT;
+}
+
+/**
  * Conv #20 — Reps nécessaires pour atteindre `e1rmTotal` à `rpeTarget` quand
  * la charge externe est forcée à 0 (mode PDC). On résout Epley inverse :
  *
@@ -490,14 +502,28 @@ export function buildPrescription(
     reps = targetReps(profile, exercise);
   }
 
-  // Conv #20 — mode PDC sticky : charge externe forcée à 0, reps recalculés
-  // pour hit le RPE cible avec le seul poids du corps. Epley étendu (n_eq
-  // peut sortir de la zone fiable [≤15], on accepte la prescription quand
-  // même — le but est de proposer un volume cohérent même sans charge).
-  const pdcOnly = state !== null && effectivePdcOnly(state, exercise);
+  // Chantier D — cliquet de reps (poids du corps PUR + mode PDC) : la charge
+  // externe est forcée à 0 et les reps prescrites viennent du PLANCHER persisté
+  // (`prescribed_reps_floor`) ; l'e1RM/les reps fixes ci-dessus ne servent qu'à
+  // SEED ce plancher la 1re fois (mute `state`, comme le cliquet de charge).
+  // Remplace l'ancien traitement `pdc_only` (Conv #20) — mut. excl. avec le
+  // cliquet de charge. Récup : reps inchangées (le volume est réduit par le
+  // nombre de séries), RPE 6 déjà appliqué via `rpe`.
   let extLoad: number;
-  if (pdcOnly) {
-    reps = targetRepsForPdc(e1rmTotal, profile.bodyweight_kg, rpe, k);
+  if (state !== null && exerciseUsesRepsFloor(state, exercise)) {
+    const floor = state.prescribed_reps_floor[exercise.id];
+    if (floor !== undefined) {
+      reps = floor;
+    } else {
+      // Seed : poids du corps PUR garde `reps` = reps fixes de l'objectif (déjà
+      // calculé plus haut). ⚠️ ne PAS seeder un PDC pur via `targetRepsForPdc` :
+      // son bootstrap e1RM (bw × pct × facteurs) ≪ poids du corps → 1 rep. Le
+      // mode PDC, lui, a un e1RM réel → Epley inverse.
+      if (effectivePdcOnly(state, exercise)) {
+        reps = targetRepsForPdc(e1rmTotal, profile.bodyweight_kg, rpe, k);
+      }
+      state.prescribed_reps_floor[exercise.id] = reps;
+    }
     extLoad = 0;
   } else {
     const totalLoad = targetLoad(e1rmTotal, reps, rpe, k);

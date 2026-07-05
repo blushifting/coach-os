@@ -36,6 +36,7 @@ import {
 import {
   updateE1rmForExercise,
   updatePrescribedLoadFloorForExercise,
+  updatePrescribedRepsFloorForExercise,
   type E1rmUpdate,
 } from './feedback';
 import {
@@ -573,6 +574,9 @@ export function recordFeedback(
     // Refonte progression — cliquet de charge (hors déload, géré par le `continue`
     // ci-dessus). Graduation R+3 / anti-régression / descente sur `prescribed_load_floor`.
     updatePrescribedLoadFloorForExercise(state, ex, fbs);
+    // Chantier D — cliquet de reps (exos poids du corps pur + PDC). Mut. excl.
+    // avec le cliquet de charge : chaque fonction no-op hors de son périmètre.
+    updatePrescribedRepsFloorForExercise(state, ex, fbs);
   }
 
   if (options.plan) {

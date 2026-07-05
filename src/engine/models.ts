@@ -789,6 +789,20 @@ export interface UserState {
    */
   prescribed_load_floor: Record<string, number>;
   /**
+   * Chantier D — plancher de REPS prescrites par exercice, miroir du cliquet de
+   * charge pour les exos au poids du corps PUR (`ChargeType.BODYWEIGHT`) et le
+   * mode PDC (`pdc_only`) : la charge externe y est figée à 0, donc la
+   * progression se fait en AJOUTANT des reps, pas des kg. `buildPrescription`
+   * lit ce plancher s'il existe (sinon il le SEED : reps fixes de l'objectif
+   * pour le PDC pur, Epley inverse pour le mode PDC). Monte d'un cran quand la
+   * meilleure série atteint `plancher + GRADUATION_RESERVE`, plafonné à
+   * `REPS_FLOOR_MAX` (au-delà : inviter au lest). Persiste d'un cycle à l'autre
+   * et est effacé aux mêmes endroits que le cliquet de charge (reset catalogue,
+   * plafond manuel, changement d'objectif). Mutuellement exclusif avec
+   * `prescribed_load_floor`. Absent sur anciens blobs.
+   */
+  prescribed_reps_floor: Record<string, number>;
+  /**
    * Conv #22 — squelette du cycle courant (grille pattern × séance) si on
    * est en mode custom co-construit. Persisté à côté de `current_cycle_plan`
    * pour permettre "Modifier la grille" et la re-distribution des séries
@@ -848,6 +862,7 @@ export function makeUserState(profile: Profile): UserState {
     equipment_overrides: {},
     weekly_volume_debt: {},
     prescribed_load_floor: {},
+    prescribed_reps_floor: {},
     current_skeleton: null,
     favorite_exercise_per_pattern: {},
     favorite_exercise_ids: [],

@@ -150,6 +150,8 @@ const serializedUserStateSchema = z.object({
   equipment_overrides: z.record(z.string(), equipmentOverrideSchema),
   weekly_volume_debt: z.record(z.string(), z.number()).optional(),
   prescribed_load_floor: z.record(z.string(), z.number()).optional(),
+  // Chantier D — cliquet de reps PDC (absent des anciens snapshots).
+  prescribed_reps_floor: z.record(z.string(), z.number()).optional(),
   // Chantier B — déload opt-in (absent des anciens snapshots, default null).
   deload_decision: z.enum(['accepted', 'declined']).nullable().optional(),
 });

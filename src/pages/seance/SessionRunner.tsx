@@ -9,6 +9,8 @@ import { cn } from '@/lib/cn';
 import { triggerHaptic } from '@/lib/haptics';
 import type { Catalog } from '@/engine/catalog';
 import { ChargeType, type SessionPlan } from '@/engine/models';
+import { exerciseUsesRepsFloor } from '@/engine/prescription';
+import { REPS_FLOOR_MAX } from '@/engine/feedback';
 import { useEngine } from '@/hooks/useEngine';
 import { useCoachOsStore } from '@/store';
 import { useDemoMode, useGymBrand } from '@/store/selectors';
@@ -318,6 +320,13 @@ export function SessionRunner({
             userState.equipment_overrides[ex.id]?.pdc_only === true &&
             (ex.charge === ChargeType.BODYWEIGHT_LOADED ||
               ex.charge === ChargeType.BODYWEIGHT_ASSISTED);
+          // Chantier D — cliquet de reps arrivé au cap : le poids du corps seul
+          // ne suffit plus à surcharger, on invite au lest / variante plus dure.
+          const atRepsCap =
+            ex !== null &&
+            userState !== null &&
+            exerciseUsesRepsFloor(userState, ex) &&
+            (userState.prescribed_reps_floor[ex.id] ?? 0) >= REPS_FLOOR_MAX;
           return (
             <li key={`${item.exercise_id}-${i}`}>
               <Card
@@ -458,6 +467,21 @@ export function SessionRunner({
                         (assisté = poids retiré, lesté = poids ajouté) là où on
                         règle la charge. Rien pour les charges normales. */}
                     {ex !== null && <ChargeMechanicNote charge={ex.charge} />}
+
+                    {/* Chantier D — cliquet de reps au cap : le poids du corps
+                        seul ne suffit plus à surcharger. */}
+                    {atRepsCap && (
+                      <p
+                        data-testid="reps-cap-hint"
+                        className="-mx-1 mb-1 rounded-lg border border-amber-700/40 bg-amber-900/20 px-3 py-2 text-xs leading-relaxed text-amber-100"
+                      >
+                        <span className="font-semibold text-amber-200">
+                          Tu maîtrises cet exercice au poids du corps.
+                        </span>{' '}
+                        Pour progresser encore, ajoute du lest ou passe à une
+                        variante plus difficile.
+                      </p>
+                    )}
 
                     <div className="flex flex-col gap-1.5">
                       {entrySets.map((entry, j) => (

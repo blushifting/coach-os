@@ -21,6 +21,7 @@ import {
   effectiveIncrement,
   effectiveLoadForE1rm,
   exerciseUsesLoadFloor,
+  exerciseUsesRepsFloor,
   nEquiv,
   resolveTargetReps,
   roundToIncrement,
@@ -237,12 +238,14 @@ export function updateE1rmForExercise(
  */
 export const GRADUATION_RESERVE = 3;
 
-/** Meilleur n_équiv (série la plus « facile ») d'un lot de séries + sa charge, ou null. */
+/** Meilleur n_équiv (série la plus « facile ») d'un lot de séries + sa charge et
+ *  ses reps réalisées, ou null. */
 function bestNeq(
   feedbacks: readonly SetFeedback[],
-): { neq: number; load: number } | null {
+): { neq: number; load: number; reps: number } | null {
   let neq = -Infinity;
   let load = 0;
+  let reps = 0;
   for (const f of feedbacks) {
     if (f.reps_done <= 0) continue;
     if (!(f.rpe_perceived >= 0.5 && f.rpe_perceived <= 10)) continue;
@@ -250,9 +253,10 @@ function bestNeq(
     if (v > neq) {
       neq = v;
       load = f.load_kg;
+      reps = f.reps_done;
     }
   }
-  return neq === -Infinity ? null : { neq, load };
+  return neq === -Infinity ? null : { neq, load, reps };
 }
 
 /** Meilleur n_équiv de la dernière séance ANTÉRIEURE contenant cet exo (ou null). */
@@ -318,4 +322,78 @@ export function updatePrescribedLoadFloorForExercise(
   }
 
   state.prescribed_load_floor[exercise.id] = next;
+}
+
+// =============================================================================
+// 5. Cliquet de reps prescrites (chantier D — poids du corps pur + mode PDC)
+// =============================================================================
+
+/**
+ * Marge de réserve exigée pour ADOPTER une performance meilleure que le plancher
+ * (anti-régression) : la meilleure série doit rester à RIR ≥ ADOPTION_RESERVE
+ * au-delà du plancher — une série menée à l'échec n'est pas un régime de
+ * croisière. Distinct de GRADUATION_RESERVE (3). Chantier E réutilisera cette
+ * même constante pour le cliquet de charge.
+ */
+export const ADOPTION_RESERVE = 2;
+
+/**
+ * Cap haut du cliquet de reps : au-delà, on cesse de graduer. Le poids du corps
+ * seul ne suffit plus à surcharger — l'UI invite alors au lest ou à une
+ * variante plus dure (cf. `reps-cap-hint`).
+ */
+export const REPS_FLOOR_MAX = 30;
+
+/** Plancher bas du cliquet de reps : une descente ne va jamais sous ce seuil. */
+export const REPS_FLOOR_MIN = 5;
+
+/**
+ * Met à jour `state.prescribed_reps_floor[exo]` à partir des séries de cet exo.
+ * Miroir EXACT du cliquet de charge (`updatePrescribedLoadFloorForExercise`)
+ * mais sur les REPS : pour les exos au poids du corps PUR (charge = 0) ou en
+ * mode PDC, la progression se fait en ajoutant des reps, pas des kg. Le plancher
+ * joue lui-même le rôle des « reps cibles R » (la prescription = le plancher).
+ *
+ * Règles :
+ *  - **Graduation** : la MEILLEURE série (n_équiv le plus haut) atteint
+ *    `plancher + GRADUATION_RESERVE` → plancher +1 rep. Stoppe au cap
+ *    `REPS_FLOOR_MAX`.
+ *  - **Anti-régression** : l'user a fait PLUS de reps que le plancher en gardant
+ *    `n_équiv ≥ plancher + ADOPTION_RESERVE` → on adopte les reps faites
+ *    (plafonnées au cap).
+ *  - **Descente** : CETTE séance ET la précédente de l'exo sous le plancher
+ *    (`n_équiv < plancher`) → plancher −1 (jamais sous `REPS_FLOOR_MIN`).
+ *
+ * Cliquet à sens unique sauf descente (hystérésis). Le caller skippe la semaine
+ * de récup. Exos hors périmètre reps-floor ignorés.
+ */
+export function updatePrescribedRepsFloorForExercise(
+  state: UserState,
+  exercise: Exercise,
+  feedbacks: readonly SetFeedback[],
+): void {
+  if (!exerciseUsesRepsFloor(state, exercise)) return;
+  const best = bestNeq(feedbacks);
+  if (best === null) return;
+
+  const cur = state.prescribed_reps_floor[exercise.id] ?? best.reps;
+  let next = cur;
+
+  // Anti-régression : plus de reps que le plancher en gardant de la réserve.
+  if (best.reps > next && best.neq >= cur + ADOPTION_RESERVE) {
+    next = Math.min(REPS_FLOOR_MAX, best.reps);
+  }
+
+  if (cur < REPS_FLOOR_MAX && best.neq >= cur + GRADUATION_RESERVE) {
+    // Graduation : +1 rep (jamais au-dessus du cap).
+    next = Math.min(REPS_FLOOR_MAX, next + 1);
+  } else if (next === cur && best.neq < cur) {
+    // Descente sur sous-perf répétée (2 séances de suite sous le plancher).
+    const prev = previousBestNeqForExercise(state, exercise.id);
+    if (prev !== null && prev < cur) {
+      next = Math.max(REPS_FLOOR_MIN, next - 1);
+    }
+  }
+
+  state.prescribed_reps_floor[exercise.id] = next;
 }
