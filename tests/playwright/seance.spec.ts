@@ -58,7 +58,7 @@ test('seance : depuis programme → runner → terminer → bilan → retour', a
 
   // État C : bilan (Conv #2x : la section PR a laissé place aux Plafonds).
   await expect(page.getByTestId('session-summary')).toBeVisible();
-  await expect(page.getByTestId('summary-volume')).toBeVisible();
+  await expect(page.getByTestId('summary-sets')).toBeVisible();
   await expect(page.getByTestId('summary-plafonds')).toBeVisible();
 
   // Retour programme

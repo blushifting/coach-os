@@ -136,11 +136,15 @@ function Flame({ active }: { readonly active: boolean }) {
 
 function WeekSessionsWidget({ sessions }: { readonly sessions: WeekSessions }) {
   const hasPlan = sessions.planned > 0;
+  // #10 (E-3) — une séance libre/bonus peut faire dépasser le planifié
+  // ("4/3", anneau sur-rempli). Dépasser = accompli, pas un bug : dès que
+  // l'objectif est atteint on masque la fraction et on clampe l'anneau à 100 %.
+  const reached = hasPlan && sessions.done >= sessions.planned;
   return (
     <WidgetShell testId="widget-week-sessions" label="Cette semaine">
       <div className="flex flex-1 items-center gap-3">
         <ProgressRing
-          value={sessions.done}
+          value={hasPlan ? Math.min(sessions.done, sessions.planned) : sessions.done}
           total={hasPlan ? sessions.planned : 1}
           size={52}
           strokeWidth={5}
@@ -150,13 +154,15 @@ function WeekSessionsWidget({ sessions }: { readonly sessions: WeekSessions }) {
             <span className="font-display text-3xl font-bold tabular-nums text-white">
               {sessions.done}
             </span>
-            {hasPlan && (
+            {hasPlan && !reached && (
               <span className="text-sm text-anthracite-300 tabular-nums">
                 / {sessions.planned}
               </span>
             )}
           </div>
-          <span className="mt-1 text-[11px] text-anthracite-300">séances</span>
+          <span className="mt-1 text-[11px] text-anthracite-300">
+            {reached ? 'objectif atteint' : 'séances'}
+          </span>
         </div>
       </div>
     </WidgetShell>
@@ -193,10 +199,20 @@ function CyclePctWidget({ cycle }: { readonly cycle: CycleProgress }) {
         </div>
         <div className="flex flex-col leading-none">
           <span className="font-display text-base font-semibold text-white tabular-nums">
-            {cycle.planned > 0 ? `${cycle.done}/${cycle.planned}` : '—'}
+            {/* #10 (E-3) — même logique que la tuile "Cette semaine" : au-delà
+                du planifié on montre le total sans fraction (accompli). */}
+            {cycle.planned <= 0
+              ? '—'
+              : cycle.done >= cycle.planned
+                ? `${cycle.done}`
+                : `${cycle.done}/${cycle.planned}`}
           </span>
           <span className="mt-1 text-[11px] text-anthracite-300">
-            {cycle.planned > 0 ? 'séances faites' : 'aucun cycle en cours'}
+            {cycle.planned <= 0
+              ? 'aucun cycle en cours'
+              : cycle.done >= cycle.planned
+                ? 'objectif atteint'
+                : 'séances faites'}
           </span>
         </div>
       </div>

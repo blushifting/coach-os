@@ -9,7 +9,12 @@ import { useGymBrand } from '@/store/selectors';
 import { GymBrand } from '@/engine/models';
 import { cn } from '@/lib/cn';
 import { sessionDisplayName } from '@/lib/session-label';
-import type { PlafondChange, SessionSummaryData } from '@/lib/session-runner';
+import { muscleLabel, type CoverageStatus } from '@/lib/progress';
+import type {
+  PlafondChange,
+  SessionMuscleVolume,
+  SessionSummaryData,
+} from '@/lib/session-runner';
 
 interface SessionSummaryProps {
   readonly label: string;
@@ -52,27 +57,31 @@ export function SessionSummary({
         </div>
       </Card>
 
-      <Card className="grid grid-cols-2 gap-3" data-testid="summary-volume">
-        <Metric
-          label="Volume du jour"
-          value={`${Math.round(data.volumeKgToday).toLocaleString('fr-FR')} kg`}
-        />
-        <Metric
-          label="vs semaine dernière"
-          value={
-            data.volumeDeltaPct === null
-              ? '—'
-              : `${data.volumeDeltaPct >= 0 ? '+' : ''}${data.volumeDeltaPct.toFixed(0)}%`
-          }
-          tone={
-            data.volumeDeltaPct === null
-              ? 'neutral'
-              : data.volumeDeltaPct >= 0
-              ? 'positive'
-              : 'negative'
-          }
-        />
+      <Card
+        className="flex items-baseline gap-3"
+        data-testid="summary-sets"
+      >
+        <span className="font-display text-2xl font-semibold text-white tabular-nums">
+          {data.setsCount}
+        </span>
+        <span className="text-sm text-anthracite-200">
+          série{data.setsCount > 1 ? 's' : ''}
+        </span>
+        <span className="ml-auto text-sm tabular-nums text-anthracite-300">
+          {data.exerciseCount} exercice{data.exerciseCount > 1 ? 's' : ''}
+        </span>
       </Card>
+
+      {data.muscleVolume.length > 0 && (
+        <Card className="flex flex-col gap-2.5" data-testid="summary-muscle-volume">
+          <h3 className="text-sm font-semibold text-white">
+            Volume par muscle · cette semaine
+          </h3>
+          {data.muscleVolume.map((m) => (
+            <MuscleVolumeRow key={m.muscle} data={m} />
+          ))}
+        </Card>
+      )}
 
       <Card data-testid="summary-plafonds" className="flex flex-col gap-2">
         <h3 className="text-sm font-semibold text-white">
@@ -109,29 +118,64 @@ export function SessionSummary({
   );
 }
 
-function Metric({
-  label,
-  value,
-  tone = 'neutral',
-}: {
-  label: string;
-  value: string;
-  tone?: 'positive' | 'negative' | 'neutral';
-}) {
+/** Série(s) pondérée(s) sans arrondi trompeur (cf. #11) : décimale si non entier. */
+function formatSets(v: number): string {
+  return Number.isInteger(v) ? String(v) : v.toFixed(1);
+}
+
+const STATUS_TEXT: Record<CoverageStatus, string> = {
+  non_travaille: 'text-anthracite-300',
+  sous_min: 'text-sang-400',
+  ok: 'text-emerald-400',
+  depassement: 'text-amber-400',
+  hors_scope: 'text-anthracite-300',
+};
+
+const STATUS_BAR: Record<CoverageStatus, string> = {
+  non_travaille: 'bg-anthracite-500',
+  sous_min: 'bg-sang-500',
+  ok: 'bg-emerald-500',
+  depassement: 'bg-amber-500',
+  hors_scope: 'bg-anthracite-500',
+};
+
+/**
+ * #13 (E-3) — ligne « volume d'un muscle ce jour » : contribution du jour (+X),
+ * total hebdo rapporté à la cible V_min–V_max, et barre colorée par statut.
+ * Un muscle non suivi (hors objectifs) montre sa contribution sans cible.
+ */
+function MuscleVolumeRow({ data }: { data: SessionMuscleVolume }) {
+  const tracked = data.vMax > 0;
+  const pct = tracked ? Math.min(100, (data.weekTotal / data.vMax) * 100) : 0;
   return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-xs uppercase tracking-wide text-anthracite-300">{label}</span>
-      <span
-        className={
-          tone === 'positive'
-            ? 'text-lg font-semibold text-white tabular-nums'
-            : tone === 'negative'
-            ? 'text-lg font-semibold text-sang-500 tabular-nums'
-            : 'text-lg font-semibold text-white tabular-nums'
-        }
-      >
-        {value}
-      </span>
+    <div className="flex flex-col gap-1" data-testid={`summary-muscle-${data.muscle}`}>
+      <div className="flex items-baseline justify-between gap-2 text-xs">
+        <span className="min-w-0 truncate text-anthracite-200">
+          {muscleLabel(data.muscle)}
+          <span className="ml-1 text-emerald-400 tabular-nums">
+            +{formatSets(data.sessionSets)}
+          </span>
+        </span>
+        {tracked ? (
+          <span className={cn('shrink-0 tabular-nums', STATUS_TEXT[data.status])}>
+            {formatSets(data.weekTotal)}
+            <span className="text-anthracite-400">
+              {' '}
+              / {data.vMin.toFixed(0)}–{data.vMax.toFixed(0)}
+            </span>
+          </span>
+        ) : (
+          <span className="shrink-0 text-anthracite-400">hors objectifs</span>
+        )}
+      </div>
+      {tracked && (
+        <div className="h-1.5 overflow-hidden rounded-full bg-anthracite-700">
+          <div
+            className={cn('h-full rounded-full', STATUS_BAR[data.status])}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      )}
     </div>
   );
 }

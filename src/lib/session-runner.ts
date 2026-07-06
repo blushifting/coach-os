@@ -19,6 +19,7 @@ import type {
   SessionFeedback,
   SessionPlan,
   SetFeedback,
+  UserState,
 } from '@/engine/models';
 import type { Catalog } from '@/engine/catalog';
 import {
@@ -29,6 +30,13 @@ import {
   targetLoad,
 } from '@/engine/prescription';
 import { aggregateE1rmWeighted, RPE_RESERVE_FLOOR } from '@/engine/feedback';
+import { effectiveVolumeBounds } from '@/engine/volume';
+import {
+  buildMusclesOf,
+  classifyVolume,
+  sumMuscleSets,
+  type CoverageStatus,
+} from '@/lib/progress';
 import type { FeedbackRow } from '@/db/schema';
 
 // =============================================================================
@@ -438,12 +446,27 @@ export function buildSessionFeedback(
 // Bilan fin de séance
 // =============================================================================
 
+export interface SessionMuscleVolume {
+  readonly muscle: string;
+  /** Séries pondérées apportées par CETTE séance. */
+  readonly sessionSets: number;
+  /** Séries pondérées cumulées cette semaine de programme (séance incluse). */
+  readonly weekTotal: number;
+  readonly vMin: number;
+  readonly vMax: number;
+  readonly status: CoverageStatus;
+}
+
 export interface SessionSummaryData {
-  readonly volumeKgToday: number;
-  readonly volumeKgLastSameLabel: number | null;
-  readonly volumeDeltaPct: number | null;
-  /** Liste des exos avec une augmentation d'e1RM (sur ce feedback). */
-  readonly prs: ReadonlyArray<{ exerciseId: string; deltaKg: number }>;
+  /** Nombre total de séries effectuées dans la séance. */
+  readonly setsCount: number;
+  /** Nombre d'exercices distincts de la séance. */
+  readonly exerciseCount: number;
+  /**
+   * #13 (E-3) — volume par muscle travaillé ce jour, rapporté à la cible hebdo.
+   * Remplace le tonnage kg (non fiable). Trié par contribution décroissante.
+   */
+  readonly muscleVolume: ReadonlyArray<SessionMuscleVolume>;
   /**
    * Conv #21 — Évolution complète des plafonds touchés par la séance (tous
    * les exos avec une mesure fiable, pas seulement les PR). Pour chaque exo
@@ -495,45 +518,51 @@ export function feedbackRowVolume(
 }
 
 /**
- * Calcule le bilan post-feedback :
- *  - volume du jour
- *  - volume de la même séance (`label`) la semaine précédente, si dispo
- *  - PR du jour = exos pour lesquels `summary[exId]` retourne un delta > 0
+ * Calcule le bilan post-feedback (#13, E-3) :
+ *  - nombre de séries effectuées + exos distincts ;
+ *  - volume par muscle travaillé, rapporté à la cible hebdo (contribution de la
+ *    séance + total de la semaine de programme vs V_min–V_max) ;
+ *  - évolution des plafonds mesurés (MAJ définitives).
+ *
+ * Le total hebdo regroupe par SEMAINE DE PROGRAMME via (cycle, semaine) —
+ * plus robuste qu'un calcul de dates, et aligné sur le calendrier.
  */
 export function computeSessionSummary(
   feedback: SessionFeedback,
   summary: RecordFeedbackResult,
   previousFeedbacks: ReadonlyArray<FeedbackRow>,
   catalog: Catalog,
-  bodyweightKg: number,
+  state: UserState,
   previouslyCalibratedExoIds: ReadonlySet<string> = new Set(),
 ): SessionSummaryData {
-  const volumeKgToday = computeSessionVolume(feedback, catalog, bodyweightKg);
+  const setsCount = feedback.sets.length;
+  const exerciseCount = new Set(feedback.sets.map((s) => s.exercise_id)).size;
 
-  // Cherche la séance la plus récente avec le même label, dans une semaine
-  // strictement antérieure (même cycle ou cycle précédent).
-  const candidates = previousFeedbacks
+  const musclesOf = buildMusclesOf(catalog);
+  const sessionByMuscle = sumMuscleSets([feedback], musclesOf);
+  const weekPrior = previousFeedbacks
     .filter(
       (r) =>
-        r.feedback.label === feedback.label &&
-        (r.cycle_index < feedback.cycle_index ||
-          (r.cycle_index === feedback.cycle_index &&
-            r.week_in_cycle < feedback.week_in_cycle)),
+        r.cycle_index === feedback.cycle_index &&
+        r.week_in_cycle === feedback.week_in_cycle,
     )
-    .sort((a, b) =>
-      b.cycle_index - a.cycle_index !== 0
-        ? b.cycle_index - a.cycle_index
-        : b.week_in_cycle - a.week_in_cycle,
-    );
-  const previous = candidates[0] ?? null;
-  const volumeKgLastSameLabel =
-    previous === null ? null : feedbackRowVolume(previous, catalog, bodyweightKg);
-  const volumeDeltaPct =
-    volumeKgLastSameLabel === null || volumeKgLastSameLabel === 0
-      ? null
-      : ((volumeKgToday - volumeKgLastSameLabel) / volumeKgLastSameLabel) * 100;
+    .map((r) => r.feedback);
+  const weekByMuscle = sumMuscleSets([...weekPrior, feedback], musclesOf);
+  const muscleVolume: SessionMuscleVolume[] = Object.keys(sessionByMuscle)
+    .map((muscle) => {
+      const [vMin, vMax] = effectiveVolumeBounds(state, muscle);
+      const weekTotal = weekByMuscle[muscle] ?? 0;
+      return {
+        muscle,
+        sessionSets: sessionByMuscle[muscle] ?? 0,
+        weekTotal,
+        vMin,
+        vMax,
+        status: classifyVolume(weekTotal, vMin, vMax),
+      };
+    })
+    .sort((a, b) => b.sessionSets - a.sessionSets);
 
-  const prs: Array<{ exerciseId: string; deltaKg: number }> = [];
   const plafondChanges: PlafondChange[] = [];
   for (const [exId, update] of Object.entries(summary)) {
     // Bloc R — on ignore les MAJ provisoires (séance tout-4+) : pas de plafond
@@ -547,13 +576,9 @@ export function computeSessionSummary(
       newE,
       deltaKg: wasCalibrated ? newE - oldE : null,
     });
-    if (wasCalibrated && newE - oldE > 0.05) {
-      prs.push({ exerciseId: exId, deltaKg: newE - oldE });
-    }
   }
-  prs.sort((a, b) => b.deltaKg - a.deltaKg);
-  // Tri du nouveau bloc : premières calibrations en tête (event saillant),
-  // puis évolutions par |delta| décroissant.
+  // Tri : premières calibrations en tête (event saillant), puis évolutions par
+  // |delta| décroissant.
   plafondChanges.sort((a, b) => {
     const aFirst = a.oldE === null ? 1 : 0;
     const bFirst = b.oldE === null ? 1 : 0;
@@ -561,13 +586,7 @@ export function computeSessionSummary(
     return Math.abs(b.deltaKg ?? 0) - Math.abs(a.deltaKg ?? 0);
   });
 
-  return {
-    volumeKgToday,
-    volumeKgLastSameLabel,
-    volumeDeltaPct,
-    prs,
-    plafondChanges,
-  };
+  return { setsCount, exerciseCount, muscleVolume, plafondChanges };
 }
 
 // =============================================================================

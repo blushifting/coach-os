@@ -19,7 +19,8 @@ import {
   updateSetEntry,
   type SessionEntries,
 } from '@/lib/session-runner';
-import type { SessionFeedback, SessionPlan } from '@/engine/models';
+import type { SessionFeedback, SessionPlan, UserState } from '@/engine/models';
+import { MuscleObjective, MuscleStatus } from '@/engine/models';
 import type { FeedbackRow } from '@/db/schema';
 import type { RecordFeedbackResult } from '@/engine/engine';
 import { Catalog } from '@/engine/catalog';
@@ -261,49 +262,66 @@ describe('computeSessionSummary', () => {
     label: 'Push',
     sets: [{ exercise_id: 'bench_press', reps_done: 5, load_kg: 80, rpe_perceived: 8 }],
   };
+  // bench_press n'existe pas dans le catalog réel → muscleVolume vide, mais
+  // setsCount / exerciseCount / plafondChanges restent testables.
+  const emptyState = {
+    volume_min: {},
+    volume_max: {},
+    muscle_goals: {},
+  } as unknown as UserState;
 
-  it('volume du jour, pas de comparaison si pas d\'historique', () => {
-    const summary: RecordFeedbackResult = {};
-    const r = computeSessionSummary(fb, summary, [], catalog, 80);
-    expect(r.volumeKgToday).toBe(400);
-    expect(r.volumeKgLastSameLabel).toBeNull();
-    expect(r.volumeDeltaPct).toBeNull();
+  it('#13 — séries effectuées + exos distincts', () => {
+    const r = computeSessionSummary(fb, {}, [], catalog, emptyState);
+    expect(r.setsCount).toBe(1);
+    expect(r.exerciseCount).toBe(1);
   });
 
-  it('compare au plus récent même label, calcule delta %', () => {
-    const prev = makeFeedbackRow('Push', 1, 1, [
-      { exercise_id: 'bench_press', reps_done: 5, load_kg: 70 },
-    ]);
-    const r = computeSessionSummary(fb, {}, [prev], catalog, 80);
-    expect(r.volumeKgLastSameLabel).toBe(350);
-    expect(r.volumeDeltaPct).toBeCloseTo(((400 - 350) / 350) * 100, 1);
-  });
-
-  it('ignore les feedbacks de label différent ou de semaine ≥', () => {
-    const sameWeek = makeFeedbackRow('Push', 1, 2, [
-      { exercise_id: 'b', reps_done: 1, load_kg: 1 },
-    ]);
-    const otherLabel = makeFeedbackRow('Pull', 1, 1, [
-      { exercise_id: 'b', reps_done: 10, load_kg: 100 },
-    ]);
-    const r = computeSessionSummary(fb, {}, [sameWeek, otherLabel], catalog, 80);
-    expect(r.volumeKgLastSameLabel).toBeNull();
-  });
-
-  it('PR : exos avec delta e1RM > 0.05 kg', () => {
-    const summary: RecordFeedbackResult = {
-      bench_press: { old: 80, next: 81.5, definitive: true },
-      shoulder_press: { old: 40, next: 40, definitive: true }, // pas de PR
-      curl: { old: 15, next: 14.5, definitive: true }, // régression
+  it('#13 — volume par muscle : contribution du jour + total hebdo vs cible', () => {
+    const exo = 'leg_press_45';
+    const muscles = catalog.get(exo).muscles;
+    const primary = Object.keys(muscles)[0]!;
+    const coef = muscles[primary]!;
+    const state = {
+      volume_min: { [primary]: 8 },
+      volume_max: { [primary]: 14 },
+      muscle_goals: {
+        [primary]: {
+          objective: MuscleObjective.HYPERTROPHIE,
+          status: MuscleStatus.PRIORITAIRE,
+          priority_rank: 1,
+        },
+      },
+    } as unknown as UserState;
+    const today: SessionFeedback = {
+      seance_date: '2026-05-13',
+      week_in_cycle: 2,
+      cycle_index: 1,
+      rpe_target: 8,
+      label: 'Legs',
+      sets: [
+        { exercise_id: exo, reps_done: 8, load_kg: 100, rpe_perceived: 8 },
+        { exercise_id: exo, reps_done: 8, load_kg: 100, rpe_perceived: 8 },
+      ],
     };
-    // Conv #21 — Les 3 exos sont déjà calibrés (avaient un plafond avant).
-    // Sans ce set, ils seraient classés en "première calibration" et n'iraient
-    // pas dans `prs`.
-    const calibrated = new Set(['bench_press', 'shoulder_press', 'curl']);
-    const r = computeSessionSummary(fb, summary, [], catalog, 80, calibrated);
-    expect(r.prs).toHaveLength(1);
-    expect(r.prs[0]!.exerciseId).toBe('bench_press');
-    expect(r.prs[0]!.deltaKg).toBeCloseTo(1.5, 2);
+    // Antérieure la MÊME semaine de programme → comptée dans le total hebdo.
+    const priorSameWeek = makeFeedbackRow('Legs', 1, 2, [
+      { exercise_id: exo, reps_done: 8, load_kg: 90 },
+    ]);
+    // Antérieure une AUTRE semaine → exclue du total hebdo.
+    const priorOtherWeek = makeFeedbackRow('Legs', 1, 1, [
+      { exercise_id: exo, reps_done: 8, load_kg: 90 },
+    ]);
+    const r = computeSessionSummary(
+      today,
+      {},
+      [priorSameWeek, priorOtherWeek],
+      catalog,
+      state,
+    );
+    const row = r.muscleVolume.find((m) => m.muscle === primary)!;
+    expect(row).toBeDefined();
+    expect(row.sessionSets).toBeCloseTo(2 * coef, 5);
+    expect(row.weekTotal).toBeCloseTo(3 * coef, 5);
   });
 
   it('plafondChanges : distingue 1re calibration, hausse, baisse, plat', () => {
@@ -314,7 +332,7 @@ describe('computeSessionSummary', () => {
       pullup: { old: 60, next: 70, definitive: true }, // 1re calibration
     };
     const calibrated = new Set(['bench_press', 'shoulder_press', 'squat']);
-    const r = computeSessionSummary(fb, summary, [], catalog, 80, calibrated);
+    const r = computeSessionSummary(fb, summary, [], catalog, emptyState, calibrated);
     expect(r.plafondChanges).toHaveLength(4);
     const byId = new Map(r.plafondChanges.map((c) => [c.exerciseId, c]));
     expect(byId.get('pullup')!.oldE).toBeNull();

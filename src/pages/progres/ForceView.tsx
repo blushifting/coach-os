@@ -15,7 +15,8 @@ import { Concept } from '@/components/Concept';
 import { displayExerciseName, kgUnitLabel } from '@/lib/catalog-filter';
 import { useCatalog, useGymBrand } from '@/store/selectors';
 import { cn } from '@/lib/cn';
-import type { ExerciseE1rmSeries } from '@/lib/progress';
+import { formatWeekLabel } from '@/lib/progress';
+import type { E1rmPoint, ExerciseE1rmSeries } from '@/lib/progress';
 
 interface ForceViewProps {
   readonly series: ReadonlyArray<ExerciseE1rmSeries>;
@@ -96,7 +97,7 @@ export function ForceView({ series }: ForceViewProps) {
             </div>
           </header>
           <MiniLine
-            points={s.points.map((p) => p.e1rm)}
+            points={s.points.slice(-FORCE_WINDOW_POINTS)}
             current={s.current}
             testId={`force-chart-${s.exercise_id}`}
           />
@@ -107,7 +108,8 @@ export function ForceView({ series }: ForceViewProps) {
 }
 
 interface MiniLineProps {
-  readonly points: ReadonlyArray<number>;
+  /** #12 (E-3) — points datés (fenêtre glissante déjà appliquée par l'appelant). */
+  readonly points: ReadonlyArray<E1rmPoint>;
   readonly current: number;
   readonly testId?: string;
 }
@@ -116,27 +118,35 @@ interface MiniLineProps {
 const PR_THRESHOLD_KG = 2;
 
 /**
+ * #12 (E-3) — fenêtre glissante : nombre max de points affichés par courbe.
+ * Au-delà, on ne garde que les plus récents. Sans borne, une courbe accumulait
+ * tous ses points depuis le début (40-50 après quelques cycles, illisibles).
+ * Le compteur « N séances » de l'en-tête garde, lui, le total réel.
+ */
+const FORCE_WINDOW_POINTS = 12;
+
+/**
  * Mini-courbe polyline avec axe Y (3 ticks en kg), ligne pointillée au
- * plafond courant, et chips "PR" sur chaque point qui bat le précédent
- * record d'au moins +2 kg.
+ * plafond courant, chips "PR" au-dessus des points records, et labels de date
+ * sous la courbe (1er / milieu / dernier point).
  *
  * Layout :
- *   viewBox 320×80. Marge gauche 28 px réservée aux labels de l'axe Y,
- *   marge haute 12 px pour laisser respirer les chips PR au-dessus des
- *   points hauts. Marge basse 4 px pour le tick "min".
+ *   viewBox 320×96. Marge gauche 28 px pour les labels de l'axe Y, marge haute
+ *   16 px pour les étoiles records, marge basse 16 px pour les dates.
  */
 function MiniLine({ points, current, testId }: MiniLineProps) {
   const W = 320;
-  const H = 84;
+  const H = 96;
   const ML = 28; // marge gauche (labels Y)
   const MT = 16; // marge haute (étoiles records — clearance constante au-dessus du point max)
-  const MB = 4; // marge basse
+  const MB = 16; // marge basse (labels de date)
   const innerW = W - ML;
   const innerH = H - MT - MB;
   if (points.length < 2) return null;
 
-  const min = Math.min(...points);
-  const max = Math.max(...points);
+  const values = points.map((p) => p.e1rm);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
   const range = max - min || 1;
 
   /** Projette une valeur e1rm sur la coordonnée Y du SVG. */
@@ -144,16 +154,16 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
   /** Projette l'index temporel sur X. */
   const xOf = (i: number) => ML + (i / (points.length - 1)) * innerW;
 
-  const xy = points.map((v, i) => [xOf(i), yOf(v)] as const);
+  const xy = values.map((v, i) => [xOf(i), yOf(v)] as const);
   const polyline = xy.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
 
   // Détection des PR : un point est PR s'il dépasse strictement le max
   // running précédent d'au moins PR_THRESHOLD_KG. Le tout premier point
   // n'est jamais marqué (pas de "précédent").
-  const prFlags: boolean[] = points.map(() => false);
-  let runningMax = points[0]!;
-  for (let i = 1; i < points.length; i++) {
-    const v = points[i]!;
+  const prFlags: boolean[] = values.map(() => false);
+  let runningMax = values[0]!;
+  for (let i = 1; i < values.length; i++) {
+    const v = values[i]!;
     if (v >= runningMax + PR_THRESHOLD_KG) {
       prFlags[i] = true;
     }
@@ -300,6 +310,29 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
               />
             </g>
           </g>
+        );
+      })}
+      {/* #12 (E-3) — labels de date sous la courbe : 1er, dernier, et milieu
+          si ≥ 4 points. Situe la progression dans le temps (une pause se voit). */}
+      {points.map((p, i) => {
+        const show =
+          i === 0 ||
+          i === points.length - 1 ||
+          (points.length >= 4 && i === Math.floor(points.length / 2));
+        if (!show) return null;
+        const anchor = i === 0 ? 'start' : i === points.length - 1 ? 'end' : 'middle';
+        return (
+          <text
+            key={`date-${i}`}
+            x={xOf(i)}
+            y={H - 3}
+            textAnchor={anchor}
+            fontSize="8"
+            fill="#9aa0aa"
+            className="tabular-nums"
+          >
+            {formatWeekLabel(p.date)}
+          </text>
         );
       })}
     </svg>

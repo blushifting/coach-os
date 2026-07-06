@@ -303,7 +303,7 @@ export default function SeancePage() {
                 result,
                 previousFeedbacks,
                 catalog,
-                userState.profile.bodyweight_kg,
+                userState,
                 previouslyCalibrated,
               );
               // Chantier B — la séance vient d'être jouée en récupération

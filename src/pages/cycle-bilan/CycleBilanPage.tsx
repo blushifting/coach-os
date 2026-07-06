@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -9,8 +9,15 @@ import { cn } from '@/lib/cn';
 import { useEngine } from '@/hooks/useEngine';
 import { useCoachOsStore } from '@/store';
 import { selectCycles, useDemoMode } from '@/store/selectors';
-import { SuggestedAction, type CycleReview } from '@/engine/models';
-import { exerciseLabel, muscleLabel } from '@/lib/progress';
+import { MuscleStatus, SuggestedAction, type CycleReview } from '@/engine/models';
+import {
+  buildMusclesOf,
+  computeCycleVolumeByMuscle,
+  exerciseLabel,
+  muscleLabel,
+  type CoverageStatus,
+  type MuscleCycleVolume,
+} from '@/lib/progress';
 import { pickReviewToDisplay, suggestedActionLabel } from './selectors';
 
 /**
@@ -26,6 +33,8 @@ export default function CycleBilanPage() {
   const lastCycleReview = useCoachOsStore((s) => s.lastCycleReview);
   const cycles = useCoachOsStore(selectCycles);
   const catalog = useCoachOsStore((s) => s.catalog);
+  const feedbacks = useCoachOsStore((s) => s.history.feedbacks);
+  const userState = useCoachOsStore((s) => s.userState);
   const [search] = useSearchParams();
   // Conv #15-5 — Si on arrive avec `?cycle=N`, on cible explicitement le
   // bilan de ce cycle (ouvert depuis Progrès > Cycles). Sinon comportement
@@ -43,15 +52,28 @@ export default function CycleBilanPage() {
   // archivé, pas une fin de cycle en cours).
   const isArchived = targetCycleIndex !== null;
 
+  // #15 (E-3) — volume réalisé par muscle sur le cycle, calculé à la volée
+  // (pas de champ persisté). Le nombre de séances alimente la tuile "Séances".
+  const cycleVolume = useMemo<MuscleCycleVolume[]>(() => {
+    if (review === null || userState === null || catalog === null) return [];
+    return computeCycleVolumeByMuscle(
+      feedbacks,
+      review.cycle_index,
+      userState,
+      buildMusclesOf(catalog),
+    );
+  }, [review, userState, catalog, feedbacks]);
+  const sessionCount =
+    review === null
+      ? 0
+      : feedbacks.filter((f) => f.cycle_index === review.cycle_index).length;
+
   return (
     <section className="flex flex-col gap-4 pb-4" data-testid="cycle-bilan-page">
       <header className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold text-white">
           {review === null ? 'Bilan de cycle' : `Bilan du cycle ${review.cycle_index}`}
         </h1>
-        <p className="text-sm text-anthracite-300">
-          Récap de ton cycle, puis choisis la suite.
-        </p>
       </header>
 
       {review === null ? (
@@ -70,7 +92,8 @@ export default function CycleBilanPage() {
         </Card>
       ) : (
         <>
-          <ReviewKeyMetrics review={review} />
+          <ReviewKeyMetrics review={review} sessionCount={sessionCount} />
+          <ReviewVolume volume={cycleVolume} />
           <ReviewPlafonds review={review} catalog={catalog} />
           <ReviewMuscles review={review} />
           {review.warnings.length > 0 && <ReviewWarnings review={review} />}
@@ -89,11 +112,16 @@ export default function CycleBilanPage() {
   );
 }
 
-function ReviewKeyMetrics({ review }: { review: CycleReview }) {
+function ReviewKeyMetrics({
+  review,
+  sessionCount,
+}: {
+  review: CycleReview;
+  sessionCount: number;
+}) {
   // Conv #11i — animation reveal-up staggered (cascade 0 / 80 ms).
-  // Conv #15-6 — HelpButton sur Adhérence (notion peu intuitive).
-  // Chantier C (plan 11) — tuile "Records" supprimée : la Progression sur
-  // le cycle (ReviewPlafonds ci-dessous) en tient lieu.
+  // #15 (E-3) — la tuile "Volume (kg)" est retirée (tonnage non fiable) : le
+  // volume utile est montré par muscle vs cible (section dédiée ci-dessous).
   return (
     <Card data-testid="bilan-key-metrics" className="grid grid-cols-2 gap-3">
       <Metric
@@ -102,12 +130,78 @@ function ReviewKeyMetrics({ review }: { review: CycleReview }) {
         value={`${Math.round(Math.min(1, review.adherence_pct) * 100)} %`}
         delay={0}
       />
-      <Metric
-        label="Volume"
-        helpTopic="volumeTotalCycle"
-        value={`${Math.round(review.volume_total_kg).toLocaleString('fr-FR')} kg`}
-        delay={80}
-      />
+      <Metric label="Séances" value={`${sessionCount}`} delay={80} />
+    </Card>
+  );
+}
+
+const VOLUME_STATUS_TEXT: Record<CoverageStatus, string> = {
+  non_travaille: 'text-anthracite-300',
+  sous_min: 'text-sang-400',
+  ok: 'text-emerald-400',
+  depassement: 'text-amber-400',
+  hors_scope: 'text-anthracite-300',
+};
+
+const VOLUME_STATUS_BAR: Record<CoverageStatus, string> = {
+  non_travaille: 'bg-anthracite-500',
+  sous_min: 'bg-sang-500',
+  ok: 'bg-emerald-500',
+  depassement: 'bg-amber-500',
+  hors_scope: 'bg-anthracite-500',
+};
+
+/** Moyenne de séries sans arrondi trompeur (cf. #11) : décimale si non entier. */
+function formatSets(v: number): string {
+  return Number.isInteger(v) ? String(v) : v.toFixed(1);
+}
+
+/**
+ * #15 (E-3) — volume réalisé par muscle sur le cycle (moy. séries/sem hors
+ * déload) rapporté à la cible V_min–V_max. Remplace le tonnage total kg.
+ */
+function ReviewVolume({ volume }: { volume: ReadonlyArray<MuscleCycleVolume> }) {
+  if (volume.length === 0) return null;
+  return (
+    <Card data-testid="bilan-volume" className="flex flex-col gap-2.5">
+      <h2 className="text-sm font-semibold text-white">
+        Volume par muscle · moy./sem vs cible
+      </h2>
+      {volume.map((m, i) => {
+        const pct = m.vMax > 0 ? Math.min(100, (m.avgSetsPerWeek / m.vMax) * 100) : 0;
+        return (
+          <div
+            key={m.muscle}
+            className="flex animate-reveal-up flex-col gap-1"
+            style={{ animationDelay: `${120 + i * 50}ms` }}
+            data-testid={`bilan-volume-${m.muscle}`}
+          >
+            <div className="flex items-baseline justify-between gap-2 text-xs">
+              <span className="min-w-0 truncate text-anthracite-200">
+                {muscleLabel(m.muscle)}
+                {m.goalStatus === MuscleStatus.PRIORITAIRE && (
+                  <span className="ml-2 rounded bg-sang-900/40 px-1 py-0.5 text-[10px] text-sang-300">
+                    prioritaire
+                  </span>
+                )}
+              </span>
+              <span className={cn('shrink-0 tabular-nums', VOLUME_STATUS_TEXT[m.status])}>
+                {formatSets(m.avgSetsPerWeek)}
+                <span className="text-anthracite-400">
+                  {' '}
+                  / {m.vMin.toFixed(0)}–{m.vMax.toFixed(0)}
+                </span>
+              </span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-anthracite-700">
+              <div
+                className={cn('h-full rounded-full', VOLUME_STATUS_BAR[m.status])}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </div>
+        );
+      })}
     </Card>
   );
 }

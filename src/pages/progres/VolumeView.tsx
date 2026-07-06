@@ -309,6 +309,18 @@ interface MiniVolumeChartProps {
   readonly testId?: string;
 }
 
+/**
+ * #11 (E-3) — libellé de série sans arrondi trompeur. Un muscle travaillé en
+ * synergie accumule des demi-séries (coef 0,5) : un volume réel de 2,5 ne doit
+ * pas s'afficher « 3 » (ce qui laissait croire « dans la cible » alors que le
+ * statut disait à juste titre « sous le minimum »). Décimale affichée seulement
+ * si la valeur n'est pas entière ; le point, lui, est déjà posé à sa vraie
+ * position sur l'axe gradué.
+ */
+function formatSets(v: number): string {
+  return Number.isInteger(v) ? String(v) : v.toFixed(1);
+}
+
 function MiniVolumeChart({ series, testId }: MiniVolumeChartProps) {
   const W = 320;
   const H = 80;
@@ -484,7 +496,7 @@ function MiniVolumeChart({ series, testId }: MiniVolumeChartProps) {
                 fill="#e5e7eb"
                 className="tabular-nums"
               >
-                {p.sets.toFixed(0)}
+                {formatSets(p.sets)}
               </text>
             )}
           </g>

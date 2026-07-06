@@ -64,7 +64,10 @@ export function cycleSetProgression(
   // est garanti en amont, au moment où `baseSets` est déterminé).
   const sets = Math.min(vMaxPerExo, baseSets);
   const progression: number[] = [sets, sets, sets, sets];
-  const deload = Math.max(1, Math.trunc(sets * DELOAD_FACTOR));
+  // #18 (E-3) — plancher de 2 séries : on ne prescrit jamais moins de 2 séries,
+  // même en récupération (un exo à 3 séries tombait à 1). Le déload reste réel
+  // via la charge (×0,9) et le RPE 6, pas seulement via le nombre de séries.
+  const deload = Math.max(2, Math.trunc(sets * DELOAD_FACTOR));
   progression.push(deload);
   return progression;
 }

@@ -22,7 +22,7 @@ import type {
   SessionFeedback,
   UserState,
 } from '@/engine/models';
-import { exercisePrimaires } from '@/engine/models';
+import { exercisePrimaires, MuscleStatus } from '@/engine/models';
 import { e1rmObserved, effectiveLoadForE1rm } from '@/engine/prescription';
 import { effectiveVolumeBounds } from '@/engine/volume';
 import {
@@ -56,7 +56,7 @@ export function buildMusclesOf(
  * Sommes par muscle des coefficients sur un sous-ensemble de feedbacks.
  * Une série compte autant que `muscles[m]` (1.0 si primaire, 0.5 si synergiste).
  */
-function sumMuscleSets(
+export function sumMuscleSets(
   feedbacks: readonly SessionFeedback[],
   musclesOf: Readonly<Record<string, Readonly<Record<string, number>>>>,
 ): Record<string, number> {
@@ -279,6 +279,74 @@ export function computeVolumeHistory(
       objective: goal?.objective ?? 'maintien',
     };
   });
+}
+
+// =============================================================================
+// 2bis. Volume par muscle réalisé sur un cycle (bilan de cycle — #15, E-3)
+// =============================================================================
+
+export interface MuscleCycleVolume {
+  readonly muscle: string;
+  /** Séries pondérées MOYENNES par semaine de travail (déload exclu). */
+  readonly avgSetsPerWeek: number;
+  readonly vMin: number;
+  readonly vMax: number;
+  readonly status: CoverageStatus;
+  /** PRIORITAIRE / SUGGERE / NON_COUVERT — tri + badge éventuel. */
+  readonly goalStatus: string;
+}
+
+/**
+ * #15 (E-3) — volume réalisé par muscle sur un cycle, en séries pondérées
+ * MOYENNES par semaine de travail (les `workingWeeks` semaines hors déload),
+ * comparé à la bande cible V_min–V_max. Répond à « as-tu tenu ta cible hebdo
+ * sur le cycle ? ». Ne renvoie que les muscles suivis (V_max > 0), prioritaires
+ * d'abord. Calculé à la volée depuis les feedbacks — rien de persisté (les
+ * bornes utilisées sont celles de l'état COURANT, exactes pour le cycle en
+ * cours ; approximation acceptable pour un bilan archivé si les objectifs ont
+ * changé depuis).
+ */
+export function computeCycleVolumeByMuscle(
+  feedbacks: ReadonlyArray<FeedbackRow>,
+  cycleIndex: number,
+  state: Pick<UserState, 'volume_min' | 'volume_max' | 'muscle_goals'>,
+  musclesOf: Readonly<Record<string, Readonly<Record<string, number>>>>,
+  workingWeeks: number = 4,
+): MuscleCycleVolume[] {
+  const inCycle = feedbacks.filter(
+    (f) => f.cycle_index === cycleIndex && f.week_in_cycle !== DELOAD_WEEK_INDEX,
+  );
+  const sums = sumMuscleSets(
+    inCycle.map((f) => f.feedback),
+    musclesOf,
+  );
+  const out: MuscleCycleVolume[] = [];
+  for (const muscle of Object.keys(state.volume_min)) {
+    const [vMin, vMax] = effectiveVolumeBounds(state as UserState, muscle);
+    if (vMax <= 0) continue; // muscle non suivi (pas de cible)
+    const avg = (sums[muscle] ?? 0) / Math.max(1, workingWeeks);
+    out.push({
+      muscle,
+      avgSetsPerWeek: avg,
+      vMin,
+      vMax,
+      status: classifyVolume(avg, vMin, vMax),
+      goalStatus: state.muscle_goals[muscle]?.status ?? MuscleStatus.NON_COUVERT,
+    });
+  }
+  // Prioritaires d'abord (rank croissant), puis alpha.
+  out.sort((a, b) => {
+    const aPrio = a.goalStatus === MuscleStatus.PRIORITAIRE ? 0 : 1;
+    const bPrio = b.goalStatus === MuscleStatus.PRIORITAIRE ? 0 : 1;
+    if (aPrio !== bPrio) return aPrio - bPrio;
+    if (aPrio === 0) {
+      const ra = state.muscle_goals[a.muscle]?.priority_rank ?? 99;
+      const rb = state.muscle_goals[b.muscle]?.priority_rank ?? 99;
+      if (ra !== rb) return ra - rb;
+    }
+    return a.muscle.localeCompare(b.muscle);
+  });
+  return out;
 }
 
 // =============================================================================

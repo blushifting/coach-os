@@ -57,7 +57,13 @@ export function addDays(d: Date, n: number): Date {
 export function weekStartFor(date: Date, cycleStart: string | null): Date {
   if (cycleStart === null) return startOfWeekMonday(date);
   const startD = parseDateKey(cycleStart);
-  const diffDays = Math.round((date.getTime() - startD.getTime()) / 86_400_000);
+  // #16 (chantier E-3) — normaliser `date` à minuit local AVANT le calcul.
+  // `now = new Date()` porte l'heure : avec `Math.round(diffJours)`, le 7e
+  // jour d'une semaine de programme basculait dans la semaine suivante dès
+  // ~midi → décalage d'1 jour (intermittent) sur la couverture et les courbes
+  // Volume, vs le calendrier qui, lui, raisonne en dates seules.
+  const dOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffDays = Math.round((dOnly.getTime() - startD.getTime()) / 86_400_000);
   const k = Math.floor(diffDays / 7);
   return addDays(startD, k * 7);
 }
