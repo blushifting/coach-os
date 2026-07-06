@@ -167,6 +167,7 @@ function makeReview(input: {
   cycle_index: number;
   plafonds: Record<string, number>;
   volume_total_kg: number;
+  muscle_goals_snapshot?: CycleReview['muscle_goals_snapshot'];
 }): CycleReview {
   return {
     cycle_index: input.cycle_index,
@@ -180,6 +181,9 @@ function makeReview(input: {
     PRs: [],
     suggested_action: SuggestedAction.CONTINUER_PAREIL,
     warnings: [],
+    ...(input.muscle_goals_snapshot !== undefined
+      ? { muscle_goals_snapshot: input.muscle_goals_snapshot }
+      : {}),
   };
 }
 
@@ -438,6 +442,72 @@ describe('buildCycleHistory', () => {
     const oldest = items[1]!;
     expect(oldest.deltaVolumeKg).toBeNull();
     expect(oldest.deltaTopPlafondKg).toBeNull();
+  });
+
+  it('objectivesByMuscle : un muscle PRIORITAIRE (rank 1) précède un non-prioritaire alphabétiquement antérieur', () => {
+    // 'abducteurs' passe avant 'pectoraux' en alphabétique, mais 'pectoraux'
+    // est PRIORITAIRE (rank 1) → il doit remonter en tête. Le statut du snapshot
+    // vaut l'enum minuscule ('prioritaire'), d'où le bug historique du littéral
+    // majuscule qui laissait tomber le tri sur l'ordre alphabétique.
+    const items = buildCycleHistory([
+      makeCycleRow(
+        1,
+        '2026-03-01',
+        '2026-04-01',
+        makeReview({
+          cycle_index: 1,
+          plafonds: { bp: 5 },
+          volume_total_kg: 8000,
+          muscle_goals_snapshot: [
+            {
+              muscle: 'abducteurs',
+              objective: MuscleObjective.HYPERTROPHIE,
+              status: MuscleStatus.SUGGERE,
+              priority_rank: 99,
+            },
+            {
+              muscle: 'pectoraux',
+              objective: MuscleObjective.HYPERTROPHIE,
+              status: MuscleStatus.PRIORITAIRE,
+              priority_rank: 1,
+            },
+          ],
+        }),
+      ),
+    ]);
+    const obj = items[0]!.objectivesByMuscle!;
+    expect(obj.map((o) => o.muscle)).toEqual(['pectoraux', 'abducteurs']);
+  });
+
+  it('objectivesByMuscle : plusieurs PRIORITAIRES sont triés par priorityRank croissant', () => {
+    const items = buildCycleHistory([
+      makeCycleRow(
+        1,
+        '2026-03-01',
+        '2026-04-01',
+        makeReview({
+          cycle_index: 1,
+          plafonds: { bp: 5 },
+          volume_total_kg: 8000,
+          muscle_goals_snapshot: [
+            {
+              muscle: 'dos',
+              objective: MuscleObjective.HYPERTROPHIE,
+              status: MuscleStatus.PRIORITAIRE,
+              priority_rank: 2,
+            },
+            {
+              muscle: 'jambes',
+              objective: MuscleObjective.HYPERTROPHIE,
+              status: MuscleStatus.PRIORITAIRE,
+              priority_rank: 1,
+            },
+          ],
+        }),
+      ),
+    ]);
+    const obj = items[0]!.objectivesByMuscle!;
+    expect(obj.map((o) => o.muscle)).toEqual(['jambes', 'dos']);
   });
 });
 

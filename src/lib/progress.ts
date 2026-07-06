@@ -477,8 +477,8 @@ function buildObjectivesByMuscle(
 
   // Tri : PRIORITAIRE (rank croissant) puis le reste par muscle alphabétique.
   items.sort((a, b) => {
-    const aPrio = a.status === 'PRIORITAIRE' ? 0 : 1;
-    const bPrio = b.status === 'PRIORITAIRE' ? 0 : 1;
+    const aPrio = a.status === MuscleStatus.PRIORITAIRE ? 0 : 1;
+    const bPrio = b.status === MuscleStatus.PRIORITAIRE ? 0 : 1;
     if (aPrio !== bPrio) return aPrio - bPrio;
     if (aPrio === 0) return a.priorityRank - b.priorityRank;
     return a.muscle.localeCompare(b.muscle);
