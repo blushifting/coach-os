@@ -3,7 +3,6 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Concept } from '@/components/Concept';
-import { HelpButton } from '@/components/HelpButton';
 import { TrendArrow } from '@/components/icons';
 import { cn } from '@/lib/cn';
 import { useEngine } from '@/hooks/useEngine';
@@ -229,8 +228,7 @@ function Metric({
       {/* Conv #18 — min-h-5 réserve la hauteur du HelpButton (h-5) sur tous
           les labels, pour aligner les baselines même sans HelpButton. */}
       <span className="flex min-h-5 items-center gap-1 text-xs uppercase tracking-wide text-anthracite-300">
-        {label}
-        {helpTopic && <HelpButton topic={helpTopic} label={`Aide : ${label}`} />}
+        {helpTopic ? <Concept topic={helpTopic}>{label}</Concept> : label}
       </span>
       {/* Conv #15 vague 3 — text-xl + whitespace-nowrap pour éviter
           que "kg" passe à la ligne sur des volumes 4-5 chiffres. */}

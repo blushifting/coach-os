@@ -6,8 +6,6 @@ import { AnatomicalSilhouette, type SilhouetteStatus } from '@/components/Anatom
 import type { Catalog } from '@/engine/catalog';
 import { exercisePrimaires, exerciseSynergistes } from '@/engine/models';
 import {
-  buildDescription,
-  equipLabel,
   extypeLabel,
   patternLabel,
   tagLabel,
@@ -134,9 +132,14 @@ export function ExerciseDetailSheet({
             </span>
           </div>
 
-          <p className="text-sm leading-relaxed text-anthracite-100">
-            {buildDescription(exercise)}
-          </p>
+          {/* E-4 — description auto retirée (redondante avec le badge type/
+              pattern ci-dessus et les sections Muscles ci-dessous). On garde
+              seulement une vraie note d'exo si elle existe. */}
+          {exercise.note && exercise.note.trim() !== '' && (
+            <p className="text-sm leading-relaxed text-anthracite-100">
+              {exercise.note.trim()}
+            </p>
+          )}
 
           {/* Bloc F (Conv #31) — mécanique de charge (assisté/lesté/PdC). */}
           <ChargeMechanicNote charge={exercise.charge} />
@@ -171,47 +174,15 @@ export function ExerciseDetailSheet({
             </SectionBlock>
           )}
 
-          <SectionBlock label="Recommandations">
-            <ul className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-anthracite-100">
-              <li className="flex justify-between">
-                <span className="text-anthracite-300">Reps hypertrophie</span>
-                <span className="tabular-nums">
-                  {exercise.reps_hyp[0]}–{exercise.reps_hyp[1]}
-                </span>
-              </li>
-              {exercise.reps_force !== null && (
-                <li className="flex justify-between">
-                  <span className="text-anthracite-300">Reps force</span>
-                  <span className="tabular-nums">
-                    {exercise.reps_force[0]}–{exercise.reps_force[1]}
-                  </span>
-                </li>
-              )}
-              <li className="flex justify-between">
-                <span className="text-anthracite-300">Repos</span>
-                <span className="tabular-nums">{formatRest(exercise.repos_s)}</span>
-              </li>
-              {/* Conv #24 — "Difficulté" retirée ici aussi (déjà retirée du
-                  catalogue en Conv #20) : étiquette subjective, encore moins
-                  utile en séance puisqu'on fait déjà l'exo. Le champ data
-                  `dif` reste pour le tie-break interne de `selection.ts`. */}
-            </ul>
+          {/* E-4 — « Reps hypertrophie/force » retirées (l'app gère les reps ;
+              déjà absentes du catalogue depuis Conv #52). La section se réduit
+              au repos conseillé, alignée sur la fiche Catalogue. */}
+          <SectionBlock label="Repos conseillé">
+            <p className="flex justify-between text-xs text-anthracite-100">
+              <span className="text-anthracite-300">Entre séries</span>
+              <span className="tabular-nums">{formatRest(exercise.repos_s)}</span>
+            </p>
           </SectionBlock>
-
-          {exercise.equip.length > 0 && (
-            <SectionBlock label="Matériel requis">
-              <div className="flex flex-wrap gap-1">
-                {exercise.equip.map((e) => (
-                  <span
-                    key={e}
-                    className="rounded border border-anthracite-700 px-2 py-0.5 text-xs text-anthracite-100"
-                  >
-                    {equipLabel(e)}
-                  </span>
-                ))}
-              </div>
-            </SectionBlock>
-          )}
 
           {tags.length > 0 && (
             <SectionBlock label="Variantes">

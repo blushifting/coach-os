@@ -90,7 +90,7 @@ export function WelcomeBanner({ feedbackCount }: WelcomeBannerProps) {
       </p>
       <div className="mt-2 flex flex-col gap-1.5">
         <Button
-          variant="secondary"
+          variant="primary"
           onClick={() => void startDemo()}
           data-testid="btn-start-demo-from-welcome"
         >

@@ -6,9 +6,10 @@
  * lazy-load par le navigateur, mise en cache automatique par le Service
  * Worker pour offline-first à la salle après 1re vue.
  *
- * UX : masquée par défaut, l'user clique "Voir le mouvement" pour la
- * révéler. Les 2 frames (start/end) alternent toutes les 1.4 s pour
- * donner un aperçu du mouvement sans surcharger la fiche.
+ * UX (E-4) : affichée directement à l'ouverture de la fiche (plus de bouton
+ * « Voir le mouvement » à cliquer). Les 2 frames (start/end) alternent toutes
+ * les 1.4 s pour donner un aperçu du mouvement. Un clic sur la photo la masque
+ * (état conservé le temps de la session de la sheet).
  */
 
 import { useEffect, useState } from 'react';
@@ -26,7 +27,7 @@ export function ExercisePhoto({
   exerciseId,
   intervalMs = ANIMATION_INTERVAL_MS,
 }: ExercisePhotoProps) {
-  const [revealed, setRevealed] = useState(false);
+  const [revealed, setRevealed] = useState(true);
   const [frame, setFrame] = useState<0 | 1>(0);
   const photos = photosFor(exerciseId);
 

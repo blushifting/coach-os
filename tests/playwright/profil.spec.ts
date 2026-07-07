@@ -155,7 +155,6 @@ test('profil : sheet Aide affiche les 15 entrées du glossaire', async ({
     'iso',
     'etire',
     'volumeHebdo',
-    'volumeTotalCycle',
     'vminmax',
     'hypertrophie',
     'adherence',

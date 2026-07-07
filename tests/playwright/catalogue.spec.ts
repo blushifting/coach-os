@@ -81,7 +81,9 @@ test('catalogue : recherche, filtre, détail', async ({ page }) => {
   // Filtre actif → bandeaux ouverts → ouvrir la 1ère card → sheet détail
   await cards.first().click();
   await expect(page.getByTestId('catalogue-detail-content')).toBeVisible();
-  await expect(page.getByTestId('catalogue-detail-description')).toBeVisible();
+  // E-4 — la description auto a été retirée de la fiche ; on vérifie à la
+  // place la section « Muscles principaux » (toujours présente).
+  await expect(page.getByTestId('catalogue-muscles-primaires')).toBeVisible();
   await expect(page.getByTestId('mini-silhouette').first()).toBeVisible();
   // Pas de "compound" brut dans le détail non plus
   await expect(page.getByTestId('catalogue-detail-content')).not.toContainText(/\bcompound\b/i);

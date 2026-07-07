@@ -9,9 +9,7 @@ import { exercisePrimaires, exerciseSynergistes } from '@/engine/models';
 import type { Exercise } from '@/engine/models';
 import { useEngine } from '@/hooks/useEngine';
 import {
-  buildDescription,
   displayExerciseName,
-  equipLabel,
   extypeLabel,
   kgUnitLabel,
   patternLabel,
@@ -140,12 +138,18 @@ export function CatalogueDetailSheet({
           {isFavorite ? 'Dans tes favoris' : 'Ajouter aux favoris'}
         </button>
 
-        <p
-          className="text-justify text-sm leading-relaxed text-anthracite-100"
-          data-testid="catalogue-detail-description"
-        >
-          {buildDescription(exercise)}
-        </p>
+        {/* E-4 — description auto retirée (redondante : « polyarticulaire/
+            isolation » = badge ci-dessus, « Muscles ciblés » = sections
+            Muscles ci-dessous). On garde seulement une vraie note d'exo
+            (exos custom + rares notes catalogue). */}
+        {exercise.note && exercise.note.trim() !== '' && (
+          <p
+            className="text-justify text-sm leading-relaxed text-anthracite-100"
+            data-testid="catalogue-detail-description"
+          >
+            {exercise.note.trim()}
+          </p>
+        )}
 
         {/* Bloc F (Conv #31) — mécanique de charge (assisté = poids retiré…). */}
         <ChargeMechanicNote charge={exercise.charge} />
@@ -261,21 +265,6 @@ export function CatalogueDetailSheet({
             <span className="tabular-nums">{formatRest(exercise.repos_s)}</span>
           </p>
         </Section>
-
-        {exercise.equip.length > 0 && (
-          <Section label="Matériel requis">
-            <div className="flex flex-wrap gap-1" data-testid="catalogue-equip">
-              {exercise.equip.map((e) => (
-                <span
-                  key={e}
-                  className="rounded border border-anthracite-700 px-2 py-0.5 text-xs text-anthracite-100"
-                >
-                  {equipLabel(e)}
-                </span>
-              ))}
-            </div>
-          </Section>
-        )}
 
         {tags.length > 0 && (
           <Section label="Variantes">

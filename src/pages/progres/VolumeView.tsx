@@ -20,7 +20,6 @@
 
 import { useMemo, useRef, useState } from 'react';
 import { Card } from '@/components/Card';
-import { HelpButton } from '@/components/HelpButton';
 import {
   AnatomicalSilhouette,
   statusToSilhouette,
@@ -129,7 +128,6 @@ export function VolumeView({ coverage, volume, muscleGoals }: VolumeViewProps) {
         <h2 className="text-sm font-semibold text-white">
           Séries par muscle cette semaine
         </h2>
-        <HelpButton topic="volumeHebdo" />
       </header>
 
       <Card className="flex justify-center" data-testid="volume-silhouette">

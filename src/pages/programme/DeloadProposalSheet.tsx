@@ -34,7 +34,7 @@ export function DeloadProposalSheet({
         </p>
         <p className="text-sm leading-relaxed text-anthracite-300">
           En récupération : des séances plus courtes et plus légères. On ne
-          mesure pas tes plafonds cette semaine, tu reprends la progression au
+          mesure pas tes Plafonds cette semaine, tu reprends la progression au
           cycle suivant.
         </p>
         <div className="mt-1 flex flex-col gap-2">

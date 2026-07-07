@@ -217,7 +217,6 @@ const GLOSSARY_ORDER: readonly HelpTopic[] = [
   'iso',
   'etire',
   'volumeHebdo',
-  'volumeTotalCycle',
   'vminmax',
   'hypertrophie',
   'adherence',

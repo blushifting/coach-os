@@ -12,7 +12,7 @@
  */
 
 import { Card } from '@/components/Card';
-import { HelpButton } from '@/components/HelpButton';
+import { Concept } from '@/components/Concept';
 import { ProgressRing } from '@/components/ProgressRing';
 import { cn } from '@/lib/cn';
 import type {
@@ -278,8 +278,7 @@ function WidgetShell({ testId, label, helpTopic, children }: WidgetShellProps) {
   return (
     <Card className="flex min-h-[96px] flex-col gap-2" data-testid={testId}>
       <span className="flex items-center gap-1 text-xs uppercase tracking-wide text-anthracite-300">
-        {label}
-        {helpTopic && <HelpButton topic={helpTopic} label={`Aide : ${label}`} />}
+        {helpTopic ? <Concept topic={helpTopic}>{label}</Concept> : label}
       </span>
       {children}
     </Card>

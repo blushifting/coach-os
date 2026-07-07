@@ -18,7 +18,7 @@ export function CondensedCalendar({
     <Card data-testid="condensed-calendar" className="flex flex-col gap-3">
       <header className="flex items-baseline justify-between">
         <h2 className="text-sm font-semibold text-white">
-          Cycle {matrix.cycleIndex} — Semaine {Math.min(currentWeekInCycle, 5)}/5
+          Cycle {matrix.cycleIndex} — Semaine {Math.min(currentWeekInCycle, 5)}
         </h2>
         <span className="text-xs text-anthracite-300">
           {formatRange(matrix.cycleStart, matrix.cycleEnd)}

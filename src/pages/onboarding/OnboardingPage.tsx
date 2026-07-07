@@ -614,7 +614,7 @@ export default function OnboardingPage() {
                   ? 'Redémarrage…'
                   : 'Création…'
                 : isRestart
-                  ? 'Démarrer le nouveau Cycle'
+                  ? 'Démarrer le nouveau cycle'
                   : 'Démarrer mon programme'}
             </Button>
           ) : (
