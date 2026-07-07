@@ -32,7 +32,7 @@ const TUTORIALS: readonly Tutorial[] = [
     id: 'first-session',
     title: 'Première séance',
     body:
-      "Pas de séance de test : à ta première séance, Kotsh pré-remplit des " +
+      "Pas de séance de test : à ta première séance, Kotsh pré-remplit des " +
       "charges raisonnables selon ton poids — tu ajustes si besoin. Il apprend " +
       "ton Plafond directement sur tes premières séries, sans phase de " +
       "calibration séparée.",
@@ -42,7 +42,7 @@ const TUTORIALS: readonly Tutorial[] = [
     title: 'Après chaque séance',
     body:
       "En fin de séance, Kotsh récapitule tes séries et recalcule ton Plafond. " +
-      "Tes charges suivantes en découlent : une série facile (Réserve élevée) " +
+      "Tes charges suivantes en découlent : une série facile (Réserve élevée) " +
       "fait monter la charge, une série où tu cales tôt la fait baisser. " +
       "Rien à régler à la main.",
   },
@@ -51,7 +51,7 @@ const TUTORIALS: readonly Tutorial[] = [
     title: 'Comprendre le cycle 4+1',
     body:
       'Un cycle = 4 semaines de progression en intensité (le volume reste fixe) + 1 semaine où Kotsh peut proposer une récupération. ' +
-      'À la fin du cycle, Kotsh te propose un bilan : muscles qui ont progressé, ' +
+      'À la fin du cycle, Kotsh te propose un bilan : muscles qui ont progressé, ' +
       "ceux qui ont plafonné, et te suggère de continuer ou d'ajuster tes " +
       'objectifs.',
   },
@@ -73,10 +73,10 @@ const FAQ: readonly FaqItem[] = [
   {
     id: 'prio-2-sur-3',
     question:
-      "Pourquoi mon muscle prioritaire n'apparaît que 2 fois sur 3 séances ?",
+      "Pourquoi mon muscle prioritaire n'apparaît que 2 fois sur 3 séances ?",
     answer:
       "Schoenfeld 2019 (méta-analyse fréquence) montre que 2 séances/semaine " +
-      "est optimal pour l'hypertrophie : passer à 3× même volume total ne donne " +
+      "est optimal pour l'hypertrophie : passer à 3× même volume total ne donne " +
       "pas plus de gain et coûte plus en récupération. Kotsh divise ton volume " +
       "cible par les ~5 séries/séance optimales par muscle pour calculer la " +
       "fréquence. Pour un muscle à 10 séries/sem, ça donne 2 séances. Tu peux " +
@@ -84,10 +84,10 @@ const FAQ: readonly FaqItem[] = [
   },
   {
     id: 'pec-haut-bas',
-    question: 'Pourquoi pas de découpage pec haut / pec bas ?',
+    question: 'Pourquoi pas de découpage pec haut / pec bas ?',
     answer:
       "Les études EMG 2010-2020 (Trebs, Lauver, Schick) montrent un continuum " +
-      "d'angles plutôt qu'une dichotomie : le sternal du grand pectoral domine à " +
+      "d'angles plutôt qu'une dichotomie : le sternal du grand pectoral domine à " +
       "tous les angles, l'inclinaison modifie la contribution claviculaire mais pas " +
       "fondamentalement le muscle ciblé. Les apps de référence (Hevy, Strong, " +
       "RP Hypertrophy) traitent le pectoral comme un seul muscle. Pour cibler le haut, " +
@@ -95,10 +95,10 @@ const FAQ: readonly FaqItem[] = [
   },
   {
     id: 'deltoides',
-    question: 'Pourquoi 2 deltoïdes seulement (latéral + postérieur) ?',
+    question: 'Pourquoi 2 deltoïdes seulement (latéral + postérieur) ?',
     answer:
-      "Le deltoïde a 3 chefs : antérieur, latéral, postérieur. Kotsh ne suit que " +
-      "les latéraux et postérieurs — pas les antérieurs. Raison : les antérieurs " +
+      "Le deltoïde a 3 chefs : antérieur, latéral, postérieur. Kotsh ne suit que " +
+      "les latéraux et postérieurs — pas les antérieurs. Raison : les antérieurs " +
       "sont saturés en continu par tout exo de pectoraux (développé couché, dips, " +
       "pompes…) et de presse verticale. En ajouter un quota séparé créerait du " +
       "sur-volume systémique. À l'inverse, les postérieurs sont sous-développés " +
@@ -109,17 +109,17 @@ const FAQ: readonly FaqItem[] = [
   },
   {
     id: 'rpe-min-6',
-    question: "Pourquoi le curseur de Réserve plafonne à « 4+ » ?",
+    question: "Pourquoi le curseur de Réserve plafonne à « 4+ » ?",
     answer:
       "Au-delà de 4 reps en réserve, une série est trop facile pour apprendre " +
-      "ton Plafond. La formule d'Epley n'est fiable que pour les séries intenses (≤ 15 reps équivalentes) ; " +
+      "ton Plafond. La formule d'Epley n'est fiable que pour les séries intenses (≤ 15 reps équivalentes) ; " +
       "en deçà, Kotsh ne peut pas extrapoler ton Plafond sans erreur. " +
-      "« 4+ » est donc la Réserve maximum « informative » pour la calibration — " +
+      "« 4+ » est donc la Réserve maximum « informative » pour la calibration — " +
       "au-delà, monte la charge.",
   },
   {
     id: 'semaine5-deload',
-    question: 'Pourquoi la semaine 5 du cycle est en récupération ?',
+    question: 'Pourquoi la semaine 5 du cycle est en récupération ?',
     answer:
       "Modèle supercompensation / gestion de la fatigue (Israetel 2017, modèle " +
       "MEV/MAV/MRV). Sur 4 semaines de montée progressive en intensité, " +
@@ -129,13 +129,13 @@ const FAQ: readonly FaqItem[] = [
   },
   {
     id: 'plafond-baisse',
-    question: "Mon Plafond a baissé après une mauvaise séance, c'est normal ?",
+    question: "Mon Plafond a baissé après une mauvaise séance, c'est normal ?",
     answer:
-      "L'algo utilise une moyenne mobile pondérée (EMA) : il intègre les nouvelles " +
+      "L'algo utilise une moyenne mobile pondérée (EMA) : il intègre les nouvelles " +
       "mesures sans tout écraser, mais une vraie mauvaise journée laisse une trace " +
-      "temporaire. La courbe Force, elle, trace ton Plafond séance après séance : " +
+      "temporaire. La courbe Force, elle, trace ton Plafond séance après séance : " +
       "elle peut donc redescendre ponctuellement, mais les étoiles records qui la " +
-      "jalonnent ne reculent jamais. C'est volontaire : la prescription doit coller " +
+      "jalonnent ne reculent jamais. C'est volontaire : la prescription doit coller " +
       "à ta forme du moment, ton record historique, lui, reste acquis.",
   },
 ];
@@ -203,7 +203,7 @@ const SOURCES: readonly SourceItem[] = [
   {
     id: 'trebs-2010',
     cite: 'Trebs, Brandenburg, Pitney (2010). EMG bench press at varying angles.',
-    topic: 'Pectoraux : continuum d\'angles (claviculaire vs sternal).',
+    topic: 'Pectoraux : continuum d\'angles (claviculaire vs sternal).',
   },
 ];
 
@@ -267,7 +267,7 @@ export function AideSheet({ open, onClose }: AideSheetProps) {
                     </span>
                     {t.title}
                   </summary>
-                  <p className="px-3 pb-3 text-sm leading-relaxed text-anthracite-300">
+                  <p className="px-3 pb-3 text-justify text-sm leading-relaxed text-anthracite-300">
                     {t.body}
                   </p>
                 </details>
@@ -291,7 +291,7 @@ export function AideSheet({ open, onClose }: AideSheetProps) {
                       <div className="text-sm font-medium text-white">
                         {entry.title}
                       </div>
-                      <p className="mt-1 text-sm leading-relaxed text-anthracite-300">
+                      <p className="mt-1 text-justify text-sm leading-relaxed text-anthracite-300">
                         {entry.body}
                       </p>
                     </div>
@@ -319,7 +319,7 @@ export function AideSheet({ open, onClose }: AideSheetProps) {
                     </span>
                     {q.question}
                   </summary>
-                  <p className="px-3 pb-3 text-sm leading-relaxed text-anthracite-300">
+                  <p className="px-3 pb-3 text-justify text-sm leading-relaxed text-anthracite-300">
                     {q.answer}
                   </p>
                 </details>

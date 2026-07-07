@@ -389,8 +389,8 @@ function ReviewActions({ review }: { review: CycleReview }) {
 
   return (
     <Card data-testid="bilan-actions" className="flex flex-col gap-2">
-      <h2 className="text-sm font-semibold text-white">Et maintenant ?</h2>
-      <p className="text-xs text-anthracite-300">Kotsh te suggère : {suggested}.</p>
+      <h2 className="text-sm font-semibold text-white">Et maintenant&nbsp;?</h2>
+      <p className="text-xs text-anthracite-300">Kotsh te suggère&nbsp;: {suggested}.</p>
       <div className="mt-2 flex flex-col gap-2">
         {/* Conv #15 vague 3 — en mode démo, les boutons sont verrouillés :
             sinon l'utilisateur peut accidentellement valider le bilan d'Alex

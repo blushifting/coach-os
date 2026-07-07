@@ -24,7 +24,7 @@ export function DeloadProposalSheet({
   onClose,
 }: DeloadProposalSheetProps) {
   return (
-    <Sheet open={open} onClose={onClose} title="Semaine de récupération ?">
+    <Sheet open={open} onClose={onClose} title="Semaine de récupération ?">
       <div className="flex flex-col gap-4" data-testid="deload-proposal-sheet">
         <p className="text-sm leading-relaxed text-anthracite-100">
           Tu as bien suivi tes quatre premières semaines. Tu peux t'accorder une
@@ -33,7 +33,7 @@ export function DeloadProposalSheet({
           souffler, ou continuer sur ta lancée.
         </p>
         <p className="text-sm leading-relaxed text-anthracite-300">
-          En récupération : des séances plus courtes et plus légères. On ne
+          En récupération&nbsp;: des séances plus courtes et plus légères. On ne
           mesure pas tes Plafonds cette semaine, tu reprends la progression au
           cycle suivant.
         </p>

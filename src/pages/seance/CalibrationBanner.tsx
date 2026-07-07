@@ -78,7 +78,7 @@ export function CalibrationBanner({
       {liveE1rm !== null ? (
         <p className="text-blue-200">
           <span className="font-semibold text-white">
-            <Concept topic="plafond">Plafond</Concept> appris :{' '}
+            <Concept topic="plafond">Plafond</Concept> appris&nbsp;:{' '}
             {liveE1rm.toFixed(1)} {unit}
           </span>{' '}
           — les séries suivantes sont ajustées automatiquement.

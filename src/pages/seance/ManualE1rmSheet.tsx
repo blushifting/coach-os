@@ -98,7 +98,7 @@ export function ManualE1rmSheet({
 
       {isBwPure ? (
         <div className="mb-4 rounded-lg border border-anthracite-700 bg-anthracite-900 px-3 py-3 text-sm text-anthracite-200">
-          Cet exercice est au poids du corps : ton Plafond est ton poids de
+          Cet exercice est au poids du corps&nbsp;: ton Plafond est ton poids de
           corps ({bodyweightKg.toFixed(1)} kg). Pas de saisie supplémentaire.
         </div>
       ) : (

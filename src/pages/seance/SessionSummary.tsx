@@ -90,7 +90,7 @@ export function SessionSummary({
         {data.plafondChanges.length === 0 ? (
           <p className="text-xs text-anthracite-300">
             {deloadActive
-              ? 'Semaine de récupération : on ne mesure pas tes Plafonds cette semaine. Tu reprends la progression au prochain cycle.'
+              ? 'Semaine de récupération : on ne mesure pas tes Plafonds cette semaine. Tu reprends la progression au prochain cycle.'
               : 'Aucune série assez intense cette séance pour mettre à jour tes Plafonds.'}
           </p>
         ) : (

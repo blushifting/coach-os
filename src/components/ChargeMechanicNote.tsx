@@ -13,11 +13,11 @@ import { cn } from '@/lib/cn';
  */
 const NOTE_BY_CHARGE: Partial<Record<ChargeType, string>> = {
   [ChargeType.BODYWEIGHT_ASSISTED]:
-    'Exercice assisté : le poids que tu règles est retiré, pas soulevé. Plus tu en mets, plus le mouvement est facile.',
+    'Exercice assisté : le poids que tu règles est retiré, pas soulevé. Plus tu en mets, plus le mouvement est facile.',
   [ChargeType.BODYWEIGHT_LOADED]:
-    'Exercice lesté : le poids que tu règles s’ajoute à ton poids de corps.',
+    'Exercice lesté : le poids que tu règles s\'ajoute à ton poids de corps.',
   [ChargeType.BODYWEIGHT]:
-    'Au poids du corps : il n’y a pas de charge à régler.',
+    'Au poids du corps : il n\'y a pas de charge à régler.',
 };
 
 export function chargeMechanicNote(charge: ChargeType): string | null {

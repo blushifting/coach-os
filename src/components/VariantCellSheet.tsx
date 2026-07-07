@@ -131,7 +131,7 @@ export function VariantCellSheet({
           {patternLabel}
         </h2>
         <p className="text-xs text-anthracite-300">
-          Muscle ciblé : {muscleLabel}
+          Muscle ciblé&nbsp;: {muscleLabel}
         </p>
       </header>
 

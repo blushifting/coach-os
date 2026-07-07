@@ -392,7 +392,7 @@ export function SessionRunner({
                       imbriqué. Toggle le choix manuel sur l'état courant. */}
                   <button
                     type="button"
-                    aria-label={collapsed ? 'Déplier l’exercice' : 'Replier l’exercice'}
+                    aria-label={collapsed ? "Déplier l'exercice" : "Replier l'exercice"}
                     aria-expanded={!collapsed}
                     data-testid={`btn-collapse-${i}`}
                     onClick={() =>
@@ -512,7 +512,7 @@ export function SessionRunner({
 
       <Dialog
         open={confirmFinish}
-        title="Terminer la séance ?"
+        title="Terminer la séance ?"
         description={
           incomplete ? (
             <>
@@ -552,7 +552,7 @@ export function SessionRunner({
 
       <Dialog
         open={confirmCancel}
-        title="Annuler la séance ?"
+        title="Annuler la séance ?"
         description={
           <>
             La séance sera retirée du calendrier comme si elle n'avait jamais
@@ -601,7 +601,7 @@ export function SessionRunner({
       {/* Bloc F (Conv #31) — proposer l'ajout aux favoris à la 3ᵉ utilisation. */}
       <Dialog
         open={suggestFav !== null}
-        title="Ajouter aux favoris ?"
+        title="Ajouter aux favoris ?"
         description={(() => {
           if (suggestFav === null) return null;
           const ex = safeGet(catalog, suggestFav);
@@ -627,7 +627,7 @@ export function SessionRunner({
           adapté selon qu'il y a des sets cochés ou non. */}
       <Dialog
         open={confirmRemove !== null}
-        title="Retirer cet exercice ?"
+        title="Retirer cet exercice ?"
         description={(() => {
           if (confirmRemove === null) return null;
           const rowDone =

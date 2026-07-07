@@ -586,7 +586,7 @@ function RpeSlider({ index, value, disabled, onChange }: RpeSliderProps) {
             }}
             style={{ pointerEvents: 'none' }}
             className="absolute inset-0 h-full w-full opacity-0"
-            aria-label="Reps en réserve : de 4+ (facile) à l'échec"
+            aria-label="Reps en réserve : de 4+ (facile) à l'échec"
           />
         </div>
 

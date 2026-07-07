@@ -115,7 +115,7 @@ export default function ProfilPage() {
         setImportError(e.message);
       } else {
         setImportError(
-          'Impossible de lire le fichier : ' + (e as Error).message,
+          'Impossible de lire le fichier : ' + (e as Error).message,
         );
       }
     } finally {

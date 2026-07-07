@@ -94,7 +94,7 @@ export function explainSuggestion(
     if (hasPullPrio) {
       return {
         rule: 'R1',
-        text: 'Équilibre push/pull : tu cibles le dos, on ajoute du push pour la posture.',
+        text: 'Équilibre push/pull : tu cibles le dos, on ajoute du push pour la posture.',
       };
     }
   }
@@ -103,7 +103,7 @@ export function explainSuggestion(
     if (hasPushPrio) {
       return {
         rule: 'R1',
-        text: 'Équilibre push/pull : tu cibles les pectoraux/épaules, on ajoute du tirage pour la posture.',
+        text: 'Équilibre push/pull : tu cibles les pectoraux/épaules, on ajoute du tirage pour la posture.',
       };
     }
   }

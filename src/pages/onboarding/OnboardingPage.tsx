@@ -743,7 +743,7 @@ function BalanceDialog({
     >
       <div className="max-h-[80vh] w-full max-w-sm overflow-y-auto rounded-2xl border border-anthracite-700 bg-anthracite-900 p-5">
         <h3 className="text-lg font-semibold text-white">
-          Un peu d'équilibre ?
+          Un peu d'équilibre&nbsp;?
         </h3>
         <p className="mt-2 text-sm leading-relaxed text-anthracite-300">
           Avec ta sélection, ces muscles resteraient sans volume. Kotsh te
@@ -803,7 +803,7 @@ function CancelRestartDialog({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Annuler la modification ?"
+      aria-label="Annuler la modification ?"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
       onClick={onCancel}
       data-testid="cancel-restart-dialog"
@@ -812,7 +812,7 @@ function CancelRestartDialog({
         className="w-full max-w-sm rounded-2xl border border-anthracite-700 bg-anthracite-900 p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-lg font-semibold text-white">Abandonner la modification ?</h3>
+        <h3 className="text-lg font-semibold text-white">Abandonner la modification&nbsp;?</h3>
         <p className="mt-2 text-sm leading-relaxed text-anthracite-300">
           Tes choix ne seront pas enregistrés. Ton cycle en cours reste actif
           tel quel.
