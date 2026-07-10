@@ -404,9 +404,13 @@ describe('buildPrescription', () => {
     expect(pres.load_kg % 5).toBe(0);
   });
 
-  it('pdc_only=true sur pullup (BW_LOADED) → load=0, reps adaptées', () => {
+  it('pdc_only=true sur pullup (BW_LOADED) MESURÉ → load=0, reps adaptées', () => {
     // Conv #20 — un pullup avec e1rm total = bw + 30kg et bw=70kg : on
     // attend ~13 reps à RPE 7 (formule Epley étendu).
+    // #63 — l'affinage des reps par `targetRepsForPdc` n'a lieu que pour un exo
+    // déjà MESURÉ (e1RM réel). Sans mesure, un e1RM bootstrap ≤ poids du corps
+    // sortirait 1 rep → on garde alors les reps objectif. On simule donc un
+    // plafond mesuré pour tester la voie Epley inverse.
     const pullup = catalog.get('pullup');
     const p = profile({ bodyweight_kg: 70 });
     const state = makeUserState(p);
@@ -414,6 +418,7 @@ describe('buildPrescription', () => {
       pdc_only: true,
     });
     const e1rmTotal = 100; // bw + 30 kg équivaut à e1RM total = 100
+    state.e1rm['pullup'] = e1rmTotal; // plafond mesuré
     const pres = buildPrescription(pullup, e1rmTotal, p, 1, { state });
     expect(pres.load_kg).toBe(0);
     expect(pres.reps).toBeGreaterThanOrEqual(8);

@@ -37,7 +37,7 @@ import { profile } from './_helpers';
 
 const catalog = new Catalog();
 const PUSHUP = 'pushup'; // poids du corps PUR (charge externe = 0), pectoraux prim.
-const PUSHUP_LOADED = 'pushup_loaded'; // bodyweight_loaded → PDC via override.
+const PUSHUP_LOADED = 'pushup_loaded'; // bodyweight_loaded → PDC par défaut (#63).
 const BENCH = 'bench_bb'; // barre → piloté par le cliquet de CHARGE.
 
 const prio = (muscle: string, obj: MuscleObjective) =>
@@ -97,8 +97,18 @@ describe('périmètre & exclusivité avec le cliquet de charge', () => {
     expect(exerciseUsesLoadFloor(s, catalog.get(PUSHUP_LOADED))).toBe(false);
   });
 
-  it('lesté SANS override : load-floor oui, reps-floor non', () => {
+  it('lestable SANS override : PDC par défaut → reps-floor oui, load-floor non (#63)', () => {
+    // #63 — un exo lestable (bodyweight_loaded) se fait au poids du corps tant
+    // que l'user n'a pas décidé d'ajouter du lest → cliquet de REPS par défaut.
     const s = stateFor();
+    expect(exerciseUsesRepsFloor(s, catalog.get(PUSHUP_LOADED))).toBe(true);
+    expect(exerciseUsesLoadFloor(s, catalog.get(PUSHUP_LOADED))).toBe(false);
+  });
+
+  it('lesté AVEC override (pdc_only=false) : load-floor oui, reps-floor non (#63)', () => {
+    // Décision explicite d'ajouter du lest → repasse au cliquet de CHARGE.
+    const s = stateFor();
+    s.equipment_overrides[PUSHUP_LOADED] = makeEquipmentOverride({ pdc_only: false });
     expect(exerciseUsesRepsFloor(s, catalog.get(PUSHUP_LOADED))).toBe(false);
     expect(exerciseUsesLoadFloor(s, catalog.get(PUSHUP_LOADED))).toBe(true);
   });
@@ -142,6 +152,9 @@ describe('seed du plancher de reps', () => {
   it('mode PDC : seed = targetRepsForPdc (Epley inverse sur l’e1RM réel), > 1', () => {
     const s = pdcState();
     const e1rm = 120; // > poids du corps (80) → plusieurs reps possibles.
+    // #63 — targetRepsForPdc n'est utilisé que sur un e1RM MESURÉ (sinon reps
+    // objectif). On simule donc un plafond mesuré.
+    s.e1rm[PUSHUP_LOADED] = e1rm;
     const pres = buildPrescription(catalog.get(PUSHUP_LOADED), e1rm, s.profile, 1, {
       muscleGoals: s.muscle_goals,
       state: s,

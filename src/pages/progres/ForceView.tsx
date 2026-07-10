@@ -170,13 +170,14 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
     if (v > runningMax) runningMax = v;
   }
 
-  // Ticks Y : extrémités + milieu, puis déduplication par valeur ENTIÈRE
-  // affichée (extrémités prioritaires). Sans ça, une plage e1RM serrée
-  // (< ~1 kg) fait arrondir deux ticks au même entier → « 28, 28, 29 ».
+  // Ticks Y : extrémités + milieu, puis déduplication par LIBELLÉ affiché
+  // (extrémités prioritaires). #63 — libellés à 1 décimale (avant : arrondi
+  // à l'entier, qui masquait les petites variations de plafond ; l'user l'a
+  // signalé). La dédup empêche deux ticks au même libellé sur une plage serrée.
   const tickCandidates = min === max ? [min] : [max, min, (min + max) / 2];
-  const seenTickLabels = new Set<number>();
+  const seenTickLabels = new Set<string>();
   const tickValues = tickCandidates.filter((v) => {
-    const label = Math.round(v);
+    const label = v.toFixed(1);
     if (seenTickLabels.has(label)) return false;
     seenTickLabels.add(label);
     return true;
@@ -215,7 +216,7 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
               fill="#9aa0aa"
               className="tabular-nums"
             >
-              {Math.round(v)} kg
+              {v.toFixed(1)} kg
             </text>
           </g>
         );

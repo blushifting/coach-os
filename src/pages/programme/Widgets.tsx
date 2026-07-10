@@ -159,6 +159,12 @@ function WeekSessionsWidget({ sessions }: { readonly sessions: WeekSessions }) {
                 / {sessions.planned}
               </span>
             )}
+            {reached && (
+              // #63 — quand l'objectif est atteint on masque le « /planifié »,
+              // mais on garde le nom « séances » ici pour ne pas laisser un
+              // chiffre nu au-dessus d'« objectif atteint ».
+              <span className="text-sm text-anthracite-300">séances</span>
+            )}
           </div>
           <span className="mt-1 text-[11px] text-anthracite-300">
             {reached ? 'objectif atteint' : 'séances'}
@@ -179,7 +185,6 @@ function CyclePctWidget({ cycle }: { readonly cycle: CycleProgress }) {
     <WidgetShell
       testId="widget-cycle-pct"
       label="Cycle"
-      helpTopic="cycle"
     >
       <div className="flex flex-1 items-center gap-3">
         <div className="relative inline-flex items-center justify-center">
@@ -204,7 +209,7 @@ function CyclePctWidget({ cycle }: { readonly cycle: CycleProgress }) {
             {cycle.planned <= 0
               ? '—'
               : cycle.done >= cycle.planned
-                ? `${cycle.done}`
+                ? `${cycle.done} séances`
                 : `${cycle.done}/${cycle.planned}`}
           </span>
           <span className="mt-1 text-[11px] text-anthracite-300">

@@ -529,8 +529,8 @@ export function recordFeedback(
   // cette valeur dans l'EMA tire `state.e1rm` vers le bas → la prescription
   // post-déload partirait d'un plafond artificiellement réduit, et le
   // Catalogue afficherait une "régression" qui n'en est pas une. On skip
-  // donc l'update e1RM pour la semaine 5. La courbe Force exclut aussi ces
-  // points (cf. `computeE1rmHistory`).
+  // donc l'update e1RM pour la semaine 5. Sans update, aucun snapshot n'est
+  // créé → la courbe Force (basée sur les snapshots) exclut aussi ces points.
   // Chantier B — déload opt-in : on ne skip QUE si la récup a été ACCEPTÉE.
   // Une semaine 5 refusée est une semaine normale → e1RM et cliquet tournent.
   const skipE1rmEntirely =
@@ -567,10 +567,21 @@ export function recordFeedback(
       continue;
     }
     const skipEma = calibrated !== null && !calibrated.has(exId);
-    summary[exId] = updateE1rmForExercise(state, ex, fbs, undefined, {
+    const e1rmUpdate = updateE1rmForExercise(state, ex, fbs, undefined, {
       skipEma,
       prescribed: prescribedByExo.get(exId),
     });
+    summary[exId] = e1rmUpdate;
+    // #63 — à la 1re VRAIE mesure d'un exo (calibration : `skipEma` = pas encore
+    // de snapshot, et update DÉFINITIVE), le plancher de charge avait été semé
+    // sur un e1RM bootstrap sans rapport avec la capacité réelle (plafond mesuré
+    // à 58 kg mais prescription bloquée à ~28 kg, car l'anti-régression du cliquet
+    // n'adopte pas une série de calibration menée à effort élevé). On efface ce
+    // plancher bootstrap ; `updatePrescribedLoadFloorForExercise` juste après le
+    // re-sème depuis la charge réellement effectuée à la calibration.
+    if (skipEma && e1rmUpdate !== null && e1rmUpdate.definitive) {
+      delete state.prescribed_load_floor[exId];
+    }
     // Refonte progression — cliquet de charge (hors déload, géré par le `continue`
     // ci-dessus). Graduation R+3 / anti-régression / descente sur `prescribed_load_floor`.
     updatePrescribedLoadFloorForExercise(state, ex, fbs);

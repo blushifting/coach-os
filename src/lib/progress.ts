@@ -15,7 +15,7 @@
  */
 
 import type { Catalog } from '@/engine/catalog';
-import type { CycleRow, FeedbackRow } from '@/db/schema';
+import type { CycleRow, E1rmSnapshotRow, FeedbackRow } from '@/db/schema';
 import type {
   ChargeType,
   CycleReview,
@@ -23,7 +23,6 @@ import type {
   UserState,
 } from '@/engine/models';
 import { exercisePrimaires, MuscleStatus } from '@/engine/models';
-import { e1rmObserved, effectiveLoadForE1rm } from '@/engine/prescription';
 import { effectiveVolumeBounds } from '@/engine/volume';
 import {
   addDays,
@@ -607,66 +606,45 @@ export interface ExerciseE1rmSeries {
 }
 
 /**
- * Construit l'historique d'e1RM par exercice à partir des feedbacks réalisés
- * Pour chaque exo et
- * chaque date de séance, on garde le plus haut e1RM calculé via Epley
- * (`e1rmObserved`) sur les sets de cette date. Ne renvoie que les exos avec
- * **≥ 2 points** (sinon pas de courbe à tracer). Tri par nombre de points
- * décroissant (les exos les plus suivis remontent en haut), limité à `topN`.
+ * #63 — Historique du Plafond (onglet Force) construit à partir des SNAPSHOTS
+ * e1RM persistés (`e1rmSnapshots`) plutôt que recalculé depuis les feedbacks.
+ *
+ * Un snapshot stocke la valeur EXACTE de `state.e1rm[exo]` (plafond EMA) au
+ * moment de chaque mesure définitive — la même valeur que le bilan de fin de
+ * séance affiche et que la prescription utilise. La courbe colle donc au reste
+ * de l'app. L'ancienne `computeE1rmHistory` recalculait un e1RM Epley brut sur
+ * la meilleure série de chaque séance, une mesure DIFFÉRENTE qui pouvait monter
+ * là où le bilan disait que le plafond baissait (EMA lissée).
+ *
+ * Déloads et séances "trop faciles" (mises à jour provisoires) ne créent pas de
+ * snapshot → naturellement exclus. Une saisie manuelle de plafond en crée un →
+ * elle apparaît sur la courbe. Valeurs gardées en flottant (pas d'arrondi).
+ *
+ * Ne renvoie que les exos avec ≥ 2 points. Tri par nombre de points décroissant
+ * puis plafond courant, limité à `topN`.
  */
-export function computeE1rmHistory(
-  feedbacks: ReadonlyArray<FeedbackRow>,
+export function computeE1rmSeriesFromSnapshots(
+  snapshots: ReadonlyArray<E1rmSnapshotRow>,
   catalog: Catalog,
-  bodyweightKg: number,
   topN: number = 8,
 ): ExerciseE1rmSeries[] {
+  // Un seul point par (exo, date) : le dernier snapshot de la journée fait foi
+  // (valeur la plus à jour du plafond). `snapshots` arrive trié par date.
   const byExo = new Map<string, Map<string, number>>();
-  for (const fb of feedbacks) {
-    // Conv #21 — exclusion totale des semaines de déload (S5) de la courbe
-    // Force. Avant on filtrait seulement les sets RPE < 6.5, mais une séance
-    // de déload peut avoir des premiers sets perçus 6.5-7 (charge basse,
-    // ressenti relativement élevé en fin de cycle), qui glissent à travers
-    // le filtre RPE et créent une "dent" à 80-90 % du plafond. Sémantiquement
-    // un déload ne mesure pas un plafond : on l'exclut entièrement.
-    if (fb.week_in_cycle === DELOAD_WEEK_INDEX) continue;
-    const date = fb.feedback.seance_date;
-    for (const s of fb.feedback.sets) {
-      if (s.reps_done <= 0) continue;
-      // Conv #15 — filet de sécurité résiduel : un set RPE < 6.5 n'est pas
-      // fiable pour Epley (formule calibrée 6.5+).
-      if (s.rpe_perceived < 6.5) continue;
-      // Chantier C (plan 11) — charge TOTALE (poids du corps compris pour les
-      // exos bodyweight), cohérente avec le Plafond affiché ailleurs.
-      const totalLoad = catalog.has(s.exercise_id)
-        ? effectiveLoadForE1rm(s.load_kg, catalog.get(s.exercise_id), bodyweightKg)
-        : s.load_kg;
-      let e: number;
-      try {
-        e = e1rmObserved(totalLoad, s.reps_done, s.rpe_perceived);
-      } catch {
-        continue;
-      }
-      if (!Number.isFinite(e) || e <= 0) continue;
-      let inner = byExo.get(s.exercise_id);
-      if (inner === undefined) {
-        inner = new Map<string, number>();
-        byExo.set(s.exercise_id, inner);
-      }
-      const cur = inner.get(date);
-      if (cur === undefined || e > cur) inner.set(date, e);
+  for (const snap of snapshots) {
+    if (!Number.isFinite(snap.e1rm) || snap.e1rm <= 0) continue;
+    if (!catalog.has(snap.exercise_id)) continue;
+    let inner = byExo.get(snap.exercise_id);
+    if (inner === undefined) {
+      inner = new Map<string, number>();
+      byExo.set(snap.exercise_id, inner);
     }
+    inner.set(snap.date, snap.e1rm);
   }
 
   const result: ExerciseE1rmSeries[] = [];
   for (const [exId, dateMap] of byExo) {
     if (dateMap.size < 2) continue;
-    if (!catalog.has(exId)) continue;
-    // Conv #21bis — on garde la trajectoire BRUTE des points (pas de
-    // running max). Une séance simplement moins performante doit rester
-    // visible en creux : c'est une info légitime de l'évolution. Seul le
-    // **vrai déload programmé** (semaine 5 du cycle) est exclu, en amont
-    // de cette boucle, parce que sémantiquement il ne mesure pas un
-    // plafond (charges réduites volontairement, pas un effort calibrage).
     const points: E1rmPoint[] = [...dateMap.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, e1rm]) => ({ date, e1rm }));

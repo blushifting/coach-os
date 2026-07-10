@@ -7,7 +7,7 @@ import {
   buildCycleHistory,
   buildMusclesOf,
   computeCoverageThisWeek,
-  computeE1rmHistory,
+  computeE1rmSeriesFromSnapshots,
   computeVolumeHistory,
   exerciseLabel,
   formatCycleDates,
@@ -17,7 +17,7 @@ import {
   type MuscleVolumeSeries,
 } from '@/lib/progress';
 import { Catalog } from '@/engine/catalog';
-import type { CycleRow, FeedbackRow } from '@/db/schema';
+import type { CycleRow, E1rmSnapshotRow, FeedbackRow } from '@/db/schema';
 import type {
   Exercise,
   CycleReview,
@@ -512,114 +512,54 @@ describe('buildCycleHistory', () => {
 });
 
 // =============================================================================
-// Helpers de formatage
+// computeE1rmSeriesFromSnapshots (#63 — courbe Force basée sur les snapshots
+// e1RM = plafond EMA du bilan, pas un recalcul Epley brut)
 // =============================================================================
 
-// =============================================================================
-// computeE1rmHistory (Conv #11g)
-// =============================================================================
-
-function makeFbCustom(
-  seanceDate: string,
-  sets: Array<{ exercise_id: string; reps_done: number; load_kg: number; rpe_perceived: number }>,
-): FeedbackRow {
-  return {
-    seance_date: seanceDate,
-    cycle_index: 1,
-    week_in_cycle: 1,
-    session_id: null,
-    feedback: {
-      seance_date: seanceDate,
-      week_in_cycle: 1,
-      cycle_index: 1,
-      rpe_target: 8,
-      sets,
-      label: 'Test',
-    },
-    created_at: seanceDate,
-  };
+function snap(
+  date: string,
+  exercise_id: string,
+  e1rm: number,
+  week_in_cycle = 1,
+): E1rmSnapshotRow {
+  return { date, exercise_id, e1rm, cycle_index: 1, week_in_cycle };
 }
 
-describe('computeE1rmHistory', () => {
+describe('computeE1rmSeriesFromSnapshots', () => {
   const cat = makeCatalog();
 
-  it("ne renvoie pas un exo avec un seul point (pas de courbe possible)", () => {
-    const fbs = [
-      makeFbCustom('2026-05-01', [
-        { exercise_id: 'bp', reps_done: 5, load_kg: 80, rpe_perceived: 8 },
-      ]),
-    ];
-    expect(computeE1rmHistory(fbs, cat, 75)).toEqual([]);
+  it('ne renvoie pas un exo avec un seul snapshot (pas de courbe)', () => {
+    expect(computeE1rmSeriesFromSnapshots([snap('2026-05-01', 'bp', 100)], cat)).toEqual([]);
   });
 
-  it('garde le max e1rm par date et trie chronologiquement', () => {
-    const fbs = [
-      makeFbCustom('2026-05-08', [
-        // 2 sets ce jour-là : on garde celui qui donne le e1rm le plus haut
-        { exercise_id: 'bp', reps_done: 5, load_kg: 80, rpe_perceived: 8 },
-        { exercise_id: 'bp', reps_done: 3, load_kg: 90, rpe_perceived: 8 },
-      ]),
-      makeFbCustom('2026-05-01', [
-        { exercise_id: 'bp', reps_done: 5, load_kg: 75, rpe_perceived: 8 },
-      ]),
+  it('trace le plafond persisté tel quel (float, sans arrondi) — baisse suivie', () => {
+    const snaps = [
+      snap('2026-05-01', 'bp', 100.4),
+      snap('2026-05-08', 'bp', 98.7), // le plafond EMA a BAISSÉ → la courbe suit
     ];
-    const series = computeE1rmHistory(fbs, cat, 75);
+    const series = computeE1rmSeriesFromSnapshots(snaps, cat);
     expect(series).toHaveLength(1);
-    expect(series[0]!.exercise_id).toBe('bp');
-    expect(series[0]!.points).toHaveLength(2);
-    expect(series[0]!.points[0]!.date).toBe('2026-05-01');
-    expect(series[0]!.points[1]!.date).toBe('2026-05-08');
-    expect(series[0]!.current).toBeGreaterThan(series[0]!.initial);
-    expect(series[0]!.deltaPct).toBeGreaterThan(0);
+    expect(series[0]!.points.map((p) => p.e1rm)).toEqual([100.4, 98.7]);
+    expect(series[0]!.initial).toBe(100.4);
+    expect(series[0]!.current).toBe(98.7);
+    expect(series[0]!.deltaPct).toBeLessThan(0);
   });
 
-  it('exclut les sets invalides (reps <= 0, e1rm calcul échoue)', () => {
-    const fbs = [
-      makeFbCustom('2026-05-01', [
-        { exercise_id: 'bp', reps_done: 0, load_kg: 80, rpe_perceived: 8 }, // skip
-        { exercise_id: 'bp', reps_done: 5, load_kg: 80, rpe_perceived: 8 },
-      ]),
-      makeFbCustom('2026-05-08', [
-        { exercise_id: 'bp', reps_done: 5, load_kg: 85, rpe_perceived: 8 },
-      ]),
+  it('trie chronologiquement et garde le dernier snapshot par date', () => {
+    const snaps = [
+      snap('2026-05-08', 'bp', 102),
+      snap('2026-05-01', 'bp', 100),
+      snap('2026-05-08', 'bp', 105), // même date, plus récent → fait foi
     ];
-    const series = computeE1rmHistory(fbs, cat, 75);
-    expect(series).toHaveLength(1);
+    const series = computeE1rmSeriesFromSnapshots(snaps, cat);
     expect(series[0]!.points).toHaveLength(2);
+    expect(series[0]!.points[0]).toEqual({ date: '2026-05-01', e1rm: 100 });
+    expect(series[0]!.points[1]).toEqual({ date: '2026-05-08', e1rm: 105 });
   });
 
   it('ignore les exos absents du catalogue', () => {
-    const fbs = [
-      makeFbCustom('2026-05-01', [
-        { exercise_id: 'inconnu', reps_done: 5, load_kg: 50, rpe_perceived: 8 },
-      ]),
-      makeFbCustom('2026-05-08', [
-        { exercise_id: 'inconnu', reps_done: 5, load_kg: 55, rpe_perceived: 8 },
-      ]),
-    ];
-    expect(computeE1rmHistory(fbs, cat, 75)).toEqual([]);
-  });
-
-  // Chantier C (plan 11) — charge TOTALE (poids du corps compris) pour les
-  // exos bodyweight_loaded, cohérente avec le Plafond de la fiche catalogue.
-  it('bodyweight_loaded : la courbe utilise la charge totale (lest + poids du corps)', () => {
-    const bwCat = new Catalog([
-      makeExercise('traction_lestee', { dos_largeur: 1.0 }, ChargeType.BODYWEIGHT_LOADED),
-    ]);
-    const bw = 80;
-    const fbs = [
-      makeFbCustom('2026-05-01', [
-        { exercise_id: 'traction_lestee', reps_done: 5, load_kg: 10, rpe_perceived: 8 },
-      ]),
-      makeFbCustom('2026-05-08', [
-        { exercise_id: 'traction_lestee', reps_done: 5, load_kg: 15, rpe_perceived: 8 },
-      ]),
-    ];
-    const series = computeE1rmHistory(fbs, bwCat, bw);
-    expect(series).toHaveLength(1);
-    // Sans le fix, le point vaudrait e1rmObserved(10, 5, 8) ≈ 12,5 kg — bien
-    // en-dessous du poids du corps, ce qui n'a aucun sens physiologique.
-    expect(series[0]!.points[0]!.e1rm).toBeGreaterThan(bw);
+    const snaps = [snap('2026-05-01', 'inconnu', 50), snap('2026-05-08', 'inconnu', 55)];
+    expect(computeE1rmSeriesFromSnapshots(snaps, cat)).toEqual([]);
   });
 });
 

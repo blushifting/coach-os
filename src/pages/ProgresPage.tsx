@@ -5,7 +5,7 @@ import {
   buildCycleHistory,
   buildMusclesOf,
   computeCoverageThisWeek,
-  computeE1rmHistory,
+  computeE1rmSeriesFromSnapshots,
   computeVolumeHistory,
 } from '@/lib/progress';
 import { useCoachOsStore } from '@/store';
@@ -72,7 +72,9 @@ export default function ProgresPage() {
         cycleStart,
       ),
       cycles: buildCycleHistory(history.cycles),
-      force: computeE1rmHistory(history.feedbacks, catalog, userState.profile.bodyweight_kg),
+      // #63 — la courbe Force lit désormais les SNAPSHOTS e1RM (= plafond du
+      // bilan de séance), pas un recalcul Epley brut des feedbacks.
+      force: computeE1rmSeriesFromSnapshots(history.e1rmSnapshots, catalog),
     };
   }, [userState, catalog, history]);
 

@@ -139,12 +139,18 @@ export function effectiveIncrement(state: UserState, exercise: Exercise): number
 }
 
 /**
- * Conv #20 — l'exo doit-il être prescrit en mode "poids du corps seulement" ?
+ * L'exo doit-il être prescrit en mode "poids du corps seulement" (charge
+ * externe forcée à 0, progression en reps) ? Seuls les types bodyweight
+ * (loaded / assisted) sont concernés ; pour les autres (DUMBBELL, BARBELL,
+ * MACHINE…), la notion de PDC n'a pas de sens → `false`.
  *
- * `true` si l'user a explicitement activé `pdc_only` sur cet exo via
- * EquipmentOverrideSheet ET que la charge de l'exo est de type bodyweight
- * (loaded ou assisted). Pour les autres types (DUMBBELL, BARBELL, MACHINE…),
- * le flag est ignoré : la notion de PDC n'a pas de sens.
+ * Défaut (#63) : un exo LESTABLE (`bodyweight_loaded` — relevés de jambes
+ * suspendus, hyperextensions, dips, tractions, pompes lestées…) se fait au
+ * poids du corps tant que l'user n'a pas décidé d'ajouter du lest. L'assisté
+ * garde son défaut historique (la "charge" est une assistance, pas un lest).
+ * L'user peut trancher explicitement via `EquipmentOverrideSheet` (pdc_only
+ * = true pour forcer le poids du corps, false pour ajouter du lest) ; ce choix
+ * explicite prime toujours sur le défaut.
  */
 export function effectivePdcOnly(state: UserState, exercise: Exercise): boolean {
   if (
@@ -154,7 +160,8 @@ export function effectivePdcOnly(state: UserState, exercise: Exercise): boolean 
     return false;
   }
   const override = state.equipment_overrides[exercise.id];
-  return override !== undefined && override.pdc_only === true;
+  if (override?.pdc_only != null) return override.pdc_only;
+  return exercise.charge === ChargeType.BODYWEIGHT_LOADED;
 }
 
 /**
@@ -516,10 +523,15 @@ export function buildPrescription(
       reps = floor;
     } else {
       // Seed : poids du corps PUR garde `reps` = reps fixes de l'objectif (déjà
-      // calculé plus haut). ⚠️ ne PAS seeder un PDC pur via `targetRepsForPdc` :
-      // son bootstrap e1RM (bw × pct × facteurs) ≪ poids du corps → 1 rep. Le
-      // mode PDC, lui, a un e1RM réel → Epley inverse.
-      if (effectivePdcOnly(state, exercise)) {
+      // calculé plus haut). Le mode PDC avec un e1RM RÉEL (mesuré) affine via
+      // Epley inverse (`targetRepsForPdc`). ⚠️ #63 — mais PAS avec un e1RM
+      // bootstrap (exo lestable basculé en PDC par défaut et jamais mesuré) :
+      // `targetRepsForPdc` sort 1 rep quand l'e1RM fictif ≤ poids du corps. Tant
+      // qu'aucune mesure n'existe, on garde les reps objectif comme seed sûr.
+      if (
+        effectivePdcOnly(state, exercise) &&
+        state.e1rm[exercise.id] !== undefined
+      ) {
         reps = targetRepsForPdc(e1rmTotal, profile.bodyweight_kg, rpe, k);
       }
       state.prescribed_reps_floor[exercise.id] = reps;

@@ -76,12 +76,19 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
     if (cyclePlan === null) return null;
     if (day.status !== 'free-future') return null;
     const dayLabels = cyclePlan.days.map((d) => d.label);
+    const todayKey = dateKey(new Date());
     const recent: { date: string; label: string }[] = [];
     for (const fb of feedbacks) {
       recent.push({ date: fb.feedback.seance_date, label: fb.feedback.label });
     }
     for (const s of sessions) {
       if (s.status !== 'planned') continue;
+      // #63 — une séance planifiée mais déjà passée sans avoir été faite
+      // (annulée, ou simplement non honorée) ne doit PAS compter comme une
+      // séance effectuée : sinon la reco du lendemain enchaîne la rotation et
+      // la cadence de repos comme si elle avait eu lieu. Seules comptent les
+      // séances faites (feedbacks) et les séances planifiées encore à venir.
+      if (s.seance_date < todayKey) continue;
       recent.push({ date: s.seance_date, label: s.plan.label });
     }
     return suggestNextSession(

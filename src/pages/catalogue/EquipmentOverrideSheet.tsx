@@ -65,11 +65,16 @@ export function EquipmentOverrideSheet({
     enabled: existing?.max_load_kg != null,
     raw: existing?.max_load_kg != null ? String(existing.max_load_kg) : '200',
   }));
-  // Conv #20 — toggle PDC sticky, uniquement pour exos BW_LOADED / BW_ASSISTED.
-  const [pdcOnly, setPdcOnly] = useState<boolean>(existing?.pdc_only === true);
   const allowsPdc =
     exercise.charge === ChargeType.BODYWEIGHT_LOADED ||
     exercise.charge === ChargeType.BODYWEIGHT_ASSISTED;
+  // #63 — défaut PDC pour les exos lestables (bodyweight_loaded) : le toggle
+  // démarre coché tant que l'user n'a pas décidé d'ajouter du lest. L'assisté
+  // garde son défaut décoché. Un choix explicite stocké (true/false) prime.
+  const pdcDefault = exercise.charge === ChargeType.BODYWEIGHT_LOADED;
+  const [pdcOnly, setPdcOnly] = useState<boolean>(
+    existing?.pdc_only != null ? existing.pdc_only : pdcDefault,
+  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -82,9 +87,13 @@ export function EquipmentOverrideSheet({
       const inc = parseField(incField);
       const min = parseField(minField);
       const max = parseField(maxField);
-      const effectivePdc = allowsPdc && pdcOnly;
-      if (inc === null && min === null && max === null && !effectivePdc) {
-        // Tout vidé → équivaut à reset.
+      // #63 — on ne persiste `pdc_only` que si l'user s'écarte du défaut de
+      // l'exo (sinon `null` = on suit le défaut). Stocke true OU false explicite
+      // (un `false` sur un exo lestable = "j'ajoute du lest").
+      const pdcExplicit = allowsPdc && pdcOnly !== pdcDefault;
+      const pdcToStore = pdcExplicit ? pdcOnly : null;
+      if (inc === null && min === null && max === null && pdcToStore === null) {
+        // Tout au défaut → équivaut à reset.
         if (hasOverride) await engine.clearEquipmentOverride(exercise.id);
         onClose();
         return;
@@ -97,7 +106,7 @@ export function EquipmentOverrideSheet({
         inc_kg: inc,
         min_load_kg: min,
         max_load_kg: max,
-        pdc_only: effectivePdc ? true : null,
+        pdc_only: pdcToStore,
       });
       onClose();
     } catch (e) {
@@ -174,10 +183,10 @@ export function EquipmentOverrideSheet({
                 aria-label="Forcer le poids du corps seulement"
               />
             </label>
-            <p className="text-[11px] leading-relaxed text-anthracite-300">
-              Coche si tu fais cet exo uniquement au poids du corps (sans
-              ajouter ou retirer de charge). L'app gardera la charge à 0 et
-              adaptera le nombre de répétitions cibles à ton niveau.
+            <p className="text-justify text-[11px] leading-relaxed text-anthracite-300">
+              Coché&nbsp;: l'app garde la charge à 0 et fait progresser le nombre
+              de répétitions. Décoche si tu veux ajouter du lest (une charge en
+              plus du poids du corps).
             </p>
           </Card>
         )}
