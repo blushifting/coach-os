@@ -81,7 +81,6 @@ export function serializeUserState(state: UserState): SerializedUserState {
     equipment_overrides: Object.fromEntries(
       Object.entries(state.equipment_overrides).map(([k, v]) => [k, { ...v }]),
     ),
-    weekly_volume_debt: { ...state.weekly_volume_debt },
     prescribed_load_floor: { ...state.prescribed_load_floor },
     prescribed_reps_floor: { ...state.prescribed_reps_floor },
     current_skeleton:
@@ -132,8 +131,6 @@ export function deserializeUserState(s: SerializedUserState): UserState {
         },
       ]),
     ),
-    // Rétrocompat : blobs antérieurs à Conv #11a n'ont pas ce champ.
-    weekly_volume_debt: { ...(s.weekly_volume_debt ?? {}) },
     // Rétrocompat : blobs antérieurs à la refonte progression n'ont pas ce champ.
     prescribed_load_floor: { ...(s.prescribed_load_floor ?? {}) },
     // Rétrocompat : blobs antérieurs au chantier D n'ont pas ce champ.

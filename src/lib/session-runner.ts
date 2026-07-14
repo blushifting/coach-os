@@ -245,18 +245,21 @@ export function suggestNextLoadAfterTooEasy(args: {
  * encore de snapshot e1RM en base, donc 1re séance de cet exo). Le caller
  * (SessionRunner) gate l'appel par `confidence !== 'measured'`.
  *
- * Dès qu'une série cochée fournit un e1RM live (`computeLiveE1rmFromEntries`,
- * moyenne pondérée des séries fiables — cohérent avec `updateE1rmForExercise`),
- * on RE-DÉRIVE la charge de chaque série suivante encore pilotée par l'algo,
- * exactement comme `buildPrescription` : `targetLoad(e1rm, reps, rpe)` décline le
- * plafond estimé au % de 1RM visé (reps + RPE cibles DE CHAQUE série du plan),
- * `externalLoadFromE1rm` retire le poids du corps, puis arrondi au cran de l'exo.
+ * Deux voies (point 2 — le bandeau et les cases doivent afficher la MÊME charge) :
+ *  - **Voie 1** — au moins une série INFORMATIVE (vrai effort) cochée fournit un
+ *    e1RM live (`computeLiveE1rmFromEntries`, `informativeOnly`) : on RE-DÉRIVE la
+ *    charge de chaque série suivante encore pilotée par l'algo, exactement comme
+ *    `buildPrescription` : `targetLoad(e1rm, reps, rpe)` décline le plafond estimé
+ *    au % de 1RM visé (reps + RPE cibles de CHAQUE série du plan),
+ *    `externalLoadFromE1rm` retire le poids du corps, puis arrondi au cran.
+ *  - **Voie 2** — pas encore de série informative mais la dernière cochée est
+ *    « trop facile » : on aligne les séries suivantes sur la charge de calibration
+ *    du bandeau (`suggestNextLoadAfterTooEasy`, ~5 reps à un vrai effort), donc le
+ *    « essaie autour de X » et la case concordent exactement.
  *
- * Contrairement à l'ancienne version (`charge_d'origine × e1RM_live/e1RM_bootstrap`),
- * ça ne dépend d'AUCUNE baseline : ça se déclenche à chaque série informative,
- * dans les deux sens (bootstrap trop bas → on monte ; trop haut → on descend) —
- * fin du « gel de calibration » (une série bien plus lourde qui ne bougeait rien)
- * et des valeurs bâtardes issues du ratio.
+ * Ça ne dépend d'AUCUNE baseline (fini le « gel de calibration » et les valeurs
+ * bâtardes issues d'un ratio) : ça se déclenche dès qu'une série est cochée, dans
+ * les deux sens (charge trop basse → on monte ; trop haute → on descend).
  *
  * On pré-remplit aussi les `reps` des séries non-cochées encore vides avec la
  * cible du plan.
@@ -282,10 +285,35 @@ export function recalibrateUpcomingSets(args: {
   const exo = catalog.get(item.exercise_id);
 
   const exoEntries = entries[itemIdx] ?? [];
-  const liveE1rm = computeLiveE1rmFromEntries(exo, bodyweightKg, exoEntries);
-  if (liveE1rm === null || liveE1rm <= 0) return entries;
-
   const inc = exo.inc_kg > 0 ? exo.inc_kg : 1.25;
+
+  // Voie 1 — au moins une série INFORMATIVE (vrai effort, RPE > 4+) cochée : on
+  // a un Plafond live, on re-dérive la charge de chaque série suivante à ses
+  // reps/RPE de plan.
+  const liveE1rm = computeLiveE1rmFromEntries(exo, bodyweightKg, exoEntries, {
+    informativeOnly: true,
+  });
+
+  // Voie 2 (point 2) — pas encore de série informative mais la dernière cochée est
+  // « trop facile » : on aligne les cases suivantes sur la MÊME charge de
+  // calibration que le bandeau (`suggestNextLoadAfterTooEasy`, ~5 reps à un vrai
+  // effort). Concordance garantie bandeau ↔ cases. Sinon (aucune donnée
+  // exploitable), on ne touche à rien.
+  let calibrationLoad: number | null = null;
+  if (liveE1rm === null || liveE1rm <= 0) {
+    const tooEasy = lastCheckedSetTooEasy(exoEntries);
+    if (tooEasy !== null) {
+      calibrationLoad = suggestNextLoadAfterTooEasy({
+        exercise: exo,
+        bodyweightKg,
+        reps: tooEasy.reps,
+        rpe: tooEasy.rpe,
+        load_kg: tooEasy.load_kg,
+      });
+    }
+    if (calibrationLoad === null) return entries;
+  }
+
   return entries.map((sets, i) => {
     if (i !== itemIdx) return sets;
     return sets.map((s, j) => {
@@ -297,25 +325,31 @@ export function recalibrateUpcomingSets(args: {
 
       // On ne re-pilote qu'une série encore « algo » : charge = prescription
       // d'origine OU déjà posée par un recalibrage (`loadAuto`). Une série
-      // ajustée à la main par l'user est préservée. La cible est TOUJOURS
-      // re-dérivée du e1RM live (jamais depuis la charge ajustée précédente).
+      // ajustée à la main par l'user est préservée.
       let nextLoad = s.load_kg;
       let nextLoadAuto = s.loadAuto ?? false;
       const algoOwned = s.load_kg === planLoad || s.loadAuto === true;
-      if (
-        algoOwned &&
-        planReps !== null &&
-        planReps > 0 &&
-        planRpe !== null &&
-        planRpe >= 0.5 &&
-        planRpe <= 10
-      ) {
-        const totalLoad = targetLoad(liveE1rm, planReps, planRpe);
-        const target = roundToIncrement(
-          externalLoadFromE1rm(totalLoad, exo, bodyweightKg),
-          inc,
-        );
-        if (target !== s.load_kg) {
+      if (algoOwned) {
+        let target: number | null = null;
+        if (liveE1rm !== null && liveE1rm > 0) {
+          // Voie 1 : cible re-dérivée du Plafond live aux reps/RPE de la série.
+          if (
+            planReps !== null &&
+            planReps > 0 &&
+            planRpe !== null &&
+            planRpe >= 0.5 &&
+            planRpe <= 10
+          ) {
+            target = roundToIncrement(
+              externalLoadFromE1rm(targetLoad(liveE1rm, planReps, planRpe), exo, bodyweightKg),
+              inc,
+            );
+          }
+        } else {
+          // Voie 2 : même charge de calibration que le bandeau.
+          target = calibrationLoad;
+        }
+        if (target !== null && target !== s.load_kg) {
           nextLoad = target;
           nextLoadAuto = true;
         }

@@ -198,7 +198,10 @@ export function buildDescription(ex: Exercise): string {
     return ex.note.trim();
   }
   const typ = extypeLabel(ex.type);
-  const pat = patternLabel(ex.pattern).toLowerCase();
+  // Point 1 — le pattern « isolation » est redondant avec le type « Isolation » :
+  // on ne l'ajoute pas (sinon « Isolation — isolation. »).
+  const patPart =
+    ex.pattern === Pattern.ISOLATION ? '' : ` — ${patternLabel(ex.pattern).toLowerCase()}`;
   // Conv #52 — formulation « Muscles ciblés : … » (liste après deux-points) :
   // aucun article devant les muscles, donc robuste aux libellés singuliers
   // comme « Grand dorsal » (un « Cible les grand dorsal » serait fautif). On
@@ -206,7 +209,7 @@ export function buildDescription(ex: Exercise): string {
   const primaires = exercisePrimaires(ex).map((m) => muscleLabel(m).toLowerCase());
   const cible =
     primaires.length === 0 ? '' : ` Muscles ciblés : ${joinFr(primaires)}.`;
-  return `${typ} — ${pat}.${cible}`.trim();
+  return `${typ}${patPart}.${cible}`.trim();
 }
 
 function joinFr(items: readonly string[]): string {

@@ -766,16 +766,6 @@ export interface UserState {
   // --- override équipement par exo ---
   equipment_overrides: Record<string, EquipmentOverride>;
   /**
-   * Dette de volume non réalisée sur la semaine en cours (Conv #11a).
-   *
-   * Mis à jour à chaque `recordFeedback` : pour chaque exo de la séance dont
-   * il manque des séries, on accumule `setsManques` sur chacun de ses muscles
-   * primaires. `generateSession` consomme cette dette en ajoutant des séries
-   * (capées) aux exos de la séance suivante qui couvrent ces muscles.
-   * `endOfWeek` reset à `{}` — la dette ne traverse pas la frontière hebdo.
-   */
-  weekly_volume_debt: Record<string, number>;
-  /**
    * Refonte progression — plancher de charge prescrite par exercice (kg externes).
    *
    * C'est la SOURCE de la charge prescrite au jour le jour (et non plus l'e1RM ×
@@ -860,7 +850,6 @@ export function makeUserState(profile: Profile): UserState {
     current_cycle_plan: null,
     build_mode: 'auto',
     equipment_overrides: {},
-    weekly_volume_debt: {},
     prescribed_load_floor: {},
     prescribed_reps_floor: {},
     current_skeleton: null,

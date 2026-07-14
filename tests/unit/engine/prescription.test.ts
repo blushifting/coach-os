@@ -438,3 +438,53 @@ describe('buildPrescription', () => {
     expect(pres.load_kg).toBeGreaterThan(0);
   });
 });
+
+// =============================================================================
+// 13. Point 5 — muscle travaillé mais NON couvert → Maintien (pas l'objectif global)
+// =============================================================================
+
+describe('buildPrescription — muscle non couvert (point 5)', () => {
+  it('muscle_goals défini mais aucun muscle primaire couvert → Maintien (reps 8, RPE 6)', () => {
+    // Programme haut du corps : seul biceps couvert (en Force). Le bench
+    // (primaire pectoraux) n'est dans aucun muscle_goal → doit passer en
+    // Maintien, PAS hériter du Force global.
+    const bench = catalog.get('bench_bb');
+    const p = profile();
+    const state = makeUserState(p);
+    const goals = { biceps: prio('biceps', MuscleObjective.FORCE, 1) };
+    const pres = buildPrescription(bench, 100, p, 1, { muscleGoals: goals, state });
+    expect(pres.reps).toBe(8); // fixedReps(MAINTIEN, compound)
+    expect(pres.rpe_target).toBe(6.0); // baseRpe(MAINTIEN)
+  });
+});
+
+// =============================================================================
+// 14. Point 4 — garde-fou : plancher jamais prescrit au-dessus du Plafond mesuré
+// =============================================================================
+
+describe('buildPrescription — garde-fou plancher > Plafond (point 4)', () => {
+  it('exo MESURÉ + plancher trop haut → prescription plafonnée, plancher persisté intact', () => {
+    const bench = catalog.get('bench_bb');
+    const p = profile();
+    const state = makeUserState(p);
+    state.e1rm['bench_bb'] = 14; // Plafond mesuré bas
+    state.prescribed_load_floor['bench_bb'] = 18; // plancher hérité trop haut (bug bootstrap)
+    const goals = { pectoraux: prio('pectoraux', MuscleObjective.HYPERTROPHIE, 1) };
+    const pres = buildPrescription(bench, 14, p, 1, { muscleGoals: goals, state });
+    // targetLoad(14, 10 reps, RPE 10) ≈ 10,5 → borne ≈ 10 < 18.
+    expect(pres.load_kg).toBeLessThan(18);
+    expect(pres.load_kg).toBeLessThanOrEqual(11);
+    // Le plancher PERSISTÉ n'est pas modifié (mémoire du ratchet).
+    expect(state.prescribed_load_floor['bench_bb']).toBe(18);
+  });
+
+  it('exo NON mesuré → pas de plafonnement (on ne borne pas sur un bootstrap)', () => {
+    const bench = catalog.get('bench_bb');
+    const p = profile();
+    const state = makeUserState(p);
+    state.prescribed_load_floor['bench_bb'] = 18; // pas de state.e1rm → non mesuré
+    const goals = { pectoraux: prio('pectoraux', MuscleObjective.HYPERTROPHIE, 1) };
+    const pres = buildPrescription(bench, 14, p, 1, { muscleGoals: goals, state });
+    expect(pres.load_kg).toBe(18);
+  });
+});

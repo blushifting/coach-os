@@ -1095,8 +1095,8 @@ export async function recordFeedbackAndCommit(
 ): Promise<engine.RecordFeedbackResult> {
   const catalog = requireCatalog();
   const next = requireUserState();
-  // Conv #11a : on passe le plan courant pour que le moteur calcule la dette
-  // de volume non réalisée et l'accumule dans `next.weekly_volume_debt`.
+  // Bloc L : on passe le plan courant pour que le moteur détecte une charge
+  // soulevée plus lourd que la prescription (adoption décisive de l'e1RM).
   const plan = useCoachOsStore.getState().currentSessionPlan;
   // Conv #16 : on identifie les exos déjà calibrés (= au moins un snapshot
   // e1RM en BDD avant cette séance) pour distinguer "1re séance" (skipEma)
@@ -1413,7 +1413,6 @@ export async function endOfCycle(args: EndOfCycleArgs = {}) {
   // Chantier B — nouveau cycle : la décision de récupération (déload opt-in)
   // repart à zéro (re-proposée en semaine 5 du nouveau cycle si l'assiduité est haute).
   next.deload_decision = null;
-  next.weekly_volume_debt = {};
 
   // 4. Régénère le plan du nouveau cycle.
   // Bloc O — plus de programmes tout faits. En mode « à la main », on reconduit

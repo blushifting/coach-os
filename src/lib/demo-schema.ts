@@ -148,6 +148,7 @@ const serializedUserStateSchema = z.object({
   muscle_goals: z.record(z.string(), muscleGoalSchema),
   current_cycle_plan: weeklyTemplateSchema.nullable(),
   equipment_overrides: z.record(z.string(), equipmentOverrideSchema),
+  // Report de volume retiré (1.41) — toléré (optionnel) pour les anciens snapshots.
   weekly_volume_debt: z.record(z.string(), z.number()).optional(),
   prescribed_load_floor: z.record(z.string(), z.number()).optional(),
   // Chantier D — cliquet de reps PDC (absent des anciens snapshots).

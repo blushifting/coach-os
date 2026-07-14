@@ -67,8 +67,6 @@ export interface SerializedUserState {
   /** Bloc O — mode de construction ('auto'|'manual'). Absent sur anciens blobs (default 'auto'). */
   build_mode?: 'auto' | 'manual';
   equipment_overrides: Record<string, EquipmentOverride>;
-  /** Dette de volume non réalisée cette semaine (Conv #11a). Absent sur les anciens blobs. */
-  weekly_volume_debt?: Record<string, number>;
   /** Plancher de charge prescrite par exo (refonte progression). Absent sur anciens blobs. */
   prescribed_load_floor?: Record<string, number>;
   /** Plancher de reps prescrites par exo poids du corps / PDC (chantier D). Absent sur anciens blobs. */

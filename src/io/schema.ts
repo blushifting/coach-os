@@ -93,7 +93,8 @@ const userStateSchema = z
         })
         .strict(),
     ),
-    // Conv #11a : optionnel pour rétrocompat avec exports antérieurs.
+    // Report de volume retiré (1.41) — champ toléré (optionnel) pour accepter les
+    // exports antérieurs, mais ignoré à la désérialisation.
     weekly_volume_debt: recordOfNumber.optional(),
     // Refonte progression : optionnel pour rétrocompat exports antérieurs.
     prescribed_load_floor: recordOfNumber.optional(),

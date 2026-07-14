@@ -4,7 +4,7 @@ import { Button } from '@/components/Button';
 import { ChargeMechanicNote } from '@/components/ChargeMechanicNote';
 import { AnatomicalSilhouette, type SilhouetteStatus } from '@/components/AnatomicalSilhouette';
 import type { Catalog } from '@/engine/catalog';
-import { exercisePrimaires, exerciseSynergistes } from '@/engine/models';
+import { exercisePrimaires, exerciseSynergistes, Pattern } from '@/engine/models';
 import {
   extypeLabel,
   patternLabel,
@@ -127,9 +127,12 @@ export function ExerciseDetailSheet({
             <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
               {extypeLabel(exercise.type)}
             </span>
-            <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
-              {patternLabel(exercise.pattern)}
-            </span>
+            {/* Point 1 — pattern « isolation » = redondant avec le type « Isolation » : on masque. */}
+            {exercise.pattern !== Pattern.ISOLATION && (
+              <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
+                {patternLabel(exercise.pattern)}
+              </span>
+            )}
           </div>
 
           {/* E-4 — description auto retirée (redondante avec le badge type/

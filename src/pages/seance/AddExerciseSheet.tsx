@@ -16,6 +16,7 @@ import { Button } from '@/components/Button';
 import { Sheet } from '@/components/Sheet';
 import type { Catalog } from '@/engine/catalog';
 import type { Exercise } from '@/engine/models';
+import { Pattern } from '@/engine/models';
 import { useEngine } from '@/hooks/useEngine';
 import {
   chargeLabel,
@@ -235,8 +236,11 @@ export function AddExerciseSheet({
                 <div className="min-w-0 flex-1">
                   <div className="font-semibold text-white">{displayExerciseName(picked, brand)}</div>
                   <div className="mt-1 text-xs text-anthracite-300">
-                    {patternLabel(picked.pattern)} · {chargeLabel(picked.charge)} ·{' '}
-                    {extypeLabel(picked.type)}
+                    {/* Point 1 — pattern « isolation » redondant avec le type : masqué. */}
+                    {picked.pattern !== Pattern.ISOLATION && (
+                      <>{patternLabel(picked.pattern)} · </>
+                    )}
+                    {chargeLabel(picked.charge)} · {extypeLabel(picked.type)}
                   </div>
                 </div>
                 {/* Bloc F (Conv #31) — œil de visu sur l'exo choisi. */}

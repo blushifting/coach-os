@@ -403,10 +403,50 @@ export function targetRepsForExercise(
  */
 export function resolveTargetReps(state: UserState, exercise: Exercise): number {
   const mg = Object.keys(state.muscle_goals).length > 0 ? state.muscle_goals : null;
-  if (mg !== null && primaryMuscleGoal(exercise, mg) !== null) {
-    return targetRepsForExercise(exercise, mg);
+  if (mg !== null) {
+    const goal = primaryMuscleGoal(exercise, mg);
+    // Point 5 (décision Azur) — un muscle travaillé mais NON couvert (aucun muscle
+    // primaire dans muscle_goals) passe en Maintien, plus l'objectif global hérité.
+    return fixedReps(goal !== null ? goal.objective : MuscleObjective.MAINTIEN, exercise.type);
   }
   return targetReps(state.profile, exercise);
+}
+
+/**
+ * Reps + RPE cibles pour cet exo selon la voie active. Mutualisé par
+ * `buildPrescription` et le garde-fou de charge (feedback.ts) pour garantir la
+ * cohérence de la cible :
+ *   - un muscle primaire (coef ≥ 1) est couvert dans `muscleGoals` → objectif de
+ *     ce muscle (le plus prioritaire) ;
+ *   - `muscleGoals` défini mais AUCUN primaire couvert → **Maintien** (point 5) :
+ *     un muscle travaillé hors priorités n'hérite plus de l'objectif global (qui
+ *     pouvait le mettre en Force) ;
+ *   - `muscleGoals` absent (null / vide) → voie legacy `profile.objective`.
+ */
+export function resolvePrescriptionTargets(
+  exercise: Exercise,
+  profile: Profile,
+  weekInCycle: number,
+  muscleGoals: Record<string, MuscleGoal> | null,
+  deloadActive: boolean,
+): { reps: number; rpe: number } {
+  const goal = muscleGoals !== null ? primaryMuscleGoal(exercise, muscleGoals) : null;
+  if (goal !== null) {
+    return {
+      reps: fixedReps(goal.objective, exercise.type),
+      rpe: baseRpeFromMuscleObjective(goal.objective, weekInCycle, deloadActive),
+    };
+  }
+  if (muscleGoals !== null) {
+    return {
+      reps: fixedReps(MuscleObjective.MAINTIEN, exercise.type),
+      rpe: baseRpeFromMuscleObjective(MuscleObjective.MAINTIEN, weekInCycle, deloadActive),
+    };
+  }
+  return {
+    reps: targetReps(profile, exercise),
+    rpe: targetRpe(profile.objective, weekInCycle, deloadActive),
+  };
 }
 
 // =============================================================================
@@ -496,18 +536,11 @@ export function buildPrescription(
   const deloadActive = options.deloadActive ?? false;
   const state = options.state ?? null;
 
-  const useMuscleGoals =
-    muscleGoals !== null && primaryMuscleGoal(exercise, muscleGoals) !== null;
-
-  let rpe: number;
-  let reps: number;
-  if (useMuscleGoals) {
-    rpe = targetRpeForExercise(exercise, weekInCycle, muscleGoals, deloadActive);
-    reps = targetRepsForExercise(exercise, muscleGoals);
-  } else {
-    rpe = targetRpe(profile.objective, weekInCycle, deloadActive);
-    reps = targetReps(profile, exercise);
-  }
+  const targets = resolvePrescriptionTargets(
+    exercise, profile, weekInCycle, muscleGoals, deloadActive,
+  );
+  const rpe = targets.rpe;
+  let reps = targets.reps;
 
   // Chantier D — cliquet de reps (poids du corps PUR + mode PDC) : la charge
   // externe est forcée à 0 et les reps prescrites viennent du PLANCHER persisté
@@ -548,12 +581,30 @@ export function buildPrescription(
     // sans charge externe additive exclus. Déload : plancher allégé d'un facteur.
     if (state !== null && exerciseUsesLoadFloor(state, exercise)) {
       const floor = state.prescribed_load_floor[exercise.id];
+      // Le bootstrap n'est JAMAIS stocké dans state.e1rm (cf. engine.ts) : la
+      // présence d'une valeur ⇔ l'exo a été réellement mesuré au moins une fois.
+      const measured = state.e1rm[exercise.id] !== undefined;
       if (deloadActive) {
         if (floor !== undefined) {
           extLoad = roundToIncrement(floor * DELOAD_LOAD_FACTOR, inc);
         }
       } else if (floor !== undefined) {
         extLoad = floor;
+        // Point 4 — garde-fou : sur un exo MESURÉ, la charge prescrite ne peut pas
+        // dépasser la charge à laquelle `reps` répétitions restent physiquement
+        // possibles (targetLoad au RPE 10 = échec). Empêche un plancher trop haut
+        // (hérité d'un seed bootstrap surestimé, ou d'un Plafond qui a baissé) de
+        // prescrire l'impossible — c'était le bug « Plafond 14, prescrit 18 ». Le
+        // plancher PERSISTÉ n'est PAS modifié (mémoire du ratchet intacte) : dès que
+        // le Plafond remonte, la charge revient au plancher. On ne borne pas sur un
+        // e1RM bootstrap (non mesuré) : ce serait plafonner sur une devinette.
+        if (measured) {
+          const cap = roundToIncrement(
+            externalLoadFromE1rm(targetLoad(e1rmTotal, reps, 10, k), exercise, profile.bodyweight_kg),
+            inc,
+          );
+          if (cap > 0 && extLoad > cap) extLoad = cap;
+        }
       } else {
         state.prescribed_load_floor[exercise.id] = extLoad;
       }

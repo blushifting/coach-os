@@ -5,7 +5,7 @@ import { ChargeMechanicNote } from '@/components/ChargeMechanicNote';
 import { Concept } from '@/components/Concept';
 import { Dialog } from '@/components/Dialog';
 import { AnatomicalSilhouette, type SilhouetteStatus } from '@/components/AnatomicalSilhouette';
-import { exercisePrimaires, exerciseSynergistes } from '@/engine/models';
+import { exercisePrimaires, exerciseSynergistes, Pattern } from '@/engine/models';
 import type { Exercise } from '@/engine/models';
 import { useEngine } from '@/hooks/useEngine';
 import {
@@ -114,9 +114,12 @@ export function CatalogueDetailSheet({
           <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
             {extypeLabel(exercise.type)}
           </span>
-          <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
-            {patternLabel(exercise.pattern)}
-          </span>
+          {/* Point 1 — pattern « isolation » = redondant avec le type « Isolation » : on masque. */}
+          {exercise.pattern !== Pattern.ISOLATION && (
+            <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
+              {patternLabel(exercise.pattern)}
+            </span>
+          )}
         </div>
 
         {/* Bloc F (Conv #31) — bascule favori. Désactivée en démo (pas
