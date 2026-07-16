@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -12,8 +12,10 @@ import { ChargeType, type SessionPlan } from '@/engine/models';
 import { exerciseUsesRepsFloor } from '@/engine/prescription';
 import { REPS_FLOOR_MAX } from '@/engine/feedback';
 import { useEngine } from '@/hooks/useEngine';
+import { useReducedMotion } from '@/hooks/useMotion';
+import { MOTION } from '@/lib/motion';
 import { useCoachOsStore } from '@/store';
-import { useDemoMode, useGymBrand } from '@/store/selectors';
+import { useDemoMode, useGymBrand, useToday } from '@/store/selectors';
 import { displayExerciseName } from '@/lib/catalog-filter';
 import { sessionDisplayName } from '@/lib/session-label';
 import {
@@ -40,6 +42,42 @@ import { SetInput } from './SetInput';
  * load_kg + rpe) compte, y compris une série lourde faite en réserve (4+),
  * pour que le recalibrage propage la charge (fix du gel de calibration).
  */
+/** Ensemble vide partagé : évite de recréer un `Set` à chaque purge de flash. */
+const NO_KEYS: ReadonlySet<string> = new Set<string>();
+
+/**
+ * Conv #66 — clés `${itemIdx}-${setIdx}` des séries dont la charge a été changée
+ * par l'ALGO. Se calcule en comparant les entries avant / après le recalibrage :
+ * `before` contient déjà la saisie de l'utilisateur, donc tout écart restant est
+ * l'œuvre du moteur. C'est ce qui permet de ne PAS flasher sa propre saisie.
+ */
+function diffChangedLoads(
+  before: SessionEntries,
+  after: SessionEntries,
+): Set<string> {
+  const out = new Set<string>();
+  for (let i = 0; i < after.length; i++) {
+    const rowAfter = after[i] ?? [];
+    const rowBefore = before[i] ?? [];
+    for (let j = 0; j < rowAfter.length; j++) {
+      const a = rowAfter[j];
+      const b = rowBefore[j];
+      if (!a || !b) continue;
+      if (a.load_kg !== b.load_kg) out.add(`${i}-${j}`);
+    }
+  }
+  return out;
+}
+
+/** Index du premier exo pas encore terminé après `from`, ou −1. */
+function nextUnfinishedIdx(entries: SessionEntries, from: number): number {
+  for (let i = from + 1; i < entries.length; i++) {
+    const row = entries[i] ?? [];
+    if (row.length > 0 && !row.every((s) => s.done)) return i;
+  }
+  return -1;
+}
+
 function isCountableForLiveE1rm(s: SetEntry | undefined): boolean {
   if (!s) return false;
   if (!s.done) return false;
@@ -100,6 +138,53 @@ export function SessionRunner({
   const done = countDoneSets(entries);
   const total = countPlannedSets(entries);
   const incomplete = done < total;
+  const reducedMotion = useReducedMotion();
+  const today = useToday();
+
+  // Conv #66 — signal ponctuel « l'algo vient de changer cette charge ».
+  const [recalibratedKeys, setRecalibratedKeys] = useState<ReadonlySet<string>>(NO_KEYS);
+  useEffect(() => {
+    if (recalibratedKeys.size === 0) return;
+    const t = window.setTimeout(() => setRecalibratedKeys(NO_KEYS), MOTION.flash);
+    return () => window.clearTimeout(t);
+  }, [recalibratedKeys]);
+
+  // Conv #66 — la dernière série vient d'être cochée : le bouton de fin se
+  // signale une fois. Le ref part de l'état courant → pas de pulsation si on
+  // arrive sur une séance déjà complète.
+  const [justCompletedAll, setJustCompletedAll] = useState(false);
+  const wasIncomplete = useRef(incomplete);
+  useEffect(() => {
+    if (!incomplete && wasIncomplete.current && total > 0) {
+      setJustCompletedAll(true);
+      const t = window.setTimeout(() => setJustCompletedAll(false), 800);
+      wasIncomplete.current = incomplete;
+      return () => window.clearTimeout(t);
+    }
+    wasIncomplete.current = incomplete;
+  }, [incomplete, total]);
+
+  // Conv #66 — après le repli auto d'un exo bouclé, on amène l'exo suivant sous
+  // les yeux. `block: 'nearest'` = ne bouge que si la carte est hors champ : un
+  // scroll qui se déclenche alors qu'on voit déjà la cible est une nuisance.
+  const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
+  const [scrollToIdx, setScrollToIdx] = useState<number | null>(null);
+  useEffect(() => {
+    if (scrollToIdx === null) return;
+    // Le repli de la carte terminée (300 ms) déplace la cible : viser avant sa
+    // stabilisation scrollerait vers une position périmée.
+    const t = window.setTimeout(
+      () => {
+        itemRefs.current[scrollToIdx]?.scrollIntoView({
+          behavior: reducedMotion ? 'auto' : 'smooth',
+          block: 'nearest',
+        });
+        setScrollToIdx(null);
+      },
+      reducedMotion ? 0 : 320,
+    );
+    return () => window.clearTimeout(t);
+  }, [scrollToIdx, reducedMotion]);
 
   // Conv #15 vague 3 — annulation : supprime la session de la DB (vs skip
   // qui la marque `status='skipped'`). La case calendrier redevient libre.
@@ -118,8 +203,11 @@ export function SessionRunner({
   // Conv #12b — confidence dérivée pour chaque exo, calculée 1× par cycle de
   // render à partir des snapshots datés. Le banner s'affiche au-dessus du
   // bloc des séries pour les exos `not_calibrated` ou `stale`.
+  //
+  // Conv #66 — `today` est ancré sur la démo quand elle est active : les
+  // snapshots d'Alex sont figés, lus à la date réelle ils passent tous `stale`
+  // et la séance de démo se couvre de bandeaux « à recalibrer » injustifiés.
   const confidenceByExo = useMemo(() => {
-    const today = new Date();
     const e1rm = userState?.e1rm ?? {};
     const out: Record<string, ReturnType<typeof e1rmConfidenceFor>> = {};
     for (const item of plan.items) {
@@ -133,7 +221,7 @@ export function SessionRunner({
       );
     }
     return out;
-  }, [plan.items, userState?.e1rm, snapshots]);
+  }, [plan.items, userState?.e1rm, snapshots, today]);
   const bodyweight = userState?.profile.bodyweight_kg ?? 75;
 
   // Wrap onEntriesChange : à chaque fois qu'une série devient "fiable pour
@@ -186,6 +274,9 @@ export function SessionRunner({
         const isCalibrating =
           exId !== undefined &&
           (confidenceByExo[exId] ?? 'measured') !== 'measured';
+        // Conv #66 — état AVANT les réécritures automatiques de charge : sert de
+        // référence pour savoir ce que l'algo a touché (cf. `diffChangedLoads`).
+        const beforeAutoLoads = next;
         if (isCalibrating) {
           next = recalibrateUpcomingSets({
             entries: next,
@@ -205,6 +296,8 @@ export function SessionRunner({
             fromSetIdx: triggeredSetIdx,
           });
         }
+        const touched = diffChangedLoads(beforeAutoLoads, next);
+        if (touched.size > 0) setRecalibratedKeys(touched);
       }
       // 1.17 — compléter toutes les séries d'un exo force le repli, MÊME si
       // l'user l'avait déplié manuellement avant la fin (override `false`).
@@ -214,19 +307,30 @@ export function SessionRunner({
       // Bloc I — override clé par `exercise_id`, lu/écrit dans le store.
       const prevCollapsed = useCoachOsStore.getState().currentSessionCollapsed;
       let nextCollapsed: Record<string, boolean> | null = null;
+      // Conv #66 — la même transition « pas-tout-fait → tout-fait » sert au repli
+      // (déjà en place) ET au scroll vers l'exo suivant. L'override n'est purgé
+      // que s'il existe, mais la transition, elle, se détecte pour tous les exos.
+      let justCompletedIdx = -1;
       for (let i = 0; i < next.length; i++) {
         const exoId = plan.items[i]?.exercise_id;
-        if (exoId === undefined || prevCollapsed[exoId] === undefined) continue;
+        if (exoId === undefined) continue;
         const newRow = next[i] ?? [];
         const oldRow = entries[i] ?? [];
         const newAllDone = newRow.length > 0 && newRow.every((s) => s.done);
         const oldAllDone = oldRow.length > 0 && oldRow.every((s) => s.done);
         if (newAllDone && !oldAllDone) {
-          nextCollapsed ??= { ...prevCollapsed };
-          delete nextCollapsed[exoId];
+          justCompletedIdx = i;
+          if (prevCollapsed[exoId] !== undefined) {
+            nextCollapsed ??= { ...prevCollapsed };
+            delete nextCollapsed[exoId];
+          }
         }
       }
       if (nextCollapsed !== null) setCurrentSessionCollapsed(nextCollapsed);
+      if (justCompletedIdx >= 0) {
+        const target = nextUnfinishedIdx(next, justCompletedIdx);
+        if (target >= 0) setScrollToIdx(target);
+      }
       onEntriesChange(next);
     },
     [
@@ -306,7 +410,12 @@ export function SessionRunner({
             exerciseUsesRepsFloor(userState, ex) &&
             (userState.prescribed_reps_floor[ex.id] ?? 0) >= REPS_FLOOR_MAX;
           return (
-            <li key={`${item.exercise_id}-${i}`}>
+            <li
+              key={`${item.exercise_id}-${i}`}
+              ref={(el) => {
+                itemRefs.current[i] = el;
+              }}
+            >
               <Card
                 className="flex flex-col gap-2"
                 data-testid={`exo-card-${i}`}
@@ -470,6 +579,7 @@ export function SessionRunner({
                           chargeType={chargeType}
                           pdcOnly={pdcOnly}
                           unilateral={ex?.uni ?? false}
+                          recalibrated={recalibratedKeys.has(`${i}-${j}`)}
                           onChange={(patch) =>
                             handleEntriesChange(updateSetEntry(entries, i, j, patch))
                           }
@@ -505,6 +615,7 @@ export function SessionRunner({
         fullWidth
         onClick={() => setConfirmFinish(true)}
         disabled={finishing || done === 0 || demoActive}
+        className={cn(justCompletedAll && 'motion-safe:animate-finish-pulse')}
         data-testid="btn-finish-session"
       >
         {finishing ? 'Enregistrement…' : 'Terminer la séance'}

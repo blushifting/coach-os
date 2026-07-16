@@ -149,6 +149,73 @@ const config: Config = {
           '0%': { opacity: '0', transform: 'translateY(4px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        // Conv #66 — bilan de séance : le repère V_min s'illumine au moment
+        // précis où la barre de volume le franchit. Vert (grille sémantique :
+        // vert = cible atteinte, comme la validation de série). Le trait
+        // s'étire verticalement plutôt que de grossir : il reste un repère
+        // posé sur la barre, il ne devient pas un objet.
+        'vmin-hit': {
+          '0%': { transform: 'scaleY(1)', boxShadow: '0 0 0 0 rgba(22,163,74,0)' },
+          '40%': {
+            transform: 'scaleY(2.4)',
+            boxShadow: '0 0 10px 2px rgba(22,163,74,0.6)',
+          },
+          '100%': { transform: 'scaleY(1)', boxShadow: '0 0 0 0 rgba(22,163,74,0)' },
+        },
+        // Conv #66 — symétrique de `tick-pop` au DÉcochage : la coche se
+        // rétracte au lieu de simplement s'éteindre. Pas de halo (on retire un
+        // acquis, ce n'est pas un événement à célébrer) et plus court que le pop.
+        'tick-unpop': {
+          '0%': { transform: 'scale(1)' },
+          '45%': { transform: 'scale(0.88)' },
+          '100%': { transform: 'scale(1)' },
+        },
+        // Conv #66 — onde qui s'échappe du dernier point de la courbe Force, une
+        // fois le tracé arrivé. Anime `r` (propriété CSS des formes SVG) plutôt
+        // qu'un `transform: scale`, qui prendrait pour origine le coin du SVG et
+        // non le centre du point. Si `r` n'est pas animable, l'opacité seule joue
+        // encore : dégradation acceptable.
+        'last-point-ping': {
+          '0%': { r: '2.5', opacity: '0.85' },
+          '100%': { r: '10', opacity: '0' },
+        },
+        // Conv #66 — changement d'onglet PRINCIPAL : la page entre du côté d'où
+        // elle vient. 16 px = le niveau haut de la hiérarchie de mouvement (les
+        // sous-onglets se contentent de 6 px, cf. `subtab-in-*`).
+        'page-in-right': {
+          '0%': { opacity: '0', transform: 'translateX(16px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        'page-in-left': {
+          '0%': { opacity: '0', transform: 'translateX(-16px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        // Conv #66 — bascule entre sous-onglets (Progrès). Amplitude VOLONTAIREMENT
+        // faible (6 px) face aux 16 px des onglets principaux : le sous-niveau doit
+        // se lire comme un glissement discret, pas comme un changement d'écran.
+        'subtab-in-right': {
+          '0%': { opacity: '0', transform: 'translateX(6px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        'subtab-in-left': {
+          '0%': { opacity: '0', transform: 'translateX(-6px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        // Conv #66 — la dernière série vient d'être cochée : le bouton de fin
+        // s'annonce une fois. Halo sang (action principale), pas vert : on ne
+        // valide rien, on signale où aller.
+        'finish-pulse': {
+          '0%': { boxShadow: '0 0 0 0 rgba(182,42,58,0)' },
+          '45%': { boxShadow: '0 0 18px 3px rgba(182,42,58,0.55)' },
+          '100%': { boxShadow: '0 0 0 0 rgba(182,42,58,0)' },
+        },
+        // Conv #66 — une charge vient d'être recalculée par la calibration.
+        // Ambre = « regarde, ça a changé », sans jugement (ni succès ni erreur).
+        // Se termine en transparent : la ligne retrouve son fond de classe.
+        'recalibrate-flash': {
+          '0%': { backgroundColor: 'rgba(217,119,6,0.28)' },
+          '100%': { backgroundColor: 'rgba(217,119,6,0)' },
+        },
       },
       animation: {
         'tick-pop': 'tick-pop 380ms cubic-bezier(0.34, 1.56, 0.64, 1)',
@@ -164,6 +231,15 @@ const config: Config = {
         'sheet-down': 'sheet-down 240ms cubic-bezier(0.4, 0, 1, 1) forwards',
         'backdrop-fade-out': 'backdrop-fade-out 240ms ease-in forwards',
         'page-fade': 'page-fade 200ms ease-out',
+        'page-in-right': 'page-in-right 220ms ease-out',
+        'page-in-left': 'page-in-left 220ms ease-out',
+        'vmin-hit': 'vmin-hit 520ms ease-out',
+        'tick-unpop': 'tick-unpop 260ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+        'finish-pulse': 'finish-pulse 800ms ease-out',
+        'last-point-ping': 'last-point-ping 900ms ease-out both',
+        'subtab-in-right': 'subtab-in-right 180ms ease-out',
+        'subtab-in-left': 'subtab-in-left 180ms ease-out',
+        'recalibrate-flash': 'recalibrate-flash 600ms ease-out',
       },
       boxShadow: {
         // Conv #11c — halo rouge diffus pour les éléments primaires hover/focus.

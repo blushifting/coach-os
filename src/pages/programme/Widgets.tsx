@@ -258,7 +258,7 @@ function NextBilanWidget({
         <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-anthracite-700">
           <div
             className={cn(
-              'h-full bg-gradient-to-r from-sang-700 to-sang-500 transition-[width] duration-500',
+              'h-full bg-gradient-to-r from-sang-700 to-sang-500 motion-safe:transition-[width] motion-safe:duration-500',
             )}
             style={{ width: `${pct}%` }}
           />

@@ -5,7 +5,9 @@ import { Card } from '@/components/Card';
 import { Concept } from '@/components/Concept';
 import { TrendArrow } from '@/components/icons';
 import { cn } from '@/lib/cn';
+import { MOTION } from '@/lib/motion';
 import { useEngine } from '@/hooks/useEngine';
+import { useAnimateOnMount } from '@/hooks/useMotion';
 import { useCoachOsStore } from '@/store';
 import { selectCycles, useDemoMode } from '@/store/selectors';
 import { MuscleStatus, SuggestedAction, type CycleReview } from '@/engine/models';
@@ -166,42 +168,67 @@ function ReviewVolume({ volume }: { volume: ReadonlyArray<MuscleCycleVolume> }) 
       <h2 className="text-sm font-semibold text-white">
         Volume par muscle · moy./sem vs cible
       </h2>
-      {volume.map((m, i) => {
-        const pct = m.vMax > 0 ? Math.min(100, (m.avgSetsPerWeek / m.vMax) * 100) : 0;
-        return (
-          <div
-            key={m.muscle}
-            className="flex animate-reveal-up flex-col gap-1"
-            style={{ animationDelay: `${120 + i * 50}ms` }}
-            data-testid={`bilan-volume-${m.muscle}`}
-          >
-            <div className="flex items-baseline justify-between gap-2 text-xs">
-              <span className="min-w-0 truncate text-anthracite-200">
-                {muscleLabel(m.muscle)}
-                {m.goalStatus === MuscleStatus.PRIORITAIRE && (
-                  <span className="ml-2 rounded bg-sang-900/40 px-1 py-0.5 text-[10px] text-sang-300">
-                    prioritaire
-                  </span>
-                )}
-              </span>
-              <span className={cn('shrink-0 tabular-nums', VOLUME_STATUS_TEXT[m.status])}>
-                {formatSets(m.avgSetsPerWeek)}
-                <span className="text-anthracite-400">
-                  {' '}
-                  / {m.vMin.toFixed(0)}–{m.vMax.toFixed(0)}
-                </span>
-              </span>
-            </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-anthracite-700">
-              <div
-                className={cn('h-full rounded-full', VOLUME_STATUS_BAR[m.status])}
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-          </div>
-        );
-      })}
+      {volume.map((m, i) => (
+        <CycleVolumeRow key={m.muscle} data={m} index={i} />
+      ))}
     </Card>
+  );
+}
+
+/**
+ * Conv #66 — une ligne de volume du bilan de cycle. La barre se remplit depuis 0
+ * (et non depuis une valeur précédente comme au bilan de SÉANCE : ici on montre
+ * une moyenne sur le cycle, pas un incrément qu'on vient d'ajouter).
+ */
+function CycleVolumeRow({
+  data,
+  index,
+}: {
+  data: MuscleCycleVolume;
+  index: number;
+}) {
+  const pct = data.vMax > 0 ? Math.min(100, (data.avgSetsPerWeek / data.vMax) * 100) : 0;
+  const revealDelay = 120 + index * MOTION.stagger;
+  const shownPct = useAnimateOnMount(0, pct);
+  return (
+    <div
+      className="flex flex-col gap-1 motion-safe:animate-reveal-up"
+      style={{ animationDelay: `${revealDelay}ms` }}
+      data-testid={`bilan-volume-${data.muscle}`}
+    >
+      <div className="flex items-baseline justify-between gap-2 text-xs">
+        <span className="min-w-0 truncate text-anthracite-200">
+          {muscleLabel(data.muscle)}
+          {data.goalStatus === MuscleStatus.PRIORITAIRE && (
+            <span className="ml-2 rounded bg-sang-900/40 px-1 py-0.5 text-[10px] text-sang-300">
+              prioritaire
+            </span>
+          )}
+        </span>
+        <span className={cn('shrink-0 tabular-nums', VOLUME_STATUS_TEXT[data.status])}>
+          {formatSets(data.avgSetsPerWeek)}
+          <span className="text-anthracite-400">
+            {' '}
+            / {data.vMin.toFixed(0)}–{data.vMax.toFixed(0)}
+          </span>
+        </span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-anthracite-700">
+        <div
+          className={cn(
+            'h-full rounded-full motion-safe:transition-[width] motion-safe:ease-out',
+            VOLUME_STATUS_BAR[data.status],
+          )}
+          style={{
+            width: `${shownPct}%`,
+            transitionDuration: `${MOTION.fill}ms`,
+            // La barre part quand sa ligne a fini d'apparaître : deux mouvements
+            // simultanés sur la même ligne se brouillent.
+            transitionDelay: `${revealDelay + 200}ms`,
+          }}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -222,7 +249,7 @@ function Metric({
     // semblait flotter à gauche de sa colonne au lieu d'être centré entre
     // Adhérence et Records.
     <div
-      className="flex animate-reveal-up flex-col items-center gap-0.5 text-center"
+      className="flex flex-col items-center gap-0.5 text-center motion-safe:animate-reveal-up"
       style={{ animationDelay: `${delay}ms` }}
     >
       {/* Conv #18 — min-h-5 réserve la hauteur du HelpButton (h-5) sur tous
@@ -280,7 +307,7 @@ function ReviewPlafonds({
           return (
             <li
               key={exId}
-              className="flex animate-reveal-up items-center justify-between text-sm"
+              className="flex items-center justify-between text-sm motion-safe:animate-reveal-up"
               style={{ animationDelay: `${200 + i * 60}ms` }}
               data-testid={`plafond-${exId}`}
               data-direction={trend}

@@ -478,6 +478,17 @@ export default function OnboardingPage() {
     }
   }
 
+  // Conv #66 — sens du glissement d'étape. `prevStep` n'est mis à jour qu'en
+  // effet (après le rendu) : le rendu courant lit donc l'étape précédente.
+  const prevStep = useRef(step);
+  const stepAnim =
+    step >= prevStep.current
+      ? 'motion-safe:animate-page-in-right'
+      : 'motion-safe:animate-page-in-left';
+  useEffect(() => {
+    prevStep.current = step;
+  }, [step]);
+
   const isLastStep = step === LAST_STEP;
   // Stepper : en restart on saute Step1, donc 3 étapes affichées.
   const stepperLabels = isRestart ? STEP_LABELS.slice(1) : STEP_LABELS;
@@ -574,7 +585,13 @@ export default function OnboardingPage() {
       </header>
 
       <main ref={mainRef} className="flex-1 overflow-y-auto pb-32">
-        {stepContent}
+        {/* Conv #66 — l'étape entre du côté d'où elle vient : « Suivant » la fait
+            entrer par la droite, « Précédent » par la gauche. Même amplitude que
+            les onglets principaux (16 px) : c'est bien un changement d'écran.
+            La clé relance l'animation à chaque étape. */}
+        <div key={step} className={stepAnim}>
+          {stepContent}
+        </div>
       </main>
 
       {error ? (

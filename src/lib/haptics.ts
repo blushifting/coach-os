@@ -12,6 +12,8 @@
  * Patterns : un nombre = durée en ms. Un tableau = pattern (vibrer/pause/...).
  */
 
+import { prefersReducedMotion } from '@/lib/motion';
+
 export type HapticEvent =
   | 'tap-soft' // tap minimal (préview, hover-style)
   | 'set-done' // série validée
@@ -28,15 +30,6 @@ const PATTERNS: Record<HapticEvent, number | number[]> = {
   pr: [30, 50, 30, 50, 30, 50, 80],
   error: [15, 40, 15],
 };
-
-function prefersReducedMotion(): boolean {
-  if (typeof window === 'undefined') return false;
-  try {
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  } catch {
-    return false;
-  }
-}
 
 export function triggerHaptic(event: HapticEvent): void {
   if (typeof navigator === 'undefined') return;

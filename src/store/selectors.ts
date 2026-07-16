@@ -4,6 +4,8 @@
  * les re-renders.
  */
 
+import { useMemo } from 'react';
+import { parseDateKey } from '@/lib/dashboard';
 import { useCoachOsStore, type CoachOsState } from './index';
 
 // === Slice "profile" ===
@@ -47,6 +49,29 @@ export const useBootstrapped = () => useCoachOsStore(selectBootstrapped);
 export const useCycleProgress = () => useCoachOsStore(selectCycleProgress);
 export const useDemoMode = () => useCoachOsStore(selectDemoMode);
 export const useDemoSnapshot = () => useCoachOsStore(selectDemoSnapshot);
+
+/**
+ * « Aujourd'hui » du point de vue de l'app — la date à passer à TOUT calcul qui
+ * dépend du temps (fenêtres glissantes, couverture de la semaine en cours,
+ * fraîcheur des Plafonds).
+ *
+ * En mode démo, elle est ANCRÉE sur la date de génération du snapshot. L'histoire
+ * d'Alex est figée au jour où le JSON a été produit, mais ce JSON est commité :
+ * il vieillit. Lu à la date réelle, tout son historique sort des fenêtres
+ * glissantes et l'UI affiche 0 partout — les courbes de Volume l'ont fait dès que
+ * le snapshot a dépassé 8 semaines d'âge (Conv #66).
+ *
+ * ⚠️ En mode démo, ne JAMAIS appeler `new Date()` directement dans un écran :
+ * passer par ce hook. C'est précisément l'oubli qui a cassé l'onglet Progrès
+ * pendant que l'accueil, lui, ancrait sa date dans son coin.
+ */
+export function useToday(): Date {
+  const snap = useDemoSnapshot();
+  return useMemo(
+    () => (snap === null ? new Date() : parseDateKey(snap.generated_at)),
+    [snap],
+  );
+}
 
 /**
  * Conv #23 — marque de salle déclarée par l'user. Utilisé par

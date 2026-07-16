@@ -15,6 +15,7 @@ import { Concept } from '@/components/Concept';
 import { displayExerciseName, kgUnitLabel } from '@/lib/catalog-filter';
 import { useCatalog, useGymBrand } from '@/store/selectors';
 import { cn } from '@/lib/cn';
+import { MOTION } from '@/lib/motion';
 import { formatWeekLabel } from '@/lib/progress';
 import type { E1rmPoint, ExerciseE1rmSeries } from '@/lib/progress';
 
@@ -156,6 +157,7 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
 
   const xy = values.map((v, i) => [xOf(i), yOf(v)] as const);
   const polyline = xy.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const lastXy = xy[xy.length - 1];
 
   // Détection des PR : un point est PR s'il dépasse strictement le max
   // running précédent d'au moins PR_THRESHOLD_KG. Le tout premier point
@@ -247,7 +249,7 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
         strokeLinejoin="round"
         strokeLinecap="round"
         pathLength={1}
-        className="animate-draw-line"
+        className="motion-safe:animate-draw-line"
         style={{ strokeDasharray: 1 }}
       />
 
@@ -259,7 +261,7 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
           marque visuellement le "PR célébré". */}
       {xy.map(([x, y], i) => {
         const tracePct = points.length > 1 ? i / (points.length - 1) : 0;
-        const delayMs = tracePct * 900;
+        const delayMs = tracePct * MOTION.draw;
         return (
           <circle
             key={i}
@@ -269,11 +271,29 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
             fill="#dc2626"
             stroke={prFlags[i] ? '#fff' : 'none'}
             strokeWidth={prFlags[i] ? 1 : 0}
-            className="animate-point-fade-in"
+            className="motion-safe:animate-point-fade-in"
             style={{ animationDelay: `${delayMs}ms` }}
           />
         );
       })}
+
+      {/* Conv #66 — onde sur le DERNIER point une fois le tracé arrivé : c'est
+          le seul point qui répond à « où j'en suis maintenant », les autres sont
+          de l'historique. Une seule fois, pas en boucle : sur un écran qu'on
+          regarde longtemps, une pulsation perpétuelle devient un parasite. */}
+      {lastXy !== undefined && (
+        <circle
+          cx={lastXy[0]}
+          cy={lastXy[1]}
+          r={2.5}
+          fill="none"
+          stroke="#dc2626"
+          strokeWidth={1.5}
+          className="motion-safe:animate-last-point-ping"
+          style={{ animationDelay: `${MOTION.draw}ms` }}
+          data-testid="force-last-point-ping"
+        />
+      )}
 
       {/* Étoiles "record" — au-dessus de chaque point qui bat le précédent
           record d'au moins +2 kg. Étoile dorée pleine avec liseré pour
@@ -296,7 +316,7 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
             data-testid="force-pr-chip"
           >
             <g
-              className="animate-reveal-up"
+              className="motion-safe:animate-reveal-up"
               style={{ animationDelay: `${700 + i * 60}ms`, animationFillMode: 'both' }}
             >
               {/* Étoile record en doré : petit accent décoratif ponctuel de

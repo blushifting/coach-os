@@ -30,6 +30,13 @@ interface SetInputProps {
    * répète la série de chaque côté). N'affecte pas le calcul de volume.
    */
   readonly unilateral?: boolean;
+  /**
+   * Conv #66 — la charge de cette série vient d'être recalculée par la
+   * calibration (`recalibrateUpcomingSets`), pas par l'utilisateur. Déclenche un
+   * flash ambre : sans lui, la charge changeait en silence sous les yeux de
+   * l'utilisateur, qui n'avait aucune raison de relire une série non entamée.
+   */
+  readonly recalibrated?: boolean;
 }
 
 const RPE_MIN = 6;
@@ -87,6 +94,7 @@ export function SetInput({
   chargeType,
   pdcOnly = false,
   unilateral = false,
+  recalibrated = false,
 }: SetInputProps) {
   // Conv #20 — pdcOnly traite l'exo comme un BW pur (badge figé, charge=0).
   const bodyweightOnly = isBodyweightOnly(chargeType) || pdcOnly;
@@ -111,6 +119,9 @@ export function SetInput({
       : 'Renseigne reps et charge avant de valider';
 
   const [justChecked, setJustChecked] = useState(false);
+  // Conv #66 — le décochage avait le retour haptique mais aucun retour visuel :
+  // la coche s'éteignait, sans geste. Elle se rétracte désormais (`tick-unpop`).
+  const [justUnchecked, setJustUnchecked] = useState(false);
   const prevDone = useRef(entry.done);
   useEffect(() => {
     if (entry.done && !prevDone.current) {
@@ -122,6 +133,10 @@ export function SetInput({
     }
     if (!entry.done && prevDone.current) {
       triggerHaptic('set-undone');
+      setJustUnchecked(true);
+      const t = setTimeout(() => setJustUnchecked(false), 260);
+      prevDone.current = false;
+      return () => clearTimeout(t);
     }
     prevDone.current = entry.done;
   }, [entry.done]);
@@ -137,7 +152,10 @@ export function SetInput({
         entry.done
           ? 'border-green-700/70 bg-green-900/25'
           : 'border-anthracite-700 bg-anthracite-900/70',
-        justChecked && 'animate-validate-flash',
+        justChecked && 'motion-safe:animate-validate-flash',
+        // Une série cochée ne peut pas être recalibrée : les deux flashs ne se
+        // disputent jamais le fond.
+        recalibrated && 'motion-safe:animate-recalibrate-flash',
       )}
     >
       {/* Conv #20 — Rangée haute : Série N · reps · kg · ✓, tous alignés
@@ -205,7 +223,8 @@ export function SetInput({
                 : disableCheck
                   ? 'cursor-not-allowed bg-anthracite-800 text-anthracite-500'
                   : 'bg-anthracite-700 text-anthracite-300 hover:text-white',
-              justChecked && 'animate-tick-pop',
+              justChecked && 'motion-safe:animate-tick-pop',
+              justUnchecked && 'motion-safe:animate-tick-unpop',
             )}
           >
             ✓

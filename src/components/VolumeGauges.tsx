@@ -115,16 +115,23 @@ function GaugeBar({ muscle, sets, vMin, vMax, status }: GaugeRow) {
           ) : null}
         </span>
       </div>
+      {/* Conv #66 — les deux couches glissent au lieu de sauter : ici la valeur
+          change VRAIMENT sous les yeux (on ajoute un exo, on change un objectif),
+          contrairement à un écran qu'on ouvre déjà rempli. Pas de remplissage au
+          montage pour cette raison : rien ne s'est produit à l'ouverture. */}
       <div className="relative h-2 overflow-hidden rounded-full bg-anthracite-800">
         {/* Bande cible [V_min, V_max]. */}
         <div
-          className="absolute inset-y-0 bg-anthracite-700"
+          className="absolute inset-y-0 bg-anthracite-700 motion-safe:transition-[left,width] motion-safe:duration-300 motion-safe:ease-out"
           style={{ left: bandLeft, width: bandWidth }}
           aria-hidden="true"
         />
         {/* Remplissage = séries pondérées réalisées. */}
         <div
-          className={cn('absolute inset-y-0 left-0 rounded-full', FILL_TONE[status])}
+          className={cn(
+            'absolute inset-y-0 left-0 rounded-full motion-safe:transition-[width] motion-safe:duration-300 motion-safe:ease-out',
+            FILL_TONE[status],
+          )}
           style={{ width: fillWidth }}
           aria-hidden="true"
         />

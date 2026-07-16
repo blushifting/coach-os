@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/cn';
 
 interface TabDef {
@@ -8,12 +8,25 @@ interface TabDef {
 
 // Conv #49 — onglets renommés : « Séances »→« Accueil », « Catalogue »→« Exercices »
 // (titres d'en-tête synchronisés dans `Header.tsx`).
-const TABS: readonly TabDef[] = [
+// Conv #66 — exporté : `TabbedLayout` s'en sert pour connaître le SENS d'une
+// navigation (aller vers un onglet à droite → la page entre par la droite).
+export const TABS: readonly TabDef[] = [
   { to: '/programme', label: 'Accueil' },
   { to: '/progres', label: 'Progrès' },
   { to: '/catalogue', label: 'Exercices' },
   { to: '/profil', label: 'Profil' },
 ];
+
+/**
+ * Rang de l'onglet correspondant à une route, ou −1 hors barre d'onglets
+ * (séance, bilan…). Même règle de correspondance que `NavLink` : égalité, ou
+ * préfixe suivi d'un `/` — `startsWith` nu ferait matcher `/progres-truc`.
+ */
+export function tabIndexOf(pathname: string): number {
+  return TABS.findIndex(
+    (t) => pathname === t.to || pathname.startsWith(`${t.to}/`),
+  );
+}
 
 /**
  * TabBar bas — Conv #11c : tab actif marqué par une barre haute en gradient
@@ -30,12 +43,30 @@ const TABS: readonly TabDef[] = [
  * libellés redeviennent les éléments les plus bas de l'écran.
  */
 export function TabBar() {
+  const { pathname } = useLocation();
+  const activeIdx = tabIndexOf(pathname);
+  const cellPct = 100 / TABS.length;
+
   return (
     <nav
       className="sticky bottom-0 z-10 border-t border-sang-700/30 bg-graphite-950"
       aria-label="Navigation principale"
     >
-      <ul className="flex h-12">
+      <ul className="relative flex h-12">
+        {/* Conv #66 — la barre active est un élément UNIQUE porté par la liste,
+            plus un span rendu dans chaque onglet actif : c'est ce qui lui permet
+            de glisser d'un onglet à l'autre au lieu de disparaître ici et
+            réapparaître là. Les marges reproduisent l'ancien `inset-x-3`. */}
+        {activeIdx >= 0 && (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute top-0 h-[3px] rounded-b bg-gradient-to-r from-sang-700 via-sang-500 to-sang-700 shadow-glow-sang motion-safe:transition-[left] motion-safe:duration-300 motion-safe:ease-out"
+            style={{
+              left: `calc(${activeIdx * cellPct}% + 0.75rem)`,
+              width: `calc(${cellPct}% - 1.5rem)`,
+            }}
+          />
+        )}
         {TABS.map((t) => (
           <li key={t.to} className="flex-1">
             <NavLink
@@ -49,17 +80,7 @@ export function TabBar() {
                 )
               }
             >
-              {({ isActive }) => (
-                <>
-                  {isActive && (
-                    <span
-                      aria-hidden="true"
-                      className="pointer-events-none absolute inset-x-3 top-0 h-[3px] rounded-b bg-gradient-to-r from-sang-700 via-sang-500 to-sang-700 shadow-glow-sang"
-                    />
-                  )}
-                  {t.label}
-                </>
-              )}
+              {t.label}
             </NavLink>
           </li>
         ))}

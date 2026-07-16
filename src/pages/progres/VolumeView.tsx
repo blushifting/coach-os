@@ -26,6 +26,7 @@ import {
   type SilhouetteStatus,
 } from '@/components/AnatomicalSilhouette';
 import { cn } from '@/lib/cn';
+import { MOTION } from '@/lib/motion';
 import {
   formatWeekLabel,
   muscleLabel,
@@ -155,9 +156,10 @@ export function VolumeView({ coverage, volume, muscleGoals }: VolumeViewProps) {
       )}
 
       <div className="flex flex-col gap-2" data-testid="volume-cards">
-        {displayMuscles.map((m) => (
+        {displayMuscles.map((m, i) => (
           <MuscleVolumeCard
             key={m.muscle}
+            index={i}
             muscle={m.muscle}
             series={m.series ?? null}
             coverage={m.coverage ?? null}
@@ -220,6 +222,8 @@ interface MuscleVolumeCardProps {
   readonly cardRef: (el: HTMLDivElement | null) => void;
   readonly isSelected: boolean;
   readonly onSelect: () => void;
+  /** Rang dans la liste — porte le décalage de la cascade d'apparition. */
+  readonly index: number;
 }
 
 function MuscleVolumeCard({
@@ -230,6 +234,7 @@ function MuscleVolumeCard({
   cardRef,
   isSelected,
   onSelect,
+  index,
 }: MuscleVolumeCardProps) {
   // Conv #17b — 3 niveaux d'affichage selon les données disponibles :
   //  1. coverage présent + non hors_scope → carte pleine (séries vs cible).
@@ -251,7 +256,11 @@ function MuscleVolumeCard({
           ? 'border-amber-400/60 shadow-[0_0_0_2px_rgba(252,211,77,0.18)]'
           : 'border-anthracite-700',
         !isTracked && 'opacity-70',
+        'motion-safe:animate-reveal-up',
       )}
+      // Cascade bornée : au-delà de la 6ᵉ carte on est hors écran de toute
+      // façon, inutile de faire attendre les suivantes.
+      style={{ animationDelay: `${Math.min(index, 5) * MOTION.stagger}ms` }}
     >
       <header className="flex items-baseline justify-between gap-2">
         <button
@@ -433,6 +442,8 @@ function MiniVolumeChart({ series, testId }: MiniVolumeChartProps) {
       {points.length >= 2 && (
         <>
           {solidPart && (
+            // Conv #66 — tracé progressif, comme la courbe Force (`pathLength=1`
+            // + `strokeDasharray=1`, l'animation joue sur le dashoffset).
             <polyline
               points={solidPart}
               fill="none"
@@ -440,19 +451,35 @@ function MiniVolumeChart({ series, testId }: MiniVolumeChartProps) {
               strokeWidth="2"
               strokeLinejoin="round"
               strokeLinecap="round"
+              pathLength={1}
+              className="motion-safe:animate-draw-line"
+              style={{ strokeDasharray: 1 }}
             />
           )}
           {dashedSegment && (
-            <polyline
-              points={dashedSegment}
-              fill="none"
-              stroke="#cbd5e1"
-              strokeWidth="2"
-              strokeDasharray="3 3"
-              strokeLinejoin="round"
-              strokeLinecap="round"
-              opacity={0.7}
-            />
+            // Le segment « semaine en cours » ne peut pas se TRACER : son
+            // `strokeDasharray` porte déjà le pointillé, et l'animation de tracé
+            // se sert du même attribut — les deux se disputeraient. Il apparaît
+            // donc en fondu, une fois le trait plein arrivé jusqu'à lui.
+            //
+            // Le fondu est porté par un <g> et non par la polyline : l'animation
+            // finit sur `opacity: 1` (fill-mode `both`), ce qui écraserait le 0.7
+            // du trait. Sur le <g>, les opacités se multiplient → 0,7 préservé.
+            <g
+              className="motion-safe:animate-point-fade-in"
+              style={{ animationDelay: `${MOTION.draw}ms`, animationDuration: '260ms' }}
+            >
+              <polyline
+                points={dashedSegment}
+                fill="none"
+                stroke="#cbd5e1"
+                strokeWidth="2"
+                strokeDasharray="3 3"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                opacity={0.7}
+              />
+            </g>
           )}
         </>
       )}
@@ -474,8 +501,15 @@ function MiniVolumeChart({ series, testId }: MiniVolumeChartProps) {
         const cx = xOf(i);
         const cy = yOf(p.sets);
         const isLast = i === lastIdx;
+        // Conv #66 — chaque point apparaît quand le tracé le traverse (même
+        // synchro que la courbe Force).
+        const tracePct = points.length > 1 ? i / (points.length - 1) : 0;
         return (
-          <g key={i}>
+          <g
+            key={i}
+            className="motion-safe:animate-point-fade-in"
+            style={{ animationDelay: `${tracePct * MOTION.draw}ms` }}
+          >
             <circle
               cx={cx}
               cy={cy}

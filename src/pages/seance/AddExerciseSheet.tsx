@@ -31,7 +31,7 @@ import {
   muscleLabel,
 } from '@/lib/progress';
 import { useCoachOsStore } from '@/store';
-import { useGymBrand } from '@/store/selectors';
+import { useGymBrand, useToday } from '@/store/selectors';
 import { favoritesFirst } from '@/lib/custom-session';
 import { ExerciseEyeButton } from '@/pages/catalogue/ExerciseEyeButton';
 
@@ -70,6 +70,7 @@ export function AddExerciseSheet({
   const feedbacks = useCoachOsStore((s) => s.history.feedbacks);
   const cycles = useCoachOsStore((s) => s.history.cycles);
   const currentSessionPlan = useCoachOsStore((s) => s.currentSessionPlan);
+  const today = useToday();
   const [query, setQuery] = useState('');
   const [picked, setPicked] = useState<Exercise | null>(null);
   const [nSets, setNSets] = useState(DEFAULT_SETS);
@@ -90,11 +91,13 @@ export function AddExerciseSheet({
       cycles.find((c) => c.cycle_index === userState.cycle_index)?.start_date ??
       null;
     const weekly: Record<string, number> = {};
+    // Conv #66 — `today` ancré sur la démo si active : sinon la couverture hebdo
+    // lue à la date réelle est vide et la mise en garde ne se déclenche jamais.
     for (const cov of computeCoverageThisWeek(
       userState,
       feedbacks,
       musclesOf,
-      new Date(),
+      today,
       cycleStart,
     )) {
       weekly[cov.muscle] = cov.sets;
@@ -109,7 +112,7 @@ export function AddExerciseSheet({
       }
     }
     return addedVolumeOvershoot(picked.muscles, nSets, weekly, userState);
-  }, [picked, nSets, userState, feedbacks, cycles, currentSessionPlan, musclesOf]);
+  }, [picked, nSets, userState, feedbacks, cycles, currentSessionPlan, musclesOf, today]);
 
   const results = useMemo<readonly Exercise[]>(() => {
     if (catalog === null) return [];

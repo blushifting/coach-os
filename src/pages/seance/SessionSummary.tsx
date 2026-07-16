@@ -8,6 +8,8 @@ import { displayExerciseName, kgUnitLabel } from '@/lib/catalog-filter';
 import { useGymBrand } from '@/store/selectors';
 import { GymBrand } from '@/engine/models';
 import { cn } from '@/lib/cn';
+import { easeOutProgressAt, MOTION } from '@/lib/motion';
+import { useAnimateOnMount, useCountUp, useDelayedFlag } from '@/hooks/useMotion';
 import { sessionDisplayName } from '@/lib/session-label';
 import { muscleLabel, type CoverageStatus } from '@/lib/progress';
 import type {
@@ -32,6 +34,25 @@ interface SessionSummaryProps {
 }
 
 /**
+ * Conv #66 — chorégraphie du bilan.
+ *
+ * Le bilan est un écran de LECTURE : on s'autorise ~1,3 s de mouvement total, là
+ * où la séance reste sous `MOTION.action` (on y consulte l'app entre deux séries).
+ *
+ * Les cartes arrivent en cascade. À l'intérieur de la carte volume, les lignes ne
+ * rejouent PAS de cascade d'apparition : un mouvement dans un mouvement se lit
+ * mal. C'est le remplissage décalé des barres qui porte la cascade.
+ */
+const cardDelayMs = (index: number): number => index * MOTION.staggerCard;
+
+/**
+ * Instant où la première barre démarre. La carte volume (index 2) apparaît à
+ * `cardDelayMs(2)` et son `reveal-up` dure 420 ms, mais sa courbe est très rapide
+ * au début : à 420 ms l'essentiel du fondu est joué, la barre peut partir.
+ */
+const BAR_BASE_DELAY_MS = cardDelayMs(2) + 260;
+
+/**
  * Écran "État C" — bilan post-séance (cf. 08 §199).
  * Volume du jour, comparaison à la semaine dernière (même `label`), PR.
  */
@@ -46,7 +67,10 @@ export function SessionSummary({
   const brand = useGymBrand() ?? undefined;
   return (
     <div className="flex flex-col gap-3" data-testid="session-summary">
-      <Card>
+      <Card
+        className="motion-safe:animate-reveal-up"
+        style={{ animationDelay: `${cardDelayMs(0)}ms` }}
+      >
         <div className="flex flex-col gap-1">
           <span className="text-xs uppercase tracking-wide text-anthracite-300">
             Bilan — {sessionDisplayName({ custom_name: customName, label })}
@@ -58,7 +82,8 @@ export function SessionSummary({
       </Card>
 
       <Card
-        className="flex items-baseline gap-3"
+        className="flex items-baseline gap-3 motion-safe:animate-reveal-up"
+        style={{ animationDelay: `${cardDelayMs(1)}ms` }}
         data-testid="summary-sets"
       >
         <span className="font-display text-2xl font-semibold text-white tabular-nums">
@@ -73,17 +98,29 @@ export function SessionSummary({
       </Card>
 
       {data.muscleVolume.length > 0 && (
-        <Card className="flex flex-col gap-2.5" data-testid="summary-muscle-volume">
+        <Card
+          className="flex flex-col gap-2.5 motion-safe:animate-reveal-up"
+          style={{ animationDelay: `${cardDelayMs(2)}ms` }}
+          data-testid="summary-muscle-volume"
+        >
           <h3 className="text-sm font-semibold text-white">
             Volume par muscle · cette semaine
           </h3>
-          {data.muscleVolume.map((m) => (
-            <MuscleVolumeRow key={m.muscle} data={m} />
+          {data.muscleVolume.map((m, i) => (
+            <MuscleVolumeRow
+              key={m.muscle}
+              data={m}
+              delayMs={BAR_BASE_DELAY_MS + i * MOTION.stagger}
+            />
           ))}
         </Card>
       )}
 
-      <Card data-testid="summary-plafonds" className="flex flex-col gap-2">
+      <Card
+        data-testid="summary-plafonds"
+        className="flex flex-col gap-2 motion-safe:animate-reveal-up"
+        style={{ animationDelay: `${cardDelayMs(3)}ms` }}
+      >
         <h3 className="text-sm font-semibold text-white">
           Évolution des <Concept topic="plafond">Plafonds</Concept>
         </h3>
@@ -107,7 +144,10 @@ export function SessionSummary({
         )}
       </Card>
 
-      <div className="flex flex-col gap-2">
+      <div
+        className="flex flex-col gap-2 motion-safe:animate-reveal-up"
+        style={{ animationDelay: `${cardDelayMs(4)}ms` }}
+      >
         <Link to="/programme">
           <Button variant="primary" fullWidth onClick={onClose} data-testid="btn-back-programme">
             Retour au programme
@@ -122,6 +162,17 @@ export function SessionSummary({
 function formatSets(v: number): string {
   return Number.isInteger(v) ? String(v) : v.toFixed(1);
 }
+
+/**
+ * Formate une valeur INTERMÉDIAIRE de compteur avec la précision de sa cible.
+ * Sans ça, un compteur qui monte vers 3 afficherait « 0,8 » puis « 1,9 » puis
+ * « 3 » : la décimale apparaît et disparaît en cours de route.
+ */
+function formatSetsLike(v: number, target: number): string {
+  return Number.isInteger(target) ? String(Math.round(v)) : v.toFixed(1);
+}
+
+const clampPct = (v: number): number => Math.max(0, Math.min(100, v));
 
 const STATUS_TEXT: Record<CoverageStatus, string> = {
   non_travaille: 'text-anthracite-300',
@@ -143,17 +194,48 @@ const STATUS_BAR: Record<CoverageStatus, string> = {
  * #13 (E-3) — ligne « volume d'un muscle ce jour » : contribution du jour (+X),
  * total hebdo rapporté à la cible V_min–V_max, et barre colorée par statut.
  * Un muscle non suivi (hors objectifs) montre sa contribution sans cible.
+ *
+ * Conv #66 — la barre ne s'affiche plus remplie : elle REPART de son niveau
+ * d'avant-séance (`weekTotal − sessionSets`, connu sans donnée nouvelle) et
+ * pousse jusqu'au total de la semaine. La part gagnée aujourd'hui est éclaircie
+ * le temps de sa course, puis se fond dans la barre : on voit ce qu'on a ajouté,
+ * puis on lit le total.
  */
-function MuscleVolumeRow({ data }: { data: SessionMuscleVolume }) {
+function MuscleVolumeRow({
+  data,
+  delayMs,
+}: {
+  data: SessionMuscleVolume;
+  delayMs: number;
+}) {
   const tracked = data.vMax > 0;
-  const pct = tracked ? Math.min(100, (data.weekTotal / data.vMax) * 100) : 0;
+  const pctBefore = tracked
+    ? clampPct(((data.weekTotal - data.sessionSets) / data.vMax) * 100)
+    : 0;
+  const pctAfter = tracked ? clampPct((data.weekTotal / data.vMax) * 100) : 0;
+  const pctVMin = tracked ? clampPct((data.vMin / data.vMax) * 100) : 0;
+
+  const todayWidth = useAnimateOnMount(0, Math.max(0, pctAfter - pctBefore));
+  const shownSets = useCountUp(data.sessionSets, MOTION.fill, delayMs);
+  const merged = useDelayedFlag(delayMs + MOTION.fill);
+
+  // La séance fait-elle franchir le minimum hebdo ? Si oui, on flashe le repère
+  // à l'instant où la barre l'atteint — pas à la fin de sa course.
+  const crossesVMin = pctBefore < pctVMin && pctVMin <= pctAfter;
+  const vMinHit = useDelayedFlag(
+    crossesVMin
+      ? delayMs +
+          MOTION.fill * easeOutProgressAt((pctVMin - pctBefore) / (pctAfter - pctBefore))
+      : 0,
+  );
+
   return (
     <div className="flex flex-col gap-1" data-testid={`summary-muscle-${data.muscle}`}>
       <div className="flex items-baseline justify-between gap-2 text-xs">
         <span className="min-w-0 truncate text-anthracite-200">
           {muscleLabel(data.muscle)}
           <span className="ml-1 text-emerald-400 tabular-nums">
-            +{formatSets(data.sessionSets)}
+            +{formatSetsLike(shownSets, data.sessionSets)}
           </span>
         </span>
         {tracked ? (
@@ -169,11 +251,52 @@ function MuscleVolumeRow({ data }: { data: SessionMuscleVolume }) {
         )}
       </div>
       {tracked && (
-        <div className="h-1.5 overflow-hidden rounded-full bg-anthracite-700">
+        // Wrapper NON clippé : le repère V_min s'étire hors de la barre en
+        // flashant, `overflow-hidden` le rognerait.
+        <div className="relative">
+          <div className="relative h-1.5 overflow-hidden rounded-full bg-anthracite-700">
+            {/* Acquis avant cette séance — statique, c'est le point de départ. */}
+            <div
+              className={cn('absolute inset-y-0 left-0', STATUS_BAR[data.status])}
+              style={{ width: `${pctBefore}%` }}
+            />
+            {/* Gagné aujourd'hui — pousse depuis le niveau précédent. */}
+            <div
+              className={cn(
+                'absolute inset-y-0 motion-safe:transition-[width] motion-safe:ease-out',
+                STATUS_BAR[data.status],
+              )}
+              style={{
+                left: `${pctBefore}%`,
+                width: `${todayWidth}%`,
+                transitionDuration: `${MOTION.fill}ms`,
+                transitionDelay: `${delayMs}ms`,
+              }}
+            >
+              <div
+                className={cn(
+                  'h-full w-full bg-white/30 motion-safe:transition-opacity motion-safe:duration-500',
+                  merged && 'opacity-0',
+                )}
+              />
+            </div>
+          </div>
+          {/* Repère V_min — utile en soi (« voilà le minimum »), et point de
+              bascule quand la séance le fait franchir. */}
           <div
-            className={cn('h-full rounded-full', STATUS_BAR[data.status])}
-            style={{ width: `${pct}%` }}
-          />
+            aria-hidden="true"
+            className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
+            style={{ left: `${pctVMin}%` }}
+          >
+            {/* Le trait porte l'animation, pas le wrapper : `vmin-hit` anime
+                `transform`, il écraserait les translations de centrage. */}
+            <div
+              className={cn(
+                'h-2.5 w-0.5 rounded-full bg-anthracite-300',
+                crossesVMin && vMinHit && 'motion-safe:animate-vmin-hit',
+              )}
+            />
+          </div>
         </div>
       )}
     </div>

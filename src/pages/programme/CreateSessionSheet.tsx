@@ -20,7 +20,7 @@ import type { Exercise } from '@/engine/models';
 import { exercisePrimaires } from '@/engine/models';
 import { useEngine } from '@/hooks/useEngine';
 import { useCoachOsStore } from '@/store';
-import { useGymBrand } from '@/store/selectors';
+import { useGymBrand, useToday } from '@/store/selectors';
 import { displayExerciseName } from '@/lib/catalog-filter';
 import { addDays, dateKey, parseDateKey } from '@/lib/dashboard';
 import {
@@ -82,6 +82,7 @@ export function CreateSessionSheet({
   const feedbacks = useCoachOsStore((s) => s.history.feedbacks);
   const sessions = useCoachOsStore((s) => s.history.sessions);
   const cycles = useCoachOsStore((s) => s.history.cycles);
+  const today = useToday();
 
   const [presetId, setPresetId] = useState<string | null>(null);
   const [slots, setSlots] = useState<CustomSlot[]>([]);
@@ -128,17 +129,18 @@ export function CreateSessionSheet({
     const cycleStart =
       cycles.find((c) => c.cycle_index === userState.cycle_index)?.start_date ?? null;
     const out: Record<string, number> = {};
+    // Conv #66 — `today` ancré sur la démo si active (cf. `useToday`).
     for (const cov of computeCoverageThisWeek(
       userState,
       feedbacks,
       musclesOf,
-      new Date(),
+      today,
       cycleStart,
     )) {
       out[cov.muscle] = cov.sets;
     }
     return out;
-  }, [userState, feedbacks, cycles, musclesOf]);
+  }, [userState, feedbacks, cycles, musclesOf, today]);
 
   // Alerte « travaillé la veille » : muscles de la base déjà tapés le jour d'avant.
   const veilleMuscles = useMemo<string[]>(() => {

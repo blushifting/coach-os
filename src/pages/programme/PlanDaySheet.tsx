@@ -22,7 +22,7 @@ import type {
   WeeklyTemplate,
 } from '@/engine/models';
 import { displayExerciseName, kgUnitLabelShort } from '@/lib/catalog-filter';
-import { useGymBrand } from '@/store/selectors';
+import { useGymBrand, useToday } from '@/store/selectors';
 import { estimateDayDurationMinutes } from '@/lib/onboarding-preview';
 
 interface PlanDaySheetProps {
@@ -53,6 +53,7 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
   const feedbacks = useCoachOsStore((s) => s.history.feedbacks);
   const sessions = useCoachOsStore((s) => s.history.sessions);
   const userState = useCoachOsStore((s) => s.userState);
+  const today = useToday();
   const [pending, setPending] = useState<number | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [plannedSession, setPlannedSession] = useState<SessionRow | null>(null);
@@ -76,7 +77,8 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
     if (cyclePlan === null) return null;
     if (day.status !== 'free-future') return null;
     const dayLabels = cyclePlan.days.map((d) => d.label);
-    const todayKey = dateKey(new Date());
+    // Conv #66 — date ancrée sur la démo si active (cf. `useToday`).
+    const todayKey = dateKey(today);
     const recent: { date: string; label: string }[] = [];
     for (const fb of feedbacks) {
       recent.push({ date: fb.feedback.seance_date, label: fb.feedback.label });
@@ -97,7 +99,7 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
       recent,
       userState.profile.sessions_per_week,
     );
-  }, [day, feedbacks, sessions, userState]);
+  }, [day, feedbacks, sessions, userState, today]);
 
   // Charge la session planifiée correspondant à ce jour (si statut planned).
   useEffect(() => {
@@ -116,10 +118,10 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
 
   if (day === null) return null;
 
-  const today = dateKey(new Date());
-  const isToday = day.date === today;
-  const isFuture = day.date > today;
-  const isPast = day.date < today;
+  const todayKey = dateKey(today);
+  const isToday = day.date === todayKey;
+  const isFuture = day.date > todayKey;
+  const isPast = day.date < todayKey;
 
   async function planSession(dayIndex: number, startNow: boolean) {
     if (day === null) return;

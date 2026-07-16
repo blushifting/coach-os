@@ -3,9 +3,8 @@ import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/Card';
 import { ChevronRight } from '@/components/icons';
 import { useCoachOsStore } from '@/store';
-import { useDemoMode } from '@/store/selectors';
+import { useDemoMode, useToday } from '@/store/selectors';
 import { useEngine } from '@/hooks/useEngine';
-import { parseDateKey } from '@/lib/dashboard';
 import {
   buildCalendarMatrix,
   computeCycleProgress,
@@ -37,6 +36,7 @@ export default function ProgrammePage() {
   const userState = useCoachOsStore((s) => s.userState);
   const history = useCoachOsStore((s) => s.history);
   const demoActive = useDemoMode();
+  const today = useToday();
   const currentSessionPlan = useCoachOsStore((s) => s.currentSessionPlan);
   const currentSessionId = useCoachOsStore((s) => s.currentSessionId);
   const navigate = useNavigate();
@@ -85,15 +85,14 @@ export default function ProgrammePage() {
 
   const dashboard = useMemo(() => {
     if (userState === null) return null;
-    // Conv #16 — en mode démo, on ancre "now" sur la date de la séance du
-    // jour Alex (snapshot) plutôt que sur la vraie date système. Sans ça,
-    // le marqueur "today" du calendrier était posé à la vraie date (mardi
-    // 19 mai pour Alex vs aujourd'hui réel pour l'utilisateur), créant
-    // une incohérence avec le texte du tour ("Alex est mardi").
-    const now =
-      demoActive && currentSessionPlan !== null
-        ? parseDateKey(currentSessionPlan.seance_date)
-        : new Date();
+    // Conv #16 — en mode démo, "now" est ancré sur la date du snapshot Alex
+    // plutôt que sur la vraie date système : sinon le marqueur "today" du
+    // calendrier tombe à la date réelle alors que le tour dit « Alex est mardi ».
+    //
+    // Conv #66 — cet ancrage vivait ici, en local. L'onglet Progrès ne l'avait
+    // pas et affichait 0 partout dès que le snapshot dépassait 8 semaines d'âge.
+    // Il passe donc par `useToday`, partagé par tous les écrans.
+    const now = today;
     // Conv #11h — alignement streak sur les semaines du programme.
     const currentCycle = history.cycles.find(
       (c) => c.cycle_index === userState.cycle_index,
@@ -114,7 +113,7 @@ export default function ProgrammePage() {
         now,
       ),
     };
-  }, [userState, history, demoActive, currentSessionPlan]);
+  }, [userState, history, demoActive, currentSessionPlan, today]);
 
   if (userState === null) {
     return <Navigate to="/welcome" replace />;

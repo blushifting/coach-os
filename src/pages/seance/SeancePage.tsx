@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useEngine } from '@/hooks/useEngine';
 import { useCoachOsStore } from '@/store';
+import { useToday } from '@/store/selectors';
 import { type SessionPlan } from '@/engine/models';
 import {
   buildSessionFeedback,
@@ -46,6 +47,7 @@ export default function SeancePage() {
   const setStoredEntries = useCoachOsStore((s) => s.setCurrentSessionEntries);
   const feedbacks = useCoachOsStore((s) => s.history.feedbacks);
   const snapshots = useCoachOsStore((s) => s.history.e1rmSnapshots);
+  const today = useToday();
 
   const [finishing, setFinishing] = useState(false);
   const [summary, setSummary] = useState<{
@@ -70,7 +72,8 @@ export default function SeancePage() {
   } | null>(null);
   const computeCalibrationSet = useCallback(
     (plan: SessionPlan): ReadonlySet<string> => {
-      const today = new Date();
+      // Conv #66 — date ancrée sur la démo si active (snapshots d'Alex figés,
+      // sinon tous `stale` → séance de démo en mode calibration intégral).
       const e1rm = userState?.e1rm ?? {};
       const out = new Set<string>();
       for (const item of plan.items) {
@@ -84,7 +87,7 @@ export default function SeancePage() {
       }
       return out;
     },
-    [snapshots, userState?.e1rm],
+    [snapshots, userState?.e1rm, today],
   );
   const calibrationExoIds = useMemo<ReadonlySet<string>>(() => {
     if (currentSessionPlan === null) return new Set();

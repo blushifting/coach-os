@@ -1,13 +1,21 @@
 /**
  * Anneau de progression circulaire (Conv #11i).
  *
- * Utilisé dans `SessionRunner` à côté de chaque exo pour visualiser la
- * fraction de séries cochées (done / total). Pure SVG, pas d'animation
- * de remplissage (le CSS transition sur stroke-dashoffset le fait
- * implicitement à chaque re-render).
+ * Trois usages, tous globaux — il n'y a PAS d'anneau par exo (le commentaire
+ * d'origine le disait, c'était vrai en #11i seulement) : l'anneau de séance de
+ * `SessionRunner`, et les widgets « Cette semaine » / « Cycle » de l'accueil.
+ *
+ * Pure SVG : le remplissage passe par une transition CSS sur `stroke-dasharray`,
+ * rejouée à chaque re-render.
+ *
+ * Conv #66 — pas de remplissage depuis 0 au montage, décision assumée : ces trois
+ * anneaux sont lus sur des écrans qu'on OUVRE (accueil, séance). Les faire monter
+ * de 0 à leur valeur raconterait une progression qui n'a pas eu lieu à cette
+ * ouverture — on n'avance pas ses séries en arrivant sur l'accueil.
  */
 
 import { cn } from '@/lib/cn';
+import { MOTION } from '@/lib/motion';
 
 interface ProgressRingProps {
   /** Numérateur (séries cochées). */
@@ -36,8 +44,8 @@ export function ProgressRing({
   const ratio = Math.max(0, Math.min(1, value / safeTotal));
   const r = (size - strokeWidth) / 2;
   const c = 2 * Math.PI * r;
-  const dash = c * ratio;
   const isComplete = total > 0 && value >= total;
+  const dash = c * ratio;
 
   return (
     <div
@@ -69,7 +77,9 @@ export function ProgressRing({
             strokeWidth={strokeWidth}
             strokeLinecap="round"
             strokeDasharray={`${dash} ${c - dash}`}
-            style={{ transition: 'stroke-dasharray 360ms cubic-bezier(0.4, 0, 0.2, 1)' }}
+            style={{
+              transition: `stroke-dasharray ${MOTION.ring}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+            }}
           />
         )}
         {/* Pas d'animation d'accomplissement : la transition rouge → anneau
