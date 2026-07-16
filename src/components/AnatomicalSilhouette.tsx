@@ -8,11 +8,12 @@
  *
  * Adaptation Coach OS :
  *  - Mapping FR → groupes RBH (cf. CO_TO_FACE / CO_TO_BACK).
- *  - Le muscle `dos_largeur` (latissimus dorsi) n'existe pas dans RBH (fondu
- *    dans `upper_back`) : 2 polygones custom ajoutés sous `LATS_BACK`.
+ *  - Conv #65 — redécoupage du dos (cf. bloc BACK_POLYS pour le détail des
+ *    coupes). Les 3 muscles dorsaux suivis ne tombaient pas sur les bons
+ *    polygones ; on recoupe les formes RBH d'origine au lieu d'en ajouter.
  *  - Statut par muscle (off / low / ok / high / highlight / synergist) →
  *    classe Tailwind via `TONE_FILL`.
- *  - Zones neutres (tête, cou, genoux, avant-bras) : gris constant.
+ *  - Zones neutres (tête, genoux, avant-bras) : gris constant.
  *
  * Composant utilisé par :
  *  - `pages/progres/CoverageView` (face + dos, h-48)
@@ -216,26 +217,62 @@ const BACK_POLYS = {
   head: [
     '50 0 45.96 0.85 40.85 5.53 40.43 12.77 45.11 20 54.89 20 59.57 12.77 59.15 5.53 54.04 0.85',
   ],
-  trapezius: [
-    '44.6808511 21.7021277 47.6595745 21.7021277 47.2340426 38.2978723 47.6595745 64.6808511 38.2978723 53.1914894 35.3191489 40.8510638 31.0638298 36.5957447 39.1489362 33.1914894 43.8297872 27.2340426',
-    '52.3404255 21.7021277 55.7446809 21.7021277 56.5957447 27.2340426 60.8510638 32.7659574 68.9361702 36.5957447 64.6808511 40.4255319 61.7021277 53.1914894 52.3404255 64.6808511 53.1914894 38.2978723',
+  // ---------------------------------------------------------------------------
+  // Conv #65 — redécoupage du dos.
+  //
+  // Constat : les polygones RBH ne tombaient sur AUCUN des 3 muscles dorsaux
+  // suivis.
+  //  - `trapezius` descend du cou à y=65 (milieu du dos) = le trapèze ENTIER,
+  //    alors que `trapezes_hauts` ne désigne que les fibres descendantes
+  //    (cou → clavicule/acromion).
+  //  - `upper_back` est la bande latérale épaule → taille : c'est le territoire
+  //    du grand dorsal, pas des rhomboïdes. Ces derniers sont médiaux et
+  //    PROFONDS (sous le trapèze), donc sous l'ancienne zone `trapezius`.
+  //  - `dos_largeur` était rendu par 2 petits polygones custom coincés sur le
+  //    flanc : le plus gros muscle du dos avait la plus petite tache.
+  //
+  // Correction : on recoupe les formes RBH d'origine, sans inventer de sommet
+  // (les deux coupes relient des sommets existants de l'asset).
+  //  - Coupe 1 — `trapezius` scindé le long de C7 (47,23 ; 38,30) → sommet
+  //    (35,32 ; 40,85) → acromion. Le haut reste `trapezes_hauts` ; le bas
+  //    (fibres moyennes + inférieures, rhomboïdes dessous) rejoint le bloc
+  //    `upper_back`. Passer par (35,32 ; 40,85) plutôt que de tirer une droite
+  //    rachis→acromion évite une longue barre horizontale en travers du dos et
+  //    rend au trapèze sa pente naturelle vers l'épaule.
+  //  - Coupe 2 — `upper_back` scindé sur la diagonale aisselle (28,09 ; 48,94)
+  //    → (38,30 ; 53,19). Au-dessus = scapula (infra-épineux / petit rond) :
+  //    reste dans `upper_back`. En dessous = aile du grand dorsal → `lats`.
+  //    La diagonale suit les fibres hautes du dorsal, quasi horizontales, qui
+  //    remontent vers l'aisselle : son apex tombe enfin sur l'insertion réelle
+  //    (sillon intertuberculaire de l'humérus).
+  //  - `lower_back` inchangé. Une variante prolongeant le dorsal jusqu'à la
+  //    crête iliaque (origine réelle via le fascia thoraco-lombaire) a été
+  //    écartée : elle écrase le V lombaire, et à ce niveau le dorsal est
+  //    aponévrotique, pas charnu.
+  //
+  // Coutures des nouvelles coupes = 1,8 unité, calées sur les coutures
+  // existantes de l'asset (mesurées à 1,75). Formes définies sur la moitié
+  // gauche puis mises en miroir (x → 100−x), ce qui corrige au passage
+  // l'asymétrie du trapèze RBH (cf. Conv #19 pour la tête et les triceps).
+  // ---------------------------------------------------------------------------
+  trapezius_upper: [
+    '44.68 21.70 47.66 21.70 47.23 37.40 35.32 39.95 31.06 36.60 39.15 33.19 43.83 27.23',
+    '55.32 21.70 52.34 21.70 52.77 37.40 64.68 39.95 68.94 36.60 60.85 33.19 56.17 27.23',
   ],
   back_deltoids: [
     '29.3617021 37.0212766 22.9787234 39.1489362 17.4468085 44.2553191 18.2978723 53.6170213 24.2553191 49.3617021 27.2340426 46.3829787',
     '71.0638298 37.0212766 78.2978723 39.5744681 82.5531915 44.6808511 81.7021277 53.6170213 74.893617 48.9361702 72.3404255 45.106383',
   ],
+  // Trapèze moyen + inférieur, rhomboïdes dessous, et région scapulaire
+  // au-dessus de l'aisselle : un seul bloc par côté.
   upper_back: [
-    '31.0638298 38.7234043 28.0851064 48.9361702 28.5106383 55.3191489 34.0425532 75.3191489 47.2340426 71.0638298 47.2340426 66.3829787 36.5957447 54.0425532 33.6170213 41.2765957',
-    '68.9361702 38.7234043 71.9148936 49.3617021 71.4893617 56.1702128 65.9574468 75.3191489 52.7659574 71.0638298 52.7659574 66.3829787 63.4042553 54.4680851 66.3829787 41.7021277',
+    '47.23 39.20 47.66 64.68 38.30 53.19 28.09 48.94 31.06 38.72 35.32 41.75',
+    '52.77 39.20 52.34 64.68 61.70 53.19 71.91 48.94 68.94 38.72 64.68 41.75',
   ],
-  // Custom Coach OS : latissimus dorsi (manquant dans RBH). Forme de flamme
-  // oblique qui épouse les voisins (upper_back à l'intérieur, lower_back en
-  // bas, bras à l'extérieur). Redessiné Conv #19 — l'ancien tracé chevauchait
-  // le bras (démarrait à x=16.5). Démarre maintenant à y=60 (sous les
-  // omoplates, là où le grand dorsal devient anatomiquement visible).
+  // Grand dorsal : apex à l'aisselle, aile qui s'évase vers la taille.
   lats: [
-    '28.5 60 30 66 32 71 33.5 75 33.8 77 34 80 33 82 25 78 26.5 71 27.5 64',
-    '71.5 60 70 66 68 71 66.5 75 66.2 77 66 80 67 82 75 78 73.5 71 72.5 64',
+    '28.23 51.06 28.51 55.32 34.04 75.32 47.23 71.06 47.23 66.38 37.40 54.97',
+    '71.77 51.06 71.49 55.32 65.96 75.32 52.77 71.06 52.77 66.38 62.60 54.97',
   ],
   // Conv #19 — triceps droits symétrisés sur les gauches (asset RBH d'origine
   // était légèrement asymétrique, ce qui faisait que les lats droits — miroir
@@ -321,7 +358,12 @@ const CO_TO_FACE: Record<string, readonly string[]> = {
 
 /** Muscles Coach OS visibles côté dos. */
 const CO_TO_BACK: Record<string, readonly string[]> = {
-  trapezes_hauts: BACK_POLYS.trapezius,
+  // Conv #65 — fibres descendantes seules, cohérent avec CO_TO_FACE qui mappe
+  // déjà `trapezes_hauts` sur la pente cou-épaule (les fibres descendantes
+  // s'insèrent sur le tiers latéral de la clavicule, donc visibles de face).
+  // Avant le redécoupage les deux vues se contredisaient : trapèze entier de
+  // dos, fibres descendantes seules de face.
+  trapezes_hauts: BACK_POLYS.trapezius_upper,
   dos_epaisseur: BACK_POLYS.upper_back,
   dos_largeur: BACK_POLYS.lats,
   deltos_posterieurs: BACK_POLYS.back_deltoids,
@@ -337,12 +379,10 @@ const CO_TO_BACK: Record<string, readonly string[]> = {
 // Composant
 // =============================================================================
 
-const FACE_NEUTRALS = [
-  FACE_POLYS.head,
-  FACE_POLYS.neck,
-  FACE_POLYS.knees,
-  FACE_POLYS.forearm,
-];
+// Conv #65 — `neck` retiré : il est mappé sur `trapezes_hauts` (CO_TO_FACE) et
+// les muscles sont rendus après les neutres, donc la version colorée gagnait
+// toujours. L'entrée était morte et contredisait le commentaire d'en-tête.
+const FACE_NEUTRALS = [FACE_POLYS.head, FACE_POLYS.knees, FACE_POLYS.forearm];
 const BACK_NEUTRALS = [BACK_POLYS.head, BACK_POLYS.knees, BACK_POLYS.forearm];
 
 /**
