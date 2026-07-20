@@ -40,8 +40,9 @@ export function TabbedLayout() {
       <main ref={mainRef} className="flex-1 overflow-y-auto px-5 py-4">
         {/* Bloc C 1.16 — transition de page cohérente à chaque changement de
             route. La clé relance l'anim. Conv #66 — le sens vient de l'ordre des
-            onglets (cf. `pageAnim`). */}
-        <div key={pathname} className={pageAnim}>
+            onglets (cf. `pageAnim`). `min-h-full` + flex : une page peut choisir
+            d'occuper la hauteur restante (accueil : rythme vertical aéré). */}
+        <div key={pathname} className={`flex min-h-full flex-col ${pageAnim}`}>
           <Outlet />
         </div>
       </main>

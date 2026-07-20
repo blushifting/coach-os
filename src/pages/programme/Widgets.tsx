@@ -37,7 +37,7 @@ export function Widgets({
   cycleTime,
 }: WidgetsProps) {
   return (
-    <div className="grid grid-cols-2 gap-3" data-testid="programme-widgets">
+    <div className="grid grid-cols-2 gap-2.5" data-testid="programme-widgets">
       <StreakWidget streak={streak} />
       <WeekSessionsWidget sessions={weekSessions} />
       <CyclePctWidget cycle={cycleProgress} />
@@ -57,13 +57,13 @@ function StreakWidget({ streak }: { readonly streak: number }) {
   // explicite l'unité du compteur.
   return (
     <WidgetShell testId="widget-streak" label="Régularité">
-      <div className="flex flex-1 items-center gap-3">
+      <div className="flex flex-1 items-center gap-3.5">
         <Flame active={active} />
         <div className="flex flex-col leading-none">
           <span className="font-display text-3xl font-bold tabular-nums text-white">
             {active ? streak : '—'}
           </span>
-          <span className="mt-1 text-[11px] text-anthracite-300">
+          <span className="mt-1 text-xs text-anthracite-300">
             {active
               ? streak === 1
                 ? "semaine d'affilée"
@@ -142,11 +142,11 @@ function WeekSessionsWidget({ sessions }: { readonly sessions: WeekSessions }) {
   const reached = hasPlan && sessions.done >= sessions.planned;
   return (
     <WidgetShell testId="widget-week-sessions" label="Cette semaine">
-      <div className="flex flex-1 items-center gap-3">
+      <div className="flex flex-1 items-center gap-3.5">
         <ProgressRing
           value={hasPlan ? Math.min(sessions.done, sessions.planned) : sessions.done}
           total={hasPlan ? sessions.planned : 1}
-          size={52}
+          size={56}
           strokeWidth={5}
         />
         <div className="flex flex-col leading-none">
@@ -166,7 +166,7 @@ function WeekSessionsWidget({ sessions }: { readonly sessions: WeekSessions }) {
               <span className="text-sm text-anthracite-300">séances</span>
             )}
           </div>
-          <span className="mt-1 text-[11px] text-anthracite-300">
+          <span className="mt-1 text-xs text-anthracite-300">
             {reached ? 'objectif atteint' : 'séances'}
           </span>
         </div>
@@ -186,12 +186,12 @@ function CyclePctWidget({ cycle }: { readonly cycle: CycleProgress }) {
       testId="widget-cycle-pct"
       label="Cycle"
     >
-      <div className="flex flex-1 items-center gap-3">
+      <div className="flex flex-1 items-center gap-3.5">
         <div className="relative inline-flex items-center justify-center">
           <ProgressRing
             value={pctSafe}
             total={100}
-            size={52}
+            size={56}
             strokeWidth={5}
           />
           {/* Conv #17 — à 100 %, on masque le label "%" : l'anneau vert
@@ -203,7 +203,7 @@ function CyclePctWidget({ cycle }: { readonly cycle: CycleProgress }) {
           )}
         </div>
         <div className="flex flex-col leading-none">
-          <span className="font-display text-base font-semibold text-white tabular-nums">
+          <span className="font-display text-lg font-semibold text-white tabular-nums">
             {/* #10 (E-3) — même logique que la tuile "Cette semaine" : au-delà
                 du planifié on montre le total sans fraction (accompli). */}
             {cycle.planned <= 0
@@ -212,7 +212,7 @@ function CyclePctWidget({ cycle }: { readonly cycle: CycleProgress }) {
                 ? `${cycle.done} séances`
                 : `${cycle.done}/${cycle.planned}`}
           </span>
-          <span className="mt-1 text-[11px] text-anthracite-300">
+          <span className="mt-1 text-xs text-anthracite-300">
             {cycle.planned <= 0
               ? 'aucun cycle en cours'
               : cycle.done >= cycle.planned
@@ -251,7 +251,7 @@ function NextBilanWidget({
           <span className="font-display text-2xl font-bold tabular-nums leading-none text-white">
             {hasCycle ? formatShortDate(date) : '—'}
           </span>
-          <span className="text-[11px] tabular-nums text-anthracite-300">
+          <span className="text-xs tabular-nums text-anthracite-300">
             {daysLeftLabel}
           </span>
         </div>
@@ -281,7 +281,7 @@ interface WidgetShellProps {
 
 function WidgetShell({ testId, label, helpTopic, children }: WidgetShellProps) {
   return (
-    <Card className="flex min-h-[96px] flex-col gap-2" data-testid={testId}>
+    <Card className="flex min-h-[104px] flex-col gap-2.5" data-testid={testId}>
       <span className="flex items-center gap-1 text-xs uppercase tracking-wide text-anthracite-300">
         {helpTopic ? <Concept topic={helpTopic}>{label}</Concept> : label}
       </span>

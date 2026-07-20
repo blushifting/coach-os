@@ -124,47 +124,64 @@ export default function ProgrammePage() {
   if (dashboard === null) return null;
 
   return (
-    <section className="flex flex-col gap-3" data-testid="programme-page">
-      <WelcomeBanner feedbackCount={history.feedbacks.length} />
+    <section className="flex flex-1 flex-col" data-testid="programme-page">
+      {/* Rythme vertical (accueil, conv #68) : le contenu occupe la hauteur
+          restante et l'espace libre se répartit via des cales flexibles — pas
+          en gaps égaux mais pondérés (2 en haut, 3 au milieu et en bas), pour
+          que la respiration du haut soit plus discrète que celle du bas (elle
+          jouxte le header et perturbe plus le regard). Sur écran rempli, les
+          cales retombent à zéro et les groupes gardent leur `gap-5` interne. */}
+      <div className="flex flex-1 flex-col">
+        <div aria-hidden className="flex-[1]" />
+        <div className="flex flex-col gap-5">
+          <WelcomeBanner feedbackCount={history.feedbacks.length} />
 
-      <Widgets
-        streak={dashboard.streak}
-        cycleProgress={dashboard.cycleProgress}
-        weekSessions={dashboard.weekSessions}
-        nextBilanDate={dashboard.nextBilanDate}
-        cycleTime={dashboard.cycleTime}
-      />
+          <Widgets
+            streak={dashboard.streak}
+            cycleProgress={dashboard.cycleProgress}
+            weekSessions={dashboard.weekSessions}
+            nextBilanDate={dashboard.nextBilanDate}
+            cycleTime={dashboard.cycleTime}
+          />
+        </div>
 
-      {dashboard.cycleFinished && (
-        <Link to="/cycle-bilan" data-testid="cycle-finished-banner" className="block">
-          <Card className="flex items-center justify-between border-sang-700 bg-sang-900/40">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-sm font-semibold text-white">Cycle terminé</span>
-              <span className="text-xs text-anthracite-300">
-                Voir le bilan et choisir la suite
-              </span>
-            </div>
-            <ChevronRight className="text-sang-500" />
-          </Card>
-        </Link>
-      )}
+        <div aria-hidden className="flex-[2]" />
 
-      {dashboard.matrix === null ? (
-        <Card data-testid="no-cycle-card">
-          <p className="text-sm text-anthracite-300">
-            Ton cycle n'est pas encore prêt. Termine la configuration pour démarrer.
-          </p>
-        </Card>
-      ) : (
-        <CondensedCalendar
-          matrix={dashboard.matrix}
-          currentWeekInCycle={userState.current_week_in_cycle}
-          // Conv #16 — calendrier non-interactif en mode démo, sinon
-          // l'utilisateur peut ouvrir la PlanDaySheet d'Alex et bloquer
-          // le tour guidé (la sheet masque le bandeau démo).
-          onDayClick={demoActive ? () => undefined : handleDayClick}
-        />
-      )}
+        <div className="flex flex-col gap-5">
+          {dashboard.cycleFinished && (
+            <Link to="/cycle-bilan" data-testid="cycle-finished-banner" className="block">
+              <Card className="flex items-center justify-between border-sang-700 bg-sang-900/40">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-sm font-semibold text-white">Cycle terminé</span>
+                  <span className="text-xs text-anthracite-300">
+                    Voir le bilan et choisir la suite
+                  </span>
+                </div>
+                <ChevronRight className="text-sang-500" />
+              </Card>
+            </Link>
+          )}
+
+          {dashboard.matrix === null ? (
+            <Card data-testid="no-cycle-card">
+              <p className="text-sm text-anthracite-300">
+                Ton cycle n'est pas encore prêt. Termine la configuration pour démarrer.
+              </p>
+            </Card>
+          ) : (
+            <CondensedCalendar
+              matrix={dashboard.matrix}
+              currentWeekInCycle={userState.current_week_in_cycle}
+              // Conv #16 — calendrier non-interactif en mode démo, sinon
+              // l'utilisateur peut ouvrir la PlanDaySheet d'Alex et bloquer
+              // le tour guidé (la sheet masque le bandeau démo).
+              onDayClick={demoActive ? () => undefined : handleDayClick}
+            />
+          )}
+        </div>
+
+        <div aria-hidden className="flex-[2]" />
+      </div>
 
       <PlanDaySheet
         open={openDay !== null}

@@ -346,12 +346,18 @@ function realizeSession(
   const focus: string[] = [];
 
   for (const m of muscles) {
+    const planned = columnVolumes.get(m) ?? 0;
     const target = residual.get(m) ?? 0;
     const isPrio = goalOf(m)?.status === MuscleStatus.PRIORITAIRE;
-    // Un muscle de MAINTIEN déjà couvert par l'incident (résidu < 3) ne reçoit
-    // pas d'exo dédié. Un muscle PRIORITAIRE, si : on lui garantit ≥ 1 exo dédié
-    // (l'user l'a explicitement priorisé → il doit le voir travaillé en direct).
-    if (target < REALIZE_MIN_SETS && !isPrio) continue;
+    // Un muscle de MAINTIEN ne perd son exo dédié que si le crédit incident a
+    // réellement couvert sa dose (résidu tombé sous la moitié du plan). L'ancien
+    // seuil fixe (résidu < 3) éliminait d'office les petits muscles dont la dose
+    // maintien — max(2, 0,4×V_min) ≈ 2-2,4 — est < 3 par construction, couverts
+    // ou non : lombaires sans hinge au programme, obliques et trapèzes (jamais
+    // crédités par aucun pattern) finissaient à zéro. Un muscle PRIORITAIRE
+    // reçoit toujours ≥ 1 exo dédié (l'user l'a explicitement priorisé → il
+    // doit le voir travaillé en direct).
+    if (!isPrio && target < planned / 2) continue;
     const dose = Math.max(target, REALIZE_MIN_SETS);
     const n = exosForSessionDose(dose);
     const setsList = distributeSetsForDose(dose, n);
