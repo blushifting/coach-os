@@ -27,7 +27,14 @@ jobs:
 
       - run: npm ci
 
+      # Chantier F — les clés Supabase sont injectées au build (variables
+      # Vite `VITE_*`). La clé publiable est publique par design : elle finit
+      # dans le bundle, la sécurité repose sur la RLS Postgres. Sans ces
+      # variables, toute la couche cloud de l'app reste inerte.
       - run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - uses: actions/configure-pages@v5
 

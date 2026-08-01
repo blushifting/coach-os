@@ -1,0 +1,41 @@
+# Chantier F — anti-mise en pause du projet Supabase.
+#
+# Un projet du plan gratuit sans AUCUNE requête API pendant 7 jours est mis en
+# pause : les données sont conservées, mais les sauvegardes de l'app échouent
+# jusqu'à un réveil manuel depuis le dashboard. C'est précisément le scénario
+# « personne n'a ouvert l'app pendant deux semaines », donc celui où l'on a le
+# plus besoin que la sauvegarde marche.
+#
+# Une requête REST triviale tous les 3 jours suffit à remettre le compteur à
+# zéro. La RLS renvoie une liste vide (aucune policy pour le rôle anonyme),
+# ce qui compte quand même comme activité.
+#
+# ⚠️ GitHub désactive les workflows planifiés d'un dépôt resté inactif environ
+# 60 jours. Sans conséquence tant que le dépôt vit.
+
+name: Supabase keepalive
+
+on:
+  schedule:
+    # Toutes les 3 nuits. Minute décalée : les horaires « pile » sont congestionnés.
+    - cron: '17 4 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping de l'API REST
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          code=$(curl -sS -o /dev/null -w '%{http_code}' \
+            "$SUPABASE_URL/rest/v1/snapshots?select=id&limit=1" \
+            -H "apikey: $SUPABASE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_KEY")
+          echo "HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "Le ping a échoué — le projet est peut-être en pause, ou les clés ont changé."
+            exit 1
+          fi
