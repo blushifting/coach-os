@@ -70,7 +70,11 @@ import {
 } from '@/db/transactions';
 import { buildPrescription, effectiveLoadForE1rm } from '@/engine/prescription';
 import { clearLocalBackupFlags, requestBackup } from '@/lib/backup';
-import { importFromJsonString } from '@/io/import';
+import {
+  importFromJsonString,
+  importPayload,
+  parseExportPayload,
+} from '@/io/import';
 import { useCoachOsStore, type HistorySnapshot } from '@/store';
 
 function cloneState(s: UserState): UserState {
@@ -1315,6 +1319,25 @@ export async function resetApp(): Promise<void> {
  */
 export async function importDataFromJson(json: string): Promise<void> {
   await importFromJsonString(json);
+  await reloadStoreAfterImport();
+}
+
+/**
+ * Chantier F-2 — même chemin, mais depuis un objet déjà désérialisé : le
+ * `payload` `jsonb` d'un snapshot cloud arrive de PostgREST en JavaScript, il
+ * serait absurde de le re-sérialiser pour le re-parser.
+ *
+ * La validation zod est **identique** à celle d'un fichier importé à la main
+ * (`parseExportPayload`) : une sauvegarde cloud corrompue ou trop ancienne est
+ * refusée avec la même `ImportValidationError`, et la DB n'est pas touchée.
+ */
+export async function importDataFromPayload(raw: unknown): Promise<void> {
+  await importPayload(parseExportPayload(raw));
+  await reloadStoreAfterImport();
+}
+
+/** Recharge le store depuis la DB après un remplacement complet. */
+async function reloadStoreAfterImport(): Promise<void> {
   const [userState, history] = await Promise.all([loadUserState(), loadHistorySnapshot()]);
   useCoachOsStore.setState({
     userState,
@@ -1503,6 +1526,8 @@ export interface EngineApi {
   clearEquipmentOverride: typeof clearEquipmentOverride;
   resetApp: typeof resetApp;
   importDataFromJson: typeof importDataFromJson;
+  /** Chantier F-2 — restauration depuis un snapshot cloud déjà désérialisé. */
+  importDataFromPayload: typeof importDataFromPayload;
   /** Conv #21b — gestion des exos custom (table userAddedExercises). */
   addCustomExercise: typeof addCustomExercise;
   removeCustomExercise: typeof removeCustomExercise;
@@ -1554,6 +1579,7 @@ export function useEngine(): EngineApi {
       clearEquipmentOverride,
       resetApp,
       importDataFromJson,
+      importDataFromPayload,
       addCustomExercise,
       removeCustomExercise,
       addExerciseToCurrentSession,

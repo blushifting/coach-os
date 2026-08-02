@@ -1,5 +1,6 @@
 /**
  * Chantier F-1 — sauvegarde automatique vers le cloud.
+ * Chantier F-2 — relecture des sauvegardes (liste + payload).
  *
  * Principe (doc 12 §0.3) : **pas de sync incrémentale**. Le multi-appareil
  * ayant été abandonné, on pousse le `ExportPayload` entier — celui du bouton
@@ -80,6 +81,18 @@ export function clearLocalBackupFlags(): void {
   lsSet(KEY_DIRTY, null);
   lsSet(KEY_LAST_AT, null);
   useAuthStore.setState({ lastBackupAt: null });
+}
+
+/**
+ * Chantier F-2 — après une restauration réussie, l'appareil porte **exactement**
+ * le contenu de la sauvegarde `at`. Il n'y a donc rien à envoyer, et la
+ * « dernière sauvegarde » affichée dans le Profil est celle qu'on vient de
+ * remettre en place. Sans ça, l'app repousserait aussitôt une copie conforme.
+ */
+export function markRestored(at: string): void {
+  lsSet(KEY_DIRTY, null);
+  lsSet(KEY_LAST_AT, at);
+  useAuthStore.setState({ lastBackupAt: at });
 }
 
 // =============================================================================
@@ -290,4 +303,112 @@ export function requestBackup(): void {
 export async function pushIfDirty(): Promise<BackupResult | null> {
   if (!isBackupDirty()) return null;
   return pushSnapshot();
+}
+
+// =============================================================================
+// Lecture (chantier F-2)
+// =============================================================================
+
+/**
+ * Une sauvegarde disponible en ligne, **sans son payload** : la liste sert à
+ * choisir, on ne télécharge les ~300 Ko qu'au moment de restaurer.
+ */
+export interface CloudSnapshotMeta {
+  readonly id: number;
+  /** Horodatage serveur (`now()` à l'insertion), jamais une horloge client. */
+  readonly createdAt: string;
+  /** Version de l'app qui a produit la sauvegarde. */
+  readonly appVersion: string;
+}
+
+export type CloudRead<T> =
+  | { readonly ok: true; readonly value: T }
+  | { readonly ok: false; readonly error: string };
+
+const READ_ERROR =
+  'Impossible de joindre tes sauvegardes en ligne. Vérifie ta connexion internet et réessaie.';
+
+/**
+ * Normalise les lignes renvoyées par PostgREST, du plus récent au plus ancien.
+ * Fonction pure — c'est elle que les tests couvrent (le tri ne dépend pas de
+ * la clause `order` du serveur, qu'on ne veut pas avoir à croire sur parole).
+ */
+export function toSnapshotMetas(rows: readonly unknown[]): CloudSnapshotMeta[] {
+  const metas: CloudSnapshotMeta[] = [];
+  for (const raw of rows) {
+    if (raw === null || typeof raw !== 'object') continue;
+    const row = raw as Record<string, unknown>;
+    const id = Number(row.id);
+    if (!Number.isFinite(id)) continue;
+    metas.push({
+      id,
+      createdAt: String(row.created_at ?? ''),
+      appVersion: String(row.app_version ?? '?'),
+    });
+  }
+  metas.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return metas;
+}
+
+/**
+ * Les sauvegardes du compte connecté (la rétention serveur en garde 10).
+ * Ne jette jamais. RLS garantit qu'on ne voit que les siennes.
+ */
+export async function listSnapshots(): Promise<CloudRead<CloudSnapshotMeta[]>> {
+  const supabase = getSupabase();
+  const userId = useAuthStore.getState().userId;
+  if (supabase === null || userId === null) {
+    return { ok: false, error: READ_ERROR };
+  }
+  try {
+    const { data, error } = await supabase
+      .from('snapshots')
+      .select('id, created_at, app_version')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (error !== null) return { ok: false, error: READ_ERROR };
+    return { ok: true, value: toSnapshotMetas(data ?? []) };
+  } catch {
+    return { ok: false, error: READ_ERROR };
+  }
+}
+
+/**
+ * Télécharge le payload d'une sauvegarde — la plus récente si `id` est omis.
+ * Ne jette jamais. Le contenu n'est **pas** validé ici : c'est `importPayload`
+ * qui le passe au zod de l'export, exactement comme un fichier importé à la
+ * main.
+ */
+export async function fetchSnapshot(
+  id?: number,
+): Promise<CloudRead<{ payload: unknown; meta: CloudSnapshotMeta }>> {
+  const supabase = getSupabase();
+  const userId = useAuthStore.getState().userId;
+  if (supabase === null || userId === null) {
+    return { ok: false, error: READ_ERROR };
+  }
+  try {
+    let query = supabase
+      .from('snapshots')
+      .select('id, created_at, app_version, payload')
+      .eq('user_id', userId);
+    if (id !== undefined) query = query.eq('id', id);
+    const { data, error } = await query
+      .order('created_at', { ascending: false })
+      .limit(1);
+    if (error !== null) return { ok: false, error: READ_ERROR };
+    const row = (data ?? [])[0];
+    if (row === undefined) {
+      return {
+        ok: false,
+        error: "Cette sauvegarde n'existe plus. Choisis-en une autre dans la liste.",
+      };
+    }
+    const meta = toSnapshotMetas([row])[0];
+    if (meta === undefined) return { ok: false, error: READ_ERROR };
+    return { ok: true, value: { payload: (row as { payload: unknown }).payload, meta } };
+  } catch {
+    return { ok: false, error: READ_ERROR };
+  }
 }

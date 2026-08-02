@@ -1,5 +1,6 @@
 /**
  * Chantier F-1 — compte cloud : connexion Google, réconciliation, sortie.
+ * Chantier F-2 — restauration : le cloud sait enfin se relire.
  *
  * Le magic link par email est mort-né (Supabase refuse de délivrer aux
  * adresses hors équipe du projet sans SMTP tiers) → **Google OAuth
@@ -13,13 +14,18 @@
 import type { Session } from '@supabase/supabase-js';
 import {
   clearReconciled,
+  fetchSnapshot,
   markReconciled,
+  markRestored,
   pushIfDirty,
   pushSnapshot,
   readLastBackupAt,
   readReconciledUserId,
+  requestBackup,
 } from '@/lib/backup';
 import { getSupabase, isSupabaseConfigured, oauthRedirectTo } from '@/lib/supabase';
+import { importDataFromPayload, resetApp } from '@/hooks/useEngine';
+import { ImportValidationError } from '@/io/import';
 import { useAuthStore } from '@/store/auth';
 import { useCoachOsStore } from '@/store';
 
@@ -126,30 +132,58 @@ export async function initAuth(): Promise<void> {
 // Réconciliation à la connexion (doc 12 §3.2)
 // =============================================================================
 
+export type ReconcileDecision = 'nothing' | 'push' | 'ask';
+
 /**
- * Trois cas, un seul point de décision :
+ * Un seul point de décision (doc 12 §3.2) :
  *   - **A** — cet appareil a des données, le cloud est vide → envoi immédiat,
  *     sans rien demander (c'est le cas d'Azur au premier branchement).
- *   - **B** — appareil vierge, cloud plein → on le dit ; la restauration
- *     arrive en F-2.
+ *   - **B** — appareil vierge, cloud plein → on propose la restauration.
  *   - **C** — les deux ont des données → dialogue explicite, jamais silencieux.
+ *   - **D** — cloud vide, mais cet appareil était lié à un **autre** compte et
+ *     porte encore ses données → on demande aussi. Sans cette branche, le cas
+ *     A verserait la progression du premier utilisateur dans le compte du
+ *     second, silencieusement.
  *
- * Une fois réconcilié, l'appareil est marqué pour ce compte : on ne repose
- * plus la question à chaque lancement.
+ * Appareil vierge et cloud vide n'est pas un cas : il n'y a rien à décider, et
+ * surtout **rien à envoyer** (sans ça, ouvrir l'app sur un navigateur neuf
+ * sèmerait le cloud d'un état vide).
+ *
+ * Fonction pure — c'est elle que les tests couvrent.
+ */
+export function decideReconciliation(args: {
+  localHasData: boolean;
+  cloudHasSnapshot: boolean;
+  /** Compte auquel cet appareil était lié auparavant, s'il y en avait un. */
+  previousUserId: string | null;
+  userId: string;
+}): ReconcileDecision {
+  if (args.cloudHasSnapshot) return 'ask';
+  if (!args.localHasData) return 'nothing';
+  if (args.previousUserId !== null && args.previousUserId !== args.userId) {
+    return 'ask';
+  }
+  return 'push';
+}
+
+/**
+ * Applique la décision ci-dessus. Une fois réconcilié, l'appareil est marqué
+ * pour ce compte : on ne repose plus la question à chaque lancement.
  */
 export async function reconcile(): Promise<void> {
   const supabase = getSupabase();
   const userId = useAuthStore.getState().userId;
   if (supabase === null || userId === null) return;
 
-  if (readReconciledUserId() === userId) {
+  const previousUserId = readReconciledUserId();
+  if (previousUserId === userId) {
     await pushIfDirty();
     return;
   }
 
   const { data, error } = await supabase
     .from('snapshots')
-    .select('created_at, app_version')
+    .select('id, created_at, app_version')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(1);
@@ -160,13 +194,19 @@ export async function reconcile(): Promise<void> {
 
   const localHasData = useCoachOsStore.getState().userState !== null;
   const cloud = data?.[0] ?? null;
+  const decision = decideReconciliation({
+    localHasData,
+    cloudHasSnapshot: cloud !== null,
+    previousUserId,
+    userId,
+  });
 
-  if (cloud === undefined || cloud === null) {
-    // Cas A (ou appareil vierge + cloud vide : rien à envoyer).
-    if (!localHasData) {
-      markReconciled(userId);
-      return;
-    }
+  if (decision === 'nothing') {
+    markReconciled(userId);
+    return;
+  }
+  if (decision === 'push') {
+    // Cas A — le seul envoi silencieux de tout le chantier.
     const result = await pushSnapshot({ force: true });
     if (result.ok) markReconciled(userId);
     return;
@@ -174,17 +214,101 @@ export async function reconcile(): Promise<void> {
 
   useAuthStore.setState({
     conflict: {
-      cloudAt: String(cloud.created_at),
-      cloudAppVersion: String(cloud.app_version ?? '?'),
+      cloud:
+        cloud === null
+          ? null
+          : {
+              id: Number(cloud.id),
+              at: String(cloud.created_at),
+              appVersion: String(cloud.app_version ?? '?'),
+            },
       localHasData,
     },
   });
 }
 
 /**
+ * L'utilisateur renonce à ce que porte cet appareil et démarre à neuf sur ce
+ * compte. Sert au cas B (« repartir de zéro ici ») et au cas D (l'ami à qui on
+ * prête un téléphone déjà rempli).
+ *
+ * L'effacement passe par `resetApp()`, exactement comme « Réinitialiser » du
+ * Profil ; on repose ensuite le marqueur de réconciliation sur le **nouveau**
+ * compte, sinon l'appareil resterait étiqueté au nom du précédent.
+ */
+export async function startFreshOnThisDevice(): Promise<{ ok: boolean }> {
+  const userId = useAuthStore.getState().userId;
+  if (userId === null) return { ok: false };
+  useAuthStore.setState({ busy: true, error: null });
+  try {
+    await resetApp();
+    markReconciled(userId);
+    useAuthStore.setState({ conflict: null });
+    return { ok: true };
+  } finally {
+    useAuthStore.setState({ busy: false });
+  }
+}
+
+// =============================================================================
+// Restauration (chantier F-2)
+// =============================================================================
+
+const RESTORE_INVALID =
+  "Cette sauvegarde est illisible par cette version de l'app. Préviens Azur avant de faire quoi que ce soit d'autre.";
+
+/**
+ * Remet en place une sauvegarde en ligne — **remplace intégralement** le
+ * contenu de cet appareil. Le chemin d'écriture est celui, déjà éprouvé, du
+ * bouton « Importer mes données » : même zod, même transaction atomique, donc
+ * un payload invalide laisse la base intacte.
+ *
+ * `snapshotId` omis = la plus récente (c'est le cas des deux dialogues de
+ * réconciliation). Fourni explicitement = un retour en arrière choisi dans
+ * l'historique : cette version-là **redevient la tête de série** en ligne,
+ * sinon le prochain appareil qui restaure récupérerait celle qu'on vient
+ * justement d'écarter.
+ */
+export async function restoreFromCloud(
+  options: { snapshotId?: number } = {},
+): Promise<{ ok: boolean; error?: string }> {
+  const userId = useAuthStore.getState().userId;
+  if (userId === null) return { ok: false, error: GENERIC_SIGNIN_ERROR };
+  useAuthStore.setState({ busy: true, error: null });
+  try {
+    const read = await fetchSnapshot(options.snapshotId);
+    if (!read.ok) {
+      useAuthStore.setState({ error: read.error });
+      return { ok: false, error: read.error };
+    }
+    try {
+      await importDataFromPayload(read.value.payload);
+    } catch (e) {
+      const message =
+        e instanceof ImportValidationError
+          ? RESTORE_INVALID
+          : 'La restauration a échoué. Tes données locales sont intactes. Réessaie, ou préviens Azur si ça persiste.';
+      useAuthStore.setState({ error: message });
+      return { ok: false, error: message };
+    }
+    markRestored(read.value.meta.createdAt);
+    markReconciled(userId);
+    useAuthStore.setState({ conflict: null });
+    if (options.snapshotId !== undefined) requestBackup();
+    return { ok: true };
+  } finally {
+    useAuthStore.setState({ busy: false });
+  }
+}
+
+/**
  * L'utilisateur tranche le conflit en faveur de cet appareil. Rien n'est perdu
  * côté cloud : les 10 dernières sauvegardes sont conservées par la rétention
- * serveur, donc F-2 pourra toujours remonter le temps.
+ * serveur, donc l'historique du Profil permet toujours de remonter le temps.
+ *
+ * Le garde-fou `localHasData` n'est plus atteignable depuis l'UI (l'appareil
+ * vide passe par `startFreshOnThisDevice`), mais il reste : pousser un état
+ * vide par-dessus une sauvegarde est la seule chose vraiment irréparable.
  */
 export async function keepThisDevice(): Promise<{ ok: boolean; error?: string }> {
   const userId = useAuthStore.getState().userId;

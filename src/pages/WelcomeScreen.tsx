@@ -132,11 +132,23 @@ export default function WelcomeScreen() {
                 >
                   Continuer avec Google
                 </Button>
+                {/* Chantier F-2 — c'est aussi la porte d'entrée « j'ai déjà un
+                    compte » : même bouton, la réconciliation à la connexion
+                    reconnaît l'appareil vide et propose la restauration. Deux
+                    boutons Google côte à côte n'auraient rien clarifié. */}
+                <p
+                  className="text-xs leading-relaxed text-anthracite-200"
+                  data-testid="welcome-existing-account"
+                >
+                  Déjà un compte&nbsp;? Connecte-toi et tu retrouveras ta
+                  progression.
+                </p>
                 <p className="text-justify text-xs leading-relaxed text-anthracite-400">
                   Un compte met ta progression à l&apos;abri&nbsp;: elle est
-                  sauvegardée en ligne toute seule. Sans compte, tout reste sur
-                  ce téléphone et rien ne sera récupérable si tu le perds ou si
-                  tu désinstalles l&apos;app.
+                  sauvegardée en ligne toute seule, et tu la récupères sur un
+                  nouveau téléphone. Sans compte, tout reste sur celui-ci et
+                  rien ne sera récupérable si tu le perds ou si tu désinstalles
+                  l&apos;app.
                 </p>
               </>
             )}

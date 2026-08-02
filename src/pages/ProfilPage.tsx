@@ -313,6 +313,7 @@ export default function ProfilPage() {
 
       <CompteSection
         onLocalWipe={handleLocalWipe}
+        onRestored={() => navigate('/programme')}
         disabled={busy !== null || demoActive}
       />
 

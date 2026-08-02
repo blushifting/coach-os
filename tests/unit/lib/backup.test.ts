@@ -14,9 +14,13 @@ import {
   buildSnapshotRow,
   coalesce,
   evaluateBackupGuards,
+  fetchSnapshot,
   hasBackupInFlight,
+  listSnapshots,
+  markRestored,
   nextPlannedSessionDate,
   pushSnapshot,
+  toSnapshotMetas,
   type BackupContext,
   type BackupResult,
 } from '@/lib/backup';
@@ -189,6 +193,58 @@ describe('buildSnapshotRow', () => {
     expect(row.user_id).toBe('u-42');
     expect(row.app_version).toBe('1.45.0');
     expect(row.payload).toEqual({ version: 1 });
+  });
+});
+
+// =============================================================================
+// Chantier F-2 — lecture
+// =============================================================================
+
+describe('toSnapshotMetas', () => {
+  it('trie du plus récent au plus ancien sans faire confiance au serveur', () => {
+    const metas = toSnapshotMetas([
+      { id: 1, created_at: '2026-08-01T10:00:00.000Z', app_version: '1.45.0' },
+      { id: 3, created_at: '2026-08-03T10:00:00.000Z', app_version: '2.0.0' },
+      { id: 2, created_at: '2026-08-02T10:00:00.000Z', app_version: '2.0.0' },
+    ]);
+    expect(metas.map((m) => m.id)).toEqual([3, 2, 1]);
+  });
+
+  it('écarte les lignes inexploitables plutôt que de produire un NaN', () => {
+    const metas = toSnapshotMetas([
+      null,
+      'bruit',
+      { created_at: '2026-08-01T10:00:00.000Z' },
+      { id: 7, created_at: '2026-08-01T10:00:00.000Z', app_version: '2.0.0' },
+    ]);
+    expect(metas).toHaveLength(1);
+    expect(metas[0]?.id).toBe(7);
+  });
+
+  it('remplace une version manquante par un point d\'interrogation', () => {
+    const metas = toSnapshotMetas([{ id: 1, created_at: '2026-08-01T10:00:00.000Z' }]);
+    expect(metas[0]?.appVersion).toBe('?');
+  });
+});
+
+describe('lecture inerte sans configuration', () => {
+  it('listSnapshots échoue proprement, sans jeter', async () => {
+    const result = await listSnapshots();
+    expect(result.ok).toBe(false);
+  });
+
+  it('fetchSnapshot échoue proprement, sans jeter', async () => {
+    const result = await fetchSnapshot(42);
+    expect(result.ok).toBe(false);
+  });
+});
+
+describe('markRestored', () => {
+  it('aligne la dernière sauvegarde sur celle qu\'on vient de remettre', () => {
+    useAuthStore.setState({ lastBackupAt: null });
+    markRestored('2026-08-01T10:00:00.000Z');
+    expect(useAuthStore.getState().lastBackupAt).toBe('2026-08-01T10:00:00.000Z');
+    useAuthStore.setState({ lastBackupAt: null });
   });
 });
 

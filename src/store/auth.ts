@@ -12,20 +12,33 @@
 
 import { create } from 'zustand';
 
+/** La sauvegarde en ligne la plus récente du compte, sans son payload. */
+export interface CloudConflictSnapshot {
+  /** Identifiant — cible de la restauration (chantier F-2). */
+  readonly id: number;
+  /** Date (ISO, horloge serveur). */
+  readonly at: string;
+  /** Version de l'app qui a produit cette sauvegarde. */
+  readonly appVersion: string;
+}
+
 /**
- * Conflit détecté à la connexion : le cloud contient déjà une sauvegarde et
- * cet appareil n'a pas encore été réconcilié avec ce compte.
+ * Point de décision à la connexion : cet appareil n'a pas encore été
+ * réconcilié avec ce compte et on ne peut pas trancher tout seul.
  *
- * Deux cas du §3.2 du doc 12, distingués par `localHasData` :
- *   - **cas B** (`false`) — appareil vierge, cloud plein. La restauration
- *     arrive en F-2 ; ici on ne sait que le dire.
- *   - **cas C** (`true`) — les deux ont des données. Jamais silencieux.
+ * Trois situations, lisibles sur les deux champs :
+ *   - **cas B** — `cloud` non nul, `localHasData` faux : appareil vierge,
+ *     cloud plein → on propose la restauration.
+ *   - **cas C** — `cloud` non nul, `localHasData` vrai : les deux côtés ont
+ *     des données, il faut choisir laquelle garde la main.
+ *   - **cas D** — `cloud` nul, `localHasData` vrai : compte neuf sur un
+ *     appareil qui porte la progression de **quelqu'un d'autre** (un ami se
+ *     connecte sur un téléphone déjà utilisé). Sans ce cas, l'envoi
+ *     automatique du cas A verserait les données du premier dans le compte du
+ *     second, sans un mot.
  */
 export interface CloudConflict {
-  /** Date (ISO, horloge serveur) de la sauvegarde la plus récente du cloud. */
-  readonly cloudAt: string;
-  /** Version de l'app qui a produit cette sauvegarde. */
-  readonly cloudAppVersion: string;
+  readonly cloud: CloudConflictSnapshot | null;
   /** Cet appareil porte-t-il déjà des données d'entraînement ? */
   readonly localHasData: boolean;
 }

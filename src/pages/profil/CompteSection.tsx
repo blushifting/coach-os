@@ -1,39 +1,56 @@
 /**
  * Chantier F-1 — section « Compte » du Profil.
+ * Chantier F-2 — machine à remonter le temps : les 10 dernières sauvegardes
+ * sont conservées côté serveur par la rétention, autant les rendre
+ * accessibles. C'est le filet de sécurité de tout le reste : une manipulation
+ * malheureuse se rattrape en trois taps.
  *
  * Entièrement absente quand la couche cloud n'est pas configurée : en dev, en
  * test et en e2e, ce composant ne rend rien du tout.
  *
  * Deux états : pas de compte lié (relance discrète + connexion Google), ou
- * compte lié (date de la dernière sauvegarde, envoi manuel, déconnexion,
- * suppression de compte).
+ * compte lié (date de la dernière sauvegarde, envoi manuel, restauration,
+ * déconnexion, suppression de compte).
  */
 
 import { useState } from 'react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Dialog } from '@/components/Dialog';
+import { Sheet } from '@/components/Sheet';
 import {
   backupNow,
   backupThenSignOut,
   deleteCloudAccount,
+  restoreFromCloud,
   signInWithGoogle,
 } from '@/lib/auth';
+import { listSnapshots, type CloudSnapshotMeta } from '@/lib/backup';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { useAuthStore } from '@/store/auth';
 
 interface CompteSectionProps {
   /** Appelé après une déconnexion ou une suppression réussie. */
   readonly onLocalWipe: () => Promise<void>;
+  /** Appelé après une restauration réussie (chantier F-2). */
+  readonly onRestored: () => void;
   readonly disabled?: boolean;
 }
 
-export function CompteSection({ onLocalWipe, disabled = false }: CompteSectionProps) {
+export function CompteSection({
+  onLocalWipe,
+  onRestored,
+  disabled = false,
+}: CompteSectionProps) {
   const { userId, email, busy, error, lastBackupAt } = useAuthStore();
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmDeleteTwice, setConfirmDeleteTwice] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [history, setHistory] = useState<readonly CloudSnapshotMeta[] | null>(null);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [pending, setPending] = useState<CloudSnapshotMeta | null>(null);
 
   if (!isSupabaseConfigured()) return null;
 
@@ -57,6 +74,30 @@ export function CompteSection({ onLocalWipe, disabled = false }: CompteSectionPr
     setNotice(null);
     const result = await backupNow();
     if (result.ok) setNotice('Sauvegarde envoyée.');
+  }
+
+  /**
+   * La liste n'est chargée qu'à l'ouverture de la feuille : elle ne sert qu'ici
+   * et personne ne doit payer une requête réseau pour afficher son profil.
+   */
+  async function handleOpenHistory() {
+    setNotice(null);
+    setHistoryError(null);
+    setHistory(null);
+    setHistoryOpen(true);
+    const result = await listSnapshots();
+    if (result.ok) setHistory(result.value);
+    else setHistoryError(result.error);
+  }
+
+  async function handleRestore(meta: CloudSnapshotMeta) {
+    setPending(null);
+    setNotice(null);
+    const result = await restoreFromCloud({ snapshotId: meta.id });
+    if (result.ok) {
+      setHistoryOpen(false);
+      onRestored();
+    }
   }
 
   return (
@@ -109,8 +150,11 @@ export function CompteSection({ onLocalWipe, disabled = false }: CompteSectionPr
           <p className="text-justify text-xs leading-relaxed text-anthracite-400">
             Ta progression part en ligne toute seule après chaque séance. On y
             stocke ce que tu as renseigné dans l&apos;app&nbsp;: sexe, âge,
-            poids, objectifs et performances. Azur, qui héberge le service, peut
-            techniquement les consulter. Tu peux aussi garder une copie sur ton
+            poids, objectifs et performances. Les serveurs sont en France, et
+            les 10 dernières sauvegardes sont conservées&nbsp;— tu peux revenir
+            à l&apos;une d&apos;elles à tout moment. Azur, qui héberge le
+            service, peut techniquement les consulter. Supprimer ton compte les
+            efface définitivement. Tu peux aussi garder une copie sur ton
             téléphone avec «&nbsp;Exporter mes données&nbsp;».
           </p>
 
@@ -123,6 +167,15 @@ export function CompteSection({ onLocalWipe, disabled = false }: CompteSectionPr
               data-testid="compte-backup-now"
             >
               Sauvegarder maintenant
+            </Button>
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => void handleOpenHistory()}
+              disabled={locked}
+              data-testid="compte-restore"
+            >
+              Restaurer une sauvegarde
             </Button>
             <Button
               variant="secondary"
@@ -163,6 +216,82 @@ export function CompteSection({ onLocalWipe, disabled = false }: CompteSectionPr
           {error}
         </div>
       )}
+
+      <Sheet
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        title="Restaurer une sauvegarde"
+      >
+        <p className="mb-4 text-justify text-xs leading-relaxed text-anthracite-400">
+          Choisis une date&nbsp;: son contenu remplacera intégralement ce que
+          contient cet appareil. La version que tu choisis redevient ta
+          sauvegarde de référence.
+        </p>
+        {historyError !== null && (
+          <div
+            role="alert"
+            data-testid="compte-history-error"
+            className="rounded-lg border border-sang-700 bg-sang-900/30 px-3 py-2 text-sm text-sang-300"
+          >
+            {historyError}
+          </div>
+        )}
+        {historyError === null && history === null && (
+          <p className="text-sm text-anthracite-300">Chargement…</p>
+        )}
+        {history !== null && history.length === 0 && (
+          <p className="text-sm text-anthracite-300" data-testid="compte-history-empty">
+            Aucune sauvegarde en ligne pour l&apos;instant.
+          </p>
+        )}
+        {history !== null && history.length > 0 && (
+          <ul className="flex flex-col gap-2" data-testid="compte-history-list">
+            {history.map((meta, index) => (
+              <li
+                key={meta.id}
+                className="flex items-center justify-between gap-3 rounded-xl border border-anthracite-700 bg-anthracite-900/60 px-3 py-2"
+              >
+                <div className="min-w-0">
+                  <div className="truncate text-sm text-white">
+                    {formatBackupDate(meta.createdAt)}
+                  </div>
+                  <div className="text-xs text-anthracite-400">
+                    {index === 0 ? 'La plus récente · ' : ''}version{' '}
+                    {meta.appVersion}
+                  </div>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setPending(meta)}
+                  disabled={locked}
+                >
+                  Restaurer
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Sheet>
+
+      <Dialog
+        open={pending !== null}
+        title={'Remplacer les données de cet appareil ?'}
+        description={
+          <>
+            Tout ce que contient cet appareil sera remplacé par la sauvegarde du{' '}
+            {pending === null ? '' : formatBackupDate(pending.createdAt)}. Ce
+            que tu as fait depuis sera perdu.
+          </>
+        }
+        confirmLabel={busy ? 'Restauration…' : 'Remplacer et récupérer'}
+        cancelLabel="Annuler"
+        destructive
+        onConfirm={() => {
+          if (pending !== null) void handleRestore(pending);
+        }}
+        onCancel={() => setPending(null)}
+      />
 
       <Dialog
         open={confirmSignOut}

@@ -2,6 +2,19 @@ import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { Button } from './Button';
 
+/**
+ * Troisième voie optionnelle (chantier F-2). Un dialogue à deux boutons se lit
+ * d'un coup d'œil sur une ligne ; à trois, la ligne devient illisible sur
+ * mobile → on bascule en pile verticale, de la voie la plus attendue à la
+ * moins attendue. Sans cette prop, le rendu historique ne bouge pas d'un pixel.
+ */
+interface DialogExtraAction {
+  readonly label: string;
+  readonly onClick: () => void;
+  readonly destructive?: boolean;
+  readonly testId?: string;
+}
+
 interface DialogProps {
   readonly open: boolean;
   readonly title: string;
@@ -9,6 +22,7 @@ interface DialogProps {
   readonly confirmLabel?: string;
   readonly cancelLabel?: string;
   readonly destructive?: boolean;
+  readonly extraAction?: DialogExtraAction;
   readonly onConfirm: () => void;
   readonly onCancel: () => void;
 }
@@ -20,6 +34,7 @@ export function Dialog({
   confirmLabel = 'Confirmer',
   cancelLabel = 'Annuler',
   destructive = false,
+  extraAction,
   onConfirm,
   onCancel,
 }: DialogProps) {
@@ -50,24 +65,53 @@ export function Dialog({
         {description && (
           <div className="mt-2 text-sm leading-relaxed text-anthracite-300">{description}</div>
         )}
-        <div className="mt-5 flex gap-2">
-          <Button
-            variant="secondary"
-            fullWidth
-            onClick={onCancel}
-            data-testid="dialog-cancel"
-          >
-            {cancelLabel}
-          </Button>
-          <Button
-            variant={destructive ? 'danger' : 'primary'}
-            fullWidth
-            onClick={onConfirm}
-            data-testid="dialog-confirm"
-          >
-            {confirmLabel}
-          </Button>
-        </div>
+        {extraAction === undefined ? (
+          <div className="mt-5 flex gap-2">
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={onCancel}
+              data-testid="dialog-cancel"
+            >
+              {cancelLabel}
+            </Button>
+            <Button
+              variant={destructive ? 'danger' : 'primary'}
+              fullWidth
+              onClick={onConfirm}
+              data-testid="dialog-confirm"
+            >
+              {confirmLabel}
+            </Button>
+          </div>
+        ) : (
+          <div className="mt-5 flex flex-col gap-2">
+            <Button
+              variant={destructive ? 'danger' : 'primary'}
+              fullWidth
+              onClick={onConfirm}
+              data-testid="dialog-confirm"
+            >
+              {confirmLabel}
+            </Button>
+            <Button
+              variant={extraAction.destructive === true ? 'danger' : 'secondary'}
+              fullWidth
+              onClick={extraAction.onClick}
+              data-testid={extraAction.testId ?? 'dialog-extra'}
+            >
+              {extraAction.label}
+            </Button>
+            <Button
+              variant="ghost"
+              fullWidth
+              onClick={onCancel}
+              data-testid="dialog-cancel"
+            >
+              {cancelLabel}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
