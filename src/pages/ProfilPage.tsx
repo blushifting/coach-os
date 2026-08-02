@@ -36,6 +36,7 @@ import { gymBrandLabel } from '@/lib/catalog-filter';
 import { useCoachOsStore } from '@/store';
 import { useDemoMode } from '@/store/selectors';
 import { AideSheet } from './profil/AideSheet';
+import { CompteSection } from './profil/CompteSection';
 import { EditProfileSheet } from './profil/EditProfileSheet';
 
 const SEX_LABEL: Record<Sex, string> = {
@@ -121,6 +122,21 @@ export default function ProfilPage() {
     } finally {
       setBusy(null);
       if (fileRef.current) fileRef.current.value = '';
+    }
+  }
+
+  /**
+   * Chantier F-1 — après une déconnexion ou une suppression de compte réussie,
+   * l'appareil est vidé (l'envoi forcé a déjà été confirmé par le serveur) et
+   * on repart de l'écran d'accueil. Même effacement que « Réinitialiser ».
+   */
+  async function handleLocalWipe() {
+    setBusy('reset');
+    try {
+      await resetApp();
+      navigate('/welcome');
+    } finally {
+      setBusy(null);
     }
   }
 
@@ -294,6 +310,11 @@ export default function ProfilPage() {
         <span aria-hidden className="mr-2 text-xl leading-none">?</span>
         Aide &amp; glossaire
       </Button>
+
+      <CompteSection
+        onLocalWipe={handleLocalWipe}
+        disabled={busy !== null || demoActive}
+      />
 
       <Card>
         <div className="mb-3 text-sm font-semibold text-white">

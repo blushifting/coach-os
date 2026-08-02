@@ -10,6 +10,11 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    // Chantier F-1 — la couche cloud doit rester INERTE en test. Vitest hérite
+    // du chargement des fichiers `.env` de Vite : sans cette neutralisation, un
+    // poste de dev configuré pour le smoke test Supabase ferait tourner la
+    // suite contre le vrai projet. Vérifié par `tests/unit/lib/backup.test.ts`.
+    env: { VITE_SUPABASE_URL: '', VITE_SUPABASE_ANON_KEY: '' },
     include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx', 'src/**/*.test.ts'],
     setupFiles: ['./tests/setup.ts'],
     // Conv #11d — `isolate: false` : on désactive le fork par fichier de test.

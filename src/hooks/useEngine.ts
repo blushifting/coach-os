@@ -69,6 +69,7 @@ import {
   txUpdateSessionPlan,
 } from '@/db/transactions';
 import { buildPrescription, effectiveLoadForE1rm } from '@/engine/prescription';
+import { clearLocalBackupFlags, requestBackup } from '@/lib/backup';
 import { importFromJsonString } from '@/io/import';
 import { useCoachOsStore, type HistorySnapshot } from '@/store';
 
@@ -1135,6 +1136,10 @@ export async function recordFeedbackAndCommit(
     currentSessionEntries: null,
   });
   await refreshHistory();
+  // Chantier F-1 — sauvegarde cloud aux moments qui comptent. Jamais attendue,
+  // jamais bloquante : `requestBackup` pose un drapeau et lance l'envoi en
+  // arrière-plan (inerte sans compte, en démo ou hors ligne).
+  requestBackup();
   return summary;
 }
 
@@ -1194,6 +1199,7 @@ export async function updateProfile(profile: Profile): Promise<UserState> {
   next.volume_max = vMax;
   await txSaveUserStateOnly(next);
   useCoachOsStore.setState({ userState: next });
+  requestBackup();
   return next;
 }
 
@@ -1216,6 +1222,7 @@ export async function updateMuscleGoals(
   next.muscle_goals = goals;
   await txSaveUserStateOnly(next);
   useCoachOsStore.setState({ userState: next });
+  requestBackup();
   return next;
 }
 
@@ -1293,6 +1300,9 @@ export async function resetApp(): Promise<void> {
   } catch {
     /* ignore */
   }
+  // Chantier F-1 — l'app repart vierge : on ne veut surtout pas qu'un drapeau
+  // « à envoyer » survivant pousse cet état vide par-dessus le cloud.
+  clearLocalBackupFlags();
 }
 
 // =============================================================================
@@ -1454,6 +1464,7 @@ export async function endOfCycle(args: EndOfCycleArgs = {}) {
     currentSessionId: null,
     currentSessionEntries: null,
   });
+  requestBackup();
   return review;
 }
 

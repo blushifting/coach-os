@@ -34,5 +34,10 @@ export default defineConfig({
     url: 'http://localhost:5173/coach-os/',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    // Chantier F-1 — on neutralise explicitement la couche cloud pour les e2e.
+    // Vite donne la priorité aux variables passées en ligne (devant `.env.local`),
+    // donc un poste de dev configuré pour le smoke test Supabase ne peut pas
+    // faire dériver la suite e2e.
+    env: { VITE_SUPABASE_URL: '', VITE_SUPABASE_ANON_KEY: '' },
   },
 });

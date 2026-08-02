@@ -1,16 +1,21 @@
 import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
+import { CloudConflictDialog } from '@/components/CloudConflictDialog';
 import { HelpProvider } from '@/components/help-context';
 import { UpdatePrompt } from '@/components/UpdatePrompt';
 import { DemoModeProvider } from '@/components/DemoMode';
 import { useCoachOsStore } from '@/store';
 import { bootstrap } from '@/hooks/useEngine';
+import { initAuth } from '@/lib/auth';
 
 export function AppShell() {
   const bootstrapped = useCoachOsStore((s) => s.bootstrapped);
 
   useEffect(() => {
-    void bootstrap();
+    // Chantier F-1 — `initAuth` APRÈS `bootstrap` : la réconciliation a besoin
+    // de savoir si cet appareil porte déjà des données, ce que seul le store
+    // moteur hydraté peut dire. Inerte si la couche cloud n'est pas configurée.
+    void bootstrap().then(() => initAuth());
   }, []);
 
   return (
@@ -31,6 +36,7 @@ export function AppShell() {
         <BrandWatermark />
         <UpdatePrompt />
         <DemoModeProvider />
+        <CloudConflictDialog />
       </div>
     </HelpProvider>
   );

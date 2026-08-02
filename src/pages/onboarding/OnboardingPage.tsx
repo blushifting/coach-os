@@ -55,6 +55,7 @@ import {
   isSkeletonFullyFilled,
 } from '@/lib/skeleton-onboarding';
 import { useCoachOsStore } from '@/store';
+import { requestBackup } from '@/lib/backup';
 import type { MuscleGoal, UserState, WeeklyTemplate } from '@/engine/models';
 import { explainSuggestion, muscleLabel } from '@/lib/balance-reasons';
 import { Step1Profile } from './Step1Profile';
@@ -412,7 +413,7 @@ export default function OnboardingPage() {
         } else if (edited !== null) {
           await setCurrentCyclePlan(edited);
         }
-        navigate('/programme', { replace: true });
+        finishOnboarding();
         return;
       }
 
@@ -451,12 +452,26 @@ export default function OnboardingPage() {
           await setCurrentCyclePlan(edited);
         }
       }
-      navigate('/programme', { replace: true });
+      finishOnboarding();
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Quelque chose s\'est mal passé. Réessaie.';
       setError(msg);
       setSubmitting(false);
     }
+  }
+
+  /**
+   * Chantier F-1 — le programme vient d'être créé et persisté : c'est un des
+   * « moments qui comptent », on demande une sauvegarde cloud (inerte s'il n'y
+   * a pas de compte lié — le drapeau restera posé jusqu'à la connexion).
+   *
+   * La proposition de compte, elle, vit sur `WelcomeScreen`, avant
+   * l'onboarding : ici, une redirection pleine page vers Google serait un
+   * détour au pire moment.
+   */
+  function finishOnboarding() {
+    requestBackup();
+    navigate('/programme', { replace: true });
   }
 
   async function persistFavoritesFromSkeleton(
