@@ -39,9 +39,12 @@ export function getSupabase(): SupabaseClient | null {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-        // Retour de la redirection OAuth : le code d'autorisation arrive dans
-        // l'URL, supabase-js l'échange contre une session puis nettoie l'URL.
-        detectSessionInUrl: true,
+        // Retour de la redirection OAuth : c'est `lib/oauth-return.ts` qui lit
+        // l'URL, et lui seul. supabase-js n'est créé qu'après le premier rendu,
+        // donc bien après que le routeur a effacé la query string en
+        // redirigeant depuis la racine — le laisser chercher le code dans
+        // l'URL, c'est le laisser chercher dans une URL déjà vidée.
+        detectSessionInUrl: false,
         flowType: 'pkce',
       },
     });

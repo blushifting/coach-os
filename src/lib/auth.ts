@@ -24,6 +24,7 @@ import {
   requestBackup,
 } from '@/lib/backup';
 import { getSupabase, isSupabaseConfigured, oauthRedirectTo } from '@/lib/supabase';
+import { takeOAuthReturn } from '@/lib/oauth-return';
 import { importDataFromPayload, resetApp } from '@/hooks/useEngine';
 import { ImportValidationError } from '@/io/import';
 import { useAuthStore } from '@/store/auth';
@@ -35,6 +36,16 @@ export const NOT_ALLOWED_MESSAGE =
 const GENERIC_SIGNIN_ERROR =
   'La connexion a échoué. Vérifie ta connexion internet et réessaie.';
 
+/**
+ * Google a bien authentifié la personne, mais l'app n'a pas pu transformer le
+ * code de retour en session. En pratique : le code a déjà été consommé, ou le
+ * détour par Google s'est fait dans un autre contexte que l'app (un onglet de
+ * navigateur au lieu de l'app installée), qui garde la moitié secrète du
+ * jeton. D'où le conseil de repasser par l'icône de l'écran d'accueil.
+ */
+const EXCHANGE_FAILED =
+  "Ta connexion Google est passée, mais l'app n'a pas réussi à la finaliser. Réessaie depuis l'icône Kotsh de ton écran d'accueil.";
+
 // =============================================================================
 // Interception de l'erreur de retour OAuth
 // =============================================================================
@@ -45,23 +56,9 @@ const GENERIC_SIGNIN_ERROR =
  * Comme le SEUL trigger posé sur `auth.users` est celui de l'allowlist, une
  * erreur serveur à l'inscription veut dire ça et rien d'autre.
  *
- * Lit puis **nettoie** les paramètres d'erreur de l'URL (query et fragment) —
- * sinon un simple rechargement de page ré-afficherait l'erreur.
+ * Fonction pure — c'est elle que les tests couvrent. La lecture de l'URL, qui
+ * doit se faire avant le premier rendu, vit dans `lib/oauth-return.ts`.
  */
-export function takeOAuthErrorFromUrl(): string | null {
-  if (typeof window === 'undefined') return null;
-  const search = new URLSearchParams(window.location.search);
-  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-  const error = search.get('error') ?? hash.get('error');
-  if (error === null) return null;
-  const description =
-    search.get('error_description') ?? hash.get('error_description') ?? '';
-  const code = search.get('error_code') ?? hash.get('error_code') ?? '';
-  window.history.replaceState({}, '', window.location.pathname);
-  return interpretOAuthError({ error, code, description });
-}
-
-/** Fonction pure — c'est elle que les tests couvrent. */
 export function interpretOAuthError(args: {
   error: string;
   code: string;
@@ -103,7 +100,9 @@ export async function initAuth(): Promise<void> {
   if (initialized) return;
   initialized = true;
 
-  const oauthError = takeOAuthErrorFromUrl();
+  const oauthReturn = takeOAuthReturn();
+  const oauthError =
+    oauthReturn.error === null ? null : interpretOAuthError(oauthReturn.error);
   const supabase = getSupabase();
   if (supabase === null) {
     useAuthStore.setState({ ready: true, error: oauthError });
@@ -114,6 +113,16 @@ export async function initAuth(): Promise<void> {
     error: oauthError,
     lastBackupAt: readLastBackupAt(),
   });
+
+  // Échange du code d'autorisation contre une session. Fait ici, et avant de
+  // s'abonner aux changements de session, pour que `reconcile()` ne parte
+  // qu'une fois — `getSession()` ci-dessous verra déjà la session ouverte.
+  if (oauthReturn.code !== null) {
+    const { error } = await supabase.auth.exchangeCodeForSession(
+      oauthReturn.code,
+    );
+    if (error !== null) useAuthStore.setState({ error: EXCHANGE_FAILED });
+  }
 
   supabase.auth.onAuthStateChange((_event, session) => {
     const previous = useAuthStore.getState().userId;
@@ -340,9 +349,9 @@ export async function keepThisDevice(): Promise<{ ok: boolean; error?: string }>
 // =============================================================================
 
 /**
- * Redirection pleine page vers Google. Au retour, `detectSessionInUrl` échange
- * le code contre une session et `onAuthStateChange` déclenche la
- * réconciliation.
+ * Redirection pleine page vers Google. Au retour, `captureOAuthReturn()` met
+ * le code à l'abri avant le premier rendu, `initAuth()` l'échange contre une
+ * session, et la réconciliation suit.
  */
 export async function signInWithGoogle(): Promise<void> {
   const supabase = getSupabase();

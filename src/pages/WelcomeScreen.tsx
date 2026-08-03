@@ -43,6 +43,10 @@ export default function WelcomeScreen() {
   const cloudEnabled = isSupabaseConfigured();
   const email = useAuthStore((s) => s.email);
   const signedIn = useAuthStore((s) => s.userId !== null);
+  // Au retour de Google, l'échange du code prend quelques centaines de
+  // millisecondes. Sans cette attente, l'écran affiche « Commencer sans
+  // compte » entre-temps : exactement le message inverse de ce qui se passe.
+  const authReady = useAuthStore((s) => s.ready);
   const authBusy = useAuthStore((s) => s.busy);
   const authError = useAuthStore((s) => s.error);
   const [installed, setInstalled] = useState<boolean>(() => isInstalledOrDev());
@@ -118,7 +122,14 @@ export default function WelcomeScreen() {
             {authError}
           </div>
         )}
-        {installed ? (
+        {installed && cloudEnabled && !authReady ? (
+          <p
+            className="py-3 text-sm text-anthracite-300"
+            data-testid="welcome-auth-pending"
+          >
+            Connexion en cours…
+          </p>
+        ) : installed ? (
           <>
             {cloudEnabled && !signedIn && (
               <>
