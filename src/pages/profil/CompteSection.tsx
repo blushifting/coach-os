@@ -1,16 +1,19 @@
 /**
- * Chantier F-1 — section « Compte » du Profil.
- * Chantier F-2 — machine à remonter le temps : les 10 dernières sauvegardes
- * sont conservées côté serveur par la rétention, autant les rendre
- * accessibles. C'est le filet de sécurité de tout le reste : une manipulation
- * malheureuse se rattrape en trois taps.
+ * Chantier F — carte « Mon compte », en tête du Profil.
  *
  * Entièrement absente quand la couche cloud n'est pas configurée : en dev, en
  * test et en e2e, ce composant ne rend rien du tout.
  *
- * Deux états : pas de compte lié (relance discrète + connexion Google), ou
- * compte lié (date de la dernière sauvegarde, envoi manuel, restauration,
- * déconnexion, suppression de compte).
+ * La carte reste **compacte** : l'adresse, et un bouton qui ouvre le reste.
+ * Les quatre actions (envoi manuel, restauration, déconnexion, suppression),
+ * dont deux destructrices, vivent dans une feuille — les laisser empilées dans
+ * le défilement du Profil mettait la suppression de compte à un tap d'une
+ * consultation ordinaire.
+ *
+ * L'état « pas de session » n'est atteignable que par accident depuis que
+ * `RequireAccount` garde l'app (jeton expiré hors ligne, cf. son en-tête) :
+ * c'est le seul cas où la sauvegarde s'arrête sans que personne ne l'ait
+ * demandé, donc le seul endroit de l'app qui le signale.
  */
 
 import { useState } from 'react';
@@ -43,6 +46,7 @@ export function CompteSection({
   disabled = false,
 }: CompteSectionProps) {
   const { userId, email, busy, error, lastBackupAt } = useAuthStore();
+  const [manageOpen, setManageOpen] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmDeleteTwice, setConfirmDeleteTwice] = useState(false);
@@ -70,7 +74,11 @@ export function CompteSection({
     if (result.ok) await onLocalWipe();
   }
 
+  // Chaque action referme la feuille « Mon compte » avant d'ouvrir la sienne :
+  // deux voiles superposés assombrissent tout et donnent l'impression d'un
+  // écran bloqué.
   async function handleBackupNow() {
+    setManageOpen(false);
     setNotice(null);
     const result = await backupNow();
     if (result.ok) setNotice('Sauvegarde envoyée.');
@@ -81,6 +89,7 @@ export function CompteSection({
    * et personne ne doit payer une requête réseau pour afficher son profil.
    */
   async function handleOpenHistory() {
+    setManageOpen(false);
     setNotice(null);
     setHistoryError(null);
     setHistory(null);
@@ -102,17 +111,12 @@ export function CompteSection({
 
   return (
     <Card data-testid="profil-compte">
-      <div className="mb-3 text-sm font-semibold text-white">
-        Sauvegarde en ligne
-      </div>
-
       {userId === null ? (
         <div className="flex flex-col gap-3">
-          <p className="text-justify text-xs leading-relaxed text-anthracite-400">
-            Sans compte, tes données ne vivent que sur ce téléphone&nbsp;: si tu
-            supprimes l&apos;app, changes d&apos;appareil ou si ton navigateur
-            fait le ménage, tout est perdu. Un compte sauvegarde
-            automatiquement ta progression en ligne.
+          <div className="text-sm font-semibold text-white">Mon compte</div>
+          <p className="text-xs leading-relaxed text-anthracite-300">
+            Ta session a expiré. Reconnecte-toi pour que tes séances repartent
+            en sauvegarde.
           </p>
           <Button
             variant="primary"
@@ -121,81 +125,29 @@ export function CompteSection({
             disabled={locked}
             data-testid="compte-signin"
           >
-            Créer un compte avec Google
+            Me connecter
           </Button>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
-          <dl className="grid grid-cols-1 gap-y-2 text-sm">
-            <div className="flex items-baseline justify-between gap-3">
-              <dt className="text-anthracite-300">Compte</dt>
-              <dd
-                className="min-w-0 truncate text-right font-medium text-white"
-                data-testid="compte-email"
-              >
-                {email ?? '—'}
-              </dd>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-white">Mon compte</div>
+            <div
+              className="truncate text-xs text-anthracite-300"
+              data-testid="compte-email"
+            >
+              {email ?? '—'}
             </div>
-            <div className="flex items-baseline justify-between gap-3">
-              <dt className="text-anthracite-300">Dernière sauvegarde</dt>
-              <dd
-                className="text-right font-medium text-white"
-                data-testid="compte-last-backup"
-              >
-                {formatBackupDate(lastBackupAt)}
-              </dd>
-            </div>
-          </dl>
-
-          <p className="text-justify text-xs leading-relaxed text-anthracite-400">
-            Ta progression part en ligne toute seule après chaque séance. On y
-            stocke ce que tu as renseigné dans l&apos;app&nbsp;: sexe, âge,
-            poids, objectifs et performances. Les serveurs sont en France, et
-            les 10 dernières sauvegardes sont conservées&nbsp;— tu peux revenir
-            à l&apos;une d&apos;elles à tout moment. Azur, qui héberge le
-            service, peut techniquement les consulter. Supprimer ton compte les
-            efface définitivement. Tu peux aussi garder une copie sur ton
-            téléphone avec «&nbsp;Exporter mes données&nbsp;».
-          </p>
-
-          <div className="flex flex-col gap-2">
-            <Button
-              variant="secondary"
-              fullWidth
-              onClick={() => void handleBackupNow()}
-              disabled={locked}
-              data-testid="compte-backup-now"
-            >
-              Sauvegarder maintenant
-            </Button>
-            <Button
-              variant="secondary"
-              fullWidth
-              onClick={() => void handleOpenHistory()}
-              disabled={locked}
-              data-testid="compte-restore"
-            >
-              Restaurer une sauvegarde
-            </Button>
-            <Button
-              variant="secondary"
-              fullWidth
-              onClick={() => setConfirmSignOut(true)}
-              disabled={locked}
-              data-testid="compte-signout"
-            >
-              Me déconnecter de cet appareil
-            </Button>
-            <Button
-              variant="danger"
-              fullWidth
-              onClick={() => setConfirmDelete(true)}
-              disabled={locked}
-              data-testid="compte-delete"
-            >
-              Supprimer mon compte
-            </Button>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setManageOpen(true)}
+            disabled={locked}
+            data-testid="compte-manage"
+          >
+            Gérer
+          </Button>
         </div>
       )}
 
@@ -216,6 +168,83 @@ export function CompteSection({
           {error}
         </div>
       )}
+
+      <Sheet
+        open={manageOpen}
+        onClose={() => setManageOpen(false)}
+        title="Mon compte"
+      >
+        <dl className="mb-4 grid grid-cols-1 gap-y-2 text-sm">
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="text-anthracite-300">Compte</dt>
+            <dd className="min-w-0 truncate text-right font-medium text-white">
+              {email ?? '—'}
+            </dd>
+          </div>
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="text-anthracite-300">Dernière sauvegarde</dt>
+            <dd
+              className="text-right font-medium text-white"
+              data-testid="compte-last-backup"
+            >
+              {formatBackupDate(lastBackupAt)}
+            </dd>
+          </div>
+        </dl>
+
+        {/* Décision de cadrage : dire franchement, en une phrase, qu'Azur peut
+            techniquement lire ces données. Le reste du pavé d'explications a
+            sauté — celle-ci est un engagement, pas du remplissage. */}
+        <p className="mb-4 text-xs leading-relaxed text-anthracite-400">
+          Serveurs en France. Azur, qui héberge le service, peut techniquement
+          consulter ces données.
+        </p>
+
+        <div className="flex flex-col gap-2">
+          <Button
+            variant="secondary"
+            fullWidth
+            onClick={() => void handleBackupNow()}
+            disabled={locked}
+            data-testid="compte-backup-now"
+          >
+            Sauvegarder maintenant
+          </Button>
+          <Button
+            variant="secondary"
+            fullWidth
+            onClick={() => void handleOpenHistory()}
+            disabled={locked}
+            data-testid="compte-restore"
+          >
+            Restaurer une sauvegarde
+          </Button>
+          <Button
+            variant="secondary"
+            fullWidth
+            onClick={() => {
+              setManageOpen(false);
+              setConfirmSignOut(true);
+            }}
+            disabled={locked}
+            data-testid="compte-signout"
+          >
+            Me déconnecter de cet appareil
+          </Button>
+          <Button
+            variant="danger"
+            fullWidth
+            onClick={() => {
+              setManageOpen(false);
+              setConfirmDelete(true);
+            }}
+            disabled={locked}
+            data-testid="compte-delete"
+          >
+            Supprimer mon compte
+          </Button>
+        </div>
+      </Sheet>
 
       <Sheet
         open={historyOpen}

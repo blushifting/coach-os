@@ -14,11 +14,12 @@
  * Conv #10a : "on dirait juste que l'app est un navigateur ouvert sur un
  * site").
  *
- * Chantier F-1 — le compte se propose **ici**, avant l'onboarding : c'est le
- * seul endroit où la redirection pleine page vers Google ne coûte rien (aucune
- * saisie en cours à perdre), et c'est aussi là que l'app retombe au retour,
- * puisque `/programme` renvoie sur cet écran tant qu'il n'y a pas de programme.
- * C'est donc également ici que s'affiche un éventuel refus d'allowlist.
+ * Chantier F — le compte n'est plus une proposition mais un passage obligé :
+ * l'app est réservée aux adresses de l'allowlist, et `RequireAccount` renvoie
+ * ici tant qu'aucun compte n'est lié. C'est le bon endroit pour ça — la
+ * redirection pleine page vers Google n'y coûte aucune saisie en cours, et
+ * c'est de toute façon là que l'app retombe au retour. C'est donc également
+ * ici que s'affiche un éventuel refus d'allowlist.
  */
 
 import { useEffect, useState } from 'react';
@@ -130,57 +131,43 @@ export default function WelcomeScreen() {
             Connexion en cours…
           </p>
         ) : installed ? (
-          <>
-            {cloudEnabled && !signedIn && (
-              <>
-                <Button
-                  variant="primary"
-                  size="lg"
-                  fullWidth
-                  onClick={() => void signInWithGoogle()}
-                  disabled={authBusy}
-                  data-testid="welcome-signin"
-                >
-                  Continuer avec Google
-                </Button>
-                {/* Chantier F-2 — c'est aussi la porte d'entrée « j'ai déjà un
-                    compte » : même bouton, la réconciliation à la connexion
-                    reconnaît l'appareil vide et propose la restauration. Deux
-                    boutons Google côte à côte n'auraient rien clarifié. */}
-                <p
-                  className="text-xs leading-relaxed text-anthracite-200"
-                  data-testid="welcome-existing-account"
-                >
-                  Déjà un compte&nbsp;? Connecte-toi et tu retrouveras ta
-                  progression.
-                </p>
-                <p className="text-justify text-xs leading-relaxed text-anthracite-400">
-                  Un compte met ta progression à l&apos;abri&nbsp;: elle est
-                  sauvegardée en ligne toute seule, et tu la récupères sur un
-                  nouveau téléphone. Sans compte, tout reste sur celui-ci et
-                  rien ne sera récupérable si tu le perds ou si tu désinstalles
-                  l&apos;app.
-                </p>
-              </>
-            )}
-            {cloudEnabled && signedIn && (
-              <p
-                className="text-xs text-anthracite-400"
-                data-testid="welcome-signed-in"
-              >
-                Connecté avec {email ?? 'ton compte Google'}.
-              </p>
-            )}
+          /* Chantier F — l'app est réservée aux adresses de l'allowlist : sans
+             compte, il n'y a pas d'autre porte que celle-ci. Le même bouton
+             sert à créer un compte et à retrouver le sien — c'est le même
+             appel à Google, et la réconciliation reconnaît toute seule un
+             appareil vide pour proposer la restauration. */
+          cloudEnabled && !signedIn ? (
             <Button
-              variant={cloudEnabled && !signedIn ? 'secondary' : 'primary'}
+              variant="primary"
               size="lg"
               fullWidth
-              onClick={() => navigate('/onboarding')}
-              data-testid="welcome-start"
+              onClick={() => void signInWithGoogle()}
+              disabled={authBusy}
+              data-testid="welcome-signin"
             >
-              {cloudEnabled && !signedIn ? 'Commencer sans compte' : 'Commencer'}
+              Se connecter avec Google
             </Button>
-          </>
+          ) : (
+            <>
+              {cloudEnabled && signedIn && (
+                <p
+                  className="text-xs text-anthracite-400"
+                  data-testid="welcome-signed-in"
+                >
+                  Connecté avec {email ?? 'ton compte Google'}.
+                </p>
+              )}
+              <Button
+                variant="primary"
+                size="lg"
+                fullWidth
+                onClick={() => navigate('/onboarding')}
+                data-testid="welcome-start"
+              >
+                Commencer
+              </Button>
+            </>
+          )
         ) : (
           <>
             <Button

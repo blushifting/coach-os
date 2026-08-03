@@ -4,6 +4,7 @@ import { CloudConflictDialog } from '@/components/CloudConflictDialog';
 import { HelpProvider } from '@/components/help-context';
 import { UpdatePrompt } from '@/components/UpdatePrompt';
 import { DemoModeProvider } from '@/components/DemoMode';
+import { SplashScreen } from '@/components/SplashScreen';
 import { useCoachOsStore } from '@/store';
 import { bootstrap } from '@/hooks/useEngine';
 import { initAuth } from '@/lib/auth';
@@ -82,19 +83,3 @@ function BrandWatermark() {
   );
 }
 
-function SplashScreen() {
-  return (
-    <div
-      className="flex flex-1 items-center justify-center"
-      data-testid="app-splash"
-      aria-busy="true"
-      aria-label="Chargement"
-    >
-      <img
-        src={`${import.meta.env.BASE_URL}icon.svg`}
-        alt=""
-        className="h-16 w-16 animate-pulse"
-      />
-    </div>
-  );
-}

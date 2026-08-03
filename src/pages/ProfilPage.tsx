@@ -168,6 +168,15 @@ export default function ProfilPage() {
           </p>
         </Card>
       )}
+      {/* Chantier F — le compte n'est plus une option de sauvegarde parmi
+          d'autres réglages : c'est qui tu es dans l'app. Il ouvre donc le
+          Profil, en carte compacte. */}
+      <CompteSection
+        onLocalWipe={handleLocalWipe}
+        onRestored={() => navigate('/programme')}
+        disabled={busy !== null || demoActive}
+      />
+
       <Card>
         <div className="mb-3 flex items-center justify-between">
           <span className="text-sm font-semibold text-white">Identité</span>
@@ -310,12 +319,6 @@ export default function ProfilPage() {
         <span aria-hidden className="mr-2 text-xl leading-none">?</span>
         Aide &amp; glossaire
       </Button>
-
-      <CompteSection
-        onLocalWipe={handleLocalWipe}
-        onRestored={() => navigate('/programme')}
-        disabled={busy !== null || demoActive}
-      />
 
       <Card>
         <div className="mb-3 text-sm font-semibold text-white">

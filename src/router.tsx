@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppShell } from '@/layout/AppShell';
+import { RequireAccount } from '@/layout/RequireAccount';
 import { TabbedLayout } from '@/layout/TabbedLayout';
 import WelcomeScreen from '@/pages/WelcomeScreen';
 import OnboardingPage from '@/pages/OnboardingPage';
@@ -20,33 +21,41 @@ export const router = createBrowserRouter(
     {
       element: <AppShell />,
       children: [
-        { index: true, element: <Navigate to="/programme" replace /> },
         { path: 'welcome', element: <WelcomeScreen /> },
-        { path: 'onboarding', element: <OnboardingPage /> },
+        // Chantier F — tout le reste de l'app est derrière le compte. Seul
+        // `/welcome` reste atteignable sans session, sinon la garde n'aurait
+        // nulle part où rediriger.
         {
-          element: <TabbedLayout />,
+          element: <RequireAccount />,
           children: [
-            { path: 'programme', element: <ProgrammePage /> },
-            { path: 'cycle-bilan', element: <CycleBilanPage /> },
-            { path: 'progres', element: <ProgresPage /> },
-            { path: 'catalogue', element: <CataloguePage /> },
-            { path: 'profil', element: <ProfilPage /> },
+            { index: true, element: <Navigate to="/programme" replace /> },
+            { path: 'onboarding', element: <OnboardingPage /> },
+            {
+              element: <TabbedLayout />,
+              children: [
+                { path: 'programme', element: <ProgrammePage /> },
+                { path: 'cycle-bilan', element: <CycleBilanPage /> },
+                { path: 'progres', element: <ProgresPage /> },
+                { path: 'catalogue', element: <CataloguePage /> },
+                { path: 'profil', element: <ProfilPage /> },
+              ],
+            },
+            // Conv #14b-1 — Le runner sort de l'onglet "Séance" (supprimé de la
+            // TabBar) et vit sur sa propre route plein écran. L'ancien `/seance`
+            // redirige vers `/programme` pour compat des liens externes.
+            { path: 'seance', element: <Navigate to="/programme" replace /> },
+            { path: 'seance/runner', element: <SeancePage /> },
+            // Bloc G (Conv #32) — éditeur du cycle en cours (plein écran).
+            { path: 'programme/modifier', element: <EditCyclePage /> },
+            ...(isDev
+              ? [
+                  { path: 'dev', element: <DevPage /> },
+                  { path: 'dev/fonts', element: <DevFontsPage /> },
+                ]
+              : []),
+            { path: '*', element: <Navigate to="/programme" replace /> },
           ],
         },
-        // Conv #14b-1 — Le runner sort de l'onglet "Séance" (supprimé de la
-        // TabBar) et vit sur sa propre route plein écran. L'ancien `/seance`
-        // redirige vers `/programme` pour compat des liens externes.
-        { path: 'seance', element: <Navigate to="/programme" replace /> },
-        { path: 'seance/runner', element: <SeancePage /> },
-        // Bloc G (Conv #32) — éditeur du cycle en cours (plein écran).
-        { path: 'programme/modifier', element: <EditCyclePage /> },
-        ...(isDev
-          ? [
-              { path: 'dev', element: <DevPage /> },
-              { path: 'dev/fonts', element: <DevFontsPage /> },
-            ]
-          : []),
-        { path: '*', element: <Navigate to="/programme" replace /> },
       ],
     },
   ],
