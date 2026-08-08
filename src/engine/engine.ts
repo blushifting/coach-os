@@ -220,6 +220,15 @@ export function generateSession(
         ? planned.progression[effWeekIdx]!
         : planned.base_sets;
     nSets = Math.max(1, nSets);
+    // A-2 (#73) — plancher de 2 séries en récupération appliqué aussi à la
+    // LECTURE du plan : les cycles générés avant le correctif portent encore un
+    // `progression[4]` à 1 série et ne se régénèrent qu'au cycle suivant. On ne
+    // remonte jamais au-dessus du compte de semaine normale (un exo
+    // volontairement à 1 série reste à 1).
+    if (effWeekIdx === 4) {
+      const normalSets = planned.progression?.[3] ?? planned.base_sets;
+      nSets = Math.max(nSets, Math.min(2, Math.max(1, normalSets)));
+    }
 
     // Conv #20 — bootstrap purement transitoire. Avant : on persistait le
     // résultat dans state.e1rm[ex.id], ce qui faisait apparaître un "plafond
@@ -429,12 +438,15 @@ export function recordFeedback(
   // plus bas (charge basse × peu de reps × RPE peu informatif) ; passer
   // cette valeur dans l'EMA tire `state.e1rm` vers le bas → la prescription
   // post-déload partirait d'un plafond artificiellement réduit, et le
-  // Catalogue afficherait une "régression" qui n'en est pas une. On skip
-  // donc l'update e1RM pour la semaine 5. Sans update, aucun snapshot n'est
-  // créé → la courbe Force (basée sur les snapshots) exclut aussi ces points.
-  // Chantier B — déload opt-in : on ne skip QUE si la récup a été ACCEPTÉE.
-  // Une semaine 5 refusée est une semaine normale → e1RM et cliquet tournent.
-  const skipE1rmEntirely =
+  // Catalogue afficherait une "régression" qui n'en est pas une.
+  // Chantier B — déload opt-in : ce régime ne s'applique QUE si la récup a été
+  // ACCEPTÉE. Une semaine 5 refusée est une semaine normale.
+  // A-3 (#73) — on ne saute plus tout : la récup passe en cliquet MONTANT.
+  // Le plafond ne peut pas baisser à cause d'une charge allégée, mais s'il monte
+  // (l'user a chargé de son propre chef), le gain est mesuré, enregistré
+  // (snapshot → courbe Force) et affiché au bilan. S'il ne bouge pas, il reste
+  // affiché à Δ 0 au lieu de disparaître du bilan.
+  const recoveryWeek =
     sessionFeedback.week_in_cycle === DELOAD_WEEK_IN_CYCLE &&
     state.deload_decision === 'accepted';
 
@@ -461,15 +473,12 @@ export function recordFeedback(
   const summary: RecordFeedbackResult = {};
   for (const [exId, fbs] of Object.entries(byEx)) {
     const ex = catalog.get(exId);
-    if (skipE1rmEntirely) {
-      // On retourne null : pas de "tuple [old, new]" car aucune update.
-      // Le bilan séance (`computeSessionSummary`) skip ces entrées.
-      summary[exId] = null;
-      continue;
-    }
+    // En récup, un exo jamais mesuré n'est pas calibré par une séance allégée :
+    // `updateE1rmForExercise` renvoie `null` et le bilan saute l'entrée.
     const skipEma = calibrated !== null && !calibrated.has(exId);
     const e1rmUpdate = updateE1rmForExercise(state, ex, fbs, undefined, {
-      skipEma,
+      skipEma: skipEma && !recoveryWeek,
+      ratchetUpOnly: recoveryWeek,
       prescribed: prescribedByExo.get(exId),
     });
     summary[exId] = e1rmUpdate;
@@ -480,15 +489,18 @@ export function recordFeedback(
     // n'adopte pas une série de calibration menée à effort élevé). On efface ce
     // plancher bootstrap ; `updatePrescribedLoadFloorForExercise` juste après le
     // re-sème depuis la charge réellement effectuée à la calibration.
-    if (skipEma && e1rmUpdate !== null && e1rmUpdate.definitive) {
+    if (skipEma && !recoveryWeek && e1rmUpdate !== null && e1rmUpdate.definitive) {
       delete state.prescribed_load_floor[exId];
     }
-    // Refonte progression — cliquet de charge (hors déload, géré par le `continue`
-    // ci-dessus). Graduation R+3 / anti-régression / descente sur `prescribed_load_floor`.
-    updatePrescribedLoadFloorForExercise(state, ex, fbs);
+    // Refonte progression — cliquet de charge : graduation R+3 / anti-régression /
+    // descente sur `prescribed_load_floor`. En récup (A-3, #73), seule
+    // l'anti-régression tourne — cf. `UpdateLoadFloorOptions.adoptionOnly`.
+    updatePrescribedLoadFloorForExercise(state, ex, fbs, { adoptionOnly: recoveryWeek });
     // Chantier D — cliquet de reps (exos poids du corps pur + PDC). Mut. excl.
     // avec le cliquet de charge : chaque fonction no-op hors de son périmètre.
-    updatePrescribedRepsFloorForExercise(state, ex, fbs);
+    // Gelé en récup (comme avant #73) : le RPE cible à 6 gonfle `n_équiv` et
+    // ferait grimper le plancher de reps sans effort réel.
+    if (!recoveryWeek) updatePrescribedRepsFloorForExercise(state, ex, fbs);
   }
 
   state.history.push(sessionFeedback);

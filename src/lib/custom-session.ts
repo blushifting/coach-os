@@ -147,7 +147,10 @@ export function defaultProgressionForDay(
   const sibling = day?.exercises[0]?.progression;
   const len = sibling !== undefined && sibling.length > 0 ? sibling.length : 5;
   const out = Array.from({ length: len }, () => nSets);
-  out[len - 1] = Math.max(1, Math.round(nSets * 0.6));
+  // A-2 (#73) — plancher de 2 séries en récupération, comme `cycleSetProgression`
+  // (un exo à 2 ou 3 séries tombait à 1). Borné par `nSets` : un exo à 1 série
+  // reste à 1.
+  out[len - 1] = Math.min(nSets, Math.max(2, Math.round(nSets * 0.6)));
   return out;
 }
 

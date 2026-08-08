@@ -568,6 +568,13 @@ export function computeSessionSummary(
   catalog: Catalog,
   state: UserState,
   previouslyCalibratedExoIds: ReadonlySet<string> = new Set(),
+  /**
+   * A-3 (#73) — séance jouée en récupération effective. Le bilan montre alors
+   * les Plafonds des exos déjà calibrés MÊME s'ils n'ont pas bougé (Δ 0) : c'est
+   * l'information utile de la semaine — la récup ne fait pas reculer le Plafond,
+   * et si l'user a chargé de son propre chef, le gain apparaît normalement.
+   */
+  recoveryWeek: boolean = false,
 ): SessionSummaryData {
   const setsCount = feedback.sets.length;
   const exerciseCount = new Set(feedback.sets.map((s) => s.exercise_id)).size;
@@ -599,9 +606,14 @@ export function computeSessionSummary(
 
   const plafondChanges: PlafondChange[] = [];
   for (const [exId, update] of Object.entries(summary)) {
+    if (update === null) continue;
     // Bloc R — on ignore les MAJ provisoires (séance tout-4+) : pas de plafond
     // « mesuré » à afficher (l'état vide « aucune série assez intense » suffit).
-    if (update === null || !update.definitive) continue;
+    // A-3 (#73) — exception en récup : on affiche quand même le Plafond des exos
+    // déjà calibrés, à Δ 0 si la séance allégée ne l'a pas fait monter.
+    if (!update.definitive && !(recoveryWeek && previouslyCalibratedExoIds.has(exId))) {
+      continue;
+    }
     const { old: oldE, next: newE } = update;
     const wasCalibrated = previouslyCalibratedExoIds.has(exId);
     plafondChanges.push({

@@ -121,6 +121,35 @@ describe('génération de séance en semaine 5 selon la décision', () => {
     expect(aItem.sets[0]!.rpe_target).toBe(6); // RPE déload
     expect(aItem.sets.length).toBeLessThan(dItem.sets.length); // moitié moins de séries
   });
+
+  it('#73 A-2 — un plan déjà persisté à 1 série en récup est relevé à 2 à la lecture', () => {
+    const state = setup();
+    const day = state.current_cycle_plan!.days[0]!;
+    // Simule un cycle généré avant le correctif : progression[4] = 1 série.
+    for (const ex of day.exercises) {
+      ex.progression = [3, 3, 3, 3, 1];
+    }
+    state.current_week_in_cycle = 5;
+    state.deload_decision = 'accepted';
+    const plan = generateSession(state, catalog, 0, '2026-02-02');
+    for (const item of plan.items) {
+      expect(item.sets.length).toBe(2);
+    }
+  });
+
+  it('#73 A-2 — un exo volontairement à 1 série reste à 1 en récup', () => {
+    const state = setup();
+    const day = state.current_cycle_plan!.days[0]!;
+    for (const ex of day.exercises) {
+      ex.progression = [1, 1, 1, 1, 1];
+    }
+    state.current_week_in_cycle = 5;
+    state.deload_decision = 'accepted';
+    const plan = generateSession(state, catalog, 0, '2026-02-02');
+    for (const item of plan.items) {
+      expect(item.sets.length).toBe(1);
+    }
+  });
 });
 
 describe('mesures (e1RM) en semaine 5 selon la décision', () => {
@@ -148,12 +177,51 @@ describe('mesures (e1RM) en semaine 5 selon la décision', () => {
     };
   }
 
-  it('acceptée → e1RM figé (aucune mesure)', () => {
+  /** Séance de récup jouée telle que prescrite : léger, effort 6. */
+  function lightWeek5(state: UserState, exId: string): SessionFeedback {
+    const load = (state.e1rm[exId] ?? 100) * 0.4;
+    return {
+      seance_date: '2026-02-02',
+      week_in_cycle: 5,
+      cycle_index: state.cycle_index,
+      rpe_target: 6,
+      label: 'récup',
+      sets: [
+        { exercise_id: exId, reps_done: 8, load_kg: load, rpe_perceived: 6 },
+        { exercise_id: exId, reps_done: 8, load_kg: load, rpe_perceived: 6 },
+      ],
+    };
+  }
+
+  it('acceptée + séance allégée → Plafond inchangé (jamais de recul)', () => {
     const { state, exId, baseline } = seeded();
     state.current_week_in_cycle = 5;
     state.deload_decision = 'accepted';
-    recordFeedback(state, catalog, heavyWeek5(state, exId));
+    const summary = recordFeedback(state, catalog, lightWeek5(state, exId));
     expect(state.e1rm[exId]).toBe(baseline);
+    // #73 A-3 — l'entrée existe (le bilan affiche le Plafond à Δ 0) mais elle
+    // n'est pas définitive → aucun snapshot, aucun point sur la courbe Force.
+    expect(summary[exId]).not.toBeNull();
+    expect(summary[exId]!.definitive).toBe(false);
+  });
+
+  it('#73 A-3 — acceptée + charge volontairement lourde → le Plafond monte et compte', () => {
+    const { state, exId, baseline } = seeded();
+    state.current_week_in_cycle = 5;
+    state.deload_decision = 'accepted';
+    const summary = recordFeedback(state, catalog, heavyWeek5(state, exId));
+    expect(state.e1rm[exId]).toBeGreaterThan(baseline);
+    expect(summary[exId]!.definitive).toBe(true);
+  });
+
+  it('#73 A-3 — acceptée : un exo jamais mesuré n’est pas calibré par une récup', () => {
+    const { state, exId } = seeded();
+    delete state.e1rm[exId];
+    state.current_week_in_cycle = 5;
+    state.deload_decision = 'accepted';
+    const summary = recordFeedback(state, catalog, heavyWeek5(state, exId));
+    expect(state.e1rm[exId]).toBeUndefined();
+    expect(summary[exId]).toBeNull();
   });
 
   it('refusée → e1RM mis à jour (semaine normale)', () => {

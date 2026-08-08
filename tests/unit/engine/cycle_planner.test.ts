@@ -176,6 +176,15 @@ describe('cycleSetProgression', () => {
     const p = cycleSetProgression(2);
     expect(p.slice(0, 4)).toEqual([2, 2, 2, 2]);
   });
+
+  it('#73 A-2 — récup : jamais moins de 2 séries (3 → 2, pas 1)', () => {
+    expect(cycleSetProgression(3)[4]).toBe(2);
+    expect(cycleSetProgression(2)[4]).toBe(2);
+  });
+
+  it('#73 A-2 — le plancher ne fait pas GAGNER de série à un exo à 1 série', () => {
+    expect(cycleSetProgression(1)[4]).toBe(1);
+  });
 });
 
 // =============================================================================

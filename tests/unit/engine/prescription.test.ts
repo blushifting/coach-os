@@ -463,7 +463,12 @@ describe('buildPrescription — muscle non couvert (point 5)', () => {
 // =============================================================================
 
 describe('buildPrescription — garde-fou plancher > Plafond (point 4)', () => {
-  it('exo MESURÉ + plancher trop haut → prescription plafonnée, plancher persisté intact', () => {
+  // #73 A-1 — le contrat a changé : le garde-fou RÉPARE le plancher au lieu de
+  // le laisser fossilisé. Cas réel d'Azur (export du 08/08) : plancher 20
+  // kg/haltère semé au bootstrap, Plafond mesuré 14, jamais plus de 10 soulevé.
+  // Conservé, le plancher ne servait qu'à ressortir en récup (0,9 × 20 = 18) et
+  // à monter d'un cran à chaque graduation, toujours plus loin du réel.
+  it('exo MESURÉ + plancher trop haut → prescription plafonnée ET plancher réparé', () => {
     const bench = catalog.get('bench_bb');
     const p = profile();
     const state = makeUserState(p);
@@ -474,8 +479,9 @@ describe('buildPrescription — garde-fou plancher > Plafond (point 4)', () => {
     // targetLoad(14, 10 reps, RPE 10) ≈ 10,5 → borne ≈ 10 < 18.
     expect(pres.load_kg).toBeLessThan(18);
     expect(pres.load_kg).toBeLessThanOrEqual(11);
-    // Le plancher PERSISTÉ n'est pas modifié (mémoire du ratchet).
-    expect(state.prescribed_load_floor['bench_bb']).toBe(18);
+    // Le plancher persisté est ramené sur la borne : la graduation repart d'une
+    // valeur atteignable au lieu de s'éloigner du Plafond à chaque séance.
+    expect(state.prescribed_load_floor['bench_bb']).toBe(pres.load_kg);
   });
 
   it('exo NON mesuré → pas de plafonnement (on ne borne pas sur un bootstrap)', () => {

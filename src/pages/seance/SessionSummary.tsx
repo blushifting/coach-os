@@ -127,11 +127,12 @@ export function SessionSummary({
         {data.plafondChanges.length === 0 ? (
           <p className="text-xs text-anthracite-300">
             {deloadActive
-              ? 'Semaine de récupération : on ne mesure pas tes Plafonds cette semaine. Tu reprends la progression au prochain cycle.'
+              ? 'Semaine de récupération : tu lèves plus léger, donc rien à mesurer ici. Tes Plafonds sont conservés tels quels.'
               : 'Aucune série assez intense cette séance pour mettre à jour tes Plafonds.'}
           </p>
         ) : (
           <ul className="flex flex-col gap-1">
+            {deloadActive && <RecoveryNote />}
             {data.plafondChanges.map((c) => (
               <PlafondRow
                 key={c.exerciseId}
@@ -155,6 +156,20 @@ export function SessionSummary({
         </Link>
       </div>
     </div>
+  );
+}
+
+/**
+ * A-3 (#73) — en récupération, le bilan affiche les Plafonds même quand ils ne
+ * bougent pas (Δ 0). Sans un mot d'explication, une liste de Δ 0 se lit comme une
+ * stagnation ; c'est au contraire le comportement voulu.
+ */
+function RecoveryNote() {
+  return (
+    <li className="text-xs text-anthracite-300">
+      {'Semaine de récupération : une séance allégée ne fait jamais reculer ' +
+        'un Plafond. Il ne bouge que si tu le bats.'}
+    </li>
   );
 }
 

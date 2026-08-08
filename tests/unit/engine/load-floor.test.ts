@@ -222,6 +222,52 @@ describe('déload (semaine 5) — charge allégée d’un facteur', () => {
     expect(pres.load_kg).toBe(45);
   });
 
+  it('#73 A-1 — le garde-fou du Plafond s’applique AUSSI en récupération', () => {
+    // Plancher gonflé (20) très au-dessus de ce que le Plafond MESURÉ (14)
+    // rend physiquement possible. Avant le fix, la branche déload sautait le
+    // garde-fou et redonnait 0,9 × 20 = 18 (« Plafond 14 → prescrit 18 »).
+    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    s.prescribed_load_floor[BENCH] = 20;
+    s.e1rm[BENCH] = 14;
+    const normale = buildPrescription(catalog.get(BENCH), 14, s.profile, 1, {
+      muscleGoals: s.muscle_goals,
+      state: s,
+    });
+    const recup = buildPrescription(catalog.get(BENCH), 14, s.profile, 5, {
+      muscleGoals: s.muscle_goals,
+      state: s,
+      deloadActive: true,
+    });
+    expect(normale.load_kg).toBeLessThan(14);
+    expect(recup.load_kg).toBeLessThanOrEqual(normale.load_kg);
+    // Le plancher fossile est RÉPARÉ, pas seulement masqué : mémoriser une charge
+    // physiquement impossible ne sert à rien.
+    expect(s.prescribed_load_floor[BENCH]).toBe(normale.load_kg);
+  });
+
+  it('#73 A-1 — plancher NON réparé tant que le Plafond n’est pas mesuré', () => {
+    // Sans mesure, le « Plafond » n'est qu'un bootstrap : on ne borne pas sur
+    // une devinette, et on ne détruit surtout pas la mémoire du cliquet.
+    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    s.prescribed_load_floor[BENCH] = 20;
+    const pres = buildPrescription(catalog.get(BENCH), 14, s.profile, 1, {
+      muscleGoals: s.muscle_goals,
+      state: s,
+    });
+    expect(pres.load_kg).toBe(20);
+    expect(s.prescribed_load_floor[BENCH]).toBe(20);
+  });
+
+  it('#73 A-1 — récupération : pas de seed de plancher sur un exo neuf', () => {
+    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    buildPrescription(catalog.get(BENCH), 100, s.profile, 5, {
+      muscleGoals: s.muscle_goals,
+      state: s,
+      deloadActive: true,
+    });
+    expect(s.prescribed_load_floor[BENCH]).toBeUndefined();
+  });
+
   it('semaine 5 REFUSÉE (déload non actif) → charge = plancher (pas de ×0,9)', () => {
     const s = stateFor(MuscleObjective.HYPERTROPHIE);
     s.prescribed_load_floor[BENCH] = 50;

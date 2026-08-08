@@ -67,7 +67,10 @@ export function cycleSetProgression(
   // #18 (E-3) — plancher de 2 séries : on ne prescrit jamais moins de 2 séries,
   // même en récupération (un exo à 3 séries tombait à 1). Le déload reste réel
   // via la charge (×0,9) et le RPE 6, pas seulement via le nombre de séries.
-  const deload = Math.max(2, Math.trunc(sets * DELOAD_FACTOR));
+  // A-2 (#73) — …sans jamais dépasser le compte des semaines normales : un exo
+  // volontairement à 1 série resterait à 1 en récup, il ne doit pas y gagner
+  // une série.
+  const deload = Math.min(sets, Math.max(2, Math.trunc(sets * DELOAD_FACTOR)));
   progression.push(deload);
   return progression;
 }

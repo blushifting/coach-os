@@ -133,6 +133,17 @@ export interface UpdateE1rmOptions {
    * `LOAD_OVERRIDE_REP_TOLERANCE`). Absent → comportement EMA standard.
    */
   readonly prescribed?: { readonly load_kg: number; readonly target_reps: number };
+
+  /**
+   * A-3 (#73) — semaine de RÉCUPÉRATION : la séance ne peut que faire MONTER le
+   * plafond, jamais le baisser. On travaille volontairement plus léger, donc une
+   * agrégation Epley plus basse ne mesure rien ; mais si l'user charge quand même
+   * et bat son plafond, c'est un vrai progrès qu'on doit enregistrer (snapshot →
+   * courbe Force) et afficher au bilan. Remplace l'ancien « on saute tout ».
+   *
+   * Exo jamais mesuré → aucune mise à jour (une semaine allégée ne calibre pas).
+   */
+  readonly ratchetUpOnly?: boolean;
 }
 
 /**
@@ -189,6 +200,17 @@ export function updateE1rmForExercise(
 
   // Bootstrap si vide : on pose old = e1rmAgg.
   const old = state.e1rm[exercise.id] ?? e1rmAgg;
+
+  // A-3 (#73) — récupération : cliquet MONTANT strict. La mise à jour n'est
+  // « définitive » (⇒ snapshot ⇒ point sur la courbe Force) que si le plafond a
+  // réellement monté sur une série informative.
+  if (options.ratchetUpOnly) {
+    const known = state.e1rm[exercise.id];
+    if (known === undefined) return null;
+    const nextUp = Math.max(known, e1rmAgg);
+    state.e1rm[exercise.id] = nextUp;
+    return { old: known, next: nextUp, definitive: definitive && nextUp > known };
+  }
 
   let next: number;
   if (!definitive) {
@@ -292,10 +314,22 @@ function previousBestNeqForExercise(
  * Cliquet à sens unique sauf descente (hystérésis). Le caller skippe la semaine
  * de récup. Exos sans charge externe additive ignorés.
  */
+export interface UpdateLoadFloorOptions {
+  /**
+   * A-3 (#73) — semaine de RÉCUPÉRATION : seule l'anti-régression tourne (adopter
+   * une charge réellement soulevée plus lourde que le plancher). Ni graduation ni
+   * descente : la charge prescrite est allégée et le RPE cible tombe à 6, donc
+   * `n_équiv` est mécaniquement élevé et ferait grimper le plancher tout seul.
+   * L'user qui charge quand même de son propre chef garde son gain.
+   */
+  readonly adoptionOnly?: boolean;
+}
+
 export function updatePrescribedLoadFloorForExercise(
   state: UserState,
   exercise: Exercise,
   feedbacks: readonly SetFeedback[],
+  options: UpdateLoadFloorOptions = {},
 ): void {
   if (!exerciseUsesLoadFloor(state, exercise)) return;
   const best = bestNeq(feedbacks);
@@ -305,6 +339,15 @@ export function updatePrescribedLoadFloorForExercise(
   const inc = effectiveIncrement(state, exercise);
   const cur = state.prescribed_load_floor[exercise.id] ?? best.load;
   let next = cur;
+
+  if (options.adoptionOnly) {
+    // Pas de seed en récupération : sans plancher établi, on ne fixe rien.
+    if (state.prescribed_load_floor[exercise.id] === undefined) return;
+    if (best.load > cur && best.neq >= targetReps + ADOPTION_RESERVE) {
+      state.prescribed_load_floor[exercise.id] = best.load;
+    }
+    return;
+  }
 
   // Anti-régression : charge réelle plus lourde ET série de croisière (n_équiv
   // ≥ R + ADOPTION_RESERVE, soit RIR ≥ 2 — une série à l'échec ne fait pas un

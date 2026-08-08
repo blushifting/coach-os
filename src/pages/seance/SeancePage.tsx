@@ -300,6 +300,12 @@ export default function SeancePage() {
               const previouslyCalibrated = new Set(
                 snapshots.map((s) => s.exercise_id),
               );
+              // Chantier B — la séance vient d'être jouée en récupération
+              // effective (semaine 5 + déload accepté). A-3 (#73) : le bilan
+              // affiche quand même les Plafonds (Δ 0 s'ils n'ont pas bougé).
+              const deloadActive =
+                fb.week_in_cycle === DELOAD_WEEK_IN_CYCLE &&
+                userState?.deload_decision === 'accepted';
               const result = await engine.recordFeedbackAndCommit(fb);
               const data = computeSessionSummary(
                 fb,
@@ -308,13 +314,8 @@ export default function SeancePage() {
                 catalog,
                 userState,
                 previouslyCalibrated,
+                deloadActive,
               );
-              // Chantier B — la séance vient d'être jouée en récupération
-              // effective (semaine 5 + déload accepté) : le bilan l'explique
-              // au lieu du message « aucune série assez intense ».
-              const deloadActive =
-                fb.week_in_cycle === DELOAD_WEEK_IN_CYCLE &&
-                userState?.deload_decision === 'accepted';
               setSummary({
                 label: fb.label,
                 customName: fb.custom_name,

@@ -141,6 +141,16 @@ describe('defaultProgressionForDay', () => {
     expect(prog).toHaveLength(4);
     expect(prog[prog.length - 1]).toBe(2); // round(3 * 0.6) = 2
   });
+
+  it('#73 A-2 — récup : jamais moins de 2 séries (2 → 2, pas 1)', () => {
+    const prog = defaultProgressionForDay(undefined, 2);
+    expect(prog[prog.length - 1]).toBe(2); // round(2 * 0.6) = 1, planché à 2
+  });
+
+  it('#73 A-2 — un exo à 1 série ne gagne pas de série en récup', () => {
+    const prog = defaultProgressionForDay(undefined, 1);
+    expect(prog[prog.length - 1]).toBe(1);
+  });
 });
 
 describe('musclesTrainedOn', () => {

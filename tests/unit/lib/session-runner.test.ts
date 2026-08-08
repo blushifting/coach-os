@@ -345,6 +345,26 @@ describe('computeSessionSummary', () => {
     // Tri : 1re calibration en tête.
     expect(r.plafondChanges[0]!.exerciseId).toBe('pullup');
   });
+
+  it('#73 A-3 — récup : les Plafonds déjà calibrés restent affichés à Δ 0', () => {
+    const summary: RecordFeedbackResult = {
+      bench_press: { old: 80, next: 80, definitive: false }, // récup, rien battu
+      squat: { old: 100, next: 104, definitive: true }, // chargé volontairement
+      pullup: { old: 60, next: 60, definitive: false }, // jamais calibré
+    };
+    const calibrated = new Set(['bench_press', 'squat']);
+    const hors = computeSessionSummary(fb, summary, [], catalog, emptyState, calibrated);
+    expect(hors.plafondChanges.map((c) => c.exerciseId)).toEqual(['squat']);
+
+    const recup = computeSessionSummary(
+      fb, summary, [], catalog, emptyState, calibrated, true,
+    );
+    const byId = new Map(recup.plafondChanges.map((c) => [c.exerciseId, c]));
+    expect(byId.get('bench_press')!.deltaKg).toBe(0);
+    expect(byId.get('squat')!.deltaKg).toBeCloseTo(4, 2);
+    // Un exo jamais calibré ne s'invite pas au bilan sur une séance allégée.
+    expect(byId.has('pullup')).toBe(false);
+  });
 });
 
 // =============================================================================

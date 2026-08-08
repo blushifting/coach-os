@@ -584,29 +584,44 @@ export function buildPrescription(
       // Le bootstrap n'est JAMAIS stocké dans state.e1rm (cf. engine.ts) : la
       // présence d'une valeur ⇔ l'exo a été réellement mesuré au moins une fois.
       const measured = state.e1rm[exercise.id] !== undefined;
-      if (deloadActive) {
-        if (floor !== undefined) {
-          extLoad = roundToIncrement(floor * DELOAD_LOAD_FACTOR, inc);
-        }
-      } else if (floor !== undefined) {
+      if (floor !== undefined) {
         extLoad = floor;
         // Point 4 — garde-fou : sur un exo MESURÉ, la charge prescrite ne peut pas
         // dépasser la charge à laquelle `reps` répétitions restent physiquement
-        // possibles (targetLoad au RPE 10 = échec). Empêche un plancher trop haut
-        // (hérité d'un seed bootstrap surestimé, ou d'un Plafond qui a baissé) de
-        // prescrire l'impossible — c'était le bug « Plafond 14, prescrit 18 ». Le
-        // plancher PERSISTÉ n'est PAS modifié (mémoire du ratchet intacte) : dès que
-        // le Plafond remonte, la charge revient au plancher. On ne borne pas sur un
-        // e1RM bootstrap (non mesuré) : ce serait plafonner sur une devinette.
+        // possibles (targetLoad au RPE 10 = échec). On ne borne pas sur un e1RM
+        // bootstrap (non mesuré) : ce serait plafonner sur une devinette.
+        //
+        // A-1 (#73) — le garde-fou RÉPARE désormais le plancher persisté au lieu
+        // de seulement masquer sa valeur à l'affichage. Cas réel : plancher semé à
+        // 20 kg/haltère depuis un bootstrap, Plafond ensuite MESURÉ à 14 → le
+        // plancher restait fossilisé à 20 (le nettoyage #63 ne se déclenche qu'à la
+        // 1re mesure DÉFINITIVE d'un exo encore non snapshoté). On voyait ~10 les
+        // semaines normales (borné) et 18 en récup (borne sautée). Mémoriser une
+        // charge physiquement impossible n'a aucune valeur : on l'écrase. Le
+        // cliquet repart proprement du plancher corrigé et regradue normalement
+        // quand le Plafond remonte.
         if (measured) {
           const cap = roundToIncrement(
             externalLoadFromE1rm(targetLoad(e1rmTotal, reps, 10, k), exercise, profile.bodyweight_kg),
             inc,
           );
-          if (cap > 0 && extLoad > cap) extLoad = cap;
+          if (cap > 0 && extLoad > cap) {
+            extLoad = cap;
+            state.prescribed_load_floor[exercise.id] = cap;
+          }
         }
-      } else {
+      } else if (!deloadActive) {
+        // Seed du plancher — hors récupération : une semaine allégée ne doit pas
+        // fixer la charge de référence de l'exo.
         state.prescribed_load_floor[exercise.id] = extLoad;
+      }
+      // A-1 (#73) — l'allègement de récupération s'applique APRÈS le garde-fou,
+      // plus à la place. L'ancienne branche `if (deloadActive)` court-circuitait
+      // le plafonnement : un plancher gonflé (20) redonnait 0,9 × 20 = 18 en
+      // récup alors que le Plafond mesuré (14) bornait la charge à ~10 le reste
+      // du cycle. C'était le « Plafond 14 → prescrit 18 » observé en vrai.
+      if (deloadActive) {
+        extLoad = roundToIncrement(extLoad * DELOAD_LOAD_FACTOR, inc);
       }
     }
   }
