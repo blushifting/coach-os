@@ -10,6 +10,8 @@
  * battent le record précédent d'au moins +2 kg.
  */
 
+import { useEffect, useState } from 'react';
+import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Concept } from '@/components/Concept';
 import { displayExerciseName, kgUnitLabel } from '@/lib/catalog-filter';
@@ -19,13 +21,35 @@ import { MOTION } from '@/lib/motion';
 import { formatWeekLabel } from '@/lib/progress';
 import type { E1rmPoint, ExerciseE1rmSeries } from '@/lib/progress';
 
+/**
+ * B-2 — nombre de courbes affichées d'emblée, et pas d'un cran sur « Voir les
+ * suivants ». L'ancien `topN = 8` du sélecteur coupait sans rien dire : sur un
+ * catalogue réel (~20 exos travaillés), la moitié disparaissait et l'onglet
+ * paraissait incomplet. On garde une liste courte à l'ouverture — mais le
+ * bouton dit combien il en reste.
+ */
+const FORCE_PAGE_SIZE = 10;
+
 interface ForceViewProps {
   readonly series: ReadonlyArray<ExerciseE1rmSeries>;
+  /**
+   * B-3 — nombre de points affichés par courbe, `null` = tout l'historique.
+   * Piloté par le sélecteur de période de l'écran Progrès.
+   */
+  readonly windowPoints: number | null;
 }
 
-export function ForceView({ series }: ForceViewProps) {
+export function ForceView({ series, windowPoints }: ForceViewProps) {
   const catalog = useCatalog();
   const brand = useGymBrand() ?? undefined;
+  const [visibleCount, setVisibleCount] = useState(FORCE_PAGE_SIZE);
+  // Le catalogue d'exos suivis change (nouveau cycle, exo remplacé) → on
+  // repart d'une liste courte plutôt que de garder une pagination héritée
+  // d'une autre liste.
+  useEffect(() => {
+    setVisibleCount(FORCE_PAGE_SIZE);
+  }, [series]);
+
   const resolveName = (s: ExerciseE1rmSeries): string => {
     if (catalog !== null && catalog.has(s.exercise_id)) {
       return displayExerciseName(catalog.get(s.exercise_id), brand);
@@ -52,7 +76,7 @@ export function ForceView({ series }: ForceViewProps) {
           <Concept topic="plafond">Plafond</Concept> par exercice
         </h2>
       </header>
-      {series.map((s) => (
+      {series.slice(0, visibleCount).map((s) => (
         <Card
           key={s.exercise_id}
           data-testid={`force-card-${s.exercise_id}`}
@@ -98,12 +122,25 @@ export function ForceView({ series }: ForceViewProps) {
             </div>
           </header>
           <MiniLine
-            points={s.points.slice(-FORCE_WINDOW_POINTS)}
+            points={windowPoints === null ? s.points : s.points.slice(-windowPoints)}
             current={s.current}
             testId={`force-chart-${s.exercise_id}`}
           />
         </Card>
       ))}
+
+      {visibleCount < series.length && (
+        <Button
+          variant="secondary"
+          size="sm"
+          fullWidth
+          onClick={() => setVisibleCount((n) => n + FORCE_PAGE_SIZE)}
+          data-testid="force-show-more"
+        >
+          Voir {Math.min(FORCE_PAGE_SIZE, series.length - visibleCount)}&nbsp;exercices
+          de plus · {series.length - visibleCount}&nbsp;restants
+        </Button>
+      )}
     </div>
   );
 }
@@ -117,14 +154,6 @@ interface MiniLineProps {
 
 /** Saut minimum (en kg) pour qu'un nouveau maximum soit qualifié de PR. */
 const PR_THRESHOLD_KG = 2;
-
-/**
- * #12 (E-3) — fenêtre glissante : nombre max de points affichés par courbe.
- * Au-delà, on ne garde que les plus récents. Sans borne, une courbe accumulait
- * tous ses points depuis le début (40-50 après quelques cycles, illisibles).
- * Le compteur « N séances » de l'en-tête garde, lui, le total réel.
- */
-const FORCE_WINDOW_POINTS = 12;
 
 /**
  * Mini-courbe polyline avec axe Y (3 ticks en kg), ligne pointillée au

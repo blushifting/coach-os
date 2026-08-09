@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { cn } from '@/lib/cn';
 import {
@@ -6,7 +6,9 @@ import {
   buildMusclesOf,
   computeCoverageThisWeek,
   computeE1rmSeriesFromSnapshots,
+  computeLastWorkedByMuscle,
   computeVolumeHistory,
+  weeksSinceFirstFeedback,
 } from '@/lib/progress';
 import { useCoachOsStore } from '@/store';
 import { useToday } from '@/store/selectors';
@@ -27,7 +29,16 @@ const TABS: ReadonlyArray<{ readonly id: Tab; readonly label: string }> = [
   { id: 'cycles', label: 'Cycles' },
 ];
 
+/** Fenêtre glissante par défaut de l'onglet Volume (semaines de programme). */
 const VOLUME_HISTORY_WEEKS = 8;
+
+/**
+ * #12 (E-3) — fenêtre glissante par défaut de l'onglet Force : nombre max de
+ * points affichés par courbe, les plus récents. Sans borne, une courbe accumule
+ * tous ses points depuis le début (40-50 après quelques cycles, illisibles).
+ * Le compteur « N séances » de chaque carte garde, lui, le total réel.
+ */
+const FORCE_WINDOW_POINTS = 12;
 
 /**
  * Onglet Progrès — Conv #6a, fusion Couverture+Volume Conv #17.
@@ -45,6 +56,11 @@ export default function ProgresPage() {
   const catalog = useCoachOsStore((s) => s.catalog);
   const today = useToday();
   const [tab, setTab] = useState<Tab>('volume');
+  // B-3 — échelle de temps des courbes. Un seul réglage pour tout l'écran
+  // (Volume ET Force) plutôt qu'un sélecteur par carte : sur une liste de 15
+  // muscles ou 20 exos, un sélecteur par carte serait une surcharge pour un
+  // réglage qu'on change deux fois par an.
+  const [fullHistory, setFullHistory] = useState(false);
 
   // Conv #66 — sens du glissement : on entre par la droite quand on va vers un
   // onglet situé plus à droite. `prevTabIdx` n'est mis à jour qu'en effet (donc
@@ -67,6 +83,9 @@ export default function ProgresPage() {
       (c) => c.cycle_index === userState.cycle_index,
     );
     const cycleStart = currentCycle?.start_date ?? null;
+    const volumeWeeks = fullHistory
+      ? weeksSinceFirstFeedback(history.feedbacks, today, cycleStart)
+      : VOLUME_HISTORY_WEEKS;
     return {
       // Conv #66 — `today` est ancré sur la démo quand elle est active. Ces deux
       // calculs sont des fenêtres glissantes : avec la date réelle, l'historique
@@ -82,16 +101,18 @@ export default function ProgresPage() {
         userState,
         history.feedbacks,
         musclesOf,
-        VOLUME_HISTORY_WEEKS,
+        volumeWeeks,
         today,
         cycleStart,
       ),
+      // B-1 — récence de travail par muscle, pour le tri des cartes Volume.
+      lastWorked: computeLastWorkedByMuscle(history.feedbacks, musclesOf),
       cycles: buildCycleHistory(history.cycles),
       // #63 — la courbe Force lit désormais les SNAPSHOTS e1RM (= plafond du
       // bilan de séance), pas un recalcul Epley brut des feedbacks.
       force: computeE1rmSeriesFromSnapshots(history.e1rmSnapshots, catalog),
     };
-  }, [userState, catalog, history, today]);
+  }, [userState, catalog, history, today, fullHistory]);
 
   if (userState === null) {
     return <Navigate to="/welcome" replace />;
@@ -125,6 +146,29 @@ export default function ProgresPage() {
         ))}
       </nav>
 
+      {tab !== 'cycles' && (
+        <div className="flex justify-end" data-testid="progres-range">
+          <div className="inline-flex gap-0.5 rounded-lg bg-anthracite-900 p-0.5">
+            <RangeButton
+              active={!fullHistory}
+              onClick={() => setFullHistory(false)}
+              testId="range-recent"
+            >
+              {tab === 'volume'
+                ? `${VOLUME_HISTORY_WEEKS} dernières semaines`
+                : `${FORCE_WINDOW_POINTS} dernières séances`}
+            </RangeButton>
+            <RangeButton
+              active={fullHistory}
+              onClick={() => setFullHistory(true)}
+              testId="range-all"
+            >
+              Tout l'historique
+            </RangeButton>
+          </div>
+        </div>
+      )}
+
       <div
         role="tabpanel"
         data-testid={`panel-${tab}`}
@@ -142,11 +186,43 @@ export default function ProgresPage() {
             coverage={data.coverage}
             volume={data.volume}
             muscleGoals={userState.muscle_goals}
+            lastWorked={data.lastWorked}
           />
         )}
-        {tab === 'force' && <ForceView series={data.force} />}
+        {tab === 'force' && (
+          <ForceView
+            series={data.force}
+            windowPoints={fullHistory ? null : FORCE_WINDOW_POINTS}
+          />
+        )}
         {tab === 'cycles' && <CyclesView items={data.cycles} catalog={catalog} />}
       </div>
     </section>
+  );
+}
+
+interface RangeButtonProps {
+  readonly active: boolean;
+  readonly onClick: () => void;
+  readonly testId: string;
+  readonly children: ReactNode;
+}
+
+function RangeButton({ active, onClick, testId, children }: RangeButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      data-testid={testId}
+      className={cn(
+        'rounded-md px-2.5 py-1 text-[11px] font-medium transition',
+        active
+          ? 'bg-anthracite-700 text-white'
+          : 'text-anthracite-400 hover:text-white',
+      )}
+    >
+      {children}
+    </button>
   );
 }

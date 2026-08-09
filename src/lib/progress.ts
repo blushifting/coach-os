@@ -620,13 +620,18 @@ export interface ExerciseE1rmSeries {
  * snapshot → naturellement exclus. Une saisie manuelle de plafond en crée un →
  * elle apparaît sur la courbe. Valeurs gardées en flottant (pas d'arrondi).
  *
- * Ne renvoie que les exos avec ≥ 2 points. Tri par nombre de points décroissant
- * puis plafond courant, limité à `topN`.
+ * Ne renvoie que les exos avec ≥ 2 points (une courbe a besoin de 2 mesures).
+ *
+ * B-1/B-2 (dump 2.2.0) — tri par **date de la dernière mesure décroissante** :
+ * ce que tu viens de travailler est en haut. L'ancien tri (nombre de points
+ * décroissant) remontait mécaniquement les exos de longue date et enterrait les
+ * nouveaux. **Aucune troncature ici** : l'ancien `topN = 8` écartait silencieu-
+ * sement la majorité d'un catalogue réel (~20 exos) ; c'est désormais à l'UI de
+ * paginer, en montrant qu'il y a une suite.
  */
 export function computeE1rmSeriesFromSnapshots(
   snapshots: ReadonlyArray<E1rmSnapshotRow>,
   catalog: Catalog,
-  topN: number = 8,
 ): ExerciseE1rmSeries[] {
   // Un seul point par (exo, date) : le dernier snapshot de la journée fait foi
   // (valeur la plus à jour du plafond). `snapshots` arrive trié par date.
@@ -645,6 +650,7 @@ export function computeE1rmSeriesFromSnapshots(
   const result: ExerciseE1rmSeries[] = [];
   for (const [exId, dateMap] of byExo) {
     if (dateMap.size < 2) continue;
+    const exercise = catalog.get(exId);
     const points: E1rmPoint[] = [...dateMap.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, e1rm]) => ({ date, e1rm }));
@@ -653,18 +659,81 @@ export function computeE1rmSeriesFromSnapshots(
     const deltaPct = initial > 0 ? (current / initial - 1) * 100 : 0;
     result.push({
       exercise_id: exId,
-      nom_fr: catalog.get(exId).nom_fr,
+      nom_fr: exercise.nom_fr,
       points,
       current,
       initial,
       deltaPct,
-      charge: catalog.get(exId).charge,
+      charge: exercise.charge,
     });
   }
 
   result.sort((a, b) => {
+    // Récence d'abord (dernière mesure la plus récente en tête).
+    const lastA = a.points[a.points.length - 1]!.date;
+    const lastB = b.points[b.points.length - 1]!.date;
+    if (lastA !== lastB) return lastB.localeCompare(lastA);
+    // Départages stables : plus de points mesurés, puis plafond le plus lourd.
     if (b.points.length !== a.points.length) return b.points.length - a.points.length;
-    return b.current - a.current;
+    if (b.current !== a.current) return b.current - a.current;
+    return a.exercise_id.localeCompare(b.exercise_id);
   });
-  return result.slice(0, topN);
+  return result;
+}
+
+// =============================================================================
+// Récence de travail par muscle (B-1 du dump 2.2.0)
+// =============================================================================
+
+/**
+ * B-1 — date de la dernière séance ayant réellement sollicité chaque muscle
+ * (`YYYY-MM-DD`), pour trier les cartes de l'onglet Volume du plus récemment
+ * travaillé au plus ancien. Un muscle jamais travaillé est absent de la map.
+ *
+ * « Sollicité » = au moins une série dont l'exercice porte un coefficient > 0
+ * sur ce muscle — synergies comprises (coef 0,5), exactement comme le volume
+ * pondéré affiché sur la carte.
+ */
+export function computeLastWorkedByMuscle(
+  feedbacks: readonly FeedbackRow[],
+  musclesOf: Readonly<Record<string, Readonly<Record<string, number>>>>,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const fb of feedbacks) {
+    for (const set of fb.feedback.sets) {
+      const muscles = musclesOf[set.exercise_id] ?? {};
+      for (const [m, coef] of Object.entries(muscles)) {
+        if (coef <= 0) continue;
+        const known = out[m];
+        if (known === undefined || fb.seance_date > known) {
+          out[m] = fb.seance_date;
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * B-3 — nombre de semaines de programme couvrant TOUT l'historique, de la
+ * semaine du premier feedback à celle de `now` incluse. Sert à alimenter
+ * `computeVolumeHistory` quand l'utilisateur demande l'historique complet
+ * plutôt que la fenêtre glissante par défaut. Minimum 1.
+ */
+export function weeksSinceFirstFeedback(
+  feedbacks: readonly FeedbackRow[],
+  now: Date = new Date(),
+  cycleStart: string | null = null,
+): number {
+  let earliest: string | null = null;
+  for (const f of feedbacks) {
+    if (earliest === null || f.seance_date < earliest) earliest = f.seance_date;
+  }
+  if (earliest === null) return 1;
+  const firstWeek = weekStartFor(parseDateKey(earliest), cycleStart);
+  const thisWeek = weekStartFor(now, cycleStart);
+  const days = Math.round(
+    (thisWeek.getTime() - firstWeek.getTime()) / (24 * 60 * 60 * 1000),
+  );
+  return Math.max(1, Math.floor(days / 7) + 1);
 }

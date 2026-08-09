@@ -47,9 +47,16 @@ interface VolumeViewProps {
   readonly coverage: ReadonlyArray<MuscleCoverage>;
   readonly volume: ReadonlyArray<MuscleVolumeSeries>;
   readonly muscleGoals: Readonly<Record<string, MuscleGoal>>;
+  /** B-1 — `muscle → YYYY-MM-DD` de la dernière séance qui l'a sollicité. */
+  readonly lastWorked: Readonly<Record<string, string>>;
 }
 
-export function VolumeView({ coverage, volume, muscleGoals }: VolumeViewProps) {
+export function VolumeView({
+  coverage,
+  volume,
+  muscleGoals,
+  lastWorked,
+}: VolumeViewProps) {
   const [selected, setSelected] = useState<string | null>(null);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -83,7 +90,11 @@ export function VolumeView({ coverage, volume, muscleGoals }: VolumeViewProps) {
   // silhouette mène toujours à une carte, l'utilisateur comprend
   // pourquoi son muscle n'est pas suivi et où le rajouter.
   //
-  // Ordre : PRIORITAIRE (rank croissant) → SUGGERE → NON_COUVERT.
+  // Ordre : PRIORITAIRE → SUGGERE → NON_COUVERT ; B-1 (dump 2.2.0) — **à
+  // l'intérieur de chaque bloc**, du muscle travaillé le plus récemment au plus
+  // ancien (jamais travaillé en dernier). Le bloc prioritaire reste en tête :
+  // c'est lui qui porte « ce que tu as choisi de développer », la récence ne
+  // hiérarchise qu'à l'intérieur.
   // Les muscles sans `muscle_goals[m]` → traités comme NON_COUVERT.
   const displayMuscles = useMemo(() => {
     const statusOrder: Record<string, number> = {
@@ -97,17 +108,30 @@ export function VolumeView({ coverage, volume, muscleGoals }: VolumeViewProps) {
       const goal = muscleGoals[m];
       const goalStatus: MuscleStatus = goal?.status ?? MuscleStatus.NON_COUVERT;
       const rank = goal?.priority_rank ?? 99;
-      return { muscle: m, coverage: cov, series: ser, goalStatus, rank };
+      return {
+        muscle: m,
+        coverage: cov,
+        series: ser,
+        goalStatus,
+        rank,
+        lastWorked: lastWorked[m] ?? null,
+      };
     });
     items.sort((a, b) => {
       const sA = statusOrder[a.goalStatus] ?? 3;
       const sB = statusOrder[b.goalStatus] ?? 3;
       if (sA !== sB) return sA - sB;
-      if (a.goalStatus === MuscleStatus.PRIORITAIRE) return a.rank - b.rank;
+      if (a.lastWorked !== b.lastWorked) {
+        // Jamais travaillé → toujours en fin de bloc.
+        if (a.lastWorked === null) return 1;
+        if (b.lastWorked === null) return -1;
+        return b.lastWorked.localeCompare(a.lastWorked);
+      }
+      if (a.rank !== b.rank) return a.rank - b.rank;
       return a.muscle.localeCompare(b.muscle);
     });
     return items;
-  }, [coverageByMuscle, seriesByMuscle, muscleGoals]);
+  }, [coverageByMuscle, seriesByMuscle, muscleGoals, lastWorked]);
 
   function handleSilhouetteClick(rawMuscle: string) {
     // Alias éventuel (deltos_anterieurs → deltos_lateraux).

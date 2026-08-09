@@ -8,7 +8,9 @@ import {
   buildMusclesOf,
   computeCoverageThisWeek,
   computeE1rmSeriesFromSnapshots,
+  computeLastWorkedByMuscle,
   computeVolumeHistory,
+  weeksSinceFirstFeedback,
   exerciseLabel,
   formatCycleDates,
   formatWeekLabel,
@@ -559,6 +561,79 @@ describe('computeE1rmSeriesFromSnapshots', () => {
   it('ignore les exos absents du catalogue', () => {
     const snaps = [snap('2026-05-01', 'inconnu', 50), snap('2026-05-08', 'inconnu', 55)];
     expect(computeE1rmSeriesFromSnapshots(snaps, cat)).toEqual([]);
+  });
+
+  // B-1/B-2 (dump 2.2.0)
+  it('trie par dernière mesure la plus récente, pas par nombre de points', () => {
+    const snaps = [
+      // 4 points mais mesuré pour la dernière fois il y a longtemps.
+      snap('2026-04-01', 'bp', 100),
+      snap('2026-04-08', 'bp', 101),
+      snap('2026-04-15', 'bp', 102),
+      snap('2026-04-22', 'bp', 103),
+      // 2 points seulement mais travaillé cette semaine.
+      snap('2026-05-20', 'curl', 30),
+      snap('2026-05-27', 'curl', 32),
+    ];
+    const series = computeE1rmSeriesFromSnapshots(snaps, cat);
+    expect(series.map((s) => s.exercise_id)).toEqual(['curl', 'bp']);
+  });
+
+  it('ne tronque plus la liste (feu le topN = 8)', () => {
+    const many: Exercise[] = [];
+    const snaps: E1rmSnapshotRow[] = [];
+    for (let i = 0; i < 12; i++) {
+      const id = `exo${i}`;
+      many.push(makeExercise(id, { pectoraux: 1.0 }));
+      snaps.push(snap('2026-05-01', id, 50 + i), snap('2026-05-08', id, 51 + i));
+    }
+    const series = computeE1rmSeriesFromSnapshots(snaps, new Catalog(many));
+    expect(series).toHaveLength(12);
+  });
+});
+
+// =============================================================================
+// computeLastWorkedByMuscle / weeksSinceFirstFeedback (B-1 / B-3 du dump 2.2.0)
+// =============================================================================
+
+describe('computeLastWorkedByMuscle', () => {
+  const musclesOf = buildMusclesOf(makeCatalog());
+
+  it('retient la date la plus récente par muscle, synergies comprises', () => {
+    const fbs = [
+      makeFb('2026-05-01', [{ exercise_id: 'bp', n: 3 }]),
+      makeFb('2026-05-10', [{ exercise_id: 'squat', n: 3 }]),
+      makeFb('2026-05-04', [{ exercise_id: 'bp', n: 2 }]),
+    ];
+    const last = computeLastWorkedByMuscle(fbs, musclesOf);
+    expect(last.pectoraux).toBe('2026-05-04');
+    // triceps est synergiste du développé (coef 0,5) → il compte quand même.
+    expect(last.triceps).toBe('2026-05-04');
+    expect(last.quadriceps).toBe('2026-05-10');
+  });
+
+  it('omet les muscles jamais travaillés', () => {
+    const last = computeLastWorkedByMuscle(
+      [makeFb('2026-05-01', [{ exercise_id: 'curl', n: 3 }])],
+      musclesOf,
+    );
+    expect(last.biceps).toBe('2026-05-01');
+    expect(last.pectoraux).toBeUndefined();
+  });
+});
+
+describe('weeksSinceFirstFeedback', () => {
+  it('compte les semaines de la 1re séance à aujourd_hui, incluses', () => {
+    const fbs = [
+      makeFb('2026-05-04', [{ exercise_id: 'bp', n: 1 }]),
+      makeFb('2026-05-18', [{ exercise_id: 'bp', n: 1 }]),
+    ];
+    // 2026-05-04 = lundi ; NOW dans la semaine du 18 → 3 semaines couvertes.
+    expect(weeksSinceFirstFeedback(fbs, new Date('2026-05-20T10:00:00'))).toBe(3);
+  });
+
+  it('renvoie 1 sans aucun feedback', () => {
+    expect(weeksSinceFirstFeedback([], new Date('2026-05-20T10:00:00'))).toBe(1);
   });
 });
 
