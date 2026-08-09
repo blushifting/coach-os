@@ -20,6 +20,7 @@ import type {
   SessionPlan,
   UserState,
 } from '@/engine/models';
+import { EquipmentPreference, chargesForPreference } from '@/engine/models';
 import { candidatesForMuscle, orderSession } from '@/engine/selection';
 
 export interface SessionPreset {
@@ -96,6 +97,14 @@ export interface CustomSlot {
  * nombre de séries plafonné par `PER_MUSCLE_SESSION_CAP`. Anti-doublon
  * inter-muscles. Renvoie les slots ordonnés « séance » (`orderSession`, muscle
  * prioritaire = 1er muscle du preset). Preset vide → aucun slot.
+ *
+ * D-1 (#75) — la préférence machines / poids libres / poids du corps est
+ * respectée, comme dans le programme. `candidatesForMuscle` ne filtrait que sur
+ * `available_equip` (legacy) : un utilisateur en « machines uniquement » se
+ * voyait proposer des poids libres dès qu'il composait une séance libre.
+ * Fallback identique à `autoGenerateCyclePlanV3` : si la préférence ne laisse
+ * aucun candidat pour ce muscle, on reprend la liste complète plutôt que de
+ * priver le muscle — sauf en poids du corps, qui est strict.
  */
 export function buildCustomSessionSlots(
   preset: SessionPreset,
@@ -104,6 +113,9 @@ export function buildCustomSessionSlots(
 ): CustomSlot[] {
   if (preset.muscles.length === 0) return [];
   const favoriteIds = new Set(state.favorite_exercise_ids ?? []);
+  const allowedCharges = chargesForPreference(state.profile.equipment_preference);
+  const strictPreference =
+    state.profile.equipment_preference === EquipmentPreference.BODYWEIGHT;
   const used = new Set<string>();
   const chosen: { ex: Exercise; nSets: number }[] = [];
   // Moins de muscles ⟹ on étale sur plus d'exos par muscle.
@@ -114,7 +126,12 @@ export function buildCustomSessionSlots(
       candidatesForMuscle(catalog, muscle, state.profile, { excludeIds: used }),
       favoriteIds,
     );
-    const picked = cands.slice(0, exosPerMuscle);
+    const preferred =
+      allowedCharges === null
+        ? cands
+        : cands.filter((ex) => allowedCharges.has(ex.charge));
+    const pool = preferred.length === 0 && !strictPreference ? cands : preferred;
+    const picked = pool.slice(0, exosPerMuscle);
     if (picked.length === 0) continue;
     // Répartit le plafond muscle/séance sur les exos retenus (min 2 séries).
     const budget = Math.min(PER_MUSCLE_SESSION_CAP, DEFAULT_SETS_PER_EXO * picked.length);

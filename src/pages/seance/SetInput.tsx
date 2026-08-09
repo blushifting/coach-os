@@ -153,9 +153,6 @@ export function SetInput({
           ? 'border-green-700/70 bg-green-900/25'
           : 'border-anthracite-700 bg-anthracite-900/70',
         justChecked && 'motion-safe:animate-validate-flash',
-        // Une série cochée ne peut pas être recalibrée : les deux flashs ne se
-        // disputent jamais le fond.
-        recalibrated && 'motion-safe:animate-recalibrate-flash',
       )}
     >
       {/* Conv #20 — Rangée haute : Série N · reps · kg · ✓, tous alignés
@@ -193,6 +190,7 @@ export function SetInput({
           bodyweightOnly={bodyweightOnly}
           chargeType={chargeType}
           disabled={disableInputs}
+          recalibrated={recalibrated}
           onChange={(v) => onChange({ load_kg: v })}
         />
 
@@ -351,6 +349,8 @@ interface LoadFieldProps {
   readonly bodyweightOnly: boolean;
   readonly chargeType?: ChargeType;
   readonly disabled: boolean;
+  /** E-1 (#75) — charge réécrite par la calibration : flash ambre sur la case. */
+  readonly recalibrated?: boolean;
   readonly onChange: (v: number | null) => void;
 }
 
@@ -360,6 +360,7 @@ function LoadField({
   bodyweightOnly,
   chargeType,
   disabled,
+  recalibrated = false,
   onChange,
 }: LoadFieldProps) {
   if (bodyweightOnly) {
@@ -392,6 +393,7 @@ function LoadField({
         index={index}
         value={load}
         disabled={disabled}
+        recalibrated={recalibrated}
         onChange={onChange}
       />
     </div>
@@ -402,10 +404,17 @@ interface KgStepperProps {
   readonly index: number;
   readonly value: number | null;
   readonly disabled: boolean;
+  readonly recalibrated?: boolean;
   readonly onChange: (v: number | null) => void;
 }
 
-function KgStepper({ index, value, disabled, onChange }: KgStepperProps) {
+function KgStepper({
+  index,
+  value,
+  disabled,
+  recalibrated = false,
+  onChange,
+}: KgStepperProps) {
   // Conv #21 — +/- sur kg toujours en pas de 1 kg, indépendamment de l'inc_kg
   // de l'exo. Si l'user appuie sur "+", il s'attend à voir la charge augmenter
   // de 1 — pas de 1,25 ni de 2,5. Un "+" qui ne fait pas +1 est déroutant.
@@ -421,6 +430,10 @@ function KgStepper({ index, value, disabled, onChange }: KgStepperProps) {
 
   const displayValue = value === null ? '' : String(value);
   const isAtMin = value !== null && value <= 0;
+  // E-1 (#75) — le flash de calibration se joue ici, sur la case charge (les
+  // trois éléments sont opaques, ils portent donc l'animation chacun) et non
+  // plus sur toute la ligne de série.
+  const flash = recalibrated ? 'motion-safe:animate-recalibrate-field' : undefined;
 
   return (
     <div className="flex h-11 items-stretch overflow-hidden rounded border border-anthracite-700">
@@ -430,7 +443,10 @@ function KgStepper({ index, value, disabled, onChange }: KgStepperProps) {
         aria-label="Diminuer la charge"
         disabled={disabled || isAtMin}
         onClick={() => bump(-STEP)}
-        className="flex w-8 shrink-0 items-center justify-center bg-anthracite-800 text-base text-anthracite-200 transition active:scale-95 disabled:cursor-not-allowed disabled:text-anthracite-500"
+        className={cn(
+          'flex w-8 shrink-0 items-center justify-center bg-anthracite-800 text-base text-anthracite-200 transition active:scale-95 disabled:cursor-not-allowed disabled:text-anthracite-500',
+          flash,
+        )}
       >
         −
       </button>
@@ -450,7 +466,10 @@ function KgStepper({ index, value, disabled, onChange }: KgStepperProps) {
           const parsed = Number.parseFloat(raw);
           onChange(Number.isFinite(parsed) ? parsed : null);
         }}
-        className="min-w-0 flex-1 border-x border-anthracite-700 bg-anthracite-800 px-1 text-center text-sm font-semibold tabular-nums text-white shadow-[inset_0_1px_2px_0_rgba(0,0,0,0.35)] outline-none transition focus:border-sang-700/50 disabled:opacity-60"
+        className={cn(
+          'min-w-0 flex-1 border-x border-anthracite-700 bg-anthracite-800 px-1 text-center text-sm font-semibold tabular-nums text-white shadow-[inset_0_1px_2px_0_rgba(0,0,0,0.35)] outline-none transition focus:border-sang-700/50 disabled:opacity-60',
+          flash,
+        )}
       />
       <button
         type="button"
@@ -458,7 +477,10 @@ function KgStepper({ index, value, disabled, onChange }: KgStepperProps) {
         aria-label="Augmenter la charge"
         disabled={disabled}
         onClick={() => bump(STEP)}
-        className="flex w-8 shrink-0 items-center justify-center bg-anthracite-800 text-base text-anthracite-200 transition active:scale-95 disabled:cursor-not-allowed disabled:text-anthracite-500"
+        className={cn(
+          'flex w-8 shrink-0 items-center justify-center bg-anthracite-800 text-base text-anthracite-200 transition active:scale-95 disabled:cursor-not-allowed disabled:text-anthracite-500',
+          flash,
+        )}
       >
         +
       </button>

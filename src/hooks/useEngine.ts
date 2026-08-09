@@ -401,6 +401,23 @@ function bumpExercisePickCount(next: UserState, exerciseId: string): void {
 }
 
 /**
+ * D-2 (#75) — même compteur pour une séance composée d'un coup (séance libre :
+ * « Créer une séance », base de preset comprise). Il ne s'incrémentait
+ * jusqu'ici que par le flux du programme (variante + ajout en cours de séance),
+ * si bien qu'un exo fait 6 fois hors programme n'était jamais proposé en
+ * favori. Un exo présent deux fois dans la même séance ne compte que pour un
+ * choix.
+ */
+function bumpPickCountsForSlots(
+  next: UserState,
+  slots: readonly { readonly exerciseId: string }[],
+): void {
+  for (const id of new Set(slots.map((s) => s.exerciseId))) {
+    bumpExercisePickCount(next, id);
+  }
+}
+
+/**
  * Bloc F (Conv #31) — l'exo vient-il d'atteindre le seuil de propositions
  * favoris (et n'est pas déjà favori) ? À appeler côté UI APRÈS l'ajout/variante
  * (le store est déjà à jour). `=== seuil` ⇒ on ne propose qu'une seule fois.
@@ -777,6 +794,7 @@ export async function startCustomSession(
   const catalog = requireCatalog();
   const next = requireUserState();
   const plan = engine.buildCustomSessionPlan(next, catalog, args);
+  bumpPickCountsForSlots(next, args.slots);
   const sessionId = await txSaveSessionPlan(plan, next);
   useCoachOsStore.setState({
     userState: next,
@@ -799,6 +817,7 @@ export async function planCustomSessionForDay(
   const catalog = requireCatalog();
   const next = requireUserState();
   const plan = engine.buildCustomSessionPlan(next, catalog, args);
+  bumpPickCountsForSlots(next, args.slots);
   const sessionId = await txSaveSessionPlan(plan, next);
   useCoachOsStore.setState({ userState: next });
   await refreshHistory();
@@ -1269,7 +1288,8 @@ export async function clearEquipmentOverride(exerciseId: string): Promise<UserSt
 
 /**
  * Efface la DB IndexedDB de Coach OS + reset le store. Le catalogue reste
- * en mémoire pour pouvoir relancer l'onboarding immédiatement.
+ * en mémoire pour pouvoir relancer l'onboarding immédiatement — ramené à ses
+ * exos par défaut (C-1, cf. plus bas).
  *
  * Après appel, `useCoachOsStore.getState().userState === null` et
  * `bootstrapped === true` (DB en état propre et vide) — l'app peut router
@@ -1283,8 +1303,13 @@ export async function clearEquipmentOverride(exerciseId: string): Promise<UserSt
 export async function resetApp(): Promise<void> {
   await getDb().delete();
   resetDbInstance();
-  const catalog = useCoachOsStore.getState().catalog;
+  // C-1 (#75) — le catalogue en mémoire est ramené aux exos par défaut. Il
+  // portait jusqu'ici les exos custom du compte effacé : sur un téléphone
+  // passé à quelqu'un d'autre (le cas même de la déconnexion), le suivant les
+  // voyait dans son Catalogue alors qu'ils n'existent plus en base.
+  const catalog = new Catalog(loadExercises());
   useCoachOsStore.setState({
+    customExerciseIds: new Set<string>(),
     userState: null,
     currentSessionPlan: null,
     currentSessionId: null,
@@ -1336,10 +1361,25 @@ export async function importDataFromPayload(raw: unknown): Promise<void> {
   await reloadStoreAfterImport();
 }
 
-/** Recharge le store depuis la DB après un remplacement complet. */
+/**
+ * Recharge le store depuis la DB après un remplacement complet.
+ *
+ * C-1 (#75) — le **catalogue est rebâti**, pas seulement l'état : un import
+ * remplace la table `userAddedExercises`, donc les exos custom du payload
+ * n'existaient que dans Dexie et restaient absents du `Catalog` en mémoire
+ * jusqu'au prochain démarrage de l'app. Symptôme après une restauration
+ * cloud : les exos custom « disparaissent » (invisibles au Catalogue, et les
+ * séances qui les référencent pointent vers un exo inconnu).
+ */
 async function reloadStoreAfterImport(): Promise<void> {
-  const [userState, history] = await Promise.all([loadUserState(), loadHistorySnapshot()]);
+  const [{ catalog, customIds }, userState, history] = await Promise.all([
+    buildFullCatalog(),
+    loadUserState(),
+    loadHistorySnapshot(),
+  ]);
   useCoachOsStore.setState({
+    catalog,
+    customExerciseIds: customIds,
     userState,
     history,
     bootstrapped: true,

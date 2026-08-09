@@ -212,9 +212,15 @@ const config: Config = {
         // Conv #66 — une charge vient d'être recalculée par la calibration.
         // Ambre = « regarde, ça a changé », sans jugement (ni succès ni erreur).
         // Se termine en transparent : la ligne retrouve son fond de classe.
-        'recalibrate-flash': {
-          '0%': { backgroundColor: 'rgba(217,119,6,0.28)' },
-          '100%': { backgroundColor: 'rgba(217,119,6,0)' },
+        // E-1 (#75) — le flash s'est replié de la ligne de série entière sur la
+        // seule case charge : c'est elle qui a changé, la ligne ne bougeait pas.
+        // Les éléments de la case sont opaques (`bg-anthracite-800`) : ils
+        // masqueraient un fond animé posé sur leur conteneur, donc chacun porte
+        // l'animation, et l'image finale est leur couleur de classe — sans quoi
+        // la case se creuserait d'un cran avant de revenir.
+        'recalibrate-field': {
+          '0%': { backgroundColor: 'rgba(217,119,6,0.45)' },
+          '100%': { backgroundColor: '#1c1f24' },
         },
       },
       animation: {
@@ -239,7 +245,7 @@ const config: Config = {
         'last-point-ping': 'last-point-ping 900ms ease-out both',
         'subtab-in-right': 'subtab-in-right 180ms ease-out',
         'subtab-in-left': 'subtab-in-left 180ms ease-out',
-        'recalibrate-flash': 'recalibrate-flash 600ms ease-out',
+        'recalibrate-field': 'recalibrate-field 600ms ease-out',
       },
       boxShadow: {
         // Conv #11c — halo rouge diffus pour les éléments primaires hover/focus.
