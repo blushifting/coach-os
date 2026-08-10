@@ -669,12 +669,11 @@ describe('helpers formatage', () => {
 });
 
 // =============================================================================
-// computeCycleVolumeByMuscle — muscles travaillés hors objectifs (Conv #76)
+// computeCycleVolumeByMuscle (Conv #76)
 // =============================================================================
 
 describe('computeCycleVolumeByMuscle', () => {
-  // Programme sans jambes (quadriceps retiré des objectifs) mais du squat fait
-  // en séance libre : le travail a eu lieu, il doit se voir.
+  /** Programme sans jambes : quadriceps retiré des objectifs. */
   function stateSansJambes(): UserState {
     const s = makeState();
     delete s.volume_min['quadriceps'];
@@ -683,34 +682,31 @@ describe('computeCycleVolumeByMuscle', () => {
     return s;
   }
 
-  it('remonte un muscle travaillé sans cible, en bas de liste', () => {
-    const state = stateSansJambes();
+  it('ne liste que les muscles suivis, même si un autre a été travaillé', () => {
+    // Du squat fait en séance libre alors que les jambes ne sont pas au
+    // programme : sans bande cible, une barre n'aurait aucune référence à
+    // montrer. Ce travail se lit sur la silhouette du bilan, pas ici.
     const rows = computeCycleVolumeByMuscle(
       [makeFb('2026-01-05', [{ exercise_id: 'bp', n: 8 }, { exercise_id: 'squat', n: 6 }])],
-      1,
-      state,
-      buildMusclesOf(makeCatalog()),
-    );
-    const quads = rows.find((r) => r.muscle === 'quadriceps');
-    expect(quads).toBeDefined();
-    expect(quads!.vMax).toBe(0);
-    expect(quads!.avgSetsPerWeek).toBeCloseTo(6 / 4, 6);
-    expect(quads!.status).toBe('hors_scope');
-    // Sans cible ⇒ toujours APRÈS tous les muscles suivis. Les synergistes hors
-    // objectifs (triceps, deltoïdes du développé) atterrissent dans le même
-    // bloc de fin, d'où une comparaison de positions plutôt qu'un index fixe.
-    const lastTracked = rows.map((r) => r.vMax > 0).lastIndexOf(true);
-    expect(rows.indexOf(quads!)).toBeGreaterThan(lastTracked);
-  });
-
-  it('un muscle ni suivi ni travaillé reste absent', () => {
-    const rows = computeCycleVolumeByMuscle(
-      [makeFb('2026-01-05', [{ exercise_id: 'bp', n: 4 }])],
       1,
       stateSansJambes(),
       buildMusclesOf(makeCatalog()),
     );
     expect(rows.some((r) => r.muscle === 'quadriceps')).toBe(false);
+    expect(rows.every((r) => r.vMax > 0)).toBe(true);
+  });
+
+  it('un muscle suivi mais non travaillé apparaît à 0', () => {
+    const rows = computeCycleVolumeByMuscle(
+      [makeFb('2026-01-05', [{ exercise_id: 'bp', n: 4 }])],
+      1,
+      makeState(),
+      buildMusclesOf(makeCatalog()),
+    );
+    const quads = rows.find((r) => r.muscle === 'quadriceps');
+    expect(quads).toBeDefined();
+    expect(quads!.avgSetsPerWeek).toBe(0);
+    expect(quads!.status).toBe('non_travaille');
   });
 
   it('les prioritaires sortent en tête, par rang', () => {

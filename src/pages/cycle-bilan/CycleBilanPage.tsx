@@ -7,7 +7,7 @@ import {
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Concept } from '@/components/Concept';
-import { ChevronRight, TrendArrow } from '@/components/icons';
+import { TrendArrow } from '@/components/icons';
 import { cn } from '@/lib/cn';
 import { MOTION } from '@/lib/motion';
 import { useEngine } from '@/hooks/useEngine';
@@ -189,40 +189,22 @@ function formatSets(v: number): string {
  * #15 (E-3) — volume réalisé par muscle sur le cycle (moy. séries/sem hors
  * déload) rapporté à la cible V_min–V_max. Remplace le tonnage total kg.
  *
- * Conv #76 — seuls les muscles PRIORITAIRES sont dépliés d'entrée : ce sont
- * eux qui portent l'objectif du cycle, et la liste complète (jusqu'à ~15
- * lignes) noyait l'information. Le reste — muscles suivis non prioritaires,
- * puis muscles travaillés hors objectifs — se déplie à la demande.
+ * Conv #76 — la carte liste les muscles SUIVIS, prioritaires en tête (badge).
+ * Les muscles travaillés hors objectifs n'y figurent pas : sans cible, une
+ * barre n'a rien à dire — leur progression éventuelle se lit sur la silhouette
+ * juste en dessous. (Un repli « voir les autres muscles » a été essayé puis
+ * retiré : il ouvrait sur des lignes sans bande de référence.)
  */
 function ReviewVolume({ volume }: { volume: ReadonlyArray<MuscleCycleVolume> }) {
-  const [expanded, setExpanded] = useState(false);
-  const priority = volume.filter((m) => m.goalStatus === MuscleStatus.PRIORITAIRE);
-  // Repli de sécurité : sans muscle prioritaire, on montre tout plutôt qu'une
-  // carte vide surmontée d'un bouton « voir les autres ».
-  const shown = expanded || priority.length === 0 ? volume : priority;
-  const hiddenCount = volume.length - shown.length;
   if (volume.length === 0) return null;
   return (
     <Card data-testid="bilan-volume" className="flex flex-col gap-2.5">
       <h2 className="text-sm font-semibold text-white">
         Volume par muscle · moy./sem vs cible
       </h2>
-      {shown.map((m, i) => (
+      {volume.map((m, i) => (
         <CycleVolumeRow key={m.muscle} data={m} index={i} />
       ))}
-      {hiddenCount > 0 && (
-        <button
-          type="button"
-          onClick={() => setExpanded(true)}
-          data-testid="bilan-volume-expand"
-          className="mt-1 flex items-center justify-between rounded-lg border-t border-anthracite-700 pt-2.5 text-xs text-anthracite-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sang-500/60"
-        >
-          <span>
-            Voir les {hiddenCount} autres muscles
-          </span>
-          <ChevronRight className="rotate-90 text-anthracite-400" />
-        </button>
-      )}
     </Card>
   );
 }
@@ -239,15 +221,11 @@ function CycleVolumeRow({
   data: MuscleCycleVolume;
   index: number;
 }) {
-  // Muscle travaillé sans cible : l'échelle n'a pas de plafond de référence, on
-  // se cale sur le volume réalisé (barre pleine, ton neutre).
-  const tracked = data.vMax > 0;
-  const scaleMax = tracked ? data.vMax : Math.max(data.avgSetsPerWeek, 1);
-  const pct = Math.min(100, (data.avgSetsPerWeek / scaleMax) * 100);
+  const pct = data.vMax > 0 ? Math.min(100, (data.avgSetsPerWeek / data.vMax) * 100) : 0;
   // Conv #76 — repère du minimum visé, posé sur la barre. C'est surtout utile
   // quand la cible n'est PAS atteinte : sans lui, une barre courte ne dit pas
   // s'il manque une demi-série ou la moitié du travail.
-  const vMinPct = tracked ? Math.min(100, (data.vMin / scaleMax) * 100) : null;
+  const vMinPct = data.vMax > 0 ? Math.min(100, (data.vMin / data.vMax) * 100) : 0;
   const revealDelay = 120 + index * MOTION.stagger;
   const shownPct = useAnimateOnMount(0, pct);
   return (
@@ -268,14 +246,8 @@ function CycleVolumeRow({
         <span className={cn('shrink-0 tabular-nums', VOLUME_STATUS_TEXT[data.status])}>
           {formatSets(data.avgSetsPerWeek)}
           <span className="text-anthracite-400">
-            {tracked ? (
-              <>
-                {' '}
-                / {data.vMin.toFixed(0)}–{data.vMax.toFixed(0)}
-              </>
-            ) : (
-              ' séries/sem'
-            )}
+            {' '}
+            / {data.vMin.toFixed(0)}–{data.vMax.toFixed(0)}
           </span>
         </span>
       </div>
@@ -295,14 +267,12 @@ function CycleVolumeRow({
             }}
           />
         </div>
-        {vMinPct !== null && (
-          <span
-            aria-hidden="true"
-            data-testid={`bilan-vmin-${data.muscle}`}
-            className="absolute -top-0.5 -bottom-0.5 w-0.5 rounded-full bg-anthracite-100"
-            style={{ left: `${vMinPct}%` }}
-          />
-        )}
+        <span
+          aria-hidden="true"
+          data-testid={`bilan-vmin-${data.muscle}`}
+          className="absolute -top-0.5 -bottom-0.5 w-0.5 rounded-full bg-anthracite-100"
+          style={{ left: `${vMinPct}%` }}
+        />
       </div>
     </div>
   );
@@ -457,12 +427,16 @@ function ReviewMuscleForce({
   return (
     <Card data-testid="bilan-muscle-force" className="flex flex-col gap-3">
       <h2 className="text-sm font-semibold text-white">Progression par muscle</h2>
-      <AnatomicalSilhouette
-        highlights={highlights}
-        view="both"
-        className="mx-auto h-48"
-        testId="bilan-force-silhouette"
-      />
+      {/* Même gabarit que les autres écrans qui la portent (Progrès > Volume,
+          Step2 onboarding) : h-56, centrée, largeur libre. */}
+      <div className="flex justify-center">
+        <AnatomicalSilhouette
+          highlights={highlights}
+          view="both"
+          className="h-56 w-auto"
+          testId="bilan-force-silhouette"
+        />
+      </div>
       <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-xs text-anthracite-200">
         <ForceLegend tone="fill-emerald-700" label="en progrès" />
         <ForceLegend tone="fill-amber-700" label="stable" />

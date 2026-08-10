@@ -320,19 +320,14 @@ export function computeCycleVolumeByMuscle(
     musclesOf,
   );
   const out: MuscleCycleVolume[] = [];
-  // Conv #76 — on parcourt aussi les muscles TRAVAILLÉS hors objectifs. Un
-  // programme sans jambes où l'on a quand même fait du squat en séance libre
-  // les passait sous silence : ils n'ont pas de cible, mais le travail a bien
-  // eu lieu et doit se voir (regroupés en bas de liste par le tri).
-  const muscles = new Set<string>([
-    ...Object.keys(state.volume_min),
-    ...Object.keys(sums),
-  ]);
-  for (const muscle of muscles) {
+  // Muscles SUIVIS uniquement. Un muscle travaillé hors objectifs n'a pas de
+  // bande cible : sa barre n'aurait aucune référence à montrer. Sa progression
+  // se lit sur la silhouette du bilan (Conv #76 — un temps listés ici, retirés
+  // après essai).
+  for (const muscle of Object.keys(state.volume_min)) {
     const [vMin, vMax] = effectiveVolumeBounds(state as UserState, muscle);
+    if (vMax <= 0) continue;
     const avg = (sums[muscle] ?? 0) / Math.max(1, workingWeeks);
-    // Ni suivi, ni travaillé : rien à dire.
-    if (vMax <= 0 && avg <= 0) continue;
     out.push({
       muscle,
       avgSetsPerWeek: avg,
@@ -342,18 +337,15 @@ export function computeCycleVolumeByMuscle(
       goalStatus: state.muscle_goals[muscle]?.status ?? MuscleStatus.NON_COUVERT,
     });
   }
-  // Prioritaires d'abord (rank croissant), puis les autres muscles suivis,
-  // puis les muscles travaillés sans cible (`hors_scope`) tout en bas.
+  // Prioritaires d'abord (rank croissant), puis alpha.
   out.sort((a, b) => {
-    const rank = (m: MuscleCycleVolume) =>
-      m.vMax <= 0 ? 2 : m.goalStatus === MuscleStatus.PRIORITAIRE ? 0 : 1;
-    const ra = rank(a);
-    const rb = rank(b);
-    if (ra !== rb) return ra - rb;
-    if (ra === 0) {
-      const pa = state.muscle_goals[a.muscle]?.priority_rank ?? 99;
-      const pb = state.muscle_goals[b.muscle]?.priority_rank ?? 99;
-      if (pa !== pb) return pa - pb;
+    const aPrio = a.goalStatus === MuscleStatus.PRIORITAIRE ? 0 : 1;
+    const bPrio = b.goalStatus === MuscleStatus.PRIORITAIRE ? 0 : 1;
+    if (aPrio !== bPrio) return aPrio - bPrio;
+    if (aPrio === 0) {
+      const ra = state.muscle_goals[a.muscle]?.priority_rank ?? 99;
+      const rb = state.muscle_goals[b.muscle]?.priority_rank ?? 99;
+      if (ra !== rb) return ra - rb;
     }
     return a.muscle.localeCompare(b.muscle);
   });
