@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { cn } from '@/lib/cn';
 import {
   buildCycleHistory,
@@ -29,6 +29,16 @@ const TABS: ReadonlyArray<{ readonly id: Tab; readonly label: string }> = [
   { id: 'cycles', label: 'Cycles' },
 ];
 
+/**
+ * Conv #76 — onglet d'arrivée réglable par `?tab=`. L'onglet vit dans un état
+ * local : sans ce paramètre, tout lien vers `/progres` retombait sur Volume —
+ * y compris le « Retour aux cycles » d'un bilan archivé, qui ramenait donc
+ * l'utilisateur ailleurs que d'où il venait.
+ */
+function parseTab(raw: string | null): Tab | null {
+  return TABS.some((t) => t.id === raw) ? (raw as Tab) : null;
+}
+
 /** Fenêtre glissante par défaut de l'onglet Volume (semaines de programme). */
 const VOLUME_HISTORY_WEEKS = 8;
 
@@ -55,7 +65,8 @@ export default function ProgresPage() {
   const history = useCoachOsStore((s) => s.history);
   const catalog = useCoachOsStore((s) => s.catalog);
   const today = useToday();
-  const [tab, setTab] = useState<Tab>('volume');
+  const [search] = useSearchParams();
+  const [tab, setTab] = useState<Tab>(() => parseTab(search.get('tab')) ?? 'volume');
   // B-3 — échelle de temps des courbes. Un seul réglage pour tout l'écran
   // (Volume ET Force) plutôt qu'un sélecteur par carte : sur une liste de 15
   // muscles ou 20 exos, un sélecteur par carte serait une surcharge pour un

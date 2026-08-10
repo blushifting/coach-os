@@ -67,11 +67,14 @@ function CycleCard({ item, catalog }: CycleCardProps) {
       </div>
 
       <div className="grid grid-cols-2 gap-2">
+        {/* Conv #76 — « Volume total » (tonnage) remplacé par l'assiduité. Le
+            tonnage avait été jugé non fiable et retiré des deux bilans en E-3 ;
+            il ne survivait plus qu'ici. */}
         <Metric
-          label="Volume total"
-          value={`${Math.round(item.volumeTotalKg).toLocaleString('fr-FR')} kg`}
-          delta={item.deltaVolumeKg}
-          unit="kg"
+          label="Assiduité"
+          value={`${Math.round(Math.min(1, item.adherencePct) * 100)} %`}
+          delta={item.deltaAdherencePts}
+          deltaSuffix=" pts"
         />
         <Metric
           label="Meilleure progression"
@@ -81,7 +84,7 @@ function CycleCard({ item, catalog }: CycleCardProps) {
               : '—'
           }
           delta={item.deltaTopPlafondKg}
-          unit="kg"
+          deltaSuffix=" kg"
         />
       </div>
 
@@ -201,10 +204,11 @@ interface MetricProps {
   readonly label: string;
   readonly value: string;
   readonly delta: number | null;
-  readonly unit: string;
+  /** Unité accolée au delta (« kg », « pts »). */
+  readonly deltaSuffix: string;
 }
 
-function Metric({ label, value, delta }: MetricProps) {
+function Metric({ label, value, delta, deltaSuffix }: MetricProps) {
   return (
     <div className="flex flex-col gap-0.5">
       <span className="text-[10px] uppercase tracking-wide text-anthracite-300">
@@ -222,7 +226,8 @@ function Metric({ label, value, delta }: MetricProps) {
                 : 'text-anthracite-300',
           )}
         >
-          {formatDelta(delta)} vs cycle précédent
+          {formatDelta(delta)}
+          {deltaSuffix} vs cycle précédent
         </span>
       )}
     </div>

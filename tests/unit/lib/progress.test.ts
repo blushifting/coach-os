@@ -169,6 +169,7 @@ function makeReview(input: {
   cycle_index: number;
   plafonds: Record<string, number>;
   volume_total_kg: number;
+  adherence_pct?: number;
   muscle_goals_snapshot?: CycleReview['muscle_goals_snapshot'];
 }): CycleReview {
   return {
@@ -178,7 +179,7 @@ function makeReview(input: {
     muscles_plateau: [],
     muscles_undertrained: [],
     muscles_overshoot: [],
-    adherence_pct: 1,
+    adherence_pct: input.adherence_pct ?? 1,
     volume_total_kg: input.volume_total_kg,
     PRs: [],
     suggested_action: SuggestedAction.CONTINUER_PAREIL,
@@ -421,29 +422,70 @@ describe('buildCycleHistory', () => {
     expect(items[0]!.plafondsTop.map(([, k]) => k)).toEqual([12, 7, 5]);
   });
 
-  it('calcule delta volume et delta top plafond vs cycle précédent', () => {
+  it('calcule delta assiduité et delta top plafond vs cycle précédent', () => {
     const items = buildCycleHistory(
       [
         makeCycleRow(
           1,
           '2026-03-01',
           '2026-04-01',
-          makeReview({ cycle_index: 1, plafonds: { bp: 5 }, volume_total_kg: 8000 }),
+          makeReview({
+            cycle_index: 1,
+            plafonds: { bp: 5 },
+            volume_total_kg: 8000,
+            adherence_pct: 0.6,
+          }),
         ),
         makeCycleRow(
           2,
           '2026-04-02',
           '2026-05-01',
-          makeReview({ cycle_index: 2, plafonds: { bp: 8 }, volume_total_kg: 11000 }),
+          makeReview({
+            cycle_index: 2,
+            plafonds: { bp: 8 },
+            volume_total_kg: 11000,
+            adherence_pct: 0.85,
+          }),
         ),
       ],
     );
     const latest = items[0]!;
-    expect(latest.deltaVolumeKg).toBe(3000);
+    expect(latest.adherencePct).toBe(0.85);
+    expect(latest.deltaAdherencePts).toBeCloseTo(25, 6);
     expect(latest.deltaTopPlafondKg).toBe(3);
     const oldest = items[1]!;
-    expect(oldest.deltaVolumeKg).toBeNull();
+    expect(oldest.deltaAdherencePts).toBeNull();
     expect(oldest.deltaTopPlafondKg).toBeNull();
+  });
+
+  it('assiduité > 100 % plafonnée des deux côtés du delta', () => {
+    // Les séances libres gonflent le numérateur : deux cycles « pleins » ne
+    // doivent pas afficher d'écart artificiel.
+    const items = buildCycleHistory([
+      makeCycleRow(
+        1,
+        '2026-03-01',
+        '2026-04-01',
+        makeReview({
+          cycle_index: 1,
+          plafonds: { bp: 5 },
+          volume_total_kg: 0,
+          adherence_pct: 1.2,
+        }),
+      ),
+      makeCycleRow(
+        2,
+        '2026-04-02',
+        '2026-05-01',
+        makeReview({
+          cycle_index: 2,
+          plafonds: { bp: 5 },
+          volume_total_kg: 0,
+          adherence_pct: 1.4,
+        }),
+      ),
+    ]);
+    expect(items[0]!.deltaAdherencePts).toBe(0);
   });
 
   it('objectivesByMuscle : un muscle PRIORITAIRE (rank 1) précède un non-prioritaire alphabétiquement antérieur', () => {

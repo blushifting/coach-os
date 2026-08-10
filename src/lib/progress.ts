@@ -360,12 +360,21 @@ export interface CycleHistoryItem {
   readonly cycleIndex: number;
   readonly startDate: string;
   readonly endDate: string | null;
-  /** Volume total kg (somme du cycle), 0 si pas de review. */
-  readonly volumeTotalKg: number;
+  /**
+   * Assiduité du cycle, en fraction 0–1 (peut dépasser 1 : les séances libres
+   * gonflent le numérateur, l'affichage plafonne).
+   *
+   * Conv #76 — remplace `volumeTotalKg` sur la carte de l'onglet Cycles. Le
+   * tonnage avait été retiré du bilan de séance puis du bilan de cycle en E-3
+   * (charge × reps × poids du corps : une séance plus légère mais plus dure
+   * ressortait « en baisse ») ; il survivait ici seul. `volume_total_kg` reste
+   * calculé et persisté dans `CycleReview`, il n'est simplement plus affiché.
+   */
+  readonly adherencePct: number;
   /** Top 3 progressions e1RM (exId, Δkg) du cycle, ordre décroissant. */
   readonly plafondsTop: ReadonlyArray<readonly [string, number]>;
-  /** Δ volume total vs cycle précédent (en kg), null si pas de précédent. */
-  readonly deltaVolumeKg: number | null;
+  /** Δ d'assiduité vs cycle précédent, en POINTS de pourcentage. */
+  readonly deltaAdherencePts: number | null;
   /** Δ progression moyenne des plafonds vs cycle précédent (kg), null si N/A. */
   readonly deltaTopPlafondKg: number | null;
   /**
@@ -420,12 +429,17 @@ export function buildCycleHistory(
       .map(([id, d]) => [id, d] as const);
 
     // Δ vs cycle précédent (le précédent ayant aussi une review).
-    let deltaVolumeKg: number | null = null;
+    let deltaAdherencePts: number | null = null;
     let deltaTopPlafondKg: number | null = null;
     for (let j = i - 1; j >= 0; j--) {
       const prev = sorted[j]!;
       if (prev.review === null) continue;
-      deltaVolumeKg = review.volume_total_kg - prev.review.volume_total_kg;
+      // Les deux termes sont plafonnés comme à l'affichage : sans ça, deux
+      // cycles à 100 % pourraient afficher un écart dû aux séances libres.
+      deltaAdherencePts =
+        (Math.min(1, review.adherence_pct) -
+          Math.min(1, prev.review.adherence_pct)) *
+        100;
       const topNow = plafondsTop[0]?.[1] ?? 0;
       const prevTops = Object.values(prev.review.plafonds_progression).sort(
         (a, b) => b - a,
@@ -441,9 +455,9 @@ export function buildCycleHistory(
       cycleIndex: c.cycle_index,
       startDate: c.start_date,
       endDate: c.end_date,
-      volumeTotalKg: review.volume_total_kg,
+      adherencePct: review.adherence_pct,
       plafondsTop,
-      deltaVolumeKg,
+      deltaAdherencePts,
       deltaTopPlafondKg,
       objectivesByMuscle,
     });

@@ -127,7 +127,9 @@ export default function CycleBilanPage() {
           <ReviewMuscleForce review={review} catalog={catalog} />
           {review.warnings.length > 0 && <ReviewWarnings review={review} />}
           {isArchived ? (
-            <Link to="/progres">
+            // Conv #76 — `?tab=cycles` : sans lui, ce bouton ramenait sur
+            // l'onglet Volume, pas sur la liste d'où l'on venait.
+            <Link to="/progres?tab=cycles">
               <Button variant="secondary" fullWidth data-testid="back-to-progres">
                 Retour aux cycles
               </Button>
