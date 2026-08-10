@@ -290,8 +290,15 @@ function NextBilanWidget({
  * dont c'est l'échéance — même objet sémantique, arrivé à terme. La grille
  * 2×2 garde ses dimensions, rien ne se décale.
  *
- * L'accent sang + la flèche + le libellé portent l'appel à l'action ; la
- * couleur ne travaille jamais seule.
+ * Traitement plein sang (le rouge d'un bouton d'action principale, pas la
+ * teinte discrète d'un bandeau) : à ce moment précis, c'est la seule chose à
+ * faire sur cet écran — le calendrier s'arrête à la semaine 5, aucune séance
+ * ne peut plus être planifiée avant d'être passé par là. Le halo et la
+ * pulsation d'ouverture assument cette urgence. Une seule tuile rouge à
+ * l'écran, donc aucune concurrence avec un autre accent.
+ *
+ * L'accent, la flèche et le libellé portent l'appel ensemble : la couleur ne
+ * travaille jamais seule.
  */
 function BilanReadyWidget() {
   return (
@@ -303,18 +310,20 @@ function BilanReadyWidget() {
       <WidgetShell
         testId="widget-next-bilan"
         label="Bilan"
-        className="h-full border-sang-700 from-sang-900/60 to-sang-950/60 transition-shadow hover:shadow-glow-sang"
+        labelClassName="text-white/70"
+        className={cn(
+          'h-full border-sang-400/70 from-sang-600 to-sang-800',
+          'shadow-glow-sang motion-safe:animate-finish-pulse',
+        )}
       >
         <div className="flex flex-1 items-center justify-between gap-2">
           <div className="flex flex-col leading-none">
             <span className="font-display text-2xl font-bold leading-none text-white">
               Prêt
             </span>
-            <span className="mt-1 text-xs text-anthracite-200">
-              cycle terminé
-            </span>
+            <span className="mt-1 text-xs text-white/80">cycle terminé</span>
           </div>
-          <ChevronRight className="shrink-0 text-sang-400" />
+          <ChevronRight className="shrink-0 text-white" />
         </div>
       </WidgetShell>
     </Link>
@@ -330,6 +339,8 @@ interface WidgetShellProps {
   readonly label: string;
   readonly helpTopic?: import('@/lib/help-glossary').HelpTopic;
   readonly className?: string;
+  /** Surcharge la couleur du label (tuile à fond plein, cf. `BilanReadyWidget`). */
+  readonly labelClassName?: string;
   readonly children: React.ReactNode;
 }
 
@@ -338,6 +349,7 @@ function WidgetShell({
   label,
   helpTopic,
   className,
+  labelClassName,
   children,
 }: WidgetShellProps) {
   return (
@@ -345,7 +357,12 @@ function WidgetShell({
       className={cn('flex min-h-[104px] flex-col gap-2.5', className)}
       data-testid={testId}
     >
-      <span className="flex items-center gap-1 text-xs uppercase tracking-wide text-anthracite-300">
+      <span
+        className={cn(
+          'flex items-center gap-1 text-xs uppercase tracking-wide text-anthracite-300',
+          labelClassName,
+        )}
+      >
         {helpTopic ? <Concept topic={helpTopic}>{label}</Concept> : label}
       </span>
       {children}

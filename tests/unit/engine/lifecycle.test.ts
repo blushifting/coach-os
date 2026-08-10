@@ -5,16 +5,20 @@
 import { describe, expect, it } from 'vitest';
 import { Catalog } from '@/engine/catalog';
 import {
-  adjustVolumeBoundsAtCycleEnd,
+  FORCE_DELTA_THRESHOLD,
   applyUserActionAfterCycle,
+  classifyForceDelta,
   generateCycleReview,
+  muscleForceDeltas,
   suggestNextAction,
 } from '@/engine/lifecycle';
 import {
   bootstrapMuscleGoalsFromProfile,
+  endOfCycle,
   generateSession,
   startUser,
 } from '@/engine/engine';
+import { effectiveVolumeBounds } from '@/engine/volume';
 import { autoGenerateCyclePlanV3 } from '@/engine/cycle_planner';
 import {
   MuscleObjective,
@@ -168,44 +172,123 @@ describe('generateCycleReview', () => {
 });
 
 // =============================================================================
-// 3. adjustVolumeBoundsAtCycleEnd
+// 3. Bornes de volume — plus aucune mutation en fin de cycle (Conv #76)
 // =============================================================================
 
-describe('adjustVolumeBoundsAtCycleEnd', () => {
-  it('overshoot augmente Vmax', () => {
+describe('fin de cycle et bornes de volume', () => {
+  it('un bilan ne touche ni volume_min ni volume_max', () => {
     const state = stateWithPlan();
-    const before = state.volume_max['pectoraux']!;
-    const review = generateCycleReview(state, catalog);
-    review.muscles_overshoot = ['pectoraux'];
-    adjustVolumeBoundsAtCycleEnd(state, review);
-    expect(state.volume_max['pectoraux']!).toBeGreaterThan(before);
+    // Un cycle bien rempli : c'est le cas qui déclenchait `overshoot` (et donc
+    // +2 sur V_max) à tous les coups avant la suppression de l'ajustement.
+    for (let w = 1; w <= 4; w++) {
+      for (let d = 0; d < 3; d++) {
+        state.history.push({
+          seance_date: `2026-01-${String(w * 7 + d).padStart(2, '0')}`,
+          week_in_cycle: w,
+          cycle_index: state.cycle_index,
+          rpe_target: 8,
+          sets: Array.from({ length: 4 }, () => ({
+            exercise_id: 'bench_bb',
+            reps_done: 8,
+            load_kg: 80,
+            rpe_perceived: 8,
+          })),
+          label: '',
+        });
+      }
+    }
+    state.e1rm['bench_bb'] = 100;
+    const vMinBefore = { ...state.volume_min };
+    const vMaxBefore = { ...state.volume_max };
+
+    endOfCycle(state, catalog);
+
+    expect(state.volume_min).toEqual(vMinBefore);
+    expect(state.volume_max).toEqual(vMaxBefore);
   });
 
-  it('plateau diminue Vmax', () => {
+  it('plus de warning « Plafond en baisse » par exercice', () => {
     const state = stateWithPlan();
-    const before = state.volume_max['pectoraux']!;
+    state.history.push({
+      seance_date: '2026-01-05',
+      week_in_cycle: 1,
+      cycle_index: state.cycle_index,
+      rpe_target: 8,
+      sets: [{ exercise_id: 'bench_bb', reps_done: 5, load_kg: 100, rpe_perceived: 9 }],
+      label: '',
+    });
+    // Plafond courant très inférieur à la mesure d'ouverture ⇒ forte baisse.
+    state.e1rm['bench_bb'] = 50;
     const review = generateCycleReview(state, catalog);
-    review.muscles_plateau = ['pectoraux'];
-    adjustVolumeBoundsAtCycleEnd(state, review);
-    expect(state.volume_max['pectoraux']!).toBeLessThan(before);
+    expect(review.plafonds_progression['bench_bb']).toBeLessThan(0);
+    expect(review.warnings).toEqual([]);
+  });
+});
+
+// =============================================================================
+// 3a. muscleForceDeltas — agrégation par muscle pour la silhouette (Conv #76)
+// =============================================================================
+
+describe('muscleForceDeltas', () => {
+  it('moyenne les Δ des exercices dont le muscle est PRIMAIRE', () => {
+    const deltas = muscleForceDeltas({ bench_bb: 4, bench_db: 2 }, catalog);
+    expect(deltas['pectoraux']).toBeCloseTo(3, 6);
   });
 
-  it('undertrained diminue Vmin', () => {
-    const state = stateWithPlan();
-    const before = state.volume_min['pectoraux']!;
-    const review = generateCycleReview(state, catalog);
-    review.muscles_undertrained = ['pectoraux'];
-    adjustVolumeBoundsAtCycleEnd(state, review);
-    expect(state.volume_min['pectoraux']!).toBeLessThan(before);
+  it('ignore un exercice absent du catalogue', () => {
+    const deltas = muscleForceDeltas({ exo_supprime: 10 }, catalog);
+    expect(Object.keys(deltas)).toEqual([]);
   });
 
-  it('undertrained génère un warning volume minimum', () => {
+  it('trois états francs autour du seuil de significativité', () => {
+    expect(classifyForceDelta(FORCE_DELTA_THRESHOLD + 0.1)).toBe('up');
+    expect(classifyForceDelta(-FORCE_DELTA_THRESHOLD - 0.1)).toBe('down');
+    // Le mot « plateau » d'avant #76 désignait une BAISSE ; la zone stable
+    // n'apparaissait dans aucune liste. Elle a maintenant son état.
+    expect(classifyForceDelta(0.2)).toBe('flat');
+    expect(classifyForceDelta(-0.2)).toBe('flat');
+  });
+});
+
+// =============================================================================
+// 3b. classifyMusclesOutcome — unité et bornes (Conv #76)
+// =============================================================================
+
+describe('surcharge de volume (muscles_overshoot)', () => {
+  /** Remplit `n` séries de développé couché par semaine, sur 4 semaines. */
+  function fillCycle(state: UserState, setsPerWeek: number): void {
+    for (let w = 1; w <= 4; w++) {
+      state.history.push({
+        seance_date: `2026-02-0${w}`,
+        week_in_cycle: w,
+        cycle_index: state.cycle_index,
+        rpe_target: 8,
+        sets: Array.from({ length: setsPerWeek }, () => ({
+          exercise_id: 'bench_bb',
+          reps_done: 8,
+          load_kg: 80,
+          rpe_perceived: 8,
+        })),
+        label: '',
+      });
+    }
+    state.e1rm['bench_bb'] = 100;
+  }
+
+  it('un volume dans la cible ne déclenche pas la surcharge', () => {
     const state = stateWithPlan();
+    const [, vMax] = effectiveVolumeBounds(state, 'pectoraux');
+    fillCycle(state, Math.max(1, Math.round(vMax) - 2));
     const review = generateCycleReview(state, catalog);
-    review.muscles_undertrained = ['pectoraux'];
-    review.warnings = [];
-    adjustVolumeBoundsAtCycleEnd(state, review);
-    expect(review.warnings.some((w) => w.includes('Volume minimum'))).toBe(true);
+    expect(review.muscles_overshoot).not.toContain('pectoraux');
+  });
+
+  it('un volume hebdo bien au-dessus de la cible haute la déclenche', () => {
+    const state = stateWithPlan();
+    const [, vMax] = effectiveVolumeBounds(state, 'pectoraux');
+    fillCycle(state, Math.ceil(vMax * 2));
+    const review = generateCycleReview(state, catalog);
+    expect(review.muscles_overshoot).toContain('pectoraux');
   });
 });
 

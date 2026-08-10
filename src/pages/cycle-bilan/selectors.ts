@@ -60,22 +60,34 @@ export function pickPendingCycleReview(args: {
 }
 
 /**
- * `action` est typé `string` (pas `SuggestedAction`) : les bilans de cycle
- * archivés avant Chantier C (plan 11) peuvent contenir `'tourner'` ou
- * `'changer'`, des valeurs retirées de l'enum mais encore présentes en DB.
+ * Muscles à la fois **surchargés** et **en recul** sur le cycle — le signal qui
+ * déclenche l'alerte de dosage du bilan (Conv #76).
+ *
+ * La conjonction est le fond du sujet. Reculer sans excès de volume peut tenir
+ * au sommeil ou à une mauvaise période : on n'accuse pas le programme.
+ * Encaisser beaucoup de volume sans rien perdre, c'est qu'on le supporte : on
+ * ne dit rien non plus. Seul le croisement des deux désigne un problème de
+ * dosage.
+ *
+ * Les deux listes sont **persistées** dans chaque `CycleReview` : l'alerte
+ * fonctionne donc aussi sur les bilans archivés, sans champ ni migration.
+ * Corollaire heureux : les muscles listés sont exactement ceux qui
+ * apparaissent en rouge sur la silhouette « Progression par muscle ».
  */
-export function suggestedActionLabel(action: string): string {
-  switch (action) {
-    case 'continuer':
-      return 'Continuer pareil';
-    case 'ajuster':
-      return 'Ajuster les objectifs';
-    case 'tourner':
-    case 'changer':
-      // Actions retirées du produit — les bilans archivés se présentent comme
-      // « Ajuster les objectifs » (pas de différence nette côté utilisateur).
-      return 'Ajuster les objectifs';
-    default:
-      return 'Continuer pareil';
-  }
+export function overloadedMuscles(review: CycleReview): string[] {
+  const declining = new Set(review.muscles_plateau);
+  return review.muscles_overshoot.filter((m) => declining.has(m));
 }
+
+/*
+ * Conv #76 — `suggestedActionLabel` supprimée avec la ligne « Kotsh te
+ * suggère… » qu'elle alimentait. `suggestNextAction` ne reposait que sur deux
+ * seuils (assiduité < 60 %, ou ≥ 3 muscles en recul), ignorait les muscles en
+ * progrès, ne distinguait pas un cycle qui progresse d'un cycle qui stagne, et
+ * ne conditionnait aucun comportement — les deux boutons restaient identiques
+ * dans les deux cas. Le bilan porte désormais une alerte de dosage, factuelle
+ * et actionnable (cf. `OverloadAlert`).
+ *
+ * Le champ `suggested_action` reste produit et persisté : il vit dans les
+ * bilans archivés et dans le schéma de la démo.
+ */

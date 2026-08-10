@@ -46,10 +46,7 @@ import {
   isDeloadActive,
 } from './volume';
 import { applyBalanceRules } from './balance';
-import {
-  adjustVolumeBoundsAtCycleEnd,
-  generateCycleReview,
-} from './lifecycle';
+import { generateCycleReview } from './lifecycle';
 
 // =============================================================================
 // 1. Initialisation utilisateur
@@ -542,8 +539,12 @@ export function endOfWeek(state: UserState): EndOfWeekResult {
 // 7. Fin de cycle
 // =============================================================================
 
+/**
+ * Conv #76 — ne mute plus rien. `adjustVolumeBoundsAtCycleEnd` a été supprimé
+ * (cf. `lifecycle.ts` §4) : une fin de cycle produit un bilan, elle ne touche
+ * plus aux bornes de volume. La fonction reste le point d'entrée du bilan pour
+ * ne pas disperser l'API du moteur.
+ */
 export function endOfCycle(state: UserState, catalog: Catalog) {
-  const review = generateCycleReview(state, catalog);
-  adjustVolumeBoundsAtCycleEnd(state, review);
-  return review;
+  return generateCycleReview(state, catalog);
 }

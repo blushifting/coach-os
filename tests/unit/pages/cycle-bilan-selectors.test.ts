@@ -16,6 +16,7 @@ import type { CycleReview, SessionFeedback, UserState } from '@/engine/models';
 import type { CycleRow, FeedbackRow } from '@/db/schema';
 import { addDays, dateKey, parseDateKey } from '@/lib/dashboard';
 import {
+  overloadedMuscles,
   pickPendingCycleReview,
   pickReviewToDisplay,
 } from '@/pages/cycle-bilan/selectors';
@@ -176,6 +177,29 @@ describe('pickPendingCycleReview', () => {
         today: addDays(parseDateKey(START), 35),
       }),
     ).toBeNull();
+  });
+});
+
+describe('overloadedMuscles', () => {
+  function reviewWith(overshoot: string[], plateau: string[]): CycleReview {
+    const r = makeReview(1);
+    r.muscles_overshoot = overshoot;
+    r.muscles_plateau = plateau;
+    return r;
+  }
+
+  it('alerte seulement sur les muscles à la fois surchargés ET en recul', () => {
+    expect(
+      overloadedMuscles(reviewWith(['pectoraux', 'dos_largeur'], ['pectoraux', 'biceps'])),
+    ).toEqual(['pectoraux']);
+  });
+
+  it('beaucoup de volume sans recul → aucune alerte', () => {
+    expect(overloadedMuscles(reviewWith(['pectoraux'], []))).toEqual([]);
+  });
+
+  it('recul sans excès de volume → aucune alerte (on n’accuse pas le programme)', () => {
+    expect(overloadedMuscles(reviewWith([], ['pectoraux']))).toEqual([]);
   });
 });
 
