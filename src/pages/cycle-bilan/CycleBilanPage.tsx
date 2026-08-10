@@ -9,7 +9,7 @@ import { MOTION } from '@/lib/motion';
 import { useEngine } from '@/hooks/useEngine';
 import { useAnimateOnMount } from '@/hooks/useMotion';
 import { useCoachOsStore } from '@/store';
-import { selectCycles, useDemoMode } from '@/store/selectors';
+import { selectCycles, useDemoMode, useToday } from '@/store/selectors';
 import { MuscleStatus, SuggestedAction, type CycleReview } from '@/engine/models';
 import {
   buildMusclesOf,
@@ -19,7 +19,11 @@ import {
   type CoverageStatus,
   type MuscleCycleVolume,
 } from '@/lib/progress';
-import { pickReviewToDisplay, suggestedActionLabel } from './selectors';
+import {
+  pickPendingCycleReview,
+  pickReviewToDisplay,
+  suggestedActionLabel,
+} from './selectors';
 
 /**
  * Page Bilan de cycle — Conv #5a.
@@ -36,6 +40,7 @@ export default function CycleBilanPage() {
   const catalog = useCoachOsStore((s) => s.catalog);
   const feedbacks = useCoachOsStore((s) => s.history.feedbacks);
   const userState = useCoachOsStore((s) => s.userState);
+  const today = useToday();
   const [search] = useSearchParams();
   // Conv #15-5 — Si on arrive avec `?cycle=N`, on cible explicitement le
   // bilan de ce cycle (ouvert depuis Progrès > Cycles). Sinon comportement
@@ -45,10 +50,22 @@ export default function CycleBilanPage() {
     targetCycleParam !== null && Number.isFinite(Number(targetCycleParam))
       ? Number(targetCycleParam)
       : null;
+
+  // Conv #76 — bilan du cycle en cours, calculé à la volée tant qu'il n'a pas
+  // été validé (cf. `pickPendingCycleReview`). Prioritaire sur le fallback
+  // `pickReviewToDisplay`, qui remonterait sinon le bilan du cycle PRÉCÉDENT.
+  const pendingReview = useMemo(
+    () =>
+      targetCycleIndex !== null
+        ? null
+        : pickPendingCycleReview({ userState, catalog, cycles, feedbacks, today }),
+    [targetCycleIndex, userState, catalog, cycles, feedbacks, today],
+  );
+
   const review =
     targetCycleIndex !== null
       ? cycles.find((c) => c.cycle_index === targetCycleIndex)?.review ?? null
-      : pickReviewToDisplay(lastCycleReview, cycles);
+      : pendingReview ?? pickReviewToDisplay(lastCycleReview, cycles);
   // Si on a un cycle ciblé, on N'A PAS d'actions à proposer (c'est un bilan
   // archivé, pas une fin de cycle en cours).
   const isArchived = targetCycleIndex !== null;
@@ -75,6 +92,13 @@ export default function CycleBilanPage() {
         <h1 className="text-xl font-semibold text-white">
           {review === null ? 'Bilan de cycle' : `Bilan du cycle ${review.cycle_index}`}
         </h1>
+        {pendingReview !== null && (
+          <p className="text-xs text-anthracite-300">
+            Ce cycle est terminé. Voici ce qu'il a donné&nbsp;; choisis la suite
+            en bas de page pour lancer le cycle&nbsp;
+            {pendingReview.cycle_index + 1}.
+          </p>
+        )}
       </header>
 
       {review === null ? (

@@ -6,13 +6,16 @@
  *  - Série de semaines    → flamme stylisée + compteur.
  *  - Cette semaine        → ProgressRing avec done/total au centre.
  *  - Cycle (séances)      → ProgressRing avec % au centre.
- *  - Prochain bilan       → barre horizontale temporelle (jours).
+ *  - Prochain bilan       → barre horizontale temporelle (jours), qui devient
+ *    l'entrée vers le bilan une fois le cycle terminé (Conv #76).
  *
  * Les `data-testid` historiques sont conservés à l'identique.
  */
 
+import { Link } from 'react-router-dom';
 import { Card } from '@/components/Card';
 import { Concept } from '@/components/Concept';
+import { ChevronRight } from '@/components/icons';
 import { ProgressRing } from '@/components/ProgressRing';
 import { cn } from '@/lib/cn';
 import type {
@@ -27,6 +30,8 @@ interface WidgetsProps {
   readonly weekSessions: WeekSessions;
   readonly nextBilanDate: string | null;
   readonly cycleTime: CycleTimeProgress | null;
+  /** Conv #76 — cycle terminé : la tuile "Prochain bilan" devient l'entrée. */
+  readonly cycleFinished: boolean;
 }
 
 export function Widgets({
@@ -35,13 +40,18 @@ export function Widgets({
   weekSessions,
   nextBilanDate,
   cycleTime,
+  cycleFinished,
 }: WidgetsProps) {
   return (
     <div className="grid grid-cols-2 gap-2.5" data-testid="programme-widgets">
       <StreakWidget streak={streak} />
       <WeekSessionsWidget sessions={weekSessions} />
       <CyclePctWidget cycle={cycleProgress} />
-      <NextBilanWidget date={nextBilanDate} time={cycleTime} />
+      {cycleFinished ? (
+        <BilanReadyWidget />
+      ) : (
+        <NextBilanWidget date={nextBilanDate} time={cycleTime} />
+      )}
     </div>
   );
 }
@@ -269,6 +279,49 @@ function NextBilanWidget({
 }
 
 // =============================================================================
+// Bilan prêt — la 4e tuile mute quand le cycle est terminé (Conv #76)
+// =============================================================================
+
+/**
+ * Conv #76 — fin de cycle. L'entrée vers le bilan vivait dans un bandeau
+ * inséré entre les widgets et le calendrier : il se collait à la grille et
+ * poussait le calendrier vers le bas au moment précis où l'écran change
+ * d'état. Elle prend maintenant la place de la tuile « Prochain bilan »,
+ * dont c'est l'échéance — même objet sémantique, arrivé à terme. La grille
+ * 2×2 garde ses dimensions, rien ne se décale.
+ *
+ * L'accent sang + la flèche + le libellé portent l'appel à l'action ; la
+ * couleur ne travaille jamais seule.
+ */
+function BilanReadyWidget() {
+  return (
+    <Link
+      to="/cycle-bilan"
+      data-testid="cycle-finished-banner"
+      className="rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sang-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-graphite-950"
+    >
+      <WidgetShell
+        testId="widget-next-bilan"
+        label="Bilan"
+        className="h-full border-sang-700 from-sang-900/60 to-sang-950/60 transition-shadow hover:shadow-glow-sang"
+      >
+        <div className="flex flex-1 items-center justify-between gap-2">
+          <div className="flex flex-col leading-none">
+            <span className="font-display text-2xl font-bold leading-none text-white">
+              Prêt
+            </span>
+            <span className="mt-1 text-xs text-anthracite-200">
+              cycle terminé
+            </span>
+          </div>
+          <ChevronRight className="shrink-0 text-sang-400" />
+        </div>
+      </WidgetShell>
+    </Link>
+  );
+}
+
+// =============================================================================
 // Shell commun (Card + header label/help)
 // =============================================================================
 
@@ -276,12 +329,22 @@ interface WidgetShellProps {
   readonly testId: string;
   readonly label: string;
   readonly helpTopic?: import('@/lib/help-glossary').HelpTopic;
+  readonly className?: string;
   readonly children: React.ReactNode;
 }
 
-function WidgetShell({ testId, label, helpTopic, children }: WidgetShellProps) {
+function WidgetShell({
+  testId,
+  label,
+  helpTopic,
+  className,
+  children,
+}: WidgetShellProps) {
   return (
-    <Card className="flex min-h-[104px] flex-col gap-2.5" data-testid={testId}>
+    <Card
+      className={cn('flex min-h-[104px] flex-col gap-2.5', className)}
+      data-testid={testId}
+    >
       <span className="flex items-center gap-1 text-xs uppercase tracking-wide text-anthracite-300">
         {helpTopic ? <Concept topic={helpTopic}>{label}</Concept> : label}
       </span>

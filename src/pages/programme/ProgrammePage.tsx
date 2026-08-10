@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/Card';
-import { ChevronRight } from '@/components/icons';
 import { useCoachOsStore } from '@/store';
 import { useDemoMode, useToday } from '@/store/selectors';
 import { useEngine } from '@/hooks/useEngine';
@@ -27,10 +26,10 @@ import { Widgets } from './Widgets';
  * Onglet Programme — Dashboard Coach OS (Conv #5a).
  *
  * Composition :
- * 1. 4 widgets (streak / cette semaine / % cycle / prochain bilan).
- * 2. Bandeau "Cycle terminé" si applicable (lien vers /cycle-bilan).
- * 3. Calendrier condensé 5 sem × 7 jours avec badges intégrés.
- * 4. Sheet "Planifier" sur tap d'une case (stub 5a — démarrage en 5b).
+ * 1. 4 widgets (streak / cette semaine / % cycle / prochain bilan — cette
+ *    dernière tuile devient l'entrée du bilan quand le cycle est terminé).
+ * 2. Calendrier condensé 5 sem × 7 jours avec badges intégrés.
+ * 3. Sheet "Planifier" sur tap d'une case (stub 5a — démarrage en 5b).
  */
 export default function ProgrammePage() {
   const userState = useCoachOsStore((s) => s.userState);
@@ -142,26 +141,18 @@ export default function ProgrammePage() {
             weekSessions={dashboard.weekSessions}
             nextBilanDate={dashboard.nextBilanDate}
             cycleTime={dashboard.cycleTime}
+            cycleFinished={dashboard.cycleFinished}
           />
         </div>
 
         <div aria-hidden className="flex-[2]" />
 
         <div className="flex flex-col gap-5">
-          {dashboard.cycleFinished && (
-            <Link to="/cycle-bilan" data-testid="cycle-finished-banner" className="block">
-              <Card className="flex items-center justify-between border-sang-700 bg-sang-900/40">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-sm font-semibold text-white">Cycle terminé</span>
-                  <span className="text-xs text-anthracite-300">
-                    Voir le bilan et choisir la suite
-                  </span>
-                </div>
-                <ChevronRight className="text-sang-500" />
-              </Card>
-            </Link>
-          )}
-
+          {/* Conv #76 — le bandeau « Cycle terminé » vivait ici, entre les
+              widgets et le calendrier : il se collait à la grille et poussait
+              le calendrier vers le bas. L'entrée vers le bilan est passée dans
+              la tuile « Prochain bilan », qui arrive justement à échéance
+              (cf. `BilanReadyWidget`). Plus rien ne se décale. */}
           {dashboard.matrix === null ? (
             <Card data-testid="no-cycle-card">
               <p className="text-sm text-anthracite-300">
