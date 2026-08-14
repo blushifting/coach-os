@@ -281,7 +281,12 @@ function bestNeq(
   return neq === -Infinity ? null : { neq, load, reps };
 }
 
-/** Meilleur n_équiv de la dernière séance ANTÉRIEURE contenant cet exo (ou null). */
+/**
+ * Meilleur n_équiv de la dernière séance ANTÉRIEURE contenant cet exo (ou null).
+ * Utilisé par le cliquet de REPS uniquement : au poids du corps il n'y a pas de
+ * charge à comparer, donc pas de filtre de plancher à appliquer (le cliquet de
+ * charge, lui, passe par `previousSessionUnderperformed`).
+ */
 function previousBestNeqForExercise(
   state: UserState,
   exerciseId: string,
@@ -298,9 +303,59 @@ function previousBestNeqForExercise(
 }
 
 /**
+ * Conv #77 — tolérance de comparaison de charges. Les charges sont arrondies à
+ * l'incrément mais restent des flottants : on ne veut pas qu'un 9,999999 rate
+ * un plancher à 10.
+ */
+const LOAD_MATCH_EPS = 1e-6;
+
+/** Séries de ce lot faites AU PLANCHER ou au-dessus. */
+function setsAtOrAboveFloor(
+  feedbacks: readonly SetFeedback[],
+  floor: number,
+): SetFeedback[] {
+  return feedbacks.filter((f) => f.load_kg >= floor - LOAD_MATCH_EPS);
+}
+
+/**
+ * La dernière séance ANTÉRIEURE contenant cet exo est-elle une sous-performance
+ * vis-à-vis de `floor` ? `null` = pas de séance antérieure exploitable (aucune
+ * information, donc pas de descente).
+ *
+ * Sous-performance = aucune série tenue au plancher, OU meilleure série au
+ * plancher sous `targetReps` reps-équivalentes.
+ *
+ * ⚠️ On teste le plancher COURANT, pas celui qui était en vigueur ce jour-là
+ * (les planchers successifs ne sont pas persistés). Approximation assumée : la
+ * question posée est « la séance d'avant tenait-elle la charge d'aujourd'hui ? ».
+ */
+function previousSessionUnderperformed(
+  state: UserState,
+  exerciseId: string,
+  floor: number,
+  targetReps: number,
+): boolean | null {
+  for (let i = state.history.length - 1; i >= 0; i--) {
+    const exoSets = state.history[i]!.sets.filter(
+      (f) => f.exercise_id === exerciseId,
+    );
+    if (exoSets.length === 0) continue;
+    // Séance présente mais sans aucune série exploitable (reps 0, RPE hors
+    // plage) : pas de mesure, donc pas de verdict.
+    if (bestNeq(exoSets) === null) return null;
+    const atFloor = bestNeq(setsAtOrAboveFloor(exoSets, floor));
+    return atFloor === null || atFloor.neq < targetReps;
+  }
+  return null;
+}
+
+/**
  * Met à jour `state.prescribed_load_floor[exo]` à partir des séries de cet exo.
  *
  * Règles (cf. fiche refonte) :
+ *  - **Périmètre de jugement** (Conv #77) : seules les séries faites AU PLANCHER
+ *    ou au-dessus comptent. Une séance entièrement plus légère que le plancher
+ *    est une sous-performance, jamais une graduation.
  *  - **Graduation** : la MEILLEURE série (n_équiv le plus haut, ≈ la plus
  *    fraîche) atteint `R + GRADUATION_RESERVE` → plancher +1 incrément. La
  *    fatigue sur les dernières séries n'empêche donc rien.
@@ -308,8 +363,9 @@ function previousBestNeqForExercise(
  *    plancher ET reste une charge de croisière (n_équiv ≥ `R + ADOPTION_RESERVE`,
  *    donc menée à RIR ≥ 2, pas à l'échec), on adopte cette charge (remplace
  *    l'ancien `outperformedLoad`).
- *  - **Descente** : seulement si CETTE séance ET la précédente de l'exo sont sous
- *    R reps-équivalentes (charge trop lourde, sous-perf répétée) → plancher −1.
+ *  - **Descente** : seulement si CETTE séance ET la précédente de l'exo sont en
+ *    sous-performance — sous R reps-équivalentes au plancher, ou plancher jamais
+ *    atteint (charge trop lourde, sous-perf répétée) → plancher −1.
  *
  * Cliquet à sens unique sauf descente (hystérésis). Le caller skippe la semaine
  * de récup. Exos sans charge externe additive ignorés.
@@ -332,37 +388,57 @@ export function updatePrescribedLoadFloorForExercise(
   options: UpdateLoadFloorOptions = {},
 ): void {
   if (!exerciseUsesLoadFloor(state, exercise)) return;
-  const best = bestNeq(feedbacks);
-  if (best === null) return;
+  // Sert uniquement à SEMER le plancher la 1re fois (aucun plancher connu ⇒ la
+  // charge réellement utilisée fait référence).
+  const seedBest = bestNeq(feedbacks);
+  if (seedBest === null) return;
 
   const targetReps = resolveTargetReps(state, exercise);
   const inc = effectiveIncrement(state, exercise);
-  const cur = state.prescribed_load_floor[exercise.id] ?? best.load;
-  let next = cur;
+  const cur = state.prescribed_load_floor[exercise.id] ?? seedBest.load;
+
+  /**
+   * Conv #77 — on ne juge le plancher que sur les séries faites AU PLANCHER ou
+   * au-dessus. Sans ce filtre, une série faite volontairement plus légère (la
+   * charge prescrite n'existe pas sur la machine, ou elle est trop lourde) était
+   * lue comme une performance À la charge du plancher : n_équiv élevé sur une
+   * charge basse pouvait graduer le plancher, et bloquait à coup sûr la descente
+   * — cas réel vu sur l'élévation latérale poulie (plancher 10 jugé sur des
+   * séries à 9, resté 3 séances trop haut). `null` = aucune série au plancher,
+   * c'est-à-dire une sous-performance, pas une absence de donnée.
+   */
+  const best = bestNeq(setsAtOrAboveFloor(feedbacks, cur));
 
   if (options.adoptionOnly) {
     // Pas de seed en récupération : sans plancher établi, on ne fixe rien.
     if (state.prescribed_load_floor[exercise.id] === undefined) return;
-    if (best.load > cur && best.neq >= targetReps + ADOPTION_RESERVE) {
+    if (best !== null && best.load > cur && best.neq >= targetReps + ADOPTION_RESERVE) {
       state.prescribed_load_floor[exercise.id] = best.load;
     }
     return;
   }
 
-  // Anti-régression : charge réelle plus lourde ET série de croisière (n_équiv
-  // ≥ R + ADOPTION_RESERVE, soit RIR ≥ 2 — une série à l'échec ne fait pas un
-  // plancher tenable) → on l'adopte.
-  if (best.load > next && best.neq >= targetReps + ADOPTION_RESERVE) {
-    next = best.load;
+  let next = cur;
+  if (best !== null) {
+    // Anti-régression : charge réelle plus lourde ET série de croisière (n_équiv
+    // ≥ R + ADOPTION_RESERVE, soit RIR ≥ 2 — une série à l'échec ne fait pas un
+    // plancher tenable) → on l'adopte.
+    if (best.load > next && best.neq >= targetReps + ADOPTION_RESERVE) {
+      next = best.load;
+    }
+    if (best.neq >= targetReps + GRADUATION_RESERVE) {
+      // Graduation : +1 incrément.
+      next = roundToIncrement(next + inc, inc);
+    }
   }
 
-  if (best.neq >= targetReps + GRADUATION_RESERVE) {
-    // Graduation : +1 incrément.
-    next = roundToIncrement(next + inc, inc);
-  } else if (next === cur && best.neq < targetReps) {
-    // Descente sur sous-perf répétée (2 séances de suite sous R).
-    const prev = previousBestNeqForExercise(state, exercise.id);
-    if (prev !== null && prev < targetReps) {
+  // Descente sur sous-perf répétée (2 séances de suite). Sous-performer, c'est
+  // rester sous R reps-équivalentes au plancher — ou ne pas avoir tenu le
+  // plancher du tout. Le garde `next === cur` laisse la priorité à une
+  // graduation / adoption qui vient d'avoir lieu.
+  if (next === cur && (best === null || best.neq < targetReps)) {
+    const prev = previousSessionUnderperformed(state, exercise.id, cur, targetReps);
+    if (prev === true) {
       next = Math.max(0, roundToIncrement(cur - inc, inc));
     }
   }

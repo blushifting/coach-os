@@ -192,6 +192,56 @@ describe('descente (hystérésis : 2 séances de suite sous R)', () => {
   });
 });
 
+describe('Conv #77 — le plancher ne se juge que sur les séries faites au plancher', () => {
+  it('série facile mais PLUS LÉGÈRE que le plancher → pas de graduation', () => {
+    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    s.prescribed_load_floor[BENCH] = 50;
+    // 40 kg × 13 reps RIR 3 → n_équiv 16, largement au-dessus du seuil de
+    // graduation… mais 10 kg SOUS le plancher : ça ne dit rien de la tenue de 50.
+    updatePrescribedLoadFloorForExercise(s, catalog.get(BENCH), [fb(40, 13, 7)]);
+    expect(s.prescribed_load_floor[BENCH]).toBe(50);
+  });
+
+  it('deux séances de suite sans jamais atteindre le plancher → −1 incrément', () => {
+    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    s.prescribed_load_floor[BENCH] = 50;
+    // Cas réel (élévation latérale poulie) : l'user allège de son propre chef et
+    // fait de belles séries à la charge allégée. L'ancienne règle y lisait « il
+    // tient le plancher » (n_équiv élevé) et bloquait la descente indéfiniment.
+    s.history.push(pastSession([fb(45, 12, 8)])); // n_équiv 14, mais à 45 < 50
+    updatePrescribedLoadFloorForExercise(s, catalog.get(BENCH), [fb(45, 12, 8)]);
+    expect(s.prescribed_load_floor[BENCH]).toBe(50 - inc());
+  });
+
+  it('une seule séance sous le plancher → pas encore de descente (hystérésis)', () => {
+    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    s.prescribed_load_floor[BENCH] = 50;
+    s.history.push(pastSession([fb(50, 10, 8)])); // séance d'avant : plancher tenu
+    updatePrescribedLoadFloorForExercise(s, catalog.get(BENCH), [fb(45, 12, 8)]);
+    expect(s.prescribed_load_floor[BENCH]).toBe(50);
+  });
+
+  it('séries mixtes : la série AU plancher fait foi, pas la plus légère', () => {
+    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    s.prescribed_load_floor[BENCH] = 50;
+    // La série la plus « facile » du lot est à 40 kg (n_équiv 16) ; celle qui
+    // compte est celle faite à 50 (n_équiv 13) → graduation normale.
+    updatePrescribedLoadFloorForExercise(s, catalog.get(BENCH), [
+      fb(50, 10, 7), // n_équiv 13, AU plancher
+      fb(40, 13, 7), // n_équiv 16, sous le plancher → ignorée
+    ]);
+    expect(s.prescribed_load_floor[BENCH]).toBe(50 + inc());
+  });
+
+  it('seed inchangé : sans plancher connu, la charge réellement faite fait référence', () => {
+    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    // Aucun plancher : le filtre se cale sur la charge de la meilleure série,
+    // qui reste donc jugée normalement (ici graduation depuis 40).
+    updatePrescribedLoadFloorForExercise(s, catalog.get(BENCH), [fb(40, 13, 7)]);
+    expect(s.prescribed_load_floor[BENCH]).toBe(40 + inc());
+  });
+});
+
 describe('exos sans charge externe additive', () => {
   it('bench (barre) est piloté par le cliquet', () => {
     const s = stateFor(MuscleObjective.HYPERTROPHIE);

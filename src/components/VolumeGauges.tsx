@@ -11,7 +11,12 @@ import { useMemo } from 'react';
 import type { Catalog } from '@/engine/catalog';
 import type { UserState, WeeklyTemplate } from '@/engine/models';
 import { effectiveVolumeBounds } from '@/engine/volume';
-import { classifyVolume, muscleLabel, type CoverageStatus } from '@/lib/progress';
+import {
+  classifyVolume,
+  displayVolumeBounds,
+  muscleLabel,
+  type CoverageStatus,
+} from '@/lib/progress';
 import { weightedWeeklyVolumeByMuscle } from '@/lib/onboarding-preview';
 import { Card } from '@/components/Card';
 import { cn } from '@/lib/cn';
@@ -61,7 +66,10 @@ export function VolumeGauges({ template, state, catalog }: Props) {
     const weighted = weightedWeeklyVolumeByMuscle(template, catalog);
     const out: GaugeRow[] = [];
     for (const muscle of Object.keys(state.muscle_goals)) {
-      const [vMin, vMax] = effectiveVolumeBounds(state as UserState, muscle);
+      // Conv #77 — bande arrondie « à l'excès », cf. `displayVolumeBounds`.
+      const [vMin, vMax] = displayVolumeBounds(
+        ...effectiveVolumeBounds(state as UserState, muscle),
+      );
       if (vMax <= 0) continue; // muscle hors scope (pas de plafond)
       const sets = weighted[muscle] ?? 0;
       out.push({ muscle, sets, vMin, vMax, status: classifyVolume(sets, vMin, vMax) });
@@ -107,7 +115,10 @@ function GaugeBar({ muscle, sets, vMin, vMax, status }: GaugeRow) {
       <div className="mb-1 flex items-baseline justify-between gap-2 text-[11px]">
         <span className="truncate text-white">{muscleLabel(muscle)}</span>
         <span className="shrink-0 tabular-nums text-anthracite-300">
-          {Math.round(sets)} / {Math.round(vMin)}–{Math.round(vMax)} séries
+          {/* Séries pondérées : décimale si non entière (un synergiste compte
+              0,5). `Math.round` faisait afficher « 3 » sur un volume de 2,5,
+              donc « 3 / 3–6 · sous la cible » — le libellé se contredisait. */}
+          {Number.isInteger(sets) ? sets : sets.toFixed(1)} / {vMin}–{vMax} séries
           {STATUS_LABEL[status] ? (
             <span className={cn('ml-1.5', STATUS_TEXT_TONE[status])}>
               · {STATUS_LABEL[status]}

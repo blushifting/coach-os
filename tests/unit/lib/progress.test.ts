@@ -11,6 +11,9 @@ import {
   computeE1rmSeriesFromSnapshots,
   computeLastWorkedByMuscle,
   computeVolumeHistory,
+  cycleBoundaries,
+  cycleIndexForDate,
+  displayVolumeBounds,
   weeksSinceFirstFeedback,
   exerciseLabel,
   formatCycleDates,
@@ -597,8 +600,8 @@ describe('computeE1rmSeriesFromSnapshots', () => {
     ];
     const series = computeE1rmSeriesFromSnapshots(snaps, cat);
     expect(series[0]!.points).toHaveLength(2);
-    expect(series[0]!.points[0]).toEqual({ date: '2026-05-01', e1rm: 100 });
-    expect(series[0]!.points[1]).toEqual({ date: '2026-05-08', e1rm: 105 });
+    expect(series[0]!.points[0]).toEqual({ date: '2026-05-01', e1rm: 100, cycleIndex: 1 });
+    expect(series[0]!.points[1]).toEqual({ date: '2026-05-08', e1rm: 105, cycleIndex: 1 });
   });
 
   it('ignore les exos absents du catalogue', () => {
@@ -760,6 +763,119 @@ describe('computeCycleVolumeByMuscle', () => {
     );
     expect(rows[0]!.muscle).toBe('pectoraux');
     expect(rows[1]!.muscle).toBe('biceps');
+  });
+});
+
+// =============================================================================
+// Conv #77 — bande de volume arrondie « à l'excès » + repères de cycle
+// =============================================================================
+
+describe('displayVolumeBounds', () => {
+  it('resserre la bande vers l’intérieur (V_min au sup., V_max à l’inf.)', () => {
+    expect(displayVolumeBounds(2.4, 6)).toEqual([3, 6]);
+    expect(displayVolumeBounds(7, 12.6)).toEqual([7, 12]);
+  });
+
+  it('laisse les bornes déjà entières intactes (pas d’epsilon parasite)', () => {
+    expect(displayVolumeBounds(10, 18)).toEqual([10, 18]);
+    expect(displayVolumeBounds(6.0000001, 11.9999998)).toEqual([6, 12]);
+  });
+
+  it('hors scope (0, 0) → inchangé', () => {
+    expect(displayVolumeBounds(0, 0)).toEqual([0, 0]);
+  });
+
+  it('bande plus étroite qu’une série → dégénère en un seul entier, jamais inversée', () => {
+    const [lo, hi] = displayVolumeBounds(2.4, 2.6);
+    expect(hi).toBeGreaterThanOrEqual(lo);
+  });
+});
+
+describe('bande affichée et statut ne se contredisent plus (bug lombaires #77)', () => {
+  // Reproduction du cas réel : lombaires en maintien, MEV 6 → bande effective
+  // [2,4 ; 6], affichée « 2–6 » avant le fix. 2 séries pile sortaient en rouge
+  // sous une bande qui annonçait 2 comme valide.
+  const catalog = new Catalog([makeExercise('hyperext', { lombaires: 1.0 })]);
+  const state = makeState({
+    volume_min: { lombaires: 6 },
+    volume_max: { lombaires: 10.8 },
+    muscle_goals: {
+      lombaires: {
+        muscle: 'lombaires',
+        objective: MuscleObjective.MAINTIEN,
+        status: MuscleStatus.SUGGERE,
+        priority_rank: 99,
+      },
+    },
+  });
+
+  it('la borne basse annoncée est celle qui fait basculer la couleur', () => {
+    const rows = computeCoverageThisWeek(
+      state,
+      [makeFb('2026-05-04', [{ exercise_id: 'hyperext', n: 2 }])],
+      buildMusclesOf(catalog),
+      new Date('2026-05-06T12:00:00'),
+      '2026-05-04',
+    );
+    const lomb = rows.find((r) => r.muscle === 'lombaires')!;
+    expect(lomb.sets).toBe(2);
+    expect(lomb.vMin).toBe(3); // 2,4 arrondi à l'excès — plus de « 2 » trompeur
+    expect(lomb.status).toBe('sous_min');
+  });
+
+  it('une fois la borne annoncée atteinte, le statut passe « dans la cible »', () => {
+    const rows = computeCoverageThisWeek(
+      state,
+      [makeFb('2026-05-04', [{ exercise_id: 'hyperext', n: 3 }])],
+      buildMusclesOf(catalog),
+      new Date('2026-05-06T12:00:00'),
+      '2026-05-04',
+    );
+    expect(rows.find((r) => r.muscle === 'lombaires')!.status).toBe('ok');
+  });
+});
+
+describe('cycleBoundaries', () => {
+  it('repère chaque changement de cycle, jamais sur le premier point', () => {
+    expect(
+      cycleBoundaries([
+        { cycleIndex: 1 },
+        { cycleIndex: 1 },
+        { cycleIndex: 2 },
+        { cycleIndex: 2 },
+        { cycleIndex: 3 },
+      ]),
+    ).toEqual([
+      { index: 2, cycleIndex: 2 },
+      { index: 4, cycleIndex: 3 },
+    ]);
+  });
+
+  it('série d’un seul cycle → aucun repère', () => {
+    expect(cycleBoundaries([{ cycleIndex: 1 }, { cycleIndex: 1 }])).toEqual([]);
+  });
+
+  it('cycle inconnu (null) → n’ouvre pas de repère', () => {
+    expect(cycleBoundaries([{ cycleIndex: null }, { cycleIndex: null }])).toEqual([]);
+  });
+});
+
+describe('cycleIndexForDate', () => {
+  const cycles = [
+    makeCycleRow(1, '2026-07-06', '2026-08-10', null),
+    makeCycleRow(2, '2026-08-10', null, null),
+  ];
+
+  it('rend le dernier cycle démarré à cette date ou avant', () => {
+    expect(cycleIndexForDate(cycles, '2026-07-06')).toBe(1);
+    expect(cycleIndexForDate(cycles, '2026-08-03')).toBe(1);
+    expect(cycleIndexForDate(cycles, '2026-08-10')).toBe(2);
+    expect(cycleIndexForDate(cycles, '2026-09-01')).toBe(2);
+  });
+
+  it('date antérieure au 1er cycle, ou aucun cycle → null', () => {
+    expect(cycleIndexForDate(cycles, '2026-07-01')).toBeNull();
+    expect(cycleIndexForDate([], '2026-07-06')).toBeNull();
   });
 });
 

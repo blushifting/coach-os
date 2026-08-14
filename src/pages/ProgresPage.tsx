@@ -115,6 +115,8 @@ export default function ProgresPage() {
         volumeWeeks,
         today,
         cycleStart,
+        // Conv #77 — sert uniquement à poser les repères de changement de cycle.
+        history.cycles,
       ),
       // B-1 — récence de travail par muscle, pour le tri des cartes Volume.
       lastWorked: computeLastWorkedByMuscle(history.feedbacks, musclesOf),

@@ -34,6 +34,7 @@ import { effectiveVolumeBounds } from '@/engine/volume';
 import {
   buildMusclesOf,
   classifyVolume,
+  displayVolumeBounds,
   sumMuscleSets,
   type CoverageStatus,
 } from '@/lib/progress';
@@ -591,7 +592,10 @@ export function computeSessionSummary(
   const weekByMuscle = sumMuscleSets([...weekPrior, feedback], musclesOf);
   const muscleVolume: SessionMuscleVolume[] = Object.keys(sessionByMuscle)
     .map((muscle) => {
-      const [vMin, vMax] = effectiveVolumeBounds(state, muscle);
+      // Conv #77 — bande ARRONDIE (cf. `displayVolumeBounds`) : la barre du
+      // bilan affichait « 2–6 » pour une bande réelle [2,4 ; 6], donc 2 séries
+      // pile sortaient en rouge, arrêtées juste avant un repère posé à 2,4.
+      const [vMin, vMax] = displayVolumeBounds(...effectiveVolumeBounds(state, muscle));
       const weekTotal = weekByMuscle[muscle] ?? 0;
       return {
         muscle,

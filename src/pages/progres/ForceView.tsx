@@ -18,7 +18,7 @@ import { displayExerciseName, kgUnitLabel } from '@/lib/catalog-filter';
 import { useCatalog, useGymBrand } from '@/store/selectors';
 import { cn } from '@/lib/cn';
 import { MOTION } from '@/lib/motion';
-import { formatWeekLabel } from '@/lib/progress';
+import { cycleBoundaries, formatWeekLabel } from '@/lib/progress';
 import type { E1rmPoint, ExerciseE1rmSeries } from '@/lib/progress';
 
 /**
@@ -69,12 +69,30 @@ export function ForceView({ series, windowPoints }: ForceViewProps) {
     );
   }
 
+  // Conv #77 — la légende des repères de cycle ne s'affiche que si la fenêtre en
+  // contient au moins un (sur « 12 dernières séances », souvent aucun).
+  const showCycleLegend = series.some(
+    (s) =>
+      cycleBoundaries(windowPoints === null ? s.points : s.points.slice(-windowPoints))
+        .length > 0,
+  );
+
   return (
     <div className="flex flex-col gap-3" data-testid="force-view">
-      <header className="flex items-center gap-2">
+      <header className="flex flex-col gap-1">
         <h2 className="text-sm font-semibold text-white">
           <Concept topic="plafond">Plafond</Concept> par exercice
         </h2>
+        {showCycleLegend && (
+          <p
+            className="text-[11px] leading-snug text-anthracite-300"
+            data-testid="force-cycle-legend"
+          >
+            Les traits verticaux marquent un changement de cycle&nbsp;: d'un cycle
+            à l'autre, les exercices et le volume changent — la progression se lit
+            surtout à l'intérieur d'un même bloc.
+          </p>
+        )}
       </header>
       {series.slice(0, visibleCount).map((s) => (
         <Card
@@ -216,6 +234,11 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
 
   const currentY = yOf(current);
 
+  // Conv #77 — repères de changement de cycle. L'axe X est l'INDEX du point, pas
+  // le temps : le trait se pose donc à mi-chemin entre la dernière mesure du
+  // cycle qui s'achève et la première du suivant.
+  const boundaries = cycleBoundaries(points);
+
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
@@ -248,6 +271,35 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
               className="tabular-nums"
             >
               {v.toFixed(1)} kg
+            </text>
+          </g>
+        );
+      })}
+
+      {/* Conv #77 — délimitations de cycle, dessinées SOUS la courbe pour
+          rester un fond de lecture. */}
+      {boundaries.map(({ index, cycleIndex }) => {
+        const x = (xOf(index - 1) + xOf(index)) / 2;
+        const nearRightEdge = x > W - 20;
+        return (
+          <g key={`cycle-${index}`} data-testid={`force-cycle-${cycleIndex}`}>
+            <line
+              x1={x}
+              x2={x}
+              y1={MT - 5}
+              y2={MT + innerH}
+              stroke="rgba(154,160,170,0.45)"
+              strokeWidth={1}
+              strokeDasharray="2 3"
+            />
+            <text
+              x={nearRightEdge ? x - 3 : x + 3}
+              y={MT - 7}
+              textAnchor={nearRightEdge ? 'end' : 'start'}
+              fontSize="8"
+              fill="#9aa0aa"
+            >
+              C{cycleIndex}
             </text>
           </g>
         );

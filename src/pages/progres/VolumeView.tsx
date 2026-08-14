@@ -28,6 +28,7 @@ import {
 import { cn } from '@/lib/cn';
 import { MOTION } from '@/lib/motion';
 import {
+  cycleBoundaries,
   formatWeekLabel,
   muscleLabel,
   type CoverageStatus,
@@ -177,6 +178,19 @@ export function VolumeView({
         >
           ← Tous les muscles ({muscleLabel(selected)} sélectionné)
         </button>
+      )}
+
+      {/* Conv #77 — n'apparaît que si la fenêtre affichée contient au moins un
+          changement de cycle (les séries partagent le même découpage temporel,
+          la première suffit à trancher). */}
+      {cycleBoundaries(volume[0]?.points ?? []).length > 0 && (
+        <p
+          className="text-[11px] leading-snug text-anthracite-300"
+          data-testid="volume-cycle-legend"
+        >
+          Les traits verticaux marquent un changement de cycle&nbsp;: c'est
+          souvent là qu'un creux ou un saut de volume s'explique.
+        </p>
       )}
 
       <div className="flex flex-col gap-2" data-testid="volume-cards">
@@ -374,6 +388,9 @@ function MiniVolumeChart({ series, testId }: MiniVolumeChartProps) {
   // La dernière semaine est considérée "en cours" (incomplète) → dernier
   // point en pointillé. Le segment qui la rejoint est aussi en pointillé.
   const lastIdx = points.length - 1;
+  // Conv #77 — repères de changement de cycle, posés entre les deux semaines qui
+  // se succèdent de part et d'autre.
+  const boundaries = cycleBoundaries(points);
   const solidPath = points
     .slice(0, lastIdx + 1)
     .map((p, i) => `${xOf(i).toFixed(1)},${yOf(p.sets).toFixed(1)}`);
@@ -406,6 +423,34 @@ function MiniVolumeChart({ series, testId }: MiniVolumeChartProps) {
           data-testid="volume-target-band"
         />
       )}
+
+      {/* Conv #77 — délimitations de cycle (sous la courbe : fond de lecture). */}
+      {boundaries.map(({ index, cycleIndex }) => {
+        const x = (xOf(index - 1) + xOf(index)) / 2;
+        const nearRightEdge = x > W - 20;
+        return (
+          <g key={`cycle-${index}`} data-testid={`volume-cycle-${cycleIndex}`}>
+            <line
+              x1={x}
+              x2={x}
+              y1={MT - 2}
+              y2={MT + innerH}
+              stroke="rgba(154,160,170,0.45)"
+              strokeWidth={1}
+              strokeDasharray="2 3"
+            />
+            <text
+              x={nearRightEdge ? x - 3 : x + 3}
+              y={MT - 3}
+              textAnchor={nearRightEdge ? 'end' : 'start'}
+              fontSize="7.5"
+              fill="#9aa0aa"
+            >
+              C{cycleIndex}
+            </text>
+          </g>
+        );
+      })}
 
       {/* Lignes V_min / V_max + labels */}
       {vMax > 0 && (

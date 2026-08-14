@@ -108,6 +108,34 @@ export interface MuscleCoverage {
  * Tolérance epsilon (Conv #18) : `sets` pondéré (coefs muscles) peut tomber
  * pile sur une borne avec un arrondi flottant (ex : 9.999…).
  */
+/**
+ * Conv #77 — bornes de volume ARRONDIES « à l'excès », pour l'affichage ET le
+ * classement. Les bornes effectives sont des flottants (ex. lombaires en
+ * Maintien : V_min = 0,4 × MEV = 2,4) alors que tout l'affichage les rendait en
+ * entiers : la bande annoncée « 2–6 » n'était pas celle testée par
+ * `classifyVolume`, et 2 séries pile s'affichaient EN ROUGE sous un repère posé
+ * à 2,4. On resserre donc la bande vers l'intérieur — V_min au supérieur, V_max
+ * à l'inférieur — et on classe sur ces mêmes entiers : ce qui est annoncé
+ * « dans la cible » l'est vraiment, et le repère tombe sur le chiffre lu.
+ *
+ * Epsilon : une borne entière calculée en flottant (6,000000001) ne doit pas
+ * être poussée à 7.
+ *
+ * ⚠️ Bande d'AFFICHAGE uniquement. Le moteur (allocation de séries,
+ * `effectiveCycleTargetVolume`) continue de travailler sur les bornes exactes.
+ */
+export function displayVolumeBounds(
+  vMin: number,
+  vMax: number,
+): readonly [number, number] {
+  if (vMin === 0 && vMax === 0) return [0, 0];
+  const lo = Math.ceil(vMin - 0.05);
+  // Garde-fou : sur une bande plus étroite que 1 série, l'arrondi croiserait les
+  // deux bornes (« 3–2 »). On dégénère alors en bande d'un seul entier.
+  const hi = Math.max(lo, Math.floor(vMax + 0.05));
+  return [lo, hi];
+}
+
 export function classifyVolume(
   sets: number,
   vMin: number,
@@ -151,7 +179,9 @@ export function computeCoverageThisWeek(
 
   const out: MuscleCoverage[] = [];
   for (const muscle of muscles) {
-    const [vMin, vMax] = effectiveVolumeBounds(state as UserState, muscle);
+    const [vMin, vMax] = displayVolumeBounds(
+      ...effectiveVolumeBounds(state as UserState, muscle),
+    );
     const sets = counts[muscle] ?? 0;
     const status = classifyVolume(sets, vMin, vMax);
     const denom = vMax > 0 ? vMax : Math.max(1, sets);
@@ -211,6 +241,12 @@ export interface WeeklyVolumePoint {
   /** Lundi YYYY-MM-DD de la semaine. */
   readonly weekStart: string;
   readonly sets: number;
+  /**
+   * Conv #77 — cycle auquel appartient cette semaine, `null` si elle précède le
+   * premier cycle connu. Sert aux repères verticaux de changement de cycle : un
+   * creux de volume s'explique souvent par un changement de programme.
+   */
+  readonly cycleIndex: number | null;
 }
 
 export interface MuscleVolumeSeries {
@@ -226,9 +262,32 @@ export interface MuscleVolumeSeries {
 }
 
 /**
+ * Conv #77 — cycle contenant `date` (clé YYYY-MM-DD) : le dernier cycle démarré
+ * à cette date ou avant. `null` si la date précède le premier cycle connu (ou si
+ * la liste est vide — appelants historiques qui ne passent pas les cycles).
+ */
+export function cycleIndexForDate(
+  cycles: readonly CycleRow[],
+  date: string,
+): number | null {
+  let found: number | null = null;
+  let bestStart = '';
+  for (const c of cycles) {
+    if (c.start_date <= date && c.start_date >= bestStart) {
+      bestStart = c.start_date;
+      found = c.cycle_index;
+    }
+  }
+  return found;
+}
+
+/**
  * Pour chaque muscle, renvoie le volume hebdo des `weeks` dernières semaines
  * calendaires (du lundi de la semaine la plus ancienne au lundi de la semaine
  * courante). Inclut les semaines vides (`sets = 0`).
+ *
+ * `cycles` (optionnel) ne sert qu'à dater les changements de cycle sur la
+ * courbe ; sans lui, les points sortent avec `cycleIndex: null`.
  */
 export function computeVolumeHistory(
   state: Pick<UserState, 'volume_min' | 'volume_max' | 'muscle_goals'>,
@@ -237,6 +296,7 @@ export function computeVolumeHistory(
   weeks: number = 8,
   now: Date = new Date(),
   cycleStart: string | null = null,
+  cycles: readonly CycleRow[] = [],
 ): MuscleVolumeSeries[] {
   if (weeks <= 0) return [];
   // Conv #11h — fenêtre glissante sur les `weeks` dernières semaines de
@@ -261,12 +321,23 @@ export function computeVolumeHistory(
     a.localeCompare(b),
   );
 
+  // Le cycle d'une semaine ne dépend pas du muscle : on le résout une fois.
+  const cycleByWeek = new Map<string, number | null>(
+    weekStarts.map((ws) => [ws, cycleIndexForDate(cycles, ws)]),
+  );
+
   return muscles.map((muscle) => {
-    const [vMin, vMax] = effectiveVolumeBounds(state as UserState, muscle);
+    const [vMin, vMax] = displayVolumeBounds(
+      ...effectiveVolumeBounds(state as UserState, muscle),
+    );
     const points: WeeklyVolumePoint[] = weekStarts.map((ws) => {
       const fbs = byWeek.get(ws) ?? [];
       const sums = sumMuscleSets(fbs, musclesOf);
-      return { weekStart: ws, sets: sums[muscle] ?? 0 };
+      return {
+        weekStart: ws,
+        sets: sums[muscle] ?? 0,
+        cycleIndex: cycleByWeek.get(ws) ?? null,
+      };
     });
     const goal = state.muscle_goals[muscle];
     return {
@@ -325,7 +396,9 @@ export function computeCycleVolumeByMuscle(
   // se lit sur la silhouette du bilan (Conv #76 — un temps listés ici, retirés
   // après essai).
   for (const muscle of Object.keys(state.volume_min)) {
-    const [vMin, vMax] = effectiveVolumeBounds(state as UserState, muscle);
+    const [vMin, vMax] = displayVolumeBounds(
+      ...effectiveVolumeBounds(state as UserState, muscle),
+    );
     if (vMax <= 0) continue;
     const avg = (sums[muscle] ?? 0) / Math.max(1, workingWeeks);
     out.push({
@@ -596,6 +669,39 @@ export function exerciseMusclesLabel(
 }
 
 // =============================================================================
+// Repères de changement de cycle (Conv #77) — partagés Force / Volume
+// =============================================================================
+
+export interface CycleBoundary {
+  /** Index du PREMIER point du nouveau cycle : le repère se pose juste avant. */
+  readonly index: number;
+  /** Numéro du cycle qui commence. */
+  readonly cycleIndex: number;
+}
+
+/**
+ * Conv #77 — positions des changements de cycle dans une série de points déjà
+ * ordonnée et déjà fenêtrée. Un changement de programme est le principal facteur
+ * confondant à la lecture d'une courbe (exos substitués, volume réalloué,
+ * semaine de récupération) : le repère permet de comparer À L'INTÉRIEUR d'un
+ * bloc plutôt qu'au travers d'une discontinuité.
+ *
+ * Le premier point ne porte jamais de repère (rien à délimiter à gauche), et les
+ * points sans cycle connu (`null`) n'en ouvrent pas.
+ */
+export function cycleBoundaries(
+  points: ReadonlyArray<{ readonly cycleIndex: number | null }>,
+): CycleBoundary[] {
+  const out: CycleBoundary[] = [];
+  for (let i = 1; i < points.length; i++) {
+    const cur = points[i]!.cycleIndex;
+    if (cur === null || cur === points[i - 1]!.cycleIndex) continue;
+    out.push({ index: i, cycleIndex: cur });
+  }
+  return out;
+}
+
+// =============================================================================
 // Historique des plafonds (Conv #11g — onglet Progrès / Force)
 // =============================================================================
 
@@ -604,6 +710,11 @@ export interface E1rmPoint {
   readonly date: string;
   /** Plafond estimé sur la meilleure série de cette date pour cet exo. */
   readonly e1rm: number;
+  /**
+   * Conv #77 — cycle de la mesure (porté par le snapshot, aucun recoupement de
+   * dates nécessaire). Sert aux repères verticaux de changement de cycle.
+   */
+  readonly cycleIndex: number;
 }
 
 export interface ExerciseE1rmSeries {
@@ -653,16 +764,16 @@ export function computeE1rmSeriesFromSnapshots(
 ): ExerciseE1rmSeries[] {
   // Un seul point par (exo, date) : le dernier snapshot de la journée fait foi
   // (valeur la plus à jour du plafond). `snapshots` arrive trié par date.
-  const byExo = new Map<string, Map<string, number>>();
+  const byExo = new Map<string, Map<string, { e1rm: number; cycleIndex: number }>>();
   for (const snap of snapshots) {
     if (!Number.isFinite(snap.e1rm) || snap.e1rm <= 0) continue;
     if (!catalog.has(snap.exercise_id)) continue;
     let inner = byExo.get(snap.exercise_id);
     if (inner === undefined) {
-      inner = new Map<string, number>();
+      inner = new Map<string, { e1rm: number; cycleIndex: number }>();
       byExo.set(snap.exercise_id, inner);
     }
-    inner.set(snap.date, snap.e1rm);
+    inner.set(snap.date, { e1rm: snap.e1rm, cycleIndex: snap.cycle_index });
   }
 
   const result: ExerciseE1rmSeries[] = [];
@@ -671,7 +782,7 @@ export function computeE1rmSeriesFromSnapshots(
     const exercise = catalog.get(exId);
     const points: E1rmPoint[] = [...dateMap.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, e1rm]) => ({ date, e1rm }));
+      .map(([date, v]) => ({ date, e1rm: v.e1rm, cycleIndex: v.cycleIndex }));
     const initial = points[0]!.e1rm;
     const current = points[points.length - 1]!.e1rm;
     const deltaPct = initial > 0 ? (current / initial - 1) * 100 : 0;
