@@ -27,6 +27,11 @@ jobs:
 
       - run: npm ci
 
+      # Dernière barrière avant la mise en production : un test rouge arrête
+      # le déploiement. La suite dure quelques secondes ; la configuration de
+      # test neutralise les variables Supabase (couche en ligne inerte).
+      - run: npx vitest run --reporter=dot
+
       # Chantier F — les clés Supabase sont injectées au build (variables
       # Vite `VITE_*`). La clé publiable est publique par design : elle finit
       # dans le bundle, la sécurité repose sur la RLS Postgres. Sans ces
