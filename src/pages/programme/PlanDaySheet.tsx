@@ -7,7 +7,7 @@ import { useEngine } from '@/hooks/useEngine';
 import { getDb } from '@/db';
 import type { SessionRow } from '@/db/schema';
 import { dateKey, type CalendarDay } from '@/lib/dashboard';
-import { formatSessionLabel, sessionDisplayName } from '@/lib/session-label';
+import { dayDisplayName, sessionDisplayName } from '@/lib/session-label';
 import { CreateSessionButton } from './CreateSessionSheet';
 import { useCoachOsStore } from '@/store';
 import {
@@ -178,6 +178,7 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
             day={day}
             feedback={completedFeedback?.feedback ?? null}
             catalog={catalog}
+            cyclePlan={cyclePlan}
           />
         )}
 
@@ -204,7 +205,7 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
         {day.status === 'free-future' && (
           <>
             {suggestion?.kind === 'rest' && (
-              <RestSuggestion recentLabels={suggestion.recentLabels} />
+              <RestSuggestion recentLabels={suggestion.recentLabels} cyclePlan={cyclePlan} />
             )}
             <FreeFutureBlock
               cyclePlan={cyclePlan}
@@ -383,7 +384,7 @@ function FreeFutureBlock({
         >
           Tu as fait la séance{' '}
           <strong className="text-white">
-            {formatSessionLabel(suggestion.previousLabel)}
+            {dayDisplayName(suggestion.previousLabel, cyclePlan)}
           </strong>{' '}
           récemment. Pour varier les muscles, passe sur la séance{' '}
           <strong className="text-sang-300">
@@ -490,10 +491,12 @@ function CompletedSessionBlock({
   day,
   feedback,
   catalog,
+  cyclePlan,
 }: {
   readonly day: CalendarDay;
   readonly feedback: SessionFeedback | null;
   readonly catalog: Catalog | null;
+  readonly cyclePlan: WeeklyTemplate | null;
 }) {
   if (feedback === null) {
     return (
@@ -501,7 +504,7 @@ function CompletedSessionBlock({
         La séance{' '}
         {day.sessionLabel !== null && (
           <>
-            <strong className="text-white">{formatSessionLabel(day.sessionLabel)}</strong>{' '}
+            <strong className="text-white">{dayDisplayName(day.sessionLabel, cyclePlan)}</strong>{' '}
           </>
         )}
         est faite.
@@ -567,8 +570,14 @@ function CompletedSessionBlock({
  * déjà couvert les muscles à venir. Ton calme (conseil, pas alerte) ; l'user
  * reste libre de lancer une séance via les boutons en dessous.
  */
-function RestSuggestion({ recentLabels }: { readonly recentLabels: readonly string[] }) {
-  const labels = recentLabels.map((l) => formatSessionLabel(l));
+function RestSuggestion({
+  recentLabels,
+  cyclePlan,
+}: {
+  readonly recentLabels: readonly string[];
+  readonly cyclePlan: WeeklyTemplate | null;
+}) {
+  const labels = recentLabels.map((l) => dayDisplayName(l, cyclePlan));
   const multiple = labels.length >= 2;
   const enchaine = multiple
     ? `${labels.slice(0, -1).join(', ')} puis ${labels[labels.length - 1]}`

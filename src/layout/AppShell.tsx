@@ -6,7 +6,7 @@ import { UpdatePrompt } from '@/components/UpdatePrompt';
 import { DemoModeProvider } from '@/components/DemoMode';
 import { SplashScreen } from '@/components/SplashScreen';
 import { useCoachOsStore } from '@/store';
-import { bootstrap } from '@/hooks/useEngine';
+import { bootstrap, watchWeekOnResume } from '@/hooks/useEngine';
 import { initAuth } from '@/lib/auth';
 
 export function AppShell() {
@@ -17,6 +17,7 @@ export function AppShell() {
     // de savoir si cet appareil porte déjà des données, ce que seul le store
     // moteur hydraté peut dire. Inerte si la couche cloud n'est pas configurée.
     void bootstrap().then(() => initAuth());
+    return watchWeekOnResume();
   }, []);
 
   return (

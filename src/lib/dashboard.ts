@@ -15,6 +15,7 @@
  */
 
 import type { UserState, WeeklyTemplate } from '@/engine/models';
+import { weekOfCycle } from '@/engine/cycle-week';
 import type { CycleRow, FeedbackRow, SessionRow } from '@/db/schema';
 
 export const CYCLE_LENGTH_WEEKS = 5;
@@ -57,11 +58,14 @@ export function addDays(d: Date, n: number): Date {
 export function weekStartFor(date: Date, cycleStart: string | null): Date {
   if (cycleStart === null) return startOfWeekMonday(date);
   const startD = parseDateKey(cycleStart);
-  // #16 (chantier E-3) — normaliser `date` à minuit local AVANT le calcul.
-  // `now = new Date()` porte l'heure : avec `Math.round(diffJours)`, le 7e
-  // jour d'une semaine de programme basculait dans la semaine suivante dès
-  // ~midi → décalage d'1 jour (intermittent) sur la couverture et les courbes
-  // Volume, vs le calendrier qui, lui, raisonne en dates seules.
+  const key = dateKey(date);
+  // Dump 2.4, étape 1 — dans le cycle, la semaine vient du calcul unique
+  // `weekOfCycle` (moteur), le même que celui des séances et des bilans.
+  if (key >= cycleStart) {
+    return addDays(startD, (weekOfCycle(key, cycleStart) - 1) * 7);
+  }
+  // Avant le début du cycle (courbes Progrès qui remontent dans les cycles
+  // précédents) : la même grille de 7 jours, prolongée vers le passé.
   const dOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const diffDays = Math.round((dOnly.getTime() - startD.getTime()) / 86_400_000);
   const k = Math.floor(diffDays / 7);

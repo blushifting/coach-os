@@ -44,7 +44,9 @@ import {
   DELOAD_WEEK_IN_CYCLE,
   initialVolumeBounds,
   isDeloadActive,
+  isDeloadWeek,
 } from './volume';
+import { prescriptionWeek } from './cycle-week';
 import { applyBalanceRules } from './balance';
 import { generateCycleReview } from './lifecycle';
 
@@ -186,6 +188,12 @@ export function generateSession(
   catalog: Catalog,
   dayIndex: number,
   seanceDate: string,
+  /**
+   * Dump 2.4, étape 1 — semaine du cycle **de la date de la séance**
+   * (`weekOfCycle`), pas celle du jour où on la programme. Par défaut, la
+   * semaine courante (appelants qui génèrent pour aujourd'hui).
+   */
+  weekInCycle: number = state.current_week_in_cycle,
 ): SessionPlan {
   if (state.current_cycle_plan === null) {
     throw new Error(
@@ -205,9 +213,11 @@ export function generateSession(
   // Chantier B — semaine 5 REFUSÉE (déload non actif) = semaine NORMALE : on
   // retombe sur le compte de séries de la semaine 4 (progression[3]) au lieu du
   // compte déload (progression[4], ÷2). Semaine 5 acceptée → compte déload.
-  let weekIdx = state.current_week_in_cycle - 1;
-  weekIdx = Math.max(0, Math.min(4, weekIdx));
-  const effWeekIdx = weekIdx === 4 && !isDeloadActive(state) ? 3 : weekIdx;
+  // Une semaine 6 (séance faite après la fin prévue du cycle) se prescrit comme
+  // une semaine 4 : jamais allégée.
+  const deloadActive = isDeloadWeek(state, weekInCycle);
+  const weekIdx = prescriptionWeek(weekInCycle) - 1;
+  const effWeekIdx = weekIdx === 4 && !deloadActive ? 3 : weekIdx;
 
   const rpeTargets: number[] = [];
   for (const planned of day.exercises) {
@@ -237,11 +247,11 @@ export function generateSession(
     const e1rmTotal = bootstrapE1rmIfMissing(state, ex);
 
     const prescription: SetPrescription = buildPrescription(
-      ex, e1rmTotal, state.profile, state.current_week_in_cycle,
+      ex, e1rmTotal, state.profile, prescriptionWeek(weekInCycle),
       {
         muscleGoals:
           Object.keys(state.muscle_goals).length > 0 ? state.muscle_goals : null,
-        deloadActive: isDeloadActive(state),
+        deloadActive,
         state,
       },
     );
@@ -261,7 +271,7 @@ export function generateSession(
 
   const planOut: SessionPlan = {
     seance_date: seanceDate,
-    week_in_cycle: state.current_week_in_cycle,
+    week_in_cycle: weekInCycle,
     cycle_index: state.cycle_index,
     rpe_target: rpeAvg,
     items,
@@ -280,6 +290,8 @@ export interface BuildCustomSessionArgs {
   readonly slots: readonly { readonly exerciseId: string; readonly nSets: number }[];
   /** Nom affiché choisi par l'user (sinon `null`). */
   readonly displayName?: string | null;
+  /** Semaine du cycle de `seanceDate` (cf. `generateSession`). Défaut : semaine courante. */
+  readonly weekInCycle?: number;
 }
 
 /**
@@ -297,6 +309,7 @@ export function buildCustomSessionPlan(
   catalog: Catalog,
   args: BuildCustomSessionArgs,
 ): SessionPlan {
+  const week = args.weekInCycle ?? state.current_week_in_cycle;
   const items: SessionItem[] = [];
   for (const slot of args.slots) {
     const ex = catalog.get(slot.exerciseId);
@@ -305,11 +318,11 @@ export function buildCustomSessionPlan(
       ex,
       e1rmTotal,
       state.profile,
-      state.current_week_in_cycle,
+      prescriptionWeek(week),
       {
         muscleGoals:
           Object.keys(state.muscle_goals).length > 0 ? state.muscle_goals : null,
-        deloadActive: isDeloadActive(state),
+        deloadActive: isDeloadWeek(state, week),
         state,
       },
     );
@@ -321,7 +334,7 @@ export function buildCustomSessionPlan(
   const name = args.displayName?.trim();
   return {
     seance_date: args.seanceDate,
-    week_in_cycle: state.current_week_in_cycle,
+    week_in_cycle: week,
     cycle_index: state.cycle_index,
     rpe_target: 8,
     items,

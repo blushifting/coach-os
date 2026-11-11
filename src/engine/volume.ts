@@ -248,9 +248,16 @@ export const PROPOSE_DELOAD_MIN_ADHERENCE = 0.75;
  * Semaine 5 refusée (ou non décidée) → semaine normale, ce helper renvoie false.
  */
 export function isDeloadActive(state: UserState): boolean {
+  return isDeloadWeek(state, state.current_week_in_cycle);
+}
+
+/**
+ * Dump 2.4, étape 1 — même question pour une semaine donnée (celle de la date
+ * d'une séance programmée d'avance, qui n'est pas forcément la semaine en cours).
+ */
+export function isDeloadWeek(state: UserState, weekInCycle: number): boolean {
   return (
-    state.current_week_in_cycle === DELOAD_WEEK_IN_CYCLE &&
-    state.deload_decision === 'accepted'
+    weekInCycle === DELOAD_WEEK_IN_CYCLE && state.deload_decision === 'accepted'
   );
 }
 

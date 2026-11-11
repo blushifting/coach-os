@@ -33,6 +33,13 @@ import {
   mergeEquivalentExercisesInPlan,
 } from '@/engine/cycle_planner';
 import { carryOverManualPlan } from '@/lib/manual-plan';
+import { dateKey } from '@/lib/dashboard';
+import {
+  alignWeeksOnDates,
+  CYCLE_WEEKS,
+  cycleStartOf,
+  weekOfCycle,
+} from '@/engine/cycle-week';
 import {
   DELOAD_WEEK_IN_CYCLE,
   initialVolumeBounds,
@@ -107,7 +114,64 @@ async function loadHistorySnapshot(): Promise<HistorySnapshot> {
     db.e1rmSnapshots.orderBy('date').toArray(),
     db.cycles.orderBy('cycle_index').toArray(),
   ]);
-  return { sessions, feedbacks, e1rmSnapshots, cycles };
+  return alignHistoryOnDates({ sessions, feedbacks, e1rmSnapshots, cycles });
+}
+
+// =============================================================================
+// Dump 2.4, étape 1 — la semaine se lit sur la date (D6)
+// =============================================================================
+
+/**
+ * Migration à la lecture : `week_in_cycle` est recalculé depuis la date de
+ * chaque séance, feedback et instantané. Répare les séances programmées
+ * d'avance (qui portaient la semaine du jour de leur création) et suit le
+ * ré-ancrage du début de cycle sur la première séance. Rien n'est réécrit en
+ * base : la date reste la seule source.
+ */
+function alignHistoryOnDates(h: HistorySnapshot): HistorySnapshot {
+  const { cycles } = h;
+  return {
+    ...h,
+    sessions: alignWeeksOnDates(
+      h.sessions,
+      cycles,
+      (r) => r.seance_date,
+      (r, week) => ({ plan: { ...r.plan, week_in_cycle: week } }),
+    ),
+    feedbacks: alignWeeksOnDates(
+      h.feedbacks,
+      cycles,
+      (r) => r.seance_date,
+      (r, week) => ({ feedback: { ...r.feedback, week_in_cycle: week } }),
+    ),
+    e1rmSnapshots: alignWeeksOnDates(h.e1rmSnapshots, cycles, (r) => r.date),
+  };
+}
+
+/** Même réalignement pour l'historique porté par `userState` (moteur). */
+function alignStateOnDates(
+  state: UserState | null,
+  cycles: HistorySnapshot['cycles'],
+): UserState | null {
+  if (state === null) return null;
+  return {
+    ...state,
+    history: alignWeeksOnDates(state.history, cycles, (f) => f.seance_date),
+  };
+}
+
+/**
+ * Semaine du cycle courant qui contient `seanceDate` : c'est elle qui fixe le
+ * nombre de séries d'une séance programmée d'avance, pas la semaine du jour où
+ * on la programme.
+ */
+function weekForDate(seanceDate: string): number {
+  const store = useCoachOsStore.getState();
+  const state = store.userState;
+  if (state === null) return 1;
+  const start = cycleStartOf(store.history.cycles, state.cycle_index);
+  if (start === null) return state.current_week_in_cycle;
+  return weekOfCycle(seanceDate, start);
 }
 
 /**
@@ -165,7 +229,7 @@ export async function bootstrap(): Promise<void> {
   useCoachOsStore.setState({
     catalog,
     customExerciseIds: customIds,
-    userState,
+    userState: alignStateOnDates(userState, history.cycles),
     history,
     bootstrapped: true,
   });
@@ -181,6 +245,7 @@ export async function addCustomExercise(dict: ExerciseDict): Promise<void> {
   await dbAddUserExercise(dict);
   const { catalog, customIds } = await buildFullCatalog();
   useCoachOsStore.setState({ catalog, customExerciseIds: customIds });
+  requestBackup();
 }
 
 /**
@@ -188,11 +253,16 @@ export async function addCustomExercise(dict: ExerciseDict): Promise<void> {
  * des feedbacks référencent cet exo, les `nom_fr` afficheront l'id brut
  * (catalog.get jette). C'est acceptable : on ne va pas supprimer
  * rétroactivement les feedbacks historiques.
+ *
+ * Dump 2.4, n° 22 — la suppression part aussi dans la sauvegarde en ligne.
+ * Sans ça, la sauvegarde gardait l'exercice jusqu'à la séance suivante, et
+ * une restauration entre-temps le faisait revenir.
  */
 export async function removeCustomExercise(exerciseId: string): Promise<void> {
   await dbDeleteUserExercise(exerciseId);
   const { catalog, customIds } = await buildFullCatalog();
   useCoachOsStore.setState({ catalog, customExerciseIds: customIds });
+  requestBackup();
 }
 
 /**
@@ -227,17 +297,10 @@ export async function tickWeekIfNeeded(now: Date = new Date()): Promise<void> {
     (f) => f.cycle_index === state.cycle_index,
   );
   if (!cycleStarted) return;
-  const start = new Date(cycle.start_date + 'T00:00:00');
-  const today = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
+  const expectedWeek = Math.min(
+    CYCLE_WEEKS,
+    weekOfCycle(dateKey(now), cycle.start_date),
   );
-  const diffDays = Math.round(
-    (today.getTime() - start.getTime()) / 86_400_000,
-  );
-  if (diffDays < 0) return;
-  const expectedWeek = Math.min(5, Math.floor(diffDays / 7) + 1);
   let safety = 0;
   while (safety < 5) {
     const cur = useCoachOsStore.getState().userState;
@@ -248,9 +311,27 @@ export async function tickWeekIfNeeded(now: Date = new Date()): Promise<void> {
   }
 }
 
+/**
+ * Dump 2.4, étape 1 (n° 15) — une PWA reste ouverte en arrière-plan d'un jour
+ * sur l'autre : sans ce rattrapage au retour au premier plan, la semaine
+ * courante restait celle de la veille tant que l'app n'était pas relancée.
+ */
+export function watchWeekOnResume(): () => void {
+  if (typeof document === 'undefined') return () => {};
+  const onVisible = () => {
+    if (document.visibilityState === 'visible') void tickWeekIfNeeded();
+  };
+  document.addEventListener('visibilitychange', onVisible);
+  return () => document.removeEventListener('visibilitychange', onVisible);
+}
+
 export async function refreshHistory(): Promise<void> {
   const history = await loadHistorySnapshot();
-  useCoachOsStore.setState({ history });
+  const userState = alignStateOnDates(
+    useCoachOsStore.getState().userState,
+    history.cycles,
+  );
+  useCoachOsStore.setState({ history, userState });
 }
 
 // =============================================================================
@@ -490,7 +571,13 @@ export async function planSessionForDay(
 ): Promise<{ plan: SessionPlan; sessionId: number }> {
   const catalog = requireCatalog();
   const next = requireUserState();
-  const plan = engine.generateSession(next, catalog, args.dayIndex, args.seanceDate);
+  const plan = engine.generateSession(
+    next,
+    catalog,
+    args.dayIndex,
+    args.seanceDate,
+    weekForDate(args.seanceDate),
+  );
   const sessionId = await txSaveSessionPlan(plan, next);
   useCoachOsStore.setState({ userState: next });
   await refreshHistory();
@@ -525,17 +612,23 @@ export async function loadPlannedSessionForRunner(
       `Tu pourras la démarrer le jour prévu.`,
     );
   }
+  // Dump 2.4, étape 1 — une séance programmée avant ce correctif porte la
+  // semaine du jour où elle a été programmée ; le feedback en hérite. On la
+  // recale sur sa date avant de la jouer.
+  const week = weekForDate(row.seance_date);
+  const plan =
+    row.plan.week_in_cycle === week ? row.plan : { ...row.plan, week_in_cycle: week };
   // Conv #15 vague 2 — si on rouvre la session déjà en cours, ne pas
   // ré-écrire le plan (sinon la ref change et SeancePage re-init les entries
   // via son useEffect, perdant les coches en cours).
   const store = useCoachOsStore.getState();
   if (store.currentSessionId !== sessionId || store.currentSessionPlan === null) {
     useCoachOsStore.setState({
-      currentSessionPlan: row.plan,
+      currentSessionPlan: plan,
       currentSessionId: sessionId,
     });
   }
-  return { plan: row.plan, sessionId };
+  return { plan, sessionId };
 }
 
 /**
@@ -748,7 +841,7 @@ export async function startFreeSession(
   const next = requireUserState();
   const plan: SessionPlan = {
     seance_date: seanceDate,
-    week_in_cycle: next.current_week_in_cycle,
+    week_in_cycle: weekForDate(seanceDate),
     cycle_index: next.cycle_index,
     rpe_target: 8,
     items: [],
@@ -793,7 +886,10 @@ export async function startCustomSession(
 ): Promise<{ plan: SessionPlan; sessionId: number }> {
   const catalog = requireCatalog();
   const next = requireUserState();
-  const plan = engine.buildCustomSessionPlan(next, catalog, args);
+  const plan = engine.buildCustomSessionPlan(next, catalog, {
+    ...args,
+    weekInCycle: weekForDate(args.seanceDate),
+  });
   bumpPickCountsForSlots(next, args.slots);
   const sessionId = await txSaveSessionPlan(plan, next);
   useCoachOsStore.setState({
@@ -816,7 +912,10 @@ export async function planCustomSessionForDay(
 ): Promise<{ plan: SessionPlan; sessionId: number }> {
   const catalog = requireCatalog();
   const next = requireUserState();
-  const plan = engine.buildCustomSessionPlan(next, catalog, args);
+  const plan = engine.buildCustomSessionPlan(next, catalog, {
+    ...args,
+    weekInCycle: weekForDate(args.seanceDate),
+  });
   bumpPickCountsForSlots(next, args.slots);
   const sessionId = await txSaveSessionPlan(plan, next);
   useCoachOsStore.setState({ userState: next });
@@ -940,19 +1039,31 @@ export async function setDeloadDecision(
   // refusé → normal. Les séances non issues d'un jour du cycle (custom) sont
   // laissées intactes. Une séance planifiée n'est jamais éditée avant démarrage,
   // donc rien à préserver.
+  //
+  // Dump 2.4, étape 1 — la semaine de récupération se reconnaît à la DATE de la
+  // séance (historique réaligné sur les dates), pas au numéro enregistré : une
+  // séance programmée en semaine 4 pour un jour de la semaine 5 portait « 4 ».
   const plan = next.current_cycle_plan;
   if (plan !== null) {
-    const db = getDb();
-    const planned = await db.sessions
-      .where('[cycle_index+week_in_cycle]')
-      .equals([next.cycle_index, DELOAD_WEEK_IN_CYCLE])
-      .and((s) => s.status === 'planned')
-      .toArray();
+    const planned = useCoachOsStore
+      .getState()
+      .history.sessions.filter(
+        (s) =>
+          s.cycle_index === next.cycle_index &&
+          s.week_in_cycle === DELOAD_WEEK_IN_CYCLE &&
+          s.status === 'planned',
+      );
     for (const row of planned) {
       if (row.id === undefined) continue;
       const dayIndex = plan.days.findIndex((d) => d.label === row.plan.label);
       if (dayIndex < 0) continue;
-      const fresh = engine.generateSession(next, catalog, dayIndex, row.seance_date);
+      const fresh = engine.generateSession(
+        next,
+        catalog,
+        dayIndex,
+        row.seance_date,
+        DELOAD_WEEK_IN_CYCLE,
+      );
       await txUpdateSessionPlan(row.id, fresh, next);
     }
   }
@@ -1380,7 +1491,7 @@ async function reloadStoreAfterImport(): Promise<void> {
   useCoachOsStore.setState({
     catalog,
     customExerciseIds: customIds,
-    userState,
+    userState: alignStateOnDates(userState, history.cycles),
     history,
     bootstrapped: true,
     currentSessionPlan: null,

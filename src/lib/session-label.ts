@@ -44,3 +44,17 @@ export function sessionDisplayName(s: {
   const c = s.custom_name?.trim();
   return c !== undefined && c.length > 0 ? c : formatSessionLabel(s.label);
 }
+
+/**
+ * Dump 2.4, n° 26 — nom affiché d'une séance repérée par son label de rotation
+ * (« C »), lu sur le **jour du programme** qui porte ce label : un renommage du
+ * jour s'applique donc aussi aux séances déjà faites. Hors programme (séance
+ * libre, ancien cycle), on retombe sur le label.
+ */
+export function dayDisplayName(
+  label: string,
+  plan: { readonly days: ReadonlyArray<{ readonly label: string; readonly custom_name?: string | null }> } | null,
+): string {
+  const day = plan?.days.find((d) => d.label === label);
+  return day !== undefined ? sessionDisplayName(day) : formatSessionLabel(label);
+}
