@@ -25,6 +25,7 @@ import { ChargeBadge } from './ChargeBadge';
 import { ExercisePhoto } from './ExercisePhoto';
 import { EquipmentOverrideSheet } from './EquipmentOverrideSheet';
 import { FavoriteStar } from './FavoriteStar';
+import { RepRangePicker } from './RepRangePicker';
 
 interface CatalogueDetailSheetProps {
   readonly open: boolean;
@@ -170,6 +171,9 @@ export function CatalogueDetailSheet({
             </span>
           </div>
         ) : null}
+
+        {/* Dump 2.4, étape 4 — fourchette de reps de l'exercice. */}
+        <RepRangePicker exercise={exercise} />
 
         {/* Conv #17 — édition manuelle hors séance. Disponible que l'exo soit
             déjà calibré ou non (label adapte le verbe). Désactivé en démo. */}

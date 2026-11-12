@@ -105,10 +105,13 @@ const userStateSchema = z
     // Report de volume retiré (1.41) — champ toléré (optionnel) pour accepter les
     // exports antérieurs, mais ignoré à la désérialisation.
     weekly_volume_debt: recordOfNumber.optional(),
-    // Refonte progression : optionnel pour rétrocompat exports antérieurs.
+    // Anciens planchers de charge et de reps (cliquets retirés au dump 2.4,
+    // étape 4) : tolérés pour accepter les exports antérieurs, ignorés ensuite.
     prescribed_load_floor: recordOfNumber.optional(),
-    // Chantier D : optionnel pour rétrocompat exports antérieurs.
     prescribed_reps_floor: recordOfNumber.optional(),
+    // Dump 2.4, étape 4 — fourchette de reps par exercice (tolérant : une clé
+    // inconnue est ignorée à la lecture).
+    rep_ranges: recordOfString.optional(),
     // Conv #22 — optionnels pour rétrocompat exports antérieurs.
     current_skeleton: z.union([z.null(), z.object({}).passthrough()]).optional(),
     favorite_exercise_per_pattern: recordOfString.optional(),

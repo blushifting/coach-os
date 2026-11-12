@@ -14,41 +14,9 @@ import {
   Level,
   Sex,
 } from '@/engine/models';
-import { loadExercises } from '@/engine/catalog';
-import {
-  exercisesWithChangedReps,
-  hasLegacyMuscleGoals,
-  migrateMuscleGoals,
-} from '@/engine/intentions';
+import { migrateMuscleGoals } from '@/engine/intentions';
+import { isRepRangeKey } from '@/engine/progression';
 import type { SerializedProfile, SerializedUserState } from './schema';
-
-let musclesById: Map<string, Readonly<Record<string, number>>> | null = null;
-
-/** Muscles d'un exercice du catalogue livré (`null` pour un exercice personnel). */
-function catalogMusclesOf(exerciseId: string): Readonly<Record<string, number>> | null {
-  musclesById ??= new Map(loadExercises().map((e) => [e.id, e.muscles]));
-  return musclesById.get(exerciseId) ?? null;
-}
-
-/**
- * Dump 2.4, étape 2 — anciens objectifs par muscle : la table de reps devient
- * unique (10 / 12). Les exercices dont la cible change perdent leur plancher de
- * charge, re-semé depuis le Plafond à la prochaine prescription. Le Plafond
- * n'est pas touché.
- */
-function migratedLoadFloor(s: SerializedUserState): Record<string, number> {
-  const floor = { ...(s.prescribed_load_floor ?? {}) };
-  if (!hasLegacyMuscleGoals(s.muscle_goals)) return floor;
-  for (const id of exercisesWithChangedReps(
-    Object.keys(floor),
-    s.muscle_goals,
-    s.profile.objective,
-    catalogMusclesOf,
-  )) {
-    delete floor[id];
-  }
-  return floor;
-}
 
 export function serializeProfile(p: Profile): SerializedProfile {
   const out: SerializedProfile = {
@@ -111,8 +79,6 @@ export function serializeUserState(state: UserState): SerializedUserState {
     equipment_overrides: Object.fromEntries(
       Object.entries(state.equipment_overrides).map(([k, v]) => [k, { ...v }]),
     ),
-    prescribed_load_floor: { ...state.prescribed_load_floor },
-    prescribed_reps_floor: { ...state.prescribed_reps_floor },
     current_skeleton:
       state.current_skeleton === null || state.current_skeleton === undefined
         ? null
@@ -121,6 +87,7 @@ export function serializeUserState(state: UserState): SerializedUserState {
     favorite_exercise_ids: [...(state.favorite_exercise_ids ?? [])],
     exercise_pick_counts: { ...(state.exercise_pick_counts ?? {}) },
     deload_decision: state.deload_decision ?? null,
+    rep_ranges: { ...state.rep_ranges },
   };
 }
 
@@ -151,10 +118,6 @@ export function deserializeUserState(s: SerializedUserState): UserState {
         },
       ]),
     ),
-    // Rétrocompat : blobs antérieurs à la refonte progression n'ont pas ce champ.
-    prescribed_load_floor: migratedLoadFloor(s),
-    // Rétrocompat : blobs antérieurs au chantier D n'ont pas ce champ.
-    prescribed_reps_floor: { ...(s.prescribed_reps_floor ?? {}) },
     // Conv #22 — Rétrocompat : blobs antérieurs n'ont pas ces champs.
     current_skeleton: s.current_skeleton ?? null,
     favorite_exercise_per_pattern: { ...(s.favorite_exercise_per_pattern ?? {}) },
@@ -168,5 +131,9 @@ export function deserializeUserState(s: SerializedUserState): UserState {
     exercise_pick_counts: { ...(s.exercise_pick_counts ?? {}) },
     // Chantier B — rétrocompat : blobs antérieurs n'ont pas ce champ (default null).
     deload_decision: s.deload_decision ?? null,
+    // Dump 2.4, étape 4 — absent sur anciens blobs ; clé inconnue ignorée.
+    rep_ranges: Object.fromEntries(
+      Object.entries(s.rep_ranges ?? {}).filter(([, v]) => isRepRangeKey(v)),
+    ) as UserState['rep_ranges'],
   };
 }

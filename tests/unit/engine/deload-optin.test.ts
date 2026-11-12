@@ -3,8 +3,8 @@
  * cf. recherche/09c_deload_optin.md
  *
  * - `isDeloadActive` : vrai seulement en semaine 5 ET décision acceptée.
- * - Séance semaine 5 ACCEPTÉE  → RPE 6, charge plancher ×0,9, moins de séries.
- * - Séance semaine 5 REFUSÉE   → semaine normale (charge plancher, RPE normal,
+ * - Séance semaine 5 ACCEPTÉE  → RPE 6, charge ×0,9, moins de séries.
+ * - Séance semaine 5 REFUSÉE   → semaine normale (même charge, RPE normal,
  *   séries de semaine 4) ET les mesures (e1RM) tournent.
  */
 import { describe, expect, it } from 'vitest';
@@ -17,6 +17,7 @@ import {
 } from '@/engine/engine';
 import { autoGenerateCyclePlanV3 } from '@/engine/cycle_planner';
 import { isDeloadActive } from '@/engine/volume';
+import { progressesByReps } from '@/engine/progression';
 import type {
   SessionFeedback,
   SessionPlan,
@@ -59,14 +60,15 @@ function faithful(plan: SessionPlan): SessionFeedback {
   };
 }
 
-/** Premier exo de la séance piloté par le cliquet de charge (plancher posé). */
-function pickFloorExo(state: UserState, plan: SessionPlan): string {
+/** Premier exo de la séance à charge externe (progression par crans). */
+function pickLoadedExo(state: UserState, plan: SessionPlan): string {
   for (const item of plan.items) {
-    if (state.prescribed_load_floor[item.exercise_id] !== undefined) {
+    const ex = catalog.get(item.exercise_id);
+    if (!progressesByReps(state, ex) && (item.sets[0]?.load_kg ?? 0) > 0) {
       return item.exercise_id;
     }
   }
-  throw new Error('aucun exo à cliquet de charge dans la séance');
+  throw new Error('aucun exo à charge externe dans la séance');
 }
 
 describe('isDeloadActive', () => {
@@ -97,12 +99,12 @@ describe('isDeloadActive', () => {
 describe('génération de séance en semaine 5 selon la décision', () => {
   it('refusée = semaine normale ; acceptée = récupération (charge, RPE, séries)', () => {
     const state = setup();
-    // Semaine 1 : pose les planchers de charge + un RPE de référence par exo.
+    // Semaine 1 : charge de référence de chaque exo (jamais fait : depuis le Plafond).
     state.current_week_in_cycle = 1;
     const w1 = generateSession(state, catalog, 0, '2026-01-05');
-    const exId = pickFloorExo(state, w1);
-    const floor = state.prescribed_load_floor[exId]!;
+    const exId = pickLoadedExo(state, w1);
     const w1Item = w1.items.find((it) => it.exercise_id === exId)!;
+    const floor = w1Item.sets[0]!.load_kg;
 
     // Semaine 5 REFUSÉE → identique à une semaine normale.
     state.current_week_in_cycle = 5;
@@ -158,7 +160,7 @@ describe('mesures (e1RM) en semaine 5 selon la décision', () => {
     state.current_week_in_cycle = 1;
     const w1 = generateSession(state, catalog, 0, '2026-01-05');
     recordFeedback(state, catalog, faithful(w1));
-    const exId = pickFloorExo(state, w1);
+    const exId = pickLoadedExo(state, w1);
     return { state, exId, baseline: state.e1rm[exId] ?? 0 };
   }
 

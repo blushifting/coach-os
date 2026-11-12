@@ -13,7 +13,7 @@ import {
   initEntries,
   lastCheckedSetTooEasy,
   listDayCandidates,
-  propagateLoadToUpcomingSets,
+  applyProgressionToUpcomingSets,
   recalibrateUpcomingSets,
   suggestNextLoadAfterTooEasy,
   updateSetEntry,
@@ -24,6 +24,7 @@ import { MuscleIntention } from '@/engine/models';
 import type { FeedbackRow } from '@/db/schema';
 import type { RecordFeedbackResult } from '@/engine/engine';
 import { Catalog } from '@/engine/catalog';
+import { makeProfile, makeUserState, Level, Sex } from '@/engine/models';
 
 // =============================================================================
 // Fixtures
@@ -612,70 +613,156 @@ describe('recalibrateUpcomingSets (chantier E — dérivation directe du e1RM li
 // Report de charge hors calibration (Bloc S, Conv #45)
 // =============================================================================
 
-describe('propagateLoadToUpcomingSets', () => {
-  it('reporte une charge MODIFIÉE sur les séries suivantes encore prescrites', () => {
-    const plan = makePlan(); // bench_press : 2 séries à 80 kg
+// =============================================================================
+// Dump 2.4, étape 4 — la règle de progression série après série
+// =============================================================================
+
+describe('applyProgressionToUpcomingSets', () => {
+  const cat = new Catalog();
+  const pecDeck = cat.get('pec_deck'); // fourchette 10–16
+  const pushup = cat.get('pushup');
+
+  function stateWithPecDeck(): UserState {
+    const st = makeUserState(
+      makeProfile({
+        sex: Sex.HOMME,
+        age: 30,
+        level: Level.INTERMEDIAIRE,
+        sessions_per_week: 3,
+        bodyweight_kg: 65,
+        available_equip: new Set(['pec_deck']),
+      }),
+    );
+    st.e1rm['pec_deck'] = 95;
+    st.history = [
+      {
+        seance_date: '2026-10-01',
+        week_in_cycle: 1,
+        cycle_index: 1,
+        rpe_target: 9,
+        label: 'A',
+        sets: [52, 59, 66].map((load_kg) => ({
+          exercise_id: 'pec_deck',
+          reps_done: 12,
+          load_kg,
+          rpe_perceived: 9,
+        })),
+      },
+    ];
+    return st;
+  }
+
+  function planOf(exerciseId: string, load: number, reps: number, n = 3): SessionPlan {
+    return {
+      seance_date: '2026-10-05',
+      week_in_cycle: 1,
+      cycle_index: 1,
+      rpe_target: 9,
+      label: 'A',
+      items: [
+        {
+          exercise_id: exerciseId,
+          sets: Array.from({ length: n }, () => ({
+            exercise_id: exerciseId,
+            reps,
+            load_kg: load,
+            rpe_target: 9,
+            rest_s: 90,
+          })),
+        },
+      ],
+    };
+  }
+
+  it('haut de la fourchette atteint : les séries suivantes passent au cran suivant de la machine', () => {
+    const plan = planOf('pec_deck', 59, 14);
     const entries: SessionEntries = [
       [
-        { reps: 5, load_kg: 85, rpe: 8, done: true }, // validée, 80 → 85
-        { reps: 5, load_kg: 80, rpe: 6, done: false }, // encore la prescription
+        { reps: 16, load_kg: 59, rpe: 9, done: true },
+        { reps: 14, load_kg: 59, rpe: 6, done: false },
+        { reps: 14, load_kg: 59, rpe: 6, done: false },
       ],
-      [{ reps: 8, load_kg: 40, rpe: 6, done: false }],
     ];
-    const next = propagateLoadToUpcomingSets({ entries, plan, itemIdx: 0, fromSetIdx: 0 });
-    expect(next[0]![1]!.load_kg).toBe(85);
-    expect(next[0]![1]!.loadAuto).toBe(true);
-    // L'autre exo n'est jamais touché (même référence).
-    expect(next[1]).toBe(entries[1]);
+    const next = applyProgressionToUpcomingSets({
+      entries, plan, itemIdx: 0, fromSetIdx: 0, state: stateWithPecDeck(), exercise: pecDeck,
+    });
+    for (const j of [1, 2]) {
+      expect(next[0]![j]!.load_kg).toBe(66);
+      expect(next[0]![j]!.loadAuto).toBe(true);
+      expect(next[0]![j]!.reps).toBeGreaterThanOrEqual(10);
+      expect(next[0]![j]!.reps).toBeLessThanOrEqual(16);
+    }
   });
 
-  it('reporte sur TOUTES les séries suivantes prescrites (multi-séries)', () => {
-    const plan = makeCalibPlan(); // leg_press_45 : 3 séries à 50 kg
+  it('sous le bas : cran inférieur', () => {
+    const plan = planOf('pec_deck', 66, 12);
     const entries: SessionEntries = [
       [
-        { reps: 8, load_kg: 55, rpe: 7, done: true }, // 50 → 55
-        { reps: 8, load_kg: 50, rpe: 6, done: false },
-        { reps: 8, load_kg: 50, rpe: 6, done: false },
+        { reps: 8, load_kg: 66, rpe: 10, done: true },
+        { reps: 12, load_kg: 66, rpe: 6, done: false },
       ],
     ];
-    const next = propagateLoadToUpcomingSets({ entries, plan, itemIdx: 0, fromSetIdx: 0 });
-    expect(next[0]![1]!.load_kg).toBe(55);
-    expect(next[0]![2]!.load_kg).toBe(55);
+    const next = applyProgressionToUpcomingSets({
+      entries, plan, itemIdx: 0, fromSetIdx: 0, state: stateWithPecDeck(), exercise: pecDeck,
+    });
+    expect(next[0]![1]!.load_kg).toBe(59);
   });
 
-  it('no-op si la charge validée vaut encore la prescription (référence inchangée)', () => {
-    const plan = makePlan();
+  it('dans la fourchette, charge prescrite : rien ne bouge', () => {
+    const plan = planOf('pec_deck', 59, 13);
     const entries: SessionEntries = [
       [
-        { reps: 5, load_kg: 80, rpe: 8, done: true }, // = prescription
-        { reps: 5, load_kg: 80, rpe: 6, done: false },
+        { reps: 12, load_kg: 59, rpe: 9, done: true },
+        { reps: 13, load_kg: 59, rpe: 6, done: false },
       ],
     ];
-    const next = propagateLoadToUpcomingSets({ entries, plan, itemIdx: 0, fromSetIdx: 0 });
+    const next = applyProgressionToUpcomingSets({
+      entries, plan, itemIdx: 0, fromSetIdx: 0, state: stateWithPecDeck(), exercise: pecDeck,
+    });
     expect(next).toBe(entries);
   });
 
-  it("préserve une série suivante ajustée à la main par l'user", () => {
-    const plan = makePlan();
+  it('dans la fourchette, charge changée à la main : elle est reportée sur les suivantes', () => {
+    const plan = planOf('pec_deck', 59, 13);
     const entries: SessionEntries = [
       [
-        { reps: 5, load_kg: 85, rpe: 8, done: true }, // 80 → 85
-        { reps: 5, load_kg: 90, rpe: 6, done: false, loadAuto: false }, // bumpée main
+        { reps: 12, load_kg: 66, rpe: 9, done: true },
+        { reps: 13, load_kg: 59, rpe: 6, done: false },
       ],
     ];
-    const next = propagateLoadToUpcomingSets({ entries, plan, itemIdx: 0, fromSetIdx: 0 });
-    expect(next[0]![1]!.load_kg).toBe(90); // respectée
+    const next = applyProgressionToUpcomingSets({
+      entries, plan, itemIdx: 0, fromSetIdx: 0, state: stateWithPecDeck(), exercise: pecDeck,
+    });
+    expect(next[0]![1]!.load_kg).toBe(66);
+    expect(next[0]![1]!.reps).toBe(13);
   });
 
-  it('ignore les séries déjà cochées', () => {
-    const plan = makePlan();
+  it('préserve une série ajustée à la main et les séries déjà cochées', () => {
+    const plan = planOf('pec_deck', 59, 14);
     const entries: SessionEntries = [
       [
-        { reps: 5, load_kg: 85, rpe: 8, done: true }, // 80 → 85
-        { reps: 5, load_kg: 80, rpe: 8, done: true }, // déjà cochée
+        { reps: 15, load_kg: 59, rpe: 9, done: true },
+        { reps: 14, load_kg: 52, rpe: 6, done: false, loadAuto: false },
+        { reps: 14, load_kg: 59, rpe: 9, done: true },
       ],
     ];
-    const next = propagateLoadToUpcomingSets({ entries, plan, itemIdx: 0, fromSetIdx: 0 });
-    expect(next[0]![1]!.load_kg).toBe(80); // intacte (done)
+    const next = applyProgressionToUpcomingSets({
+      entries, plan, itemIdx: 0, fromSetIdx: 0, state: stateWithPecDeck(), exercise: pecDeck,
+    });
+    expect(next).toBe(entries);
+  });
+
+  it('poids du corps : rien ne change', () => {
+    const plan = planOf('pushup', 0, 20);
+    const entries: SessionEntries = [
+      [
+        { reps: 25, load_kg: 0, rpe: 9, done: true },
+        { reps: 20, load_kg: 0, rpe: 6, done: false },
+      ],
+    ];
+    const next = applyProgressionToUpcomingSets({
+      entries, plan, itemIdx: 0, fromSetIdx: 0, state: stateWithPecDeck(), exercise: pushup,
+    });
+    expect(next).toBe(entries);
   });
 });

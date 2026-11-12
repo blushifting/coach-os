@@ -5,30 +5,22 @@
  *   - Inversion (target_load round-trip).
  *   - Domaine de validité des mesures (n_équiv ≤ 15).
  *   - Arrondi (incrément, plancher, bascule 5kg ≥ 150 kg).
- *   - RPE et reps visés : table unique (dump 2.4).
- *   - effective_increment et build_prescription.
+ *   - effective_increment (la prescription elle-même : progression.test.ts).
  */
 
 import { describe, expect, it } from 'vitest';
 
 import {
   EPLEY_K,
-  buildPrescription,
   e1rmObserved,
   effectiveIncrement,
   measurementIsReliable,
   nEquiv,
   roundToIncrement,
   targetLoad,
-  targetReps,
-  targetRpe,
 } from '@/engine/prescription';
 import { Catalog } from '@/engine/catalog';
-import { MuscleIntention,
-  ExType,
-  makeEquipmentOverride,
-  makeMuscleGoal,
-  makeUserState } from '@/engine/models';
+import { makeEquipmentOverride, makeUserState } from '@/engine/models';
 
 import { profile } from './_helpers';
 
@@ -133,21 +125,6 @@ describe('roundToIncrement', () => {
 // 6. RPE visé (dump 2.4 : une seule valeur, déload mis à part)
 // =============================================================================
 
-describe('targetRpe', () => {
-  // Chantier B — RPE de référence CONSTANT ; l'abaissement déload dépend de
-  // `deloadActive` (semaine 5 acceptée), plus du numéro de semaine : une
-  // semaine 5 refusée garde le RPE normal.
-  it('constant sem 1..5 hors déload ; déload actif = 6', () => {
-    expect(targetRpe(1)).toBe(7);
-    expect(targetRpe(4)).toBe(7);
-    expect(targetRpe(5)).toBe(7);
-    expect(targetRpe(5, true)).toBe(6);
-  });
-  it('hors plage → throw', () => {
-    expect(() => targetRpe(6)).toThrow();
-  });
-});
-
 // =============================================================================
 // 7. Plage RPE valide
 // =============================================================================
@@ -164,44 +141,6 @@ describe('e1rmObserved — plage RPE', () => {
 // =============================================================================
 // 8. Reps visées — table unique (dump 2.4, D3)
 // =============================================================================
-
-describe('targetReps — même table pour tous les exercices', () => {
-  it('polyarticulaire → 10', () => {
-    const bench = catalog.get('bench_bb');
-    expect(bench.type).toBe(ExType.COMPOUND);
-    expect(targetReps(bench)).toBe(10);
-  });
-
-  it('isolation → 12', () => {
-    const iso = [...catalog].find((e) => e.type === ExType.ISOLATION);
-    expect(iso).toBeDefined();
-    expect(targetReps(iso!)).toBe(12);
-  });
-
-  it("l'intention du muscle ne change ni les reps ni l'effort", () => {
-    const bench = catalog.get('bench_bb');
-    const base = makeUserState(profile());
-    const developper = makeUserState(profile());
-    developper.muscle_goals = {
-      pectoraux: makeMuscleGoal({
-        muscle: 'pectoraux',
-        intention: MuscleIntention.DEVELOPPER,
-        priority_rank: 1,
-      }),
-    };
-    const entretenir = makeUserState(profile());
-    entretenir.muscle_goals = {
-      pectoraux: makeMuscleGoal({ muscle: 'pectoraux', intention: MuscleIntention.ENTRETENIR }),
-    };
-    const ref = buildPrescription(bench, 100, base.profile, 1, { state: base });
-    for (const st of [developper, entretenir]) {
-      const p = buildPrescription(bench, 100, st.profile, 1, { state: st });
-      expect(p.reps).toBe(ref.reps);
-      expect(p.rpe_target).toBe(ref.rpe_target);
-      expect(p.load_kg).toBe(ref.load_kg);
-    }
-  });
-});
 
 // =============================================================================
 // 11. effectiveIncrement — override équipement par exo
@@ -235,109 +174,11 @@ describe('effectiveIncrement', () => {
 // 12. buildPrescription — rétrocompat + extension muscle_goals
 // =============================================================================
 
-describe('buildPrescription', () => {
-  it('signature legacy inchangée', () => {
-    const bench = catalog.get('bench_bb');
-    const p = profile();
-    const pres = buildPrescription(bench, 100, p, 1);
-    expect(pres.exercise_id).toBe('bench_bb');
-    expect(pres.reps).toBeGreaterThan(0);
-    expect(pres.rpe_target).toBe(7.0);
-  });
-
-  it('déload actif via buildPrescription → RPE 6 + charge plancher ×0,9', () => {
-    const bench = catalog.get('bench_bb');
-    const p = profile();
-    const state = makeUserState(p);
-    state.prescribed_load_floor[bench.id] = 100;
-    const pres = buildPrescription(bench, 100, p, 5, {
-      state,
-      deloadActive: true,
-    });
-    expect(pres.rpe_target).toBe(6.0);
-    expect(pres.load_kg).toBeCloseTo(90, 0);
-  });
-
-  it('override inc_kg=5 → charge multiple de 5', () => {
-    const bench = catalog.get('bench_bb');
-    const p = profile();
-    const state = makeUserState(p);
-    state.equipment_overrides['bench_bb'] = makeEquipmentOverride({ inc_kg: 5 });
-    const pres = buildPrescription(bench, 100, p, 1, { state });
-    expect(pres.load_kg % 5).toBe(0);
-  });
-
-  it('pdc_only=true sur pullup (BW_LOADED) MESURÉ → load=0, reps adaptées', () => {
-    // Conv #20 — un pullup avec e1rm total = bw + 30kg et bw=70kg : on
-    // attend ~13 reps à RPE 7 (formule Epley étendu).
-    // #63 — l'affinage des reps par `targetRepsForPdc` n'a lieu que pour un exo
-    // déjà MESURÉ (e1RM réel). Sans mesure, un e1RM bootstrap ≤ poids du corps
-    // sortirait 1 rep → on garde alors les reps objectif. On simule donc un
-    // plafond mesuré pour tester la voie Epley inverse.
-    const pullup = catalog.get('pullup');
-    const p = profile({ bodyweight_kg: 70 });
-    const state = makeUserState(p);
-    state.equipment_overrides['pullup'] = makeEquipmentOverride({
-      pdc_only: true,
-    });
-    const e1rmTotal = 100; // bw + 30 kg équivaut à e1RM total = 100
-    state.e1rm['pullup'] = e1rmTotal; // plafond mesuré
-    const pres = buildPrescription(pullup, e1rmTotal, p, 1, { state });
-    expect(pres.load_kg).toBe(0);
-    expect(pres.reps).toBeGreaterThanOrEqual(8);
-    expect(pres.reps).toBeLessThanOrEqual(20);
-  });
-
-  it('pdc_only=true sur exo non-BW (bench) → ignoré', () => {
-    const bench = catalog.get('bench_bb');
-    const p = profile();
-    const state = makeUserState(p);
-    state.equipment_overrides['bench_bb'] = makeEquipmentOverride({
-      pdc_only: true,
-    });
-    const pres = buildPrescription(bench, 100, p, 1, { state });
-    // Le flag est ignoré (bench n'est pas BW) → on a une charge calculée
-    // par la voie standard.
-    expect(pres.load_kg).toBeGreaterThan(0);
-  });
-});
-
 // =============================================================================
 // 13. Point 5 — muscle travaillé mais NON couvert → Maintien (pas l'objectif global)
 // =============================================================================
-
 
 // =============================================================================
 // 14. Point 4 — garde-fou : plancher jamais prescrit au-dessus du Plafond mesuré
 // =============================================================================
 
-describe('buildPrescription — garde-fou plancher > Plafond (point 4)', () => {
-  // #73 A-1 — le contrat a changé : le garde-fou RÉPARE le plancher au lieu de
-  // le laisser fossilisé. Cas réel d'Azur (export du 08/08) : plancher 20
-  // kg/haltère semé au bootstrap, Plafond mesuré 14, jamais plus de 10 soulevé.
-  // Conservé, le plancher ne servait qu'à ressortir en récup (0,9 × 20 = 18) et
-  // à monter d'un cran à chaque graduation, toujours plus loin du réel.
-  it('exo MESURÉ + plancher trop haut → prescription plafonnée ET plancher réparé', () => {
-    const bench = catalog.get('bench_bb');
-    const p = profile();
-    const state = makeUserState(p);
-    state.e1rm['bench_bb'] = 14; // Plafond mesuré bas
-    state.prescribed_load_floor['bench_bb'] = 18; // plancher hérité trop haut (bug bootstrap)
-    const pres = buildPrescription(bench, 14, p, 1, { state });
-    // targetLoad(14, 10 reps, RPE 10) ≈ 10,5 → borne ≈ 10 < 18.
-    expect(pres.load_kg).toBeLessThan(18);
-    expect(pres.load_kg).toBeLessThanOrEqual(11);
-    // Le plancher persisté est ramené sur la borne : la graduation repart d'une
-    // valeur atteignable au lieu de s'éloigner du Plafond à chaque séance.
-    expect(state.prescribed_load_floor['bench_bb']).toBe(pres.load_kg);
-  });
-
-  it('exo NON mesuré → pas de plafonnement (on ne borne pas sur un bootstrap)', () => {
-    const bench = catalog.get('bench_bb');
-    const p = profile();
-    const state = makeUserState(p);
-    state.prescribed_load_floor['bench_bb'] = 18; // pas de state.e1rm → non mesuré
-    const pres = buildPrescription(bench, 14, p, 1, { state });
-    expect(pres.load_kg).toBe(18);
-  });
-});

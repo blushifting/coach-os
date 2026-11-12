@@ -31,6 +31,7 @@ import {
   targetLoad,
 } from '@/engine/prescription';
 import { aggregateE1rmWeighted, RPE_RESERVE_FLOOR } from '@/engine/feedback';
+import { nextSetTarget } from '@/engine/progression';
 import {
   buildMusclesOf,
   classifyVolume,
@@ -371,51 +372,69 @@ export function recalibrateUpcomingSets(args: {
 }
 
 /**
- * Bloc S (Conv #45) — report de charge sur les séries suivantes.
+ * Dump 2.4, étape 4 — la règle de progression appliquée **série après série**
+ * (exercices déjà mesurés ; la calibration garde `recalibrateUpcomingSets`).
  *
- * Hors calibration : quand l'utilisateur valide une série dont il a **modifié**
- * la charge (≠ prescription du plan), on reporte cette charge sur les séries
- * **suivantes non cochées** du même exo — pour coller au pas réel de la machine
- * ou à l'ajustement qu'il vient de faire, sans qu'il ait à le ressaisir série
- * par série. Déclenché à CHAQUE validation de série (choix Azur).
+ * Après la série `fromSetIdx` :
+ *  - haut de la fourchette atteint → les séries suivantes passent au cran
+ *    suivant, avec les reps prévues par le Plafond ;
+ *  - sous le bas → cran inférieur ;
+ *  - sinon → même charge que la série faite (reporte une charge modifiée par
+ *    l'utilisateur, comme le faisait le report du Bloc S).
+ * Au poids du corps, rien ne change.
  *
- * Garde-fous (même heuristique `algoOwned` que `recalibrateUpcomingSets`) :
- *  - No-op si la charge validée est `null` ou égale à la prescription (= non
- *    modifiée) → on ne touche à rien.
- *  - On n'écrase qu'une série suivante encore « pilotée par l'algo » : sa charge
- *    vaut encore sa prescription d'origine, OU elle a déjà été posée par un
- *    report (`loadAuto`). Une série que l'user a ajustée lui-même
- *    (`loadAuto:false`, charge ≠ prescription) est PRÉSERVÉE.
- *  - Les séries déjà cochées (`done`) ne bougent pas.
- *  - Aucune mutation : retourne `entries` inchangé si rien n'est à reporter.
+ * Garde-fous : seules les séries suivantes non cochées et encore « pilotées par
+ * l'algo » (charge = prescription d'origine, ou déjà posée automatiquement)
+ * bougent ; les reps ne sont réécrites que si elles valent encore la cible du
+ * plan (ou ont été posées avec la charge). Aucune mutation.
  */
-export function propagateLoadToUpcomingSets(args: {
+export function applyProgressionToUpcomingSets(args: {
   entries: SessionEntries;
   plan: SessionPlan;
   itemIdx: number;
   fromSetIdx: number;
+  state: UserState;
+  exercise: Exercise;
 }): SessionEntries {
-  const { entries, plan, itemIdx, fromSetIdx } = args;
+  const { entries, plan, itemIdx, fromSetIdx, state, exercise } = args;
   const item = plan.items[itemIdx];
   if (item === undefined) return entries;
-  const src = (entries[itemIdx] ?? [])[fromSetIdx];
-  if (src === undefined) return entries;
-  const srcLoad = src.load_kg;
-  const planLoad = item.sets[fromSetIdx]?.load_kg ?? null;
-  // Charge non modifiée par l'user → rien à reporter.
-  if (srcLoad === null || srcLoad === planLoad) return entries;
+  const row = entries[itemIdx] ?? [];
+  const src = row[fromSetIdx];
+  if (src === undefined || !src.done) return entries;
+  if (src.load_kg === null || src.reps === null || src.reps <= 0) return entries;
+  const sessionLoads = row.flatMap((e) => (e.done && e.load_kg !== null ? [e.load_kg] : []));
+  const target = nextSetTarget({
+    state,
+    exercise,
+    e1rmTotal: state.e1rm[exercise.id] ?? null,
+    load_kg: src.load_kg,
+    reps: src.reps,
+    sessionLoads,
+  });
+  if (target === null) return entries;
 
   let changed = false;
   const next = entries.map((sets, i) => {
     if (i !== itemIdx) return sets;
     return sets.map((s, j) => {
       if (j <= fromSetIdx || s.done) return s;
-      const sPlanLoad = item.sets[j]?.load_kg ?? null;
-      const algoOwned = s.load_kg === sPlanLoad || s.loadAuto === true;
+      const planSet = item.sets[j];
+      const planLoad = planSet?.load_kg ?? null;
+      const planReps = planSet?.reps ?? null;
+      const algoOwned = s.load_kg === planLoad || s.loadAuto === true;
       if (!algoOwned) return s;
-      if (s.load_kg === srcLoad && s.loadAuto === true) return s;
+      const repsOwned = s.reps === null || s.reps === planReps || s.loadAuto === true;
+      const nextReps = target.reps !== null && repsOwned ? target.reps : s.reps;
+      const loadMoves = s.load_kg !== target.load_kg;
+      if (!loadMoves && nextReps === s.reps) return s;
       changed = true;
-      return { ...s, load_kg: srcLoad, loadAuto: true };
+      return {
+        ...s,
+        load_kg: target.load_kg,
+        reps: nextReps,
+        loadAuto: loadMoves ? true : s.loadAuto,
+      };
     });
   });
   return changed ? next : entries;

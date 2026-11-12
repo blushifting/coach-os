@@ -65,8 +65,7 @@ function makeState(overrides: Partial<UserState> = {}): UserState {
     muscle_goals: {},
     current_cycle_plan: null,
     equipment_overrides: {},
-    prescribed_load_floor: {},
-    prescribed_reps_floor: {},
+    rep_ranges: {},
     ...overrides,
   };
 }

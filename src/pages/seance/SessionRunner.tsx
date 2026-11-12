@@ -9,8 +9,7 @@ import { cn } from '@/lib/cn';
 import { triggerHaptic } from '@/lib/haptics';
 import type { Catalog } from '@/engine/catalog';
 import { ChargeType, type SessionPlan } from '@/engine/models';
-import { exerciseUsesRepsFloor } from '@/engine/prescription';
-import { REPS_FLOOR_MAX } from '@/engine/feedback';
+import { BODYWEIGHT_REPS_CAP, progressesByReps } from '@/engine/progression';
 import { useEngine } from '@/hooks/useEngine';
 import { useReducedMotion } from '@/hooks/useMotion';
 import { MOTION } from '@/lib/motion';
@@ -22,7 +21,7 @@ import {
   countDoneSets,
   countPlannedSets,
   formatRest,
-  propagateLoadToUpcomingSets,
+  applyProgressionToUpcomingSets,
   recalibrateUpcomingSets,
   type SessionEntries,
   type SetEntry,
@@ -285,15 +284,17 @@ export function SessionRunner({
             bodyweightKg: bodyweight,
             itemIdx: triggeredIdx,
           });
-        } else {
-          // Bloc S (Conv #45) — exo déjà calibré : on ne recalibre pas en
-          // séance, mais on reporte une charge MODIFIÉE par l'user sur les
-          // séries suivantes (no-op si elle vaut encore la prescription).
-          next = propagateLoadToUpcomingSets({
+        } else if (userState !== null && exId !== undefined && catalog.has(exId)) {
+          // Dump 2.4, étape 4 — exo déjà mesuré : la règle de progression,
+          // série après série (cran suivant au haut de la fourchette, cran
+          // inférieur sous le bas, sinon la charge faite est reportée).
+          next = applyProgressionToUpcomingSets({
             entries: next,
             plan,
             itemIdx: triggeredIdx,
             fromSetIdx: triggeredSetIdx,
+            state: userState,
+            exercise: catalog.get(exId),
           });
         }
         const touched = diffChangedLoads(beforeAutoLoads, next);
@@ -338,6 +339,7 @@ export function SessionRunner({
       entries,
       plan,
       bodyweight,
+      userState,
       onEntriesChange,
       confidenceByExo,
       setCurrentSessionCollapsed,
@@ -402,13 +404,13 @@ export function SessionRunner({
             userState.equipment_overrides[ex.id]?.pdc_only === true &&
             (ex.charge === ChargeType.BODYWEIGHT_LOADED ||
               ex.charge === ChargeType.BODYWEIGHT_ASSISTED);
-          // Chantier D — cliquet de reps arrivé au cap : le poids du corps seul
-          // ne suffit plus à surcharger, on invite au lest / variante plus dure.
+          // Poids du corps arrivé au plafond de reps : on invite (sans obliger)
+          // au lest ou à une variante plus dure.
           const atRepsCap =
             ex !== null &&
             userState !== null &&
-            exerciseUsesRepsFloor(userState, ex) &&
-            (userState.prescribed_reps_floor[ex.id] ?? 0) >= REPS_FLOOR_MAX;
+            progressesByReps(userState, ex) &&
+            (item.sets[0]?.reps ?? 0) >= BODYWEIGHT_REPS_CAP;
           return (
             <li
               key={`${item.exercise_id}-${i}`}
@@ -555,8 +557,7 @@ export function SessionRunner({
                         règle la charge. Rien pour les charges normales. */}
                     {ex !== null && <ChargeMechanicNote charge={ex.charge} />}
 
-                    {/* Chantier D — cliquet de reps au cap : le poids du corps
-                        seul ne suffit plus à surcharger. */}
+                    {/* Poids du corps au plafond de reps : invitation au lest. */}
                     {atRepsCap && (
                       <p
                         data-testid="reps-cap-hint"

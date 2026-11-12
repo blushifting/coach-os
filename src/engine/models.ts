@@ -701,9 +701,8 @@ export interface EquipmentOverride {
   max_load_kg: number | null;
   /**
    * Conv #20 — Mode "Poids du corps seulement" (sticky).
-   *  - `true`  : la prescription force load_kg = 0 et adapte les reps cibles
-   *              pour atteindre le RPE cible (Epley étendu, cf.
-   *              `buildPrescription`). N'a de sens que sur les exos
+   *  - `true`  : la prescription force load_kg = 0 ; seules les reps
+   *              progressent (cf. `progression.ts`). N'a de sens que sur les exos
    *              `BODYWEIGHT_LOADED` / `BODYWEIGHT_ASSISTED`.
    *  - `false` / `null` : comportement par défaut (charge ajustée).
    */
@@ -749,33 +748,6 @@ export interface UserState {
   // --- override équipement par exo ---
   equipment_overrides: Record<string, EquipmentOverride>;
   /**
-   * Refonte progression — plancher de charge prescrite par exercice (kg externes).
-   *
-   * C'est la SOURCE de la charge prescrite au jour le jour (et non plus l'e1RM ×
-   * RPE) : `buildPrescription` lit ce plancher s'il existe, sinon il le SEED avec
-   * la charge dérivée de l'e1RM. Le plancher monte d'un cran (cliquet) quand la
-   * meilleure série atteint `R + GRADUATION_RESERVE` (cf. feedback.ts), persiste
-   * d'un cycle à l'autre (jamais reset en fin de cycle), et est effacé quand on
-   * réinitialise/repose l'e1RM de l'exo (reset catalogue, plafond manuel,
-   * changement d'objectif). Exos sans charge externe additive (poids du corps,
-   * assisté, PDC) exclus : ils gardent la voie e1RM. Absent sur anciens blobs.
-   */
-  prescribed_load_floor: Record<string, number>;
-  /**
-   * Chantier D — plancher de REPS prescrites par exercice, miroir du cliquet de
-   * charge pour les exos au poids du corps PUR (`ChargeType.BODYWEIGHT`) et le
-   * mode PDC (`pdc_only`) : la charge externe y est figée à 0, donc la
-   * progression se fait en AJOUTANT des reps, pas des kg. `buildPrescription`
-   * lit ce plancher s'il existe (sinon il le SEED : reps fixes de l'objectif
-   * pour le PDC pur, Epley inverse pour le mode PDC). Monte d'un cran quand la
-   * meilleure série atteint `plancher + GRADUATION_RESERVE`, plafonné à
-   * `REPS_FLOOR_MAX` (au-delà : inviter au lest). Persiste d'un cycle à l'autre
-   * et est effacé aux mêmes endroits que le cliquet de charge (reset catalogue,
-   * plafond manuel, changement d'objectif). Mutuellement exclusif avec
-   * `prescribed_load_floor`. Absent sur anciens blobs.
-   */
-  prescribed_reps_floor: Record<string, number>;
-  /**
    * Conv #22 — squelette du cycle courant (grille pattern × séance) si on
    * est en mode custom co-construit. Persisté à côté de `current_cycle_plan`
    * pour permettre "Modifier la grille" et la re-distribution des séries
@@ -808,7 +780,7 @@ export interface UserState {
   /**
    * Chantier B (plan 11) — décision de l'utilisateur sur la semaine de
    * récupération (déload opt-in) du cycle courant :
-   *  - `'accepted'` : semaine 5 allégée (volume ÷2, charge ×0,9, RPE 6, aucune
+   *  - `'accepted'` : semaine 5 allégée (volume ÷2, charge ×0,9, aucune
    *    mesure) — cf. `isDeloadActive` (volume.ts).
    *  - `'declined'` : semaine 5 = semaine NORMALE (progression + mesures actives).
    *  - `null`       : pas encore décidé (défaut ; hors semaine 5, ou proposition
@@ -816,7 +788,20 @@ export interface UserState {
    * Absent sur anciens blobs (default `null`).
    */
   deload_decision?: 'accepted' | 'declined' | null;
+  /**
+   * Dump 2.4, étape 4 — fourchette de reps choisie par exercice (fiche, ou
+   * proposition de fin de séance). Absent = celle conseillée par le catalogue.
+   * Un choix explicite (même identique à la conseillée) coupe les propositions
+   * de changement pour cet exercice.
+   */
+  rep_ranges: Record<string, RepRangeKey>;
 }
+
+/**
+ * Dump 2.4, étape 4 — les trois fourchettes de reps (valeurs dans
+ * `engine/progression.ts`, `REP_RANGES`) : 6–10, 8–13, 10–16.
+ */
+export type RepRangeKey = 'heavy' | 'medium' | 'light';
 
 export function makeUserState(profile: Profile): UserState {
   return {
@@ -832,12 +817,11 @@ export function makeUserState(profile: Profile): UserState {
     current_cycle_plan: null,
     build_mode: 'auto',
     equipment_overrides: {},
-    prescribed_load_floor: {},
-    prescribed_reps_floor: {},
     current_skeleton: null,
     favorite_exercise_per_pattern: {},
     favorite_exercise_ids: [],
     exercise_pick_counts: {},
     deload_decision: null,
+    rep_ranges: {},
   };
 }

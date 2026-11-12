@@ -65,10 +65,14 @@ export interface SerializedUserState {
   /** Bloc O — mode de construction ('auto'|'manual'). Absent sur anciens blobs (default 'auto'). */
   build_mode?: 'auto' | 'manual';
   equipment_overrides: Record<string, EquipmentOverride>;
-  /** Plancher de charge prescrite par exo (refonte progression). Absent sur anciens blobs. */
+  /**
+   * Anciens planchers de charge et de reps (cliquets retirés au dump 2.4, étape 4) :
+   * encore présents dans les anciennes bases, ignorés à la lecture.
+   */
   prescribed_load_floor?: Record<string, number>;
-  /** Plancher de reps prescrites par exo poids du corps / PDC (chantier D). Absent sur anciens blobs. */
   prescribed_reps_floor?: Record<string, number>;
+  /** Fourchette de reps choisie par exercice (dump 2.4, étape 4). Absent sur anciens blobs. */
+  rep_ranges?: Record<string, string>;
   /** Conv #22 — squelette du cycle courant (path co-construit). Absent sur anciens blobs. */
   current_skeleton?: import('@/engine/models').SkeletonTemplate | null;
   /** Conv #22 — exos préférés par pattern. Absent sur anciens blobs. */

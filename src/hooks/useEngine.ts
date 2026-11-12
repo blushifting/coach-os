@@ -49,6 +49,7 @@ import type {
   EquipmentOverride,
   MuscleGoal,
   Profile,
+  RepRangeKey,
   SessionFeedback,
   SessionPlan,
   SkeletonTemplate,
@@ -74,7 +75,8 @@ import {
   txSaveUserStateOnly,
   txUpdateSessionPlan,
 } from '@/db/transactions';
-import { buildPrescription, effectiveLoadForE1rm } from '@/engine/prescription';
+import { effectiveLoadForE1rm } from '@/engine/prescription';
+import { buildPrescription } from '@/engine/progression';
 import { clearLocalBackupFlags, requestBackup } from '@/lib/backup';
 import {
   importFromJsonString,
@@ -464,6 +466,19 @@ export async function toggleFavorite(exerciseId: string): Promise<UserState> {
 }
 
 /**
+ * Dump 2.4, étape 4 — choisit la fourchette de reps d'un exercice (fiche, ou
+ * réponse à la proposition de fin de séance). Un choix explicite, même identique
+ * à la fourchette conseillée, coupe les propositions de changement.
+ */
+export async function setRepRange(exerciseId: string, key: RepRangeKey): Promise<UserState> {
+  const next = requireUserState();
+  next.rep_ranges = { ...next.rep_ranges, [exerciseId]: key };
+  await txSaveUserStateOnly(next);
+  useCoachOsStore.setState({ userState: next });
+  return next;
+}
+
+/**
  * Bloc F (Conv #31) — seuil d'ajouts ad-hoc/variante au-delà duquel on propose
  * d'ajouter l'exo aux favoris.
  */
@@ -756,16 +771,10 @@ export async function addExerciseToCurrentSession(
   // bootstrap transitoire (cf. Conv #20.2 — pas de persistance), juste pour
   // poser une prescription cohérente sur le nouvel exo.
   const e1rmTotal = engine.bootstrapE1rmIfMissing(next, exercise);
-  const prescription = buildPrescription(
-    exercise,
-    e1rmTotal,
-    next.profile,
-    next.current_week_in_cycle,
-    {
-      deloadActive: isDeloadActive(next),
-      state: next,
-    },
-  );
+  const prescription = buildPrescription(exercise, e1rmTotal, next.profile, {
+    deloadActive: isDeloadActive(next),
+    state: next,
+  });
   const safeSets = Math.max(1, Math.min(10, nSets));
   const newItem = {
     exercise_id: exerciseId,
@@ -1117,11 +1126,6 @@ export async function setManualE1rm(args: SetManualE1rmArgs): Promise<UserState>
     throw new Error(`e1RM invalide : ${e1rmTotal}`);
   }
   next.e1rm[args.exerciseId] = e1rmTotal;
-  // Refonte progression — un plafond posé à la main réamorce la charge : on
-  // efface le plancher du cliquet pour qu'il soit re-seedé depuis ce nouvel e1RM.
-  delete next.prescribed_load_floor[args.exerciseId];
-  // Chantier D — idem pour le cliquet de reps (exos poids du corps / PDC).
-  delete next.prescribed_reps_floor[args.exerciseId];
   const today = new Date();
   const dateStr =
     today.getFullYear() +
@@ -1149,16 +1153,10 @@ export async function setManualE1rm(args: SetManualE1rmArgs): Promise<UserState>
   const touched =
     plan !== null && plan.items.some((it) => it.exercise_id === args.exerciseId);
   if (plan !== null && sessionId !== null && touched) {
-    const prescription = buildPrescription(
-      args.exercise,
-      e1rmTotal,
-      next.profile,
-      next.current_week_in_cycle,
-      {
-        deloadActive: isDeloadActive(next),
-        state: next,
-      },
-    );
+    const prescription = buildPrescription(args.exercise, e1rmTotal, next.profile, {
+      deloadActive: isDeloadActive(next),
+      state: next,
+    });
     const newItems = plan.items.map((it) =>
       it.exercise_id === args.exerciseId
         ? { exercise_id: it.exercise_id, sets: it.sets.map(() => prescription) }
@@ -1203,11 +1201,6 @@ export async function setManualE1rm(args: SetManualE1rmArgs): Promise<UserState>
 export async function resetE1rm(exerciseId: string): Promise<UserState> {
   const next = requireUserState();
   delete next.e1rm[exerciseId];
-  // Refonte progression — reset du plafond ⇒ reset du plancher de charge
-  // (l'exo repart en calibration, re-seedé au bootstrap).
-  delete next.prescribed_load_floor[exerciseId];
-  // Chantier D — idem pour le cliquet de reps (exos poids du corps / PDC).
-  delete next.prescribed_reps_floor[exerciseId];
   await txResetE1rm({ state: next, exerciseId });
   useCoachOsStore.setState({ userState: next });
   await refreshHistory();
@@ -1584,6 +1577,7 @@ export interface EngineApi {
   addFavoriteForPattern: typeof addFavoriteForPattern;
   /** Bloc F (Conv #31) — bascule un favori unifié (étoile catalogue/fiche). */
   toggleFavorite: typeof toggleFavorite;
+  setRepRange: typeof setRepRange;
   /** Bloc F (Conv #31) — l'exo atteint-il le seuil de proposition favoris ? */
   shouldSuggestFavorite: typeof shouldSuggestFavorite;
   applyVariantReplacements: typeof applyVariantReplacements;
@@ -1637,6 +1631,7 @@ export function useEngine(): EngineApi {
       generateInitialCyclePlanFromSkeleton,
       addFavoriteForPattern,
       toggleFavorite,
+      setRepRange,
       shouldSuggestFavorite,
       applyVariantReplacements,
       setManualE1rm,

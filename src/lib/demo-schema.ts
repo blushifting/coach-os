@@ -155,9 +155,10 @@ const serializedUserStateSchema = z.object({
   equipment_overrides: z.record(z.string(), equipmentOverrideSchema),
   // Report de volume retiré (1.41) — toléré (optionnel) pour les anciens snapshots.
   weekly_volume_debt: z.record(z.string(), z.number()).optional(),
+  // Anciens planchers (cliquets retirés au dump 2.4, étape 4) : tolérés, ignorés.
   prescribed_load_floor: z.record(z.string(), z.number()).optional(),
-  // Chantier D — cliquet de reps PDC (absent des anciens snapshots).
   prescribed_reps_floor: z.record(z.string(), z.number()).optional(),
+  rep_ranges: z.record(z.string(), z.string()).optional(),
   // Chantier B — déload opt-in (absent des anciens snapshots, default null).
   deload_decision: z.enum(['accepted', 'declined']).nullable().optional(),
 });

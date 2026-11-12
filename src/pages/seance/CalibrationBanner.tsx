@@ -88,7 +88,7 @@ export function CalibrationBanner({
           <span className="font-semibold text-blue-300">
             Trop facile pour mesurer ton Plafond
           </span>{' '}
-          — garde 2 à 3 reps en réserve (arrête-toi avant l'échec).
+          — approche-toi le plus possible de l'échec.
           {suggestedLoad !== null ? (
             <>
               {' '}

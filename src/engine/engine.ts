@@ -25,17 +25,9 @@ import {
   exercisePrimaires,
   makeUserState,
 } from './models';
-import {
-  buildPrescription,
-  e1rmObserved,
-  effectiveLoadForE1rm,
-} from './prescription';
-import {
-  updateE1rmForExercise,
-  updatePrescribedLoadFloorForExercise,
-  updatePrescribedRepsFloorForExercise,
-  type E1rmUpdate,
-} from './feedback';
+import { e1rmObserved, effectiveLoadForE1rm } from './prescription';
+import { buildPrescription } from './progression';
+import { updateE1rmForExercise, type E1rmUpdate } from './feedback';
 import {
   advanceWeek,
   DELOAD_WEEK_IN_CYCLE,
@@ -221,13 +213,10 @@ export function generateSession(
     // génération.
     const e1rmTotal = bootstrapE1rmIfMissing(state, ex);
 
-    const prescription: SetPrescription = buildPrescription(
-      ex, e1rmTotal, state.profile, prescriptionWeek(weekInCycle),
-      {
-        deloadActive,
-        state,
-      },
-    );
+    const prescription: SetPrescription = buildPrescription(ex, e1rmTotal, state.profile, {
+      deloadActive,
+      state,
+    });
     const sets: SetPrescription[] = [];
     for (let i = 0; i < nSets; i++) sets.push(prescription);
     items.push({ exercise_id: ex.id, sets });
@@ -287,16 +276,10 @@ export function buildCustomSessionPlan(
   for (const slot of args.slots) {
     const ex = catalog.get(slot.exerciseId);
     const e1rmTotal = bootstrapE1rmIfMissing(state, ex);
-    const prescription = buildPrescription(
-      ex,
-      e1rmTotal,
-      state.profile,
-      prescriptionWeek(week),
-      {
-        deloadActive: isDeloadWeek(state, week),
-        state,
-      },
-    );
+    const prescription = buildPrescription(ex, e1rmTotal, state.profile, {
+      deloadActive: isDeloadWeek(state, week),
+      state,
+    });
     const n = Math.max(1, Math.min(10, Math.round(slot.nSets)));
     const sets: SetPrescription[] = [];
     for (let i = 0; i < n; i++) sets.push({ ...prescription });
@@ -344,13 +327,10 @@ export function replaceSessionItem(
 
   // Conv #20 — bootstrap transitoire, pas de persistance (cf. generateSession).
   const e1rmTotal = bootstrapE1rmIfMissing(state, newEx);
-  const prescription: SetPrescription = buildPrescription(
-    newEx, e1rmTotal, state.profile, state.current_week_in_cycle,
-    {
-      deloadActive: isDeloadActive(state),
-      state,
-    },
-  );
+  const prescription: SetPrescription = buildPrescription(newEx, e1rmTotal, state.profile, {
+    deloadActive: isDeloadActive(state),
+    state,
+  });
   const newSets: SetPrescription[] = [];
   for (let i = 0; i < nSets; i++) newSets.push(prescription);
 
@@ -461,25 +441,6 @@ export function recordFeedback(
       prescribed: prescribedByExo.get(exId),
     });
     summary[exId] = e1rmUpdate;
-    // #63 — à la 1re VRAIE mesure d'un exo (calibration : `skipEma` = pas encore
-    // de snapshot, et update DÉFINITIVE), le plancher de charge avait été semé
-    // sur un e1RM bootstrap sans rapport avec la capacité réelle (plafond mesuré
-    // à 58 kg mais prescription bloquée à ~28 kg, car l'anti-régression du cliquet
-    // n'adopte pas une série de calibration menée à effort élevé). On efface ce
-    // plancher bootstrap ; `updatePrescribedLoadFloorForExercise` juste après le
-    // re-sème depuis la charge réellement effectuée à la calibration.
-    if (skipEma && !recoveryWeek && e1rmUpdate !== null && e1rmUpdate.definitive) {
-      delete state.prescribed_load_floor[exId];
-    }
-    // Refonte progression — cliquet de charge : graduation R+3 / anti-régression /
-    // descente sur `prescribed_load_floor`. En récup (A-3, #73), seule
-    // l'anti-régression tourne — cf. `UpdateLoadFloorOptions.adoptionOnly`.
-    updatePrescribedLoadFloorForExercise(state, ex, fbs, { adoptionOnly: recoveryWeek });
-    // Chantier D — cliquet de reps (exos poids du corps pur + PDC). Mut. excl.
-    // avec le cliquet de charge : chaque fonction no-op hors de son périmètre.
-    // Gelé en récup (comme avant #73) : le RPE cible à 6 gonfle `n_équiv` et
-    // ferait grimper le plancher de reps sans effort réel.
-    if (!recoveryWeek) updatePrescribedRepsFloorForExercise(state, ex, fbs);
   }
 
   state.history.push(sessionFeedback);

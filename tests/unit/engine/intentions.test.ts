@@ -5,8 +5,6 @@
 
 import { describe, expect, it } from 'vitest';
 import {
-  exercisesWithChangedReps,
-  hasLegacyMuscleGoals,
   migrateMuscleGoalList,
   migrateMuscleGoals,
   type StoredMuscleGoal,
@@ -60,8 +58,6 @@ describe('migrateMuscleGoals', () => {
   it('le nouveau format passe tel quel (migration idempotente)', () => {
     const once = migrateMuscleGoals(LEGACY);
     expect(migrateMuscleGoals(once)).toEqual(once);
-    expect(hasLegacyMuscleGoals(once)).toBe(false);
-    expect(hasLegacyMuscleGoals(LEGACY)).toBe(true);
   });
 
   it('liste du bilan de cycle : même migration', () => {
@@ -70,30 +66,3 @@ describe('migrateMuscleGoals', () => {
   });
 });
 
-describe('exercisesWithChangedReps — plancher de charge à re-semer', () => {
-  const MUSCLES: Record<string, Record<string, number>> = {
-    elevation_laterale: { deltos_lateraux: 1 },
-    lat_pulldown: { dos_largeur: 1, biceps: 0.5 },
-    leg_press: { quadriceps: 1, fessiers: 0.5 },
-  };
-  const musclesOf = (id: string) => MUSCLES[id] ?? null;
-
-  it('exo dont le muscle primaire était en hypertrophie : inchangé (10 / 12)', () => {
-    expect(exercisesWithChangedReps(['elevation_laterale'], LEGACY, 'hypertrophie', musclesOf)).toEqual([]);
-  });
-
-  it('exo d’un muscle en maintien ou hors objectifs : reps changées (8 → 10)', () => {
-    expect(
-      exercisesWithChangedReps(['lat_pulldown', 'leg_press'], LEGACY, 'hypertrophie', musclesOf),
-    ).toEqual(['lat_pulldown', 'leg_press']);
-  });
-
-  it('exercice inconnu du catalogue livré : laissé tel quel', () => {
-    expect(exercisesWithChangedReps(['exo_perso'], LEGACY, 'hypertrophie', musclesOf)).toEqual([]);
-  });
-
-  it('aucun réglage par muscle : l’objectif global du profil décidait', () => {
-    expect(exercisesWithChangedReps(['leg_press'], {}, 'hypertrophie', musclesOf)).toEqual([]);
-    expect(exercisesWithChangedReps(['leg_press'], {}, 'force', musclesOf)).toEqual(['leg_press']);
-  });
-});

@@ -13,6 +13,8 @@ import { useCountUp } from '@/hooks/useMotion';
 import { sessionDisplayName } from '@/lib/session-label';
 import { muscleLabel, volumeScale } from '@/lib/progress';
 import { formatSets, markLabel, VolumeBar, VOLUME_TEXT } from '@/components/VolumeBar';
+import type { RepRangeSuggestion } from '@/engine/progression';
+import { RepRangeSuggestionCard } from './RepRangeSuggestionCard';
 import type {
   PlafondChange,
   SessionMuscleVolume,
@@ -31,6 +33,8 @@ interface SessionSummaryProps {
    * l'explique au lieu du message « aucune série assez intense ».
    */
   readonly deloadActive?: boolean;
+  /** Dump 2.4, étape 4 — exercices dont la fourchette est trop étroite pour ses crans. */
+  readonly rangeSuggestions?: readonly RepRangeSuggestion[];
   readonly onClose: () => void;
 }
 
@@ -63,6 +67,7 @@ export function SessionSummary({
   data,
   catalog,
   deloadActive = false,
+  rangeSuggestions = [],
   onClose,
 }: SessionSummaryProps) {
   const brand = useGymBrand() ?? undefined;
@@ -147,9 +152,18 @@ export function SessionSummary({
         )}
       </Card>
 
+      {rangeSuggestions.map((sg) => (
+        <RepRangeSuggestionCard
+          key={sg.exercise_id}
+          suggestion={sg}
+          catalog={catalog}
+          style={{ animationDelay: `${cardDelayMs(4)}ms` }}
+        />
+      ))}
+
       <div
         className="flex flex-col gap-2 motion-safe:animate-reveal-up"
-        style={{ animationDelay: `${cardDelayMs(4)}ms` }}
+        style={{ animationDelay: `${cardDelayMs(rangeSuggestions.length > 0 ? 5 : 4)}ms` }}
       >
         <Link to="/programme">
           <Button variant="primary" fullWidth onClick={onClose} data-testid="btn-back-programme">

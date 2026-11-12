@@ -69,13 +69,6 @@ export const VOLUME_HIGH_MARK = 20;
 
 export const DELOAD_FACTOR = 0.5;
 /**
- * Refonte progression — facteur d'allègement de la CHARGE en semaine de
- * récupération (déload), appliqué au plancher de charge (`prescribed_load_floor`).
- * Le déload reste surtout un allègement de VOLUME ; la charge ne baisse que
- * modérément. Tunable (le déload deviendra opt-in, cf. backlog).
- */
-export const DELOAD_LOAD_FACTOR = 0.9;
-/**
  * Conv #21bis — Semaine du cycle dédiée au déload (5/5 par convention).
  * Dupliqué côté `lib/dashboard.ts` (`DELOAD_WEEK_INDEX`) mais le moteur
  * reste pur (pas d'import depuis lib/). Toute relecture doit se baser

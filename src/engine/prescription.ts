@@ -5,19 +5,13 @@
  *   - recherche/03_modele_mathematique.md, §3, §4, §8 (formules e1RM legacy)
  *   - recherche/09_programmation.md, §3, §9.2 (refacto par MuscleGoal)
  *
- * Dump 2.4, étape 2 (D3) — les reps et l'effort visés ne dépendent plus d'un
- * objectif (ni du profil, ni du muscle) : une seule table pour tous les
- * exercices, en attendant la fourchette propre à chaque exercice (étape 4).
+ * Dump 2.4, étape 4 — la charge et les reps prescrites viennent de la règle de
+ * progression (`progression.ts`) ; ce module ne garde que les calculs (Plafond,
+ * charge cible, arrondi, poids du corps).
  */
 
-import type {
-  Exercise,
-  Profile,
-  UserState,
-  SetPrescription,
-} from './models';
-import { ChargeType, ExType } from './models';
-import { DELOAD_LOAD_FACTOR } from './volume';
+import type { Exercise, UserState } from './models';
+import { ChargeType } from './models';
 
 // Constante d'Epley standard (LeSuer 1997, Wood 2002).
 export const EPLEY_K = 0.0333;
@@ -151,107 +145,8 @@ export function effectivePdcOnly(state: UserState, exercise: Exercise): boolean 
   return exercise.charge === ChargeType.BODYWEIGHT_LOADED;
 }
 
-/**
- * Refonte progression — l'exo est-il piloté par le cliquet de charge
- * (`prescribed_load_floor`) ? Oui pour les exos à charge externe ADDITIVE
- * (barre, haltère, machine, lesté). Non pour le poids du corps pur, l'assisté
- * (charge = assistance, sens inverse) et le mode PDC : ils gardent la voie e1RM.
- */
-export function exerciseUsesLoadFloor(state: UserState, exercise: Exercise): boolean {
-  if (effectivePdcOnly(state, exercise)) return false;
-  return (
-    exercise.charge !== ChargeType.BODYWEIGHT &&
-    exercise.charge !== ChargeType.BODYWEIGHT_ASSISTED
-  );
-}
-
-/**
- * Chantier D — l'exo est-il piloté par le cliquet de REPS
- * (`prescribed_reps_floor`) ? Oui pour le poids du corps PUR
- * (`ChargeType.BODYWEIGHT`, charge externe = 0) et le mode PDC (`pdc_only`) :
- * ces exos ne prennent pas de kg, la progression se fait en ajoutant des reps.
- * Mutuellement exclusif avec `exerciseUsesLoadFloor` (qui exclut déjà ces cas).
- */
-export function exerciseUsesRepsFloor(state: UserState, exercise: Exercise): boolean {
-  if (effectivePdcOnly(state, exercise)) return true;
-  return exercise.charge === ChargeType.BODYWEIGHT;
-}
-
-/**
- * Conv #20 — Reps nécessaires pour atteindre `e1rmTotal` à `rpeTarget` quand
- * la charge externe est forcée à 0 (mode PDC). On résout Epley inverse :
- *
- *   e1rmTotal = effectiveLoad × (1 + k × (reps + 10 − rpe))
- *
- * avec `effectiveLoad` constant = bodyweight pour BODYWEIGHT_LOADED (load=0)
- * et BODYWEIGHT_ASSISTED (load=0 = pas d'assistance = bw plein). Le
- * "plafond fictif" Epley est étendu — on accepte des reps > 15 même si la
- * formule sort de sa zone fiable. Floor à 1 rep.
- */
-export function targetRepsForPdc(
-  e1rmTotal: number,
-  bodyweight: number,
-  rpeTarget: number,
-  k: number = EPLEY_K,
-): number {
-  if (bodyweight <= 0) {
-    return 1;
-  }
-  const ratio = e1rmTotal / bodyweight;
-  if (ratio <= 1) {
-    return 1;
-  }
-  const nEq = (ratio - 1) / k;
-  const reps = nEq - (10 - rpeTarget);
-  return Math.max(1, Math.round(reps));
-}
-
 // =============================================================================
-// 4. Reps, effort et repos visés (dump 2.4, étape 2 : une seule table)
-// =============================================================================
-
-// Reps cibles FIXES par type d'exercice, pour TOUS les exercices (D3 : plus
-// d'objectif par muscle ni de profil). Valeurs de l'ancien objectif
-// hypertrophie, validées par Azur en conv #80 en attendant la fourchette propre
-// à chaque exercice (étape 4).
-//
-// Une valeur RONDE, facile à suivre en salle, plafonnée pour rester exploitable
-// par Epley : n_équiv = reps + (10 − RPE) ≤ 15 (cf. `measurementIsReliable`).
-const TARGET_REPS = { compound: 10, isolation: 12 } as const;
-
-/** Reps cibles de cet exercice. */
-export function targetReps(exercise: Exercise): number {
-  return exercise.type === ExType.ISOLATION ? TARGET_REPS.isolation : TARGET_REPS.compound;
-}
-
-// Effort de RÉFÉRENCE constant (RPE 7, soit une Réserve de 3) : il sert à SEED
-// la charge, le plancher `prescribed_load_floor` prend ensuite le relais. La
-// semaine de récupération acceptée l'abaisse.
-export const BASE_RPE = 7.0;
-export const DELOAD_RPE = 6.0;
-
-/** RPE visé pour cette semaine (abaissé en récupération effective). */
-export function targetRpe(weekInCycle: number, deloadActive = false): number {
-  if (!(weekInCycle >= 1 && weekInCycle <= 5)) {
-    throw new Error(`Semaine hors plage 1..5 : ${weekInCycle}`);
-  }
-  return deloadActive ? DELOAD_RPE : BASE_RPE;
-}
-
-/** Reps + RPE visés pour cet exercice et cette semaine. */
-export function resolvePrescriptionTargets(
-  exercise: Exercise,
-  weekInCycle: number,
-  deloadActive: boolean,
-): { reps: number; rpe: number } {
-  return {
-    reps: targetReps(exercise),
-    rpe: targetRpe(weekInCycle, deloadActive),
-  };
-}
-
-// =============================================================================
-// 6. Effective load / charge externe selon le type
+// 4. Charge effective / charge externe selon le type
 // =============================================================================
 
 /**
@@ -292,140 +187,4 @@ export function externalLoadFromE1rm(
     return Math.max(0.0, bodyweight - targetTotalKg);
   }
   return targetTotalKg;
-}
-
-// =============================================================================
-// 7. Construction d'une SetPrescription
-// =============================================================================
-
-export interface BuildPrescriptionOptions {
-  k?: number;
-  /**
-   * Récupération EFFECTIVE (semaine 5 + déload accepté par l'user). Calculé par
-   * les appelants moteur via `isDeloadActive(state)`. Abaisse le RPE à 6 et la
-   * charge prescrite au plancher × DELOAD_LOAD_FACTOR. Une semaine 5 refusée
-   * (ou non décidée) laisse ce booléen à false → prescription normale.
-   */
-  deloadActive?: boolean;
-  state?: UserState | null;
-}
-
-/**
- * Construit une prescription cohérente pour une série d'un exercice donné.
- *
- * Reps et RPE visés : `resolvePrescriptionTargets` (table unique, D3).
- *
- * Si state est fourni, l'incrément utilisé est `effectiveIncrement(state, exercise)`
- * (qui consulte equipment_overrides). Sinon, exercise.inc_kg du catalogue.
- *
- * `e1rmTotal` : e1RM exprimé en charge totale soulevée (poids du corps inclus
- *               pour les bodyweight_loaded).
- */
-export function buildPrescription(
-  exercise: Exercise,
-  e1rmTotal: number,
-  profile: Profile,
-  weekInCycle: number,
-  options: BuildPrescriptionOptions = {},
-): SetPrescription {
-  const k = options.k ?? EPLEY_K;
-  const deloadActive = options.deloadActive ?? false;
-  const state = options.state ?? null;
-
-  const targets = resolvePrescriptionTargets(exercise, weekInCycle, deloadActive);
-  const rpe = targets.rpe;
-  let reps = targets.reps;
-
-  // Chantier D — cliquet de reps (poids du corps PUR + mode PDC) : la charge
-  // externe est forcée à 0 et les reps prescrites viennent du PLANCHER persisté
-  // (`prescribed_reps_floor`) ; l'e1RM/les reps fixes ci-dessus ne servent qu'à
-  // SEED ce plancher la 1re fois (mute `state`, comme le cliquet de charge).
-  // Remplace l'ancien traitement `pdc_only` (Conv #20) — mut. excl. avec le
-  // cliquet de charge. Récup : reps inchangées (le volume est réduit par le
-  // nombre de séries), RPE 6 déjà appliqué via `rpe`.
-  let extLoad: number;
-  if (state !== null && exerciseUsesRepsFloor(state, exercise)) {
-    const floor = state.prescribed_reps_floor[exercise.id];
-    if (floor !== undefined) {
-      reps = floor;
-    } else {
-      // Seed : poids du corps PUR garde `reps` = reps fixes de l'objectif (déjà
-      // calculé plus haut). Le mode PDC avec un e1RM RÉEL (mesuré) affine via
-      // Epley inverse (`targetRepsForPdc`). ⚠️ #63 — mais PAS avec un e1RM
-      // bootstrap (exo lestable basculé en PDC par défaut et jamais mesuré) :
-      // `targetRepsForPdc` sort 1 rep quand l'e1RM fictif ≤ poids du corps. Tant
-      // qu'aucune mesure n'existe, on garde les reps objectif comme seed sûr.
-      if (
-        effectivePdcOnly(state, exercise) &&
-        state.e1rm[exercise.id] !== undefined
-      ) {
-        reps = targetRepsForPdc(e1rmTotal, profile.bodyweight_kg, rpe, k);
-      }
-      state.prescribed_reps_floor[exercise.id] = reps;
-    }
-    extLoad = 0;
-  } else {
-    const totalLoad = targetLoad(e1rmTotal, reps, rpe, k);
-    extLoad = externalLoadFromE1rm(totalLoad, exercise, profile.bodyweight_kg);
-    const inc = state !== null ? effectiveIncrement(state, exercise) : exercise.inc_kg;
-    extLoad = roundToIncrement(extLoad, inc);
-    // Refonte progression — cliquet de charge. La charge prescrite vient du
-    // PLANCHER persisté (`prescribed_load_floor`) ; l'e1RM ci-dessus ne sert qu'à
-    // SEED ce plancher la 1re fois (mute `state`, comme le reste du moteur). Exos
-    // sans charge externe additive exclus. Déload : plancher allégé d'un facteur.
-    if (state !== null && exerciseUsesLoadFloor(state, exercise)) {
-      const floor = state.prescribed_load_floor[exercise.id];
-      // Le bootstrap n'est JAMAIS stocké dans state.e1rm (cf. engine.ts) : la
-      // présence d'une valeur ⇔ l'exo a été réellement mesuré au moins une fois.
-      const measured = state.e1rm[exercise.id] !== undefined;
-      if (floor !== undefined) {
-        extLoad = floor;
-        // Point 4 — garde-fou : sur un exo MESURÉ, la charge prescrite ne peut pas
-        // dépasser la charge à laquelle `reps` répétitions restent physiquement
-        // possibles (targetLoad au RPE 10 = échec). On ne borne pas sur un e1RM
-        // bootstrap (non mesuré) : ce serait plafonner sur une devinette.
-        //
-        // A-1 (#73) — le garde-fou RÉPARE désormais le plancher persisté au lieu
-        // de seulement masquer sa valeur à l'affichage. Cas réel : plancher semé à
-        // 20 kg/haltère depuis un bootstrap, Plafond ensuite MESURÉ à 14 → le
-        // plancher restait fossilisé à 20 (le nettoyage #63 ne se déclenche qu'à la
-        // 1re mesure DÉFINITIVE d'un exo encore non snapshoté). On voyait ~10 les
-        // semaines normales (borné) et 18 en récup (borne sautée). Mémoriser une
-        // charge physiquement impossible n'a aucune valeur : on l'écrase. Le
-        // cliquet repart proprement du plancher corrigé et regradue normalement
-        // quand le Plafond remonte.
-        if (measured) {
-          const cap = roundToIncrement(
-            externalLoadFromE1rm(targetLoad(e1rmTotal, reps, 10, k), exercise, profile.bodyweight_kg),
-            inc,
-          );
-          if (cap > 0 && extLoad > cap) {
-            extLoad = cap;
-            state.prescribed_load_floor[exercise.id] = cap;
-          }
-        }
-      } else if (!deloadActive) {
-        // Seed du plancher — hors récupération : une semaine allégée ne doit pas
-        // fixer la charge de référence de l'exo.
-        state.prescribed_load_floor[exercise.id] = extLoad;
-      }
-      // A-1 (#73) — l'allègement de récupération s'applique APRÈS le garde-fou,
-      // plus à la place. L'ancienne branche `if (deloadActive)` court-circuitait
-      // le plafonnement : un plancher gonflé (20) redonnait 0,9 × 20 = 18 en
-      // récup alors que le Plafond mesuré (14) bornait la charge à ~10 le reste
-      // du cycle. C'était le « Plafond 14 → prescrit 18 » observé en vrai.
-      if (deloadActive) {
-        extLoad = roundToIncrement(extLoad * DELOAD_LOAD_FACTOR, inc);
-      }
-    }
-  }
-  const rest = exercise.repos_s;
-
-  return {
-    exercise_id: exercise.id,
-    reps,
-    load_kg: extLoad,
-    rpe_target: rpe,
-    rest_s: rest,
-  };
 }

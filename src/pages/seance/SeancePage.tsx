@@ -14,6 +14,7 @@ import {
 } from '@/lib/session-runner';
 import { e1rmConfidenceFor } from '@/lib/calibration-status';
 import { DELOAD_WEEK_IN_CYCLE } from '@/engine/volume';
+import { repRangeSuggestion, type RepRangeSuggestion } from '@/engine/progression';
 import { ChevronLeft } from '@/components/icons';
 import { SessionRunner } from './SessionRunner';
 import { SessionSummary } from './SessionSummary';
@@ -55,6 +56,7 @@ export default function SeancePage() {
     customName?: string | null;
     data: SessionSummaryData;
     deloadActive?: boolean;
+    rangeSuggestions?: readonly RepRangeSuggestion[];
   } | null>(null);
 
   // Source de vérité : store. Si le store n'a pas encore d'entries (1er render
@@ -233,6 +235,7 @@ export default function SeancePage() {
             data={summary.data}
             catalog={catalog}
             deloadActive={summary.deloadActive}
+            rangeSuggestions={summary.rangeSuggestions}
             onClose={() => setSummary(null)}
           />
         </main>
@@ -316,11 +319,23 @@ export default function SeancePage() {
                 previouslyCalibrated,
                 deloadActive,
               );
+              // Dump 2.4, étape 4 — fourchettes trop étroites pour les crans,
+              // lues sur l'état APRÈS l'enregistrement (la séance du jour compte).
+              const after = useCoachOsStore.getState().userState;
+              const rangeSuggestions: RepRangeSuggestion[] = [];
+              if (after !== null) {
+                for (const id of new Set(fb.sets.map((s) => s.exercise_id))) {
+                  if (!catalog.has(id)) continue;
+                  const sg = repRangeSuggestion(after, catalog.get(id));
+                  if (sg !== null) rangeSuggestions.push(sg);
+                }
+              }
               setSummary({
                 label: fb.label,
                 customName: fb.custom_name,
                 data,
                 deloadActive,
+                rangeSuggestions,
               });
             } finally {
               setFinishing(false);
