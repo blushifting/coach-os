@@ -70,8 +70,8 @@ export const HELP_GLOSSARY: Readonly<Record<HelpTopic, HelpEntry>> = {
     body: 'Nombre de séries par muscle par semaine. La variable la plus puissante pour grossir : seuil critique autour de 10 séries/sem/muscle (Schoenfeld 2017).',
   },
   vminmax: {
-    title: 'Volume minimal / maximal',
-    body: 'Intervalle de séries par semaine. Le minimum (V_min) est le seuil en dessous duquel tu stagnes ; le maximum (V_max), celui au-dessus duquel la fatigue annule les gains. Kotsh les ajuste à chaque bilan de cycle.',
+    title: 'Repères de volume',
+    body: "Chaque barre de volume porte un seul repère. Muscle à développer : le seuil de croissance, en dessous duquel il progresse peu. Muscle à entretenir : le plancher d'entretien, autour de 40 % de ce seuil, qui suffit à le garder. Muscle sans objectif : pas de repère, on compte tes séries. Le bout de la barre, c'est 20 séries par semaine : au-delà, le volume est élevé. Rien d'interdit, mais le gain en plus devient incertain.",
   },
   intention: {
     title: 'Développer, entretenir ou sans objectif',

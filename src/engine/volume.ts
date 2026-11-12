@@ -49,9 +49,24 @@ export const FEMALE_BONUS_FACTOR = 1.15;
 
 export const SENIOR_AGE_THRESHOLD = 50;
 export const SENIOR_FACTOR = 0.8;
-export const SENIOR_VMAX_FACTOR = 1.5;
 
-export const DEFAULT_VMAX_FACTOR = 1.8;
+/**
+ * Dump 2.4 (D7, étape 3) — **zone haute** : un repère unique, commun à tous les
+ * muscles, en séries pondérées par semaine. Au-delà, le volume est dit « élevé »
+ * (ambre) : un constat, jamais un blocage.
+ *
+ * Sources (vérifiées en conv #81) : Baz-Valle et al. 2022 (J Hum Kinet,
+ * méta-analyse, 6 essais sur sujets entraînés) recommandent 12 à 20 séries par
+ * muscle et par semaine ; au-delà de 20, pas de gain supplémentaire mesuré sur
+ * quadriceps et biceps, un gain sur triceps. Pelland et al. 2025 (prépublication
+ * SportRxiv, lue à travers des résumés) : le gain croît avec le volume en
+ * rendement décroissant, sans plafond net. Au-delà de 20, le bénéfice devient
+ * incertain ; ce n'est pas un danger.
+ *
+ * Remplace l'ancien repère haut par muscle (`V_min × 1,8`, sans source propre).
+ */
+export const VOLUME_HIGH_MARK = 20;
+
 export const DELOAD_FACTOR = 0.5;
 /**
  * Refonte progression — facteur d'allègement de la CHARGE en semaine de
@@ -67,9 +82,6 @@ export const DELOAD_LOAD_FACTOR = 0.9;
  * sur cette constante plutôt qu'un `=== 5` magique.
  */
 export const DELOAD_WEEK_IN_CYCLE = 5;
-
-export const VMAX_UP_DELTA = 2;
-export const VMAX_DOWN_DELTA = 2;
 
 // Cf. 09 §5.1 — rendement décroissant >5-6 séries/exo (Schoenfeld 2017).
 export const SETS_PER_SESSION_OPTIMAL = 5;
@@ -91,12 +103,9 @@ export const MAINTENANCE_FACTOR = 0.4;
 // 3. Initialisation des bornes
 // =============================================================================
 
-/** Retourne `[V_min, V_max]` par muscle pour ce profil. */
-export function initialVolumeBounds(
-  profile: Profile,
-): readonly [Record<string, number>, Record<string, number>] {
+/** Seuil de croissance (V_min) par muscle pour ce profil. */
+export function initialGrowthThresholds(profile: Profile): Record<string, number> {
   const vMin: Record<string, number> = {};
-  const vMax: Record<string, number> = {};
   for (const [muscle, byLevel] of Object.entries(V_MIN_BASE)) {
     let base = byLevel[profile.level];
     if (profile.sex === Sex.FEMME && FEMALE_BONUS_MUSCLES.has(muscle)) {
@@ -106,44 +115,35 @@ export function initialVolumeBounds(
       base *= SENIOR_FACTOR;
     }
     vMin[muscle] = base;
-    if (profile.age >= SENIOR_AGE_THRESHOLD) {
-      vMax[muscle] = base * SENIOR_VMAX_FACTOR;
-    } else {
-      vMax[muscle] = base * DEFAULT_VMAX_FACTOR;
-    }
   }
-  return [vMin, vMax];
+  return vMin;
 }
 
 // =============================================================================
-// 5. Voie muscle_goals : effectiveVolumeBounds + targetFrequencyV2 (cf. 09 §4.5)
+// 5. Voie muscle_goals : volumeMark + targetFrequencyV2 (cf. 09 §4.5)
 // =============================================================================
 
 /**
- * Bande de volume (séries pondérées par semaine) de ce muscle, selon son
- * intention (dump 2.4, D2). `state.volume_min[muscle]` est le **seuil de
- * croissance** (MEV), `state.volume_max[muscle]` le repère haut.
- *   - Développer → [seuil de croissance, repère haut].
- *   - Entretenir → [plancher d'entretien, seuil de croissance] : le plancher
- *     vaut 40 % du seuil, au moins 2 séries (Bickel 2011).
- *   - Sans intention → les repères de « Développer », sans cible : le muscle
- *     reste suivi (D1), c'est la lecture qui reste neutre.
- *
- * Seul un muscle absent des repères (inconnu du modèle) renvoie (0, 0).
+ * Dump 2.4 (D2, étape 3) — **le repère** de volume hebdo de ce muscle (séries
+ * pondérées), un seul par muscle, selon son intention. `state.volume_min[muscle]`
+ * est le seuil de croissance (MEV).
+ *   - Développer → le seuil de croissance ;
+ *   - Entretenir → le plancher d'entretien (40 % du seuil, au moins 2 séries) ;
+ *   - sans objectif, ou muscle inconnu du modèle → `null` : on compte les
+ *     séries, sans repère.
+ * Au-dessus du repère, la seule autre borne est la zone haute commune
+ * (`VOLUME_HIGH_MARK`).
  */
-export function effectiveVolumeBounds(
-  state: UserState,
+export function volumeMark(
+  state: Pick<UserState, 'volume_min' | 'muscle_goals'>,
   muscle: string,
-): readonly [number, number] {
-  if (!(muscle in state.volume_min)) {
-    return [0, 0];
-  }
-  const baseMin = state.volume_min[muscle]!;
-  const baseMax = state.volume_max[muscle]!;
-  if (state.muscle_goals[muscle]?.intention === MuscleIntention.ENTRETENIR) {
-    return [maintenanceFloor(baseMin), baseMin];
-  }
-  return [baseMin, baseMax];
+): number | null {
+  const threshold = state.volume_min[muscle];
+  if (threshold === undefined) return null;
+  const intention = state.muscle_goals[muscle]?.intention;
+  if (intention === MuscleIntention.DEVELOPPER) return threshold;
+  if (intention === MuscleIntention.ENTRETENIR) return maintenanceFloor(threshold);
+  return null;
 }
 
 /** Plancher d'entretien : 40 % du seuil de croissance, au moins 2 séries (Bickel 2011). */
@@ -152,16 +152,16 @@ export function maintenanceFloor(growthThreshold: number): number {
 }
 
 /**
- * Refonte remplissage (recherche/09b, 2026-07) — position de la cible DANS la
- * bande `[V_min, V_max]`, pour les muscles PRIORITAIRES uniquement.
+ * Refonte remplissage (recherche/09b, 2026-07) — le générateur vise un peu
+ * au-dessus du seuil de croissance pour un muscle à développer : viser le seuil
+ * sec est trop conservateur depuis que le volume est fixe sur le cycle (Bloc L).
  *
- * Historique : on visait `V_min` sec (le plancher de la bande sourcée
- * Schoenfeld). Depuis que la montée de volume intra-cycle a été retirée
- * (Bloc L, séries fixes), sitter au plancher est trop conservateur → on décolle
- * de 20 % dans la bande. `V_cible ≈ V_min × 1,16` en hypertrophie. Tunable
- * 0,15-0,25. Le MAINTIEN n'est PAS relevé (il n'a pas vocation à progresser).
+ * Étape 3 du dump 2.4 : la cible s'exprimait comme « seuil + 20 % de la bande
+ * jusqu'au repère haut (seuil × 1,8) », soit seuil × 1,16. Le repère haut par
+ * muscle a disparu (zone haute commune, `VOLUME_HIGH_MARK`) ; la cible est
+ * gardée telle quelle, écrite directement. L'entretien n'est pas relevé.
  */
-export const CYCLE_TARGET_VOLUME_RATIO = 0.2;
+export const DEVELOP_TARGET_FACTOR = 1.16;
 
 /**
  * Volume cible du cycle pour ce muscle (séries pondérées).
@@ -170,21 +170,21 @@ export const CYCLE_TARGET_VOLUME_RATIO = 0.2;
  * La progression intra-cycle passe par l'intensité (charge/RPE) et les reps ;
  * le volume monte d'un cycle à l'autre via la recalibration de fin de cycle.
  *
- *   - sans intention → 0 (suivi, mais aucune cible : D1)
- *   - Entretenir     → borne basse (plancher d'entretien)
- *   - Développer     → V_min + ratio × (V_max − V_min)
+ *   - sans objectif → 0 (suivi, mais aucune cible : D1)
+ *   - Entretenir    → le plancher d'entretien
+ *   - Développer    → seuil de croissance × `DEVELOP_TARGET_FACTOR`
  */
 export function effectiveCycleTargetVolume(
   state: UserState,
   muscle: string,
 ): number {
   const goal = state.muscle_goals[muscle];
-  if (goal === undefined) return 0;
-  const [lo, hi] = effectiveVolumeBounds(state, muscle);
+  const mark = volumeMark(state, muscle);
+  if (goal === undefined || mark === null) return 0;
   if (goal.intention === MuscleIntention.DEVELOPPER) {
-    return lo + CYCLE_TARGET_VOLUME_RATIO * (hi - lo);
+    return mark * DEVELOP_TARGET_FACTOR;
   }
-  return lo;
+  return mark;
 }
 
 /**

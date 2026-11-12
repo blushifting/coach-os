@@ -113,6 +113,8 @@ const cycleReviewSchema = z.object({
   warnings: z.array(z.string()),
   // Conv #14c-7 — snapshot des objectifs au moment du bilan (optionnel).
   muscle_goals_snapshot: z.array(muscleGoalSchema).optional(),
+  // Dump 2.4, étape 3 — récupération prise sur ce cycle (optionnel).
+  recovery_taken: z.boolean().optional(),
 });
 
 const equipmentOverrideSchema = z.object({
@@ -142,7 +144,8 @@ const serializedUserStateSchema = z.object({
   e1rm: z.record(z.string(), z.number()),
   k_user: z.record(z.string(), z.number()),
   volume_min: z.record(z.string(), z.number()),
-  volume_max: z.record(z.string(), z.number()),
+  // Vestige (dump 2.4, étape 3) : toléré dans les anciennes démos, ignoré.
+  volume_max: z.record(z.string(), z.number()).optional(),
   current_week_in_cycle: z.number().int(),
   cycle_index: z.number().int(),
   history: z.array(sessionFeedbackSchema),

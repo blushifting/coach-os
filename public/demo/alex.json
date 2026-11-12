@@ -68,23 +68,6 @@
       "obliques": 6,
       "lombaires": 6
     },
-    "volume_max": {
-      "pectoraux": 18,
-      "dos_largeur": 21.6,
-      "dos_epaisseur": 18,
-      "trapezes_hauts": 10.8,
-      "quadriceps": 18,
-      "ischios": 14.4,
-      "fessiers": 18,
-      "mollets": 18,
-      "deltos_lateraux": 18,
-      "deltos_posterieurs": 14.4,
-      "biceps": 14.4,
-      "triceps": 14.4,
-      "abdos": 14.4,
-      "obliques": 10.8,
-      "lombaires": 10.8
-    },
     "current_week_in_cycle": 4,
     "cycle_index": 2,
     "history": [
@@ -10995,7 +10978,8 @@
             ]
           ],
           "suggested_action": "continuer",
-          "warnings": []
+          "warnings": [],
+          "recovery_taken": false
         }
       },
       {

@@ -567,6 +567,8 @@ function buildCycle1Review(ctx: PlayerCtx): CycleReview {
     PRs: prs,
     suggested_action: SuggestedAction.CONTINUER_PAREIL,
     warnings: [],
+    // Alex n'a pas pris de semaine de récupération au cycle 1.
+    recovery_taken: false,
   };
 }
 
@@ -588,7 +590,6 @@ function serializeUserState(state: UserState): SerializedUserState {
     k_user: { ...state.k_user },
     reps_pr: { ...state.reps_pr },
     volume_min: { ...state.volume_min },
-    volume_max: { ...state.volume_max },
     current_week_in_cycle: state.current_week_in_cycle,
     cycle_index: state.cycle_index,
     history: state.history,

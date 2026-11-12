@@ -1,6 +1,6 @@
 /**
  * Miroir TS de prototype/tests/test_volume.py.
- * Couvre : V_min/V_max initiaux, progression hebdo legacy, advanceWeek,
+ * Couvre : seuils de croissance initiaux, cible du générateur, progression hebdo legacy, advanceWeek,
  * détection plateau anticipé.
  */
 
@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   Level,
-  
+  MuscleIntention,
   Sex,
   makeProfile,
   type SessionFeedback,
@@ -17,7 +17,8 @@ import {
 import {
   advanceWeek,
   cycleAdherence,
-  initialVolumeBounds,
+  effectiveCycleTargetVolume,
+  initialGrowthThresholds,
 } from '@/engine/volume';
 
 import { startUserStub } from './_helpers';
@@ -37,29 +38,42 @@ function profile(opts: {
 }
 
 // =============================================================================
-// initialVolumeBounds
+// initialGrowthThresholds
 // =============================================================================
 
-describe('initialVolumeBounds', () => {
-  it('intermédiaire homme : pec V_min=10, V_max=18 ; quad V_min=10 ; tri V_min=8', () => {
-    const [vMin, vMax] = initialVolumeBounds(profile());
+describe('initialGrowthThresholds', () => {
+  it('intermédiaire homme : pec 10 ; quad 10 ; tri 8', () => {
+    const vMin = initialGrowthThresholds(profile());
     expect(vMin['pectoraux']).toBe(10);
-    expect(vMax['pectoraux']).toBe(18);
     expect(vMin['quadriceps']).toBe(10);
     expect(vMin['triceps']).toBe(8);
   });
 
   it('femme : bonus +15% sur le haut du corps, pas sur quadriceps', () => {
-    const [vMinH] = initialVolumeBounds(profile());
-    const [vMinF] = initialVolumeBounds(profile({ sex: Sex.FEMME }));
+    const vMinH = initialGrowthThresholds(profile());
+    const vMinF = initialGrowthThresholds(profile({ sex: Sex.FEMME }));
     expect(vMinF['pectoraux']).toBeGreaterThan(vMinH['pectoraux']!);
     expect(vMinF['quadriceps']).toBe(vMinH['quadriceps']);
   });
 
-  it('senior (≥50 ans) : −20 % sur tous, V_max plafonné à V_min × 1.5', () => {
-    const [vMin, vMax] = initialVolumeBounds(profile({ age: 55 }));
+  it('senior (≥50 ans) : −20 % sur tous', () => {
+    const vMin = initialGrowthThresholds(profile({ age: 55 }));
     expect(vMin['pectoraux']).toBeCloseTo(8, 2); // 10 × 0.8
-    expect(vMax['pectoraux']).toBeCloseTo(12, 2); // 8 × 1.5
+  });
+});
+
+// =============================================================================
+// effectiveCycleTargetVolume (dump 2.4, étape 3 : cible inchangée)
+// =============================================================================
+
+describe('effectiveCycleTargetVolume', () => {
+  it('Développer → seuil × 1,16 ; Entretenir → plancher ; sans objectif → 0', () => {
+    const state = startUserStub(profile());
+    state.muscle_goals.pectoraux = { muscle: 'pectoraux', intention: MuscleIntention.DEVELOPPER, priority_rank: 1 };
+    state.muscle_goals.abdos = { muscle: 'abdos', intention: MuscleIntention.ENTRETENIR, priority_rank: 99 };
+    expect(effectiveCycleTargetVolume(state, 'pectoraux')).toBeCloseTo(11.6, 6);
+    expect(effectiveCycleTargetVolume(state, 'abdos')).toBeCloseTo(3.2, 6);
+    expect(effectiveCycleTargetVolume(state, 'biceps')).toBe(0);
   });
 });
 

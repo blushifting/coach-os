@@ -63,7 +63,7 @@ export type SilhouetteStatus =
  *     primaire / synergiste avec deux teintes de sang. Inchangée.
  *  - `volume` — mono-teinte sang pour la vue Progrès → Volume. La couleur
  *     graduée signale uniquement la position relative au volume cible
- *     (sang-900 sous V_min → sang-600 cible → sang-400 au-dessus).
+ *     (sang-900 travaillé → sang-600 dans la cible → sang-400 volume élevé).
  *  - `priority` — palette amber/or pour la sélection des muscles
  *     prioritaires en onboarding. Top 3 "brille" en amber-400, autres en
  *     amber-700.
@@ -117,12 +117,12 @@ const TONE_FILL_LEGACY: Record<SilhouetteStatus, string> = {
   synergist: 'fill-sang-900',
 };
 
-// Conv #20 — Vue Volume (Progrès) : mono-teinte sang qui exprime la position
-// relative au cible V_min/V_max. Le contraste fait tout le travail (pas de
-// stroke effect ni d'animation).
-//   sous V_min  → sang-900 (sombre, peu présent)
-//   dans cible  → sang-600 (couleur marque pleine — "santé")
-//   au-dessus   → sang-400 (clair vif, ressort visuellement = junk volume)
+// Conv #20, dump 2.4 étape 3 — Vue Volume (Progrès) : mono-teinte sang. Le
+// contraste fait tout le travail (pas de stroke effect ni d'animation).
+//   travaillé hors de la bonne zone → sang-900 (sombre, peu présent)
+//   dans la cible (repère → 20)     → sang-600 (couleur marque pleine)
+//   volume élevé (au-delà de 20)    → sang-400 (clair vif)
+// Correspondance des statuts : `statusToSilhouette`.
 const TONE_FILL_VOLUME: Record<SilhouetteStatus, string> = {
   off: 'fill-anthracite-500',
   low: 'fill-sang-900',
@@ -621,16 +621,24 @@ function SilhouetteSide({
 // Helpers d'intégration
 // =============================================================================
 
+/**
+ * Dump 2.4, étape 3 — tout ce qui est fait est montré (D1) :
+ *   - pas travaillé → éteint ;
+ *   - travaillé mais pas dans la bonne zone (sous le repère, ou sans objectif)
+ *     → rouge sombre ;
+ *   - dans la bonne zone (du repère à la zone haute) → rouge plein ;
+ *   - volume élevé (au-delà de 20 séries) → rouge vif.
+ */
 export function statusToSilhouette(s: CoverageStatus): SilhouetteStatus {
   switch (s) {
-    case 'sous_min':
+    case 'sous_repere':
+    case 'sans_objectif':
       return 'low';
     case 'ok':
       return 'ok';
-    case 'depassement':
+    case 'eleve':
       return 'high';
     case 'non_travaille':
-    case 'sans_intention':
       return 'off';
   }
 }

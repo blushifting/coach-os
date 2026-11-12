@@ -39,7 +39,7 @@ import {
 import {
   advanceWeek,
   DELOAD_WEEK_IN_CYCLE,
-  initialVolumeBounds,
+  initialGrowthThresholds,
   isDeloadActive,
   isDeloadWeek,
 } from './volume';
@@ -66,10 +66,8 @@ export function startUser(
 ): UserState {
   const muscleGoals = options.muscleGoals ?? null;
 
-  const [vMin, vMax] = initialVolumeBounds(profile);
   const state = makeUserState(profile);
-  state.volume_min = vMin;
-  state.volume_max = vMax;
+  state.volume_min = initialGrowthThresholds(profile);
 
   if (muscleGoals && Object.keys(muscleGoals).length > 0) {
     state.muscle_goals = { ...muscleGoals };

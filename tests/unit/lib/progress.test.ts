@@ -6,21 +6,18 @@ import { describe, expect, it } from 'vitest';
 import {
   buildCycleHistory,
   buildMusclesOf,
+  classifyVolume,
   computeCoverageThisWeek,
-  computeCycleVolumeByMuscle,
+  computeCycleVolume,
   computeE1rmSeriesFromSnapshots,
   computeLastWorkedByMuscle,
-  computeVolumeHistory,
   cycleBoundaries,
-  cycleIndexForDate,
-  displayVolumeBounds,
-  weeksSinceFirstFeedback,
+  displayMark,
   exerciseLabel,
   formatCycleDates,
   formatWeekLabel,
   muscleLabel,
-  type MuscleCoverage,
-  type MuscleVolumeSeries,
+  volumeScale,
 } from '@/lib/progress';
 import { Catalog } from '@/engine/catalog';
 import type { CycleRow, E1rmSnapshotRow, FeedbackRow } from '@/db/schema';
@@ -90,7 +87,6 @@ function makeState(overrides: Partial<UserState> = {}): UserState {
     e1rm: {},
     k_user: {},
     volume_min: { pectoraux: 10, biceps: 8, quadriceps: 10 },
-    volume_max: { pectoraux: 18, biceps: 14, quadriceps: 18 },
     current_week_in_cycle: 2,
     cycle_index: 1,
     history: [],
@@ -200,7 +196,7 @@ describe('buildMusclesOf', () => {
 });
 
 // =============================================================================
-// computeCoverageThisWeek
+// computeCoverageThisWeek (dump 2.4, étape 3 : un repère, zone haute à 20)
 // =============================================================================
 
 describe('computeCoverageThisWeek', () => {
@@ -217,7 +213,7 @@ describe('computeCoverageThisWeek', () => {
     expect(byMuscle.get('biceps')?.status).toBe('non_travaille');
   });
 
-  it('compte les feedbacks de la semaine courante uniquement', () => {
+  it('compte la semaine courante uniquement, sous le seuil → sous_repere', () => {
     const state = makeState();
     const cov = computeCoverageThisWeek(
       state,
@@ -232,127 +228,87 @@ describe('computeCoverageThisWeek', () => {
     );
     const pec = cov.find((c) => c.muscle === 'pectoraux');
     expect(pec?.sets).toBe(4);
-    expect(pec?.status).toBe('sous_min'); // 4 < V_min=10
+    expect(pec?.mark).toBe(10);
+    expect(pec?.status).toBe('sous_repere');
   });
 
-  it('passe à ok quand le volume atteint V_min', () => {
+  it('passe à ok dès le seuil atteint, et le reste jusqu’à 20', () => {
     const state = makeState();
-    const cov = computeCoverageThisWeek(
-      state,
-      [makeFb('2026-05-13', [{ exercise_id: 'bp', n: 12 }])],
-      musclesOf,
-      NOW,
-    );
-    const pec = cov.find((c) => c.muscle === 'pectoraux');
-    expect(pec?.sets).toBe(12); // 12 × 1.0
-    expect(pec?.status).toBe('ok'); // 10 ≤ 12 ≤ 18
+    const at = (n: number) =>
+      computeCoverageThisWeek(
+        state,
+        [makeFb('2026-05-13', [{ exercise_id: 'bp', n }])],
+        musclesOf,
+        NOW,
+      ).find((c) => c.muscle === 'pectoraux')!.status;
+    expect(at(10)).toBe('ok');
+    expect(at(20)).toBe('ok');
+    expect(at(21)).toBe('eleve');
   });
 
-  it('passe à depassement au-delà de V_max', () => {
-    const state = makeState();
-    const cov = computeCoverageThisWeek(
-      state,
-      [makeFb('2026-05-13', [{ exercise_id: 'bp', n: 25 }])],
-      musclesOf,
-      NOW,
-    );
-    const pec = cov.find((c) => c.muscle === 'pectoraux');
-    expect(pec?.status).toBe('depassement');
-  });
-
-  it("marque sans_intention un muscle sans intention, qui garde ses repères (D1)", () => {
+  it('un muscle à entretenir reste « ok » au-dessus de son seuil de croissance', () => {
     const state = makeState({
-      volume_min: { pectoraux: 10, mollets: 6 },
-      volume_max: { pectoraux: 18, mollets: 12 },
       muscle_goals: {
-        pectoraux: {
-          muscle: 'pectoraux',
-          intention: MuscleIntention.DEVELOPPER,
-          priority_rank: 1,
-        },
+        biceps: { muscle: 'biceps', intention: MuscleIntention.ENTRETENIR, priority_rank: 99 },
       },
     });
-    const cov = computeCoverageThisWeek(state, [], musclesOf, NOW);
-    const m = cov.find((c) => c.muscle === 'mollets');
-    expect(m?.status).toBe('sans_intention');
-    expect(m?.vMin).toBe(6);
-    expect(m?.vMax).toBe(12);
-  });
-
-  it("intensity reste clampée à [0, 1]", () => {
-    const state = makeState();
     const cov = computeCoverageThisWeek(
       state,
-      [makeFb('2026-05-13', [{ exercise_id: 'bp', n: 100 }])],
+      [makeFb('2026-05-13', [{ exercise_id: 'curl', n: 12 }])],
       musclesOf,
       NOW,
     );
-    for (const c of cov) {
-      expect(c.intensity).toBeGreaterThanOrEqual(0);
-      expect(c.intensity).toBeLessThanOrEqual(1);
-    }
+    const bi = cov.find((c) => c.muscle === 'biceps')!;
+    expect(bi.mark).toBe(4); // plancher 0,4 × 8 = 3,2, affiché 4
+    expect(bi.status).toBe('ok');
+  });
+
+  it('un muscle sans objectif : pas de repère, jamais d’alerte sous 20 (D2)', () => {
+    const state = makeState({ muscle_goals: {} });
+    const cov = computeCoverageThisWeek(
+      state,
+      [makeFb('2026-05-13', [{ exercise_id: 'bp', n: 6 }])],
+      musclesOf,
+      NOW,
+    );
+    const pec = cov.find((c) => c.muscle === 'pectoraux')!;
+    expect(pec.mark).toBeNull();
+    expect(pec.status).toBe('sans_objectif');
+    // Travaillé hors du profil (synergiste) : listé aussi, sans repère.
+    expect(cov.find((c) => c.muscle === 'triceps')?.status).toBe('sans_objectif');
   });
 });
 
-// =============================================================================
-// computeVolumeHistory
-// =============================================================================
-
-describe('computeVolumeHistory', () => {
-  const NOW = new Date(2026, 4, 13); // mer 13 mai
-  const cat = makeCatalog();
-  const musclesOf = buildMusclesOf(cat);
-
-  it('renvoie une série par muscle du profil, ordonnée alpha', () => {
-    const state = makeState();
-    const series = computeVolumeHistory(state, [], musclesOf, 4, NOW);
-    expect(series.map((s) => s.muscle)).toEqual(['biceps', 'pectoraux', 'quadriceps']);
-  });
-
-  it('chaque série a `weeks` points, ordre ancien → récent', () => {
-    const state = makeState();
-    const series = computeVolumeHistory(state, [], musclesOf, 4, NOW);
-    const pec = series.find((s) => s.muscle === 'pectoraux')!;
-    expect(pec.points).toHaveLength(4);
-    expect(pec.points[0]!.weekStart).toBe('2026-04-20');
-    expect(pec.points[3]!.weekStart).toBe('2026-05-11');
-  });
-
-  it('agrège les feedbacks par semaine et par muscle', () => {
-    const state = makeState();
-    const series = computeVolumeHistory(
-      state,
-      [
-        makeFb('2026-05-12', [{ exercise_id: 'bp', n: 6 }]), // semaine courante
-        makeFb('2026-05-13', [{ exercise_id: 'curl', n: 4 }]),
-        makeFb('2026-05-04', [{ exercise_id: 'bp', n: 3 }]), // semaine -1
-      ],
-      musclesOf,
-      4,
-      NOW,
-    );
-    const pec = series.find((s) => s.muscle === 'pectoraux')!;
-    expect(pec.points[3]!.sets).toBe(6);
-    expect(pec.points[2]!.sets).toBe(3);
-    const bi = series.find((s) => s.muscle === 'biceps')!;
-    expect(bi.points[3]!.sets).toBe(4);
-  });
-
-  it('vMin / vMax sont ceux du profil (effectiveVolumeBounds)', () => {
-    const state = makeState();
-    const series: MuscleVolumeSeries[] = computeVolumeHistory(
-      state,
-      [],
-      musclesOf,
-      2,
-      NOW,
-    );
-    const pec = series.find((s) => s.muscle === 'pectoraux')!;
-    // factor HYPERTROPHIE = 1.0 → bornes inchangées.
-    expect(pec.vMin).toBe(10);
-    expect(pec.vMax).toBe(18);
+describe('classifyVolume', () => {
+  it('suit l’ordre : zéro, au-delà de 20, sans repère, sous le repère, ok', () => {
+    expect(classifyVolume(0, 10)).toBe('non_travaille');
+    expect(classifyVolume(25, null)).toBe('eleve');
+    expect(classifyVolume(25, 10)).toBe('eleve');
+    expect(classifyVolume(7, null)).toBe('sans_objectif');
+    expect(classifyVolume(7, 10)).toBe('sous_repere');
+    expect(classifyVolume(9.98, 10)).toBe('ok'); // arrondi flottant pile au repère
+    expect(classifyVolume(20.02, 10)).toBe('ok');
   });
 });
+
+describe('volumeScale', () => {
+  it('vaut la zone haute (20), allongée seulement par un muscle au-delà', () => {
+    expect(volumeScale([])).toBe(20);
+    expect(volumeScale([3, 12, 19.5])).toBe(20);
+    expect(volumeScale([3, 23])).toBe(23);
+  });
+});
+
+describe('displayMark', () => {
+  it('arrondit le repère au supérieur, sans epsilon parasite (conv #77)', () => {
+    expect(displayMark(2.4)).toBe(3);
+    expect(displayMark(4.8)).toBe(5);
+    expect(displayMark(10)).toBe(10);
+    expect(displayMark(6.0000001)).toBe(6);
+    expect(displayMark(null)).toBeNull();
+  });
+});
+
 
 // =============================================================================
 // buildCycleHistory
@@ -653,21 +609,6 @@ describe('computeLastWorkedByMuscle', () => {
   });
 });
 
-describe('weeksSinceFirstFeedback', () => {
-  it('compte les semaines de la 1re séance à aujourd_hui, incluses', () => {
-    const fbs = [
-      makeFb('2026-05-04', [{ exercise_id: 'bp', n: 1 }]),
-      makeFb('2026-05-18', [{ exercise_id: 'bp', n: 1 }]),
-    ];
-    // 2026-05-04 = lundi ; NOW dans la semaine du 18 → 3 semaines couvertes.
-    expect(weeksSinceFirstFeedback(fbs, new Date('2026-05-20T10:00:00'))).toBe(3);
-  });
-
-  it('renvoie 1 sans aucun feedback', () => {
-    expect(weeksSinceFirstFeedback([], new Date('2026-05-20T10:00:00'))).toBe(1);
-  });
-});
-
 describe('helpers formatage', () => {
   it('muscleLabel : capitalise sans article, dictionnaire FR (Conv #14c-8)', () => {
     expect(muscleLabel('deltos_lateraux')).toBe('Deltoïdes latéraux');
@@ -699,91 +640,124 @@ describe('helpers formatage', () => {
 });
 
 // =============================================================================
-// computeCycleVolumeByMuscle (Conv #76)
+// computeCycleVolume (dump 2.4, étape 3 : n° 13, n° 19)
 // =============================================================================
 
-describe('computeCycleVolumeByMuscle', () => {
-  /** Programme sans jambes : quadriceps retiré des objectifs. */
-  function stateSansJambes(): UserState {
-    const s = makeState();
-    delete s.volume_min['quadriceps'];
-    delete s.volume_max['quadriceps'];
-    delete s.muscle_goals['quadriceps'];
-    return s;
-  }
-
-  it('ne liste que les muscles suivis, même si un autre a été travaillé', () => {
-    // Du squat fait en séance libre alors que les jambes ne sont pas au
-    // programme : sans bande cible, une barre n'aurait aucune référence à
-    // montrer. Ce travail se lit sur la silhouette du bilan, pas ici.
-    const rows = computeCycleVolumeByMuscle(
-      [makeFb('2026-01-05', [{ exercise_id: 'bp', n: 8 }, { exercise_id: 'squat', n: 6 }])],
-      1,
-      stateSansJambes(),
-      buildMusclesOf(makeCatalog()),
+describe('computeCycleVolume', () => {
+  // Cycle commencé le lundi 5 janvier 2026 : semaines du lundi au dimanche.
+  const START = '2026-01-05';
+  const musclesOf = buildMusclesOf(makeCatalog());
+  /** 10 séries de développé par semaine 1 à 4, 5 en semaine 5 (récupération). */
+  const fullCycle = [
+    makeFb('2026-01-06', [{ exercise_id: 'bp', n: 10 }]),
+    makeFb('2026-01-13', [{ exercise_id: 'bp', n: 10 }]),
+    makeFb('2026-01-20', [{ exercise_id: 'bp', n: 10 }]),
+    makeFb('2026-01-27', [{ exercise_id: 'bp', n: 10 }]),
+    makeFb('2026-02-03', [{ exercise_id: 'bp', n: 5 }]),
+  ];
+  const closed = (recoveryTaken: boolean | null) =>
+    computeCycleVolume(
+      makeState(),
+      fullCycle,
+      musclesOf,
+      { cycleIndex: 1, startDate: START, endDate: '2026-02-09', recoveryTaken },
+      '2026-02-20',
     );
-    expect(rows.some((r) => r.muscle === 'quadriceps')).toBe(false);
-    expect(rows.every((r) => r.vMax > 0)).toBe(true);
+  const pec = (v: ReturnType<typeof closed>) => v.muscles.find((m) => m.muscle === 'pectoraux')!;
+
+  it('toutes les séances faites, récupération prise → pile sur le repère moyen', () => {
+    const v = closed(true);
+    expect(v.weeks).toHaveLength(5);
+    expect(v.weeks[4]!.recovery).toBe(true);
+    expect(v.countedWeeks).toEqual([1, 2, 3, 4, 5]);
+    expect(pec(v).perWeek).toEqual([10, 10, 10, 10, 5]);
+    expect(pec(v).markPerWeek).toEqual([10, 10, 10, 10, 5]);
+    expect(pec(v).average).toBe(9);
+    expect(pec(v).averageMark).toBe(9); // (4 × 10 + 5) ÷ 5
+    expect(pec(v).averageStatus).toBe('ok');
   });
 
-  it('un muscle suivi mais non travaillé apparaît à 0', () => {
-    const rows = computeCycleVolumeByMuscle(
-      [makeFb('2026-01-05', [{ exercise_id: 'bp', n: 4 }])],
-      1,
-      makeState(),
-      buildMusclesOf(makeCatalog()),
-    );
-    const quads = rows.find((r) => r.muscle === 'quadriceps');
-    expect(quads).toBeDefined();
-    expect(quads!.avgSetsPerWeek).toBe(0);
-    expect(quads!.status).toBe('non_travaille');
+  it('récupération refusée → la semaine 5 compte comme une semaine normale', () => {
+    const v = closed(false);
+    expect(pec(v).averageMark).toBe(10);
+    expect(pec(v).averageStatus).toBe('sous_repere'); // 45 ÷ 5 = 9 < 10
   });
 
-  it('les prioritaires sortent en tête, par rang', () => {
-    const rows = computeCycleVolumeByMuscle(
-      [makeFb('2026-01-05', [{ exercise_id: 'bp', n: 4 }, { exercise_id: 'curl', n: 4 }])],
-      1,
+  it('récupération inconnue (cycle ancien) → la semaine 5 reste hors moyenne', () => {
+    const v = closed(null);
+    expect(v.countedWeeks).toEqual([1, 2, 3, 4]);
+    expect(pec(v).average).toBe(10);
+    expect(pec(v).averageMark).toBe(10);
+    expect(pec(v).averageStatus).toBe('ok');
+  });
+
+  it('cycle clos plus tôt → seules les semaines écoulées comptent', () => {
+    const v = computeCycleVolume(
       makeState(),
-      buildMusclesOf(makeCatalog()),
+      fullCycle.slice(0, 2),
+      musclesOf,
+      { cycleIndex: 1, startDate: START, endDate: '2026-01-15', recoveryTaken: false },
+      '2026-02-20',
     );
-    expect(rows[0]!.muscle).toBe('pectoraux');
-    expect(rows[1]!.muscle).toBe('biceps');
+    expect(v.weeks).toHaveLength(2);
+    expect(pec(v).average).toBe(10);
+  });
+
+  it('cycle en cours : cinq colonnes, la moyenne sur les semaines terminées', () => {
+    const v = computeCycleVolume(
+      makeState(),
+      fullCycle.slice(0, 3),
+      musclesOf,
+      { cycleIndex: 1, startDate: START, endDate: null, recoveryTaken: false },
+      '2026-01-21', // semaine 3
+    );
+    expect(v.weeks).toHaveLength(5);
+    expect(v.weeks.map((w) => w.started)).toEqual([true, true, true, false, false]);
+    expect(v.countedWeeks).toEqual([1, 2]);
+    expect(pec(v).perWeek).toEqual([10, 10, 10, 0, 0]);
+  });
+
+  it('une séance faite après la fin prévue tombe en semaine 6 et compte', () => {
+    const v = computeCycleVolume(
+      makeState(),
+      [...fullCycle, makeFb('2026-02-10', [{ exercise_id: 'bp', n: 10 }])],
+      musclesOf,
+      { cycleIndex: 1, startDate: START, endDate: null, recoveryTaken: true },
+      '2026-02-11',
+    );
+    expect(v.weeks).toHaveLength(6);
+    expect(pec(v).perWeek[5]).toBe(10);
+    expect(v.countedWeeks).toEqual([1, 2, 3, 4, 5]); // semaine 6 en cours
+  });
+
+  it('un muscle sans objectif est compté, sans repère', () => {
+    const v = closed(true);
+    const tri = v.muscles.find((m) => m.muscle === 'triceps')!; // synergiste du bp
+    expect(tri.intention).toBeNull();
+    expect(tri.averageMark).toBeNull();
+    expect(tri.average).toBe(4.5);
+    expect(tri.averageStatus).toBe('sans_objectif');
+  });
+
+  it('ignore les séances d’un autre cycle', () => {
+    const other = { ...makeFb('2026-01-06', [{ exercise_id: 'bp', n: 30 }]), cycle_index: 2 };
+    const v = computeCycleVolume(
+      makeState(),
+      [...fullCycle, other],
+      musclesOf,
+      { cycleIndex: 1, startDate: START, endDate: '2026-02-09', recoveryTaken: true },
+      '2026-02-20',
+    );
+    expect(pec(v).perWeek[0]).toBe(10);
   });
 });
 
-// =============================================================================
-// Conv #77 — bande de volume arrondie « à l'excès » + repères de cycle
-// =============================================================================
-
-describe('displayVolumeBounds', () => {
-  it('resserre la bande vers l’intérieur (V_min au sup., V_max à l’inf.)', () => {
-    expect(displayVolumeBounds(2.4, 6)).toEqual([3, 6]);
-    expect(displayVolumeBounds(7, 12.6)).toEqual([7, 12]);
-  });
-
-  it('laisse les bornes déjà entières intactes (pas d’epsilon parasite)', () => {
-    expect(displayVolumeBounds(10, 18)).toEqual([10, 18]);
-    expect(displayVolumeBounds(6.0000001, 11.9999998)).toEqual([6, 12]);
-  });
-
-  it('hors scope (0, 0) → inchangé', () => {
-    expect(displayVolumeBounds(0, 0)).toEqual([0, 0]);
-  });
-
-  it('bande plus étroite qu’une série → dégénère en un seul entier, jamais inversée', () => {
-    const [lo, hi] = displayVolumeBounds(2.4, 2.6);
-    expect(hi).toBeGreaterThanOrEqual(lo);
-  });
-});
-
-describe('bande affichée et statut ne se contredisent plus (bug lombaires #77)', () => {
-  // Reproduction du cas réel : lombaires en maintien, MEV 6 → bande effective
-  // [2,4 ; 6], affichée « 2–6 » avant le fix. 2 séries pile sortaient en rouge
-  // sous une bande qui annonçait 2 comme valide.
+describe('repère affiché et statut ne se contredisent pas (bug lombaires #77)', () => {
+  // Lombaires en entretien, seuil 6 → plancher 2,4, affiché 3. Avant le fix,
+  // 2 séries pile sortaient en rouge sous un repère qui annonçait 2.
   const catalog = new Catalog([makeExercise('hyperext', { lombaires: 1.0 })]);
   const state = makeState({
     volume_min: { lombaires: 6 },
-    volume_max: { lombaires: 10.8 },
     muscle_goals: {
       lombaires: {
         muscle: 'lombaires',
@@ -792,30 +766,19 @@ describe('bande affichée et statut ne se contredisent plus (bug lombaires #77)'
       },
     },
   });
-
-  it('la borne basse annoncée est celle qui fait basculer la couleur', () => {
-    const rows = computeCoverageThisWeek(
+  const statusAt = (n: number) =>
+    computeCoverageThisWeek(
       state,
-      [makeFb('2026-05-04', [{ exercise_id: 'hyperext', n: 2 }])],
+      [makeFb('2026-05-04', [{ exercise_id: 'hyperext', n }])],
       buildMusclesOf(catalog),
       new Date('2026-05-06T12:00:00'),
       '2026-05-04',
-    );
-    const lomb = rows.find((r) => r.muscle === 'lombaires')!;
-    expect(lomb.sets).toBe(2);
-    expect(lomb.vMin).toBe(3); // 2,4 arrondi à l'excès — plus de « 2 » trompeur
-    expect(lomb.status).toBe('sous_min');
-  });
+    ).find((r) => r.muscle === 'lombaires')!;
 
-  it('une fois la borne annoncée atteinte, le statut passe « dans la cible »', () => {
-    const rows = computeCoverageThisWeek(
-      state,
-      [makeFb('2026-05-04', [{ exercise_id: 'hyperext', n: 3 }])],
-      buildMusclesOf(catalog),
-      new Date('2026-05-06T12:00:00'),
-      '2026-05-04',
-    );
-    expect(rows.find((r) => r.muscle === 'lombaires')!.status).toBe('ok');
+  it('le repère annoncé est celui qui fait basculer la couleur', () => {
+    expect(statusAt(2).mark).toBe(3);
+    expect(statusAt(2).status).toBe('sous_repere');
+    expect(statusAt(3).status).toBe('ok');
   });
 });
 
@@ -841,42 +804,5 @@ describe('cycleBoundaries', () => {
 
   it('cycle inconnu (null) → n’ouvre pas de repère', () => {
     expect(cycleBoundaries([{ cycleIndex: null }, { cycleIndex: null }])).toEqual([]);
-  });
-});
-
-describe('cycleIndexForDate', () => {
-  const cycles = [
-    makeCycleRow(1, '2026-07-06', '2026-08-10', null),
-    makeCycleRow(2, '2026-08-10', null, null),
-  ];
-
-  it('rend le dernier cycle démarré à cette date ou avant', () => {
-    expect(cycleIndexForDate(cycles, '2026-07-06')).toBe(1);
-    expect(cycleIndexForDate(cycles, '2026-08-03')).toBe(1);
-    expect(cycleIndexForDate(cycles, '2026-08-10')).toBe(2);
-    expect(cycleIndexForDate(cycles, '2026-09-01')).toBe(2);
-  });
-
-  it('date antérieure au 1er cycle, ou aucun cycle → null', () => {
-    expect(cycleIndexForDate(cycles, '2026-07-01')).toBeNull();
-    expect(cycleIndexForDate([], '2026-07-06')).toBeNull();
-  });
-});
-
-// =============================================================================
-// Smoke type-check
-// =============================================================================
-
-describe('types', () => {
-  it("MuscleCoverage est exporté avec la bonne forme", () => {
-    const x: MuscleCoverage = {
-      muscle: 'x',
-      sets: 0,
-      vMin: 0,
-      vMax: 0,
-      status: 'sans_intention',
-      intensity: 0,
-    };
-    expect(x.status).toBe('sans_intention');
   });
 });

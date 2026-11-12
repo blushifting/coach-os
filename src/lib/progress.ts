@@ -1,14 +1,11 @@
 /**
  * Sélecteurs purs pour l'onglet Progrès (Conv #6a).
  *
- * Source de vérité :
- * - `recherche/10_plan_claude_code.md §3 Conv #6a` — Couverture (heatmap
- *   muscles travaillés cette semaine), Volume (barres hebdo par muscle avec
- *   bandes V_min/V_max grises), Cycles (historique nommé par programme + dates).
- * - `recherche/08_ux_decisions.md §527-532` — silhouette propre refonte
- *   Conv #8, ici on livre la couverture en grille de chips colorés.
- * - `recherche/09_programmation.md §3.3, §5.1` — V_min/V_max effectifs,
- *   séries pondérées par muscle.
+ * Volume (dump 2.4, étape 3 — `recherche/13_ligne_directrice_2_4.md`) : un
+ * seul repère par muscle selon son intention, une zone haute commune (20
+ * séries pondérées par semaine), une échelle commune par écran, et le volume
+ * d'un cycle semaine par semaine. Cycles : historique nommé par programme.
+ * Force : courbes de Plafond.
  *
  * Tout est pur : aucune dépendance au store ni à la DB. Les composants UI
  * lisent l'état via les sélecteurs Zustand puis appellent ces fonctions.
@@ -24,13 +21,13 @@ import type {
 } from '@/engine/models';
 import { exercisePrimaires, MuscleIntention } from '@/engine/models';
 import { migrateMuscleGoalList } from '@/engine/intentions';
-import { effectiveVolumeBounds } from '@/engine/volume';
+import { VOLUME_HIGH_MARK, volumeMark } from '@/engine/volume';
+import { CYCLE_WEEKS, weekOfCycle } from '@/engine/cycle-week';
 import {
   addDays,
   dateKey,
   DELOAD_WEEK_INDEX,
   parseDateKey,
-  weekKeyFor,
   weekStartFor,
 } from '@/lib/dashboard';
 
@@ -73,96 +70,84 @@ export function sumMuscleSets(
 }
 
 // =============================================================================
-// 1. Couverture (heatmap semaine en cours)
+// 1. Volume hebdo d'un muscle : repère, zone haute, statut (dump 2.4, étape 3)
 // =============================================================================
 
 /**
- * Statut d'un muscle pour la semaine en cours.
- * - `non_travaille` : 0 série pondérée.
- * - `sous_min` : < V_min effectif (sous-dosé).
- * - `ok` : V_min ≤ x ≤ V_max.
- * - `depassement` : > V_max (sur-volume).
- * - `sans_intention` : muscle sans intention (dump 2.4, D2) : suivi, sans cible,
- *   donc jamais d'alerte. Ne se déduit plus de bornes nulles : tous les muscles
- *   ont des repères.
+ * Statut d'un volume hebdo (séries pondérées), dump 2.4 (D2, D7) :
+ * - `non_travaille` : aucune série ;
+ * - `sous_repere` : sous le repère de l'intention (seuil de croissance pour un
+ *   muscle à développer, plancher d'entretien pour un muscle à entretenir) ;
+ * - `ok` : du repère jusqu'à la zone haute ;
+ * - `eleve` : au-delà de la zone haute (20 séries), pour tous les muscles. Un
+ *   constat (« beau total, tu peux t'arrêter là »), jamais un frein ;
+ * - `sans_objectif` : muscle sans objectif, sous la zone haute : on compte les
+ *   séries, sans repère ni alerte.
  */
 export type CoverageStatus =
   | 'non_travaille'
-  | 'sous_min'
+  | 'sous_repere'
   | 'ok'
-  | 'depassement'
-  | 'sans_intention';
+  | 'eleve'
+  | 'sans_objectif';
 
-export interface MuscleCoverage {
-  readonly muscle: string;
-  readonly sets: number;
-  readonly vMin: number;
-  readonly vMax: number;
-  readonly status: CoverageStatus;
-  /** Intensité 0..1 pour la heatmap (sets / V_max, clampé). */
-  readonly intensity: number;
-}
+/** Les séries pondérées tombent sur des flottants (9,999…) : tolérance de lecture. */
+const SETS_EPSILON = 0.05;
+
+type VolumeState = Pick<UserState, 'volume_min' | 'muscle_goals'>;
+type MusclesOf = Readonly<Record<string, Readonly<Record<string, number>>>>;
 
 /**
- * Classe un volume hebdo (séries pondérées) par rapport à sa bande cible.
- * Factorisé (Bloc O) pour être partagé entre la couverture hebdo réelle et les
- * jauges de volume « live » du mode « à la main ».
- *
- * Tolérance epsilon (Conv #18) : `sets` pondéré (coefs muscles) peut tomber
- * pile sur une borne avec un arrondi flottant (ex : 9.999…).
+ * Repère tel qu'affiché, arrondi au supérieur (conv #77) : le plancher
+ * d'entretien des lombaires (2,4) se lit « 3 », et c'est 3 qui est testé — ce
+ * qui est annoncé atteint l'est vraiment. Epsilon : 6,000000001 reste 6.
  */
-/**
- * Conv #77 — bornes de volume ARRONDIES « à l'excès », pour l'affichage ET le
- * classement. Les bornes effectives sont des flottants (ex. lombaires en
- * Maintien : V_min = 0,4 × MEV = 2,4) alors que tout l'affichage les rendait en
- * entiers : la bande annoncée « 2–6 » n'était pas celle testée par
- * `classifyVolume`, et 2 séries pile s'affichaient EN ROUGE sous un repère posé
- * à 2,4. On resserre donc la bande vers l'intérieur — V_min au supérieur, V_max
- * à l'inférieur — et on classe sur ces mêmes entiers : ce qui est annoncé
- * « dans la cible » l'est vraiment, et le repère tombe sur le chiffre lu.
- *
- * Epsilon : une borne entière calculée en flottant (6,000000001) ne doit pas
- * être poussée à 7.
- *
- * ⚠️ Bande d'AFFICHAGE uniquement. Le moteur (allocation de séries,
- * `effectiveCycleTargetVolume`) continue de travailler sur les bornes exactes.
- */
-export function displayVolumeBounds(
-  vMin: number,
-  vMax: number,
-): readonly [number, number] {
-  if (vMin === 0 && vMax === 0) return [0, 0];
-  const lo = Math.ceil(vMin - 0.05);
-  // Garde-fou : sur une bande plus étroite que 1 série, l'arrondi croiserait les
-  // deux bornes (« 3–2 »). On dégénère alors en bande d'un seul entier.
-  const hi = Math.max(lo, Math.floor(vMax + 0.05));
-  return [lo, hi];
+export function displayMark(mark: number | null): number | null {
+  return mark === null ? null : Math.ceil(mark - SETS_EPSILON);
 }
 
-export function classifyVolume(
-  sets: number,
-  vMin: number,
-  vMax: number,
-  hasIntention = true,
-): CoverageStatus {
-  if (!hasIntention || (vMin === 0 && vMax === 0)) return 'sans_intention';
-  if (sets === 0) return 'non_travaille';
-  if (sets < vMin - 0.05) return 'sous_min';
-  if (sets > vMax + 0.05) return 'depassement';
+/** Repère hebdo affiché de ce muscle (cf. `volumeMark`), `null` sans objectif. */
+export function weeklyMark(state: VolumeState, muscle: string): number | null {
+  return displayMark(volumeMark(state, muscle));
+}
+
+/** Classe un volume (séries pondérées) par rapport au repère et à la zone haute. */
+export function classifyVolume(sets: number, mark: number | null): CoverageStatus {
+  if (sets < SETS_EPSILON) return 'non_travaille';
+  if (sets > VOLUME_HIGH_MARK + SETS_EPSILON) return 'eleve';
+  if (mark === null) return 'sans_objectif';
+  if (sets < mark - SETS_EPSILON) return 'sous_repere';
   return 'ok';
 }
 
 /**
- * Calcule la couverture par muscle pour la semaine **du programme** contenant
- * `now` (Conv #11h — alignée sur `cycleStart` plutôt que sur le lundi ISO,
- * pour être cohérente avec le calendrier visuel). Si `cycleStart` est null
- * (pas de cycle posé), fallback sur la semaine ISO.
- * On considère uniquement les feedbacks (séances réalisées).
+ * Échelle commune des barres d'un écran (D7) : la zone haute (20 séries), qui
+ * fait le bout de la barre, allongée seulement si un muscle la dépasse. Deux
+ * barres d'un même écran se comparent donc à l'œil.
+ */
+export function volumeScale(values: Iterable<number>): number {
+  let max = VOLUME_HIGH_MARK;
+  for (const v of values) if (v > max) max = v;
+  return max;
+}
+
+export interface MuscleCoverage {
+  readonly muscle: string;
+  readonly sets: number;
+  /** Repère affiché (seuil ou plancher), `null` sans objectif. */
+  readonly mark: number | null;
+  readonly status: CoverageStatus;
+}
+
+/**
+ * Volume par muscle de la semaine **du cycle** qui contient `now` (alignée sur
+ * `cycleStart`, D6 ; semaine ISO s'il n'y a pas de cycle). Séances faites
+ * uniquement. Tous les muscles connus, plus ceux qui ont été travaillés.
  */
 export function computeCoverageThisWeek(
-  state: Pick<UserState, 'volume_min' | 'volume_max' | 'muscle_goals'>,
+  state: VolumeState,
   feedbacks: readonly FeedbackRow[],
-  musclesOf: Readonly<Record<string, Readonly<Record<string, number>>>>,
+  musclesOf: MusclesOf,
   now: Date = new Date(),
   cycleStart: string | null = null,
 ): MuscleCoverage[] {
@@ -183,16 +168,10 @@ export function computeCoverageThisWeek(
 
   const out: MuscleCoverage[] = [];
   for (const muscle of muscles) {
-    const [vMin, vMax] = displayVolumeBounds(
-      ...effectiveVolumeBounds(state as UserState, muscle),
-    );
+    const mark = weeklyMark(state, muscle);
     const sets = counts[muscle] ?? 0;
-    const status = classifyVolume(sets, vMin, vMax, state.muscle_goals[muscle] !== undefined);
-    const denom = vMax > 0 ? vMax : Math.max(1, sets);
-    const intensity = Math.min(1, sets / denom);
-    out.push({ muscle, sets, vMin, vMax, status, intensity });
+    out.push({ muscle, sets, mark, status: classifyVolume(sets, mark) });
   }
-  // Tri stable : par ordre canonique MUSCLES si possible, sinon alpha.
   out.sort((a, b) => a.muscle.localeCompare(b.muscle));
   return out;
 }
@@ -201,229 +180,180 @@ export interface AddedVolumeOvershoot {
   readonly muscle: string;
   /** Séries pondérées projetées après ajout. */
   readonly projected: number;
-  /** Plafond hebdo effectif (V_max / MRV). */
-  readonly vMax: number;
 }
 
 /**
- * Conv #30 — Muscles qu'un exercice ajouté en séance (`addedSets` séries)
- * ferait passer **au-dessus de leur plafond de volume hebdo** (V_max / MRV).
+ * Conv #30, dump 2.4 étape 3 — muscles qu'un exercice ajouté (`addedSets`
+ * séries) ferait passer **au-delà de la zone haute** (20 séries pondérées), pour
+ * tous les muscles, avec ou sans objectif.
  *
- * `weeklyWeightedSets` = séries pondérées déjà engagées cette semaine (séances
- * faites + séance en cours), par muscle. On y ajoute la contribution pondérée
- * de l'exo candidat (coef × séries) et on compare à V_max. Sert à la mise en
- * garde « volume élevé » de `AddExerciseSheet` (pas de série bonus, juste un
- * avertissement non bloquant). Pur. Trié du dépassement le plus fort au plus
- * faible.
+ * `weeklyWeightedSets` = séries pondérées déjà engagées cette semaine, par
+ * muscle. Sert à l'avertissement non bloquant « Volume élevé » à l'ajout d'un
+ * exercice. Pur. Trié du plus chargé au moins chargé.
  */
 export function addedVolumeOvershoot(
   exoMuscles: Readonly<Record<string, number>>,
   addedSets: number,
   weeklyWeightedSets: Readonly<Record<string, number>>,
-  state: Pick<UserState, 'volume_min' | 'volume_max' | 'muscle_goals'>,
 ): AddedVolumeOvershoot[] {
   const out: AddedVolumeOvershoot[] = [];
   for (const [muscle, coef] of Object.entries(exoMuscles)) {
     if (coef <= 0) continue;
-    const [, vMax] = effectiveVolumeBounds(state as UserState, muscle);
-    if (vMax <= 0) continue; // muscle hors scope (pas de plafond)
     const projected = (weeklyWeightedSets[muscle] ?? 0) + addedSets * coef;
-    // Epsilon : évite de crier au dépassement sur un arrondi flottant pile au cap.
-    if (projected > vMax + 0.05) {
-      out.push({ muscle, projected, vMax });
+    if (projected > VOLUME_HIGH_MARK + SETS_EPSILON) {
+      out.push({ muscle, projected });
     }
   }
-  out.sort((a, b) => b.projected / b.vMax - a.projected / a.vMax);
+  out.sort((a, b) => b.projected - a.projected);
   return out;
 }
 
 // =============================================================================
-// 2. Volume hebdo par muscle (N dernières semaines)
+// 2. Volume d'un cycle, semaine par semaine (Progrès > Volume, bilan de cycle)
 // =============================================================================
 
-export interface WeeklyVolumePoint {
-  /** Lundi YYYY-MM-DD de la semaine. */
-  readonly weekStart: string;
-  readonly sets: number;
-  /**
-   * Conv #77 — cycle auquel appartient cette semaine, `null` si elle précède le
-   * premier cycle connu. Sert aux repères verticaux de changement de cycle : un
-   * creux de volume s'explique souvent par un changement de programme.
-   */
-  readonly cycleIndex: number | null;
+export interface CycleWeek {
+  /** Numéro de la semaine dans le cycle (1, 2, …). */
+  readonly week: number;
+  /** Premier jour de la semaine, `YYYY-MM-DD`. */
+  readonly start: string;
+  /** Semaine de récupération prise (repère divisé par deux). */
+  readonly recovery: boolean;
+  /** Semaine déjà commencée (le cycle en cours a des semaines à venir). */
+  readonly started: boolean;
 }
-
-export interface MuscleVolumeSeries {
-  readonly muscle: string;
-  readonly vMin: number;
-  readonly vMax: number;
-  /** Séries pondérées par semaine, ordre chronologique ancien → récent. */
-  readonly points: ReadonlyArray<WeeklyVolumePoint>;
-  /** Intention du muscle, ou `null` s'il n'en a pas (suivi sans cible). */
-  readonly intention: MuscleIntention | null;
-}
-
-/**
- * Conv #77 — cycle contenant `date` (clé YYYY-MM-DD) : le dernier cycle démarré
- * à cette date ou avant. `null` si la date précède le premier cycle connu (ou si
- * la liste est vide — appelants historiques qui ne passent pas les cycles).
- */
-export function cycleIndexForDate(
-  cycles: readonly CycleRow[],
-  date: string,
-): number | null {
-  let found: number | null = null;
-  let bestStart = '';
-  for (const c of cycles) {
-    if (c.start_date <= date && c.start_date >= bestStart) {
-      bestStart = c.start_date;
-      found = c.cycle_index;
-    }
-  }
-  return found;
-}
-
-/**
- * Pour chaque muscle, renvoie le volume hebdo des `weeks` dernières semaines
- * calendaires (du lundi de la semaine la plus ancienne au lundi de la semaine
- * courante). Inclut les semaines vides (`sets = 0`).
- *
- * `cycles` (optionnel) ne sert qu'à dater les changements de cycle sur la
- * courbe ; sans lui, les points sortent avec `cycleIndex: null`.
- */
-export function computeVolumeHistory(
-  state: Pick<UserState, 'volume_min' | 'volume_max' | 'muscle_goals'>,
-  feedbacks: readonly FeedbackRow[],
-  musclesOf: Readonly<Record<string, Readonly<Record<string, number>>>>,
-  weeks: number = 8,
-  now: Date = new Date(),
-  cycleStart: string | null = null,
-  cycles: readonly CycleRow[] = [],
-): MuscleVolumeSeries[] {
-  if (weeks <= 0) return [];
-  // Conv #11h — fenêtre glissante sur les `weeks` dernières semaines de
-  // programme (alignées sur cycleStart), pas semaines ISO. Cohérent avec
-  // le calendrier visuel.
-  const thisWeekStart = weekStartFor(now, cycleStart);
-  const weekStarts: string[] = [];
-  for (let i = weeks - 1; i >= 0; i--) {
-    weekStarts.push(dateKey(addDays(thisWeekStart, -i * 7)));
-  }
-
-  const byWeek = new Map<string, SessionFeedback[]>();
-  for (const f of feedbacks) {
-    const wk = weekKeyFor(parseDateKey(f.seance_date), cycleStart);
-    const list = byWeek.get(wk) ?? [];
-    list.push(f.feedback);
-    byWeek.set(wk, list);
-  }
-
-  // Muscles à afficher : ceux du profil (V_min connu).
-  const muscles = Object.keys(state.volume_min).sort((a, b) =>
-    a.localeCompare(b),
-  );
-
-  // Le cycle d'une semaine ne dépend pas du muscle : on le résout une fois.
-  const cycleByWeek = new Map<string, number | null>(
-    weekStarts.map((ws) => [ws, cycleIndexForDate(cycles, ws)]),
-  );
-
-  return muscles.map((muscle) => {
-    const [vMin, vMax] = displayVolumeBounds(
-      ...effectiveVolumeBounds(state as UserState, muscle),
-    );
-    const points: WeeklyVolumePoint[] = weekStarts.map((ws) => {
-      const fbs = byWeek.get(ws) ?? [];
-      const sums = sumMuscleSets(fbs, musclesOf);
-      return {
-        weekStart: ws,
-        sets: sums[muscle] ?? 0,
-        cycleIndex: cycleByWeek.get(ws) ?? null,
-      };
-    });
-    return {
-      muscle,
-      vMin,
-      vMax,
-      points,
-      intention: state.muscle_goals[muscle]?.intention ?? null,
-    };
-  });
-}
-
-// =============================================================================
-// 2bis. Volume par muscle réalisé sur un cycle (bilan de cycle — #15, E-3)
-// =============================================================================
 
 export interface MuscleCycleVolume {
   readonly muscle: string;
-  /** Séries pondérées MOYENNES par semaine de travail (déload exclu). */
-  readonly avgSetsPerWeek: number;
-  readonly vMin: number;
-  readonly vMax: number;
-  readonly status: CoverageStatus;
-  /** Intention du muscle — tri. */
-  readonly intention: MuscleIntention;
+  readonly intention: MuscleIntention | null;
+  /** Rang d'un muscle à développer, `null` sinon. */
+  readonly priorityRank: number | null;
+  /** Séries pondérées de chaque semaine (index 0 = semaine 1). */
+  readonly perWeek: readonly number[];
+  /** Repère affiché de chaque semaine (moitié en récupération), `null` sans objectif. */
+  readonly markPerWeek: readonly (number | null)[];
+  /** Séries pondérées moyennes par semaine, sur les semaines comptées. */
+  readonly average: number;
+  /** Repère moyen sur ces mêmes semaines (une décimale), `null` sans objectif. */
+  readonly averageMark: number | null;
+  readonly averageStatus: CoverageStatus;
 }
 
+export interface CycleVolume {
+  readonly cycleIndex: number;
+  readonly weeks: readonly CycleWeek[];
+  /** Numéros des semaines comptées dans la moyenne. */
+  readonly countedWeeks: readonly number[];
+  /** Tous les muscles connus, plus ceux travaillés sur le cycle (ordre alphabétique). */
+  readonly muscles: readonly MuscleCycleVolume[];
+}
+
+export interface CycleVolumeInput {
+  readonly cycleIndex: number;
+  readonly startDate: string;
+  /** Date de clôture, `null` pour le cycle en cours. */
+  readonly endDate: string | null;
+  /**
+   * Récupération prise sur ce cycle : `true` / `false`, ou `null` si on ne le
+   * sait pas (cycle clos avant la 2.3.2) ; la semaine 5 est alors laissée hors
+   * de la moyenne, comme avant.
+   */
+  readonly recoveryTaken: boolean | null;
+}
+
+const round1 = (x: number): number => Math.round(x * 10) / 10;
+
 /**
- * #15 (E-3) — volume réalisé par muscle sur un cycle, en séries pondérées
- * MOYENNES par semaine de travail (les `workingWeeks` semaines hors déload),
- * comparé à la bande cible V_min–V_max. Répond à « as-tu tenu ta cible hebdo
- * sur le cycle ? ». Ne renvoie que les muscles qui ont une intention, ceux à
- * développer d'abord. Calculé à la volée depuis les feedbacks — rien de persisté (les
- * bornes utilisées sont celles de l'état COURANT, exactes pour le cycle en
- * cours ; approximation acceptable pour un bilan archivé si les objectifs ont
- * changé depuis).
+ * Dump 2.4, étape 3 (n° 13, 19) — volume d'un cycle semaine par semaine, et sa
+ * moyenne comparée à un repère moyen.
+ *
+ * La moyenne compte les semaines écoulées du cycle (pour le cycle en cours :
+ * les semaines terminées, ou la semaine en cours si aucune ne l'est). La semaine
+ * de récupération prise y entre avec un repère divisé par deux, puisque le
+ * générateur y divise les séries par deux. Qui fait toutes ses séances tombe
+ * donc pile sur le repère moyen : seuil 10, quatre semaines à 10 et une
+ * récupération à 5 → 45 séries sur 5 semaines, repère moyen 9.
+ *
+ * La semaine d'une séance se lit sur sa date (D6). Une séance faite après la
+ * fin prévue du cycle tombe en semaine 6 et compte comme une semaine normale.
  */
-export function computeCycleVolumeByMuscle(
-  feedbacks: ReadonlyArray<FeedbackRow>,
-  cycleIndex: number,
-  state: Pick<UserState, 'volume_min' | 'volume_max' | 'muscle_goals'>,
-  musclesOf: Readonly<Record<string, Readonly<Record<string, number>>>>,
-  workingWeeks: number = 4,
-): MuscleCycleVolume[] {
-  const inCycle = feedbacks.filter(
-    (f) => f.cycle_index === cycleIndex && f.week_in_cycle !== DELOAD_WEEK_INDEX,
-  );
-  const sums = sumMuscleSets(
-    inCycle.map((f) => f.feedback),
-    musclesOf,
-  );
-  const out: MuscleCycleVolume[] = [];
-  // Muscles qui ont une intention (D10 : les muscles engagés). Les autres
-  // restent visibles sur la silhouette du bilan ; leur repli « voir les autres
-  // muscles » arrive avec les écrans de volume (étape 3).
-  for (const muscle of Object.keys(state.volume_min)) {
-    const goal = state.muscle_goals[muscle];
-    if (goal === undefined) continue;
-    const [vMin, vMax] = displayVolumeBounds(
-      ...effectiveVolumeBounds(state as UserState, muscle),
-    );
-    if (vMax <= 0) continue;
-    const avg = (sums[muscle] ?? 0) / Math.max(1, workingWeeks);
-    out.push({
-      muscle,
-      avgSetsPerWeek: avg,
-      vMin,
-      vMax,
-      status: classifyVolume(avg, vMin, vMax),
-      intention: goal.intention,
+export function computeCycleVolume(
+  state: VolumeState,
+  feedbacks: readonly FeedbackRow[],
+  musclesOf: MusclesOf,
+  cycle: CycleVolumeInput,
+  today: string,
+): CycleVolume {
+  const inCycle = feedbacks.filter((f) => f.cycle_index === cycle.cycleIndex);
+  const byWeek = new Map<number, SessionFeedback[]>();
+  let lastWorkedWeek = 0;
+  for (const f of inCycle) {
+    const w = weekOfCycle(f.seance_date, cycle.startDate);
+    const list = byWeek.get(w) ?? [];
+    list.push(f.feedback);
+    byWeek.set(w, list);
+    lastWorkedWeek = Math.max(lastWorkedWeek, w);
+  }
+
+  const isCurrent = cycle.endDate === null;
+  const reachedWeek = isCurrent
+    ? weekOfCycle(today, cycle.startDate)
+    : Math.min(CYCLE_WEEKS, weekOfCycle(cycle.endDate!, cycle.startDate));
+  const lastWeek = Math.max(isCurrent ? CYCLE_WEEKS : 1, reachedWeek, lastWorkedWeek);
+
+  const weeks: CycleWeek[] = [];
+  for (let w = 1; w <= lastWeek; w++) {
+    weeks.push({
+      week: w,
+      start: dateKey(addDays(parseDateKey(cycle.startDate), 7 * (w - 1))),
+      recovery: w === DELOAD_WEEK_INDEX && cycle.recoveryTaken === true,
+      started: w <= Math.max(reachedWeek, lastWorkedWeek),
     });
   }
-  // À développer d'abord (rank croissant), puis alpha.
-  out.sort((a, b) => {
-    const aPrio = a.intention === MuscleIntention.DEVELOPPER ? 0 : 1;
-    const bPrio = b.intention === MuscleIntention.DEVELOPPER ? 0 : 1;
-    if (aPrio !== bPrio) return aPrio - bPrio;
-    if (aPrio === 0) {
-      const ra = state.muscle_goals[a.muscle]?.priority_rank ?? 99;
-      const rb = state.muscle_goals[b.muscle]?.priority_rank ?? 99;
-      if (ra !== rb) return ra - rb;
-    }
-    return a.muscle.localeCompare(b.muscle);
-  });
-  return out;
+
+  const elapsed = isCurrent
+    ? Math.max(1, reachedWeek - 1)
+    : Math.max(reachedWeek, lastWorkedWeek);
+  const countedWeeks: number[] = [];
+  for (let w = 1; w <= elapsed; w++) {
+    if (w === DELOAD_WEEK_INDEX && cycle.recoveryTaken === null) continue;
+    countedWeeks.push(w);
+  }
+
+  const sumsByWeek = weeks.map((wk) => sumMuscleSets(byWeek.get(wk.week) ?? [], musclesOf));
+  const muscleSet = new Set<string>(Object.keys(state.volume_min));
+  for (const sums of sumsByWeek) for (const m of Object.keys(sums)) muscleSet.add(m);
+
+  const muscles: MuscleCycleVolume[] = [...muscleSet]
+    .sort((a, b) => a.localeCompare(b))
+    .map((muscle) => {
+      const goal = state.muscle_goals[muscle];
+      const mark = weeklyMark(state, muscle);
+      const perWeek = sumsByWeek.map((sums) => sums[muscle] ?? 0);
+      const markPerWeek = weeks.map((wk) =>
+        mark === null ? null : wk.recovery ? mark / 2 : mark,
+      );
+      const n = Math.max(1, countedWeeks.length);
+      const total = countedWeeks.reduce((acc, w) => acc + perWeek[w - 1]!, 0);
+      const average = total / n;
+      const averageMark =
+        mark === null
+          ? null
+          : round1(countedWeeks.reduce((acc, w) => acc + markPerWeek[w - 1]!, 0) / n);
+      return {
+        muscle,
+        intention: goal?.intention ?? null,
+        priorityRank:
+          goal?.intention === MuscleIntention.DEVELOPPER ? goal.priority_rank : null,
+        perWeek,
+        markPerWeek,
+        average,
+        averageMark,
+        averageStatus: classifyVolume(average, averageMark),
+      };
+    });
+
+  return { cycleIndex: cycle.cycleIndex, weeks, countedWeeks, muscles };
 }
 
 // =============================================================================
@@ -840,28 +770,4 @@ export function computeLastWorkedByMuscle(
     }
   }
   return out;
-}
-
-/**
- * B-3 — nombre de semaines de programme couvrant TOUT l'historique, de la
- * semaine du premier feedback à celle de `now` incluse. Sert à alimenter
- * `computeVolumeHistory` quand l'utilisateur demande l'historique complet
- * plutôt que la fenêtre glissante par défaut. Minimum 1.
- */
-export function weeksSinceFirstFeedback(
-  feedbacks: readonly FeedbackRow[],
-  now: Date = new Date(),
-  cycleStart: string | null = null,
-): number {
-  let earliest: string | null = null;
-  for (const f of feedbacks) {
-    if (earliest === null || f.seance_date < earliest) earliest = f.seance_date;
-  }
-  if (earliest === null) return 1;
-  const firstWeek = weekStartFor(parseDateKey(earliest), cycleStart);
-  const thisWeek = weekStartFor(now, cycleStart);
-  const days = Math.round(
-    (thisWeek.getTime() - firstWeek.getTime()) / (24 * 60 * 60 * 1000),
-  );
-  return Math.max(1, Math.floor(days / 7) + 1);
 }

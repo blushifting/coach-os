@@ -55,7 +55,6 @@ export interface SerializedUserState {
   e1rm: Record<string, number>;
   k_user: Record<string, number>;
   volume_min: Record<string, number>;
-  volume_max: Record<string, number>;
   current_week_in_cycle: number;
   cycle_index: number;
   history: SessionFeedback[];

@@ -41,7 +41,7 @@ import {
 } from '@/engine/cycle-week';
 import {
   DELOAD_WEEK_IN_CYCLE,
-  initialVolumeBounds,
+  initialGrowthThresholds,
   isDeloadActive,
 } from '@/engine/volume';
 import { SuggestedAction, DurationCategory } from '@/engine/models';
@@ -1310,8 +1310,8 @@ export interface EndOfCycleArgs {
 /**
  * Remplace le `Profile` courant.
  *
- * Recalcule `volume_min` / `volume_max` parce qu'ils dépendent de
- * sex / age / level (cf. `initialVolumeBounds`). Tout le reste (e1rm, history,
+ * Recalcule `volume_min` (seuils de croissance) parce qu'il dépend de
+ * sex / age / level (cf. `initialGrowthThresholds`). Tout le reste (e1rm, history,
  * muscle_goals, current_cycle_plan, équipement overrides…) est conservé.
  *
  * Note : ne régénère pas `current_cycle_plan` — la régénération éventuelle
@@ -1321,9 +1321,7 @@ export interface EndOfCycleArgs {
 export async function updateProfile(profile: Profile): Promise<UserState> {
   const next = requireUserState();
   next.profile = profile;
-  const [vMin, vMax] = initialVolumeBounds(profile);
-  next.volume_min = vMin;
-  next.volume_max = vMax;
+  next.volume_min = initialGrowthThresholds(profile);
   await txSaveUserStateOnly(next);
   useCoachOsStore.setState({ userState: next });
   requestBackup();

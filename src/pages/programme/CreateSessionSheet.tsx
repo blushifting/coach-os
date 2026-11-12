@@ -159,7 +159,7 @@ export function CreateSessionSheet({
         addedWeighted[m] = (addedWeighted[m] ?? 0) + c * slot.nSets;
       }
     }
-    return addedVolumeOvershoot(addedWeighted, 1, weeklyBase, userState);
+    return addedVolumeOvershoot(addedWeighted, 1, weeklyBase);
   }, [slots, weeklyBase, userState, musclesOf]);
 
   const totalSets = slots.reduce((a, s) => a + s.nSets, 0);
@@ -351,8 +351,8 @@ export function CreateSessionSheet({
                 >
                   <strong className="text-amber-100">Volume élevé.</strong> Ces séries
                   poussent {overshoot.map((o) => muscleLabel(o.muscle)).join(', ')}{' '}
-                  au-dessus du volume hebdomadaire conseillé. Tu peux quand même continuer,
-                  pense à bien récupérer.
+                  au-delà de 20&nbsp;séries cette semaine. C'est un beau total&nbsp;: tu peux
+                  t'arrêter là, ou continuer en pensant à bien récupérer.
                 </p>
               )}
 

@@ -50,7 +50,7 @@ export function weeklyVolumeByMuscle(
 /**
  * Bloc O — séries **pondérées** par muscle sur le plan (Σ coef × base_sets sur
  * TOUS les muscles de l'exo, primaires + synergistes), pas seulement les
- * primaires. C'est l'unité des bandes de volume (`effectiveVolumeBounds`),
+ * primaires. C'est l'unité des bandes de volume (`volumeMark`),
  * donc la base des jauges « live » du mode « à la main ». Même logique que
  * `topUpMaintenance` (cycle_planner) / `sumMuscleSets` (progress).
  */

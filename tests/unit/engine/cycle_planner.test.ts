@@ -1,6 +1,6 @@
 /**
  * Tests du planificateur de cycle (voie unique V3, Conv #39).
- * Couvre : effectiveVolumeBounds (extension MuscleGoal), targetFrequencyV2,
+ * Couvre : volumeMark (repère par intention), targetFrequencyV2,
  * cycleSetProgression, autoGenerateCyclePlanV3 (invariants globaux),
  * enforceLengthenedBias, orderSession.
  *
@@ -25,8 +25,8 @@ import {
   exercisePrimaires } from '@/engine/models';
 import { orderSession, totalSets } from '@/engine/selection';
 import {
-  effectiveVolumeBounds,
   targetFrequencyV2,
+  volumeMark,
   MAX_TOTAL_SETS_PER_SESSION_V2,
 } from '@/engine/volume';
 
@@ -65,41 +65,35 @@ function typicalGoals(): Record<string, MuscleGoal> {
 }
 
 // =============================================================================
-// 1. effectiveVolumeBounds (extension MuscleGoal)
+// 1. volumeMark : un seul repère par muscle (dump 2.4, étape 3)
 // =============================================================================
 
-describe('effectiveVolumeBounds', () => {
-  // Dump 2.4 (D1) — un muscle sans intention reste suivi : il garde ses repères.
-  it('sans intention → repères de « Développer », jamais (0, 0)', () => {
+describe('volumeMark', () => {
+  // Dump 2.4 (D2) — sans objectif, on compte les séries, sans repère.
+  it('sans objectif → aucun repère', () => {
     const state = stateInterH4x();
-    expect(effectiveVolumeBounds(state, 'pectoraux')).toEqual([
-      state.volume_min.pectoraux,
-      state.volume_max.pectoraux,
-    ]);
+    expect(volumeMark(state, 'pectoraux')).toBeNull();
   });
 
-  it('Développer → [seuil de croissance, repère haut]', () => {
+  it('Développer → le seuil de croissance', () => {
     const state = stateInterH4x();
     state.muscle_goals.pectoraux = prio('pectoraux');
-    expect(effectiveVolumeBounds(state, 'pectoraux')).toEqual([
-      state.volume_min.pectoraux,
-      state.volume_max.pectoraux,
-    ]);
+    expect(volumeMark(state, 'pectoraux')).toBe(state.volume_min.pectoraux);
   });
 
-  // Conv #29 — maintien = bande [MV, MEV] = [0.4×Vmin (plancher 2), Vmin].
-  // Le plafond V_max = MEV (= baseMin) pour une lecture de progrès uniforme.
-  it('Entretenir → bande [MV, MEV], V_min < V_max', () => {
+  // Conv #29 — plancher d'entretien = 0,4 × seuil, au moins 2 séries.
+  it('Entretenir → le plancher d’entretien (40 % du seuil, au moins 2)', () => {
     const state = stateInterH4x();
     state.muscle_goals.abdos = suggested('abdos');
-    const baseMin = state.volume_min.abdos!;
-    const [vMin, vMax] = effectiveVolumeBounds(state, 'abdos');
-    expect(vMin).toBeCloseTo(Math.max(2, baseMin * 0.4), 6);
-    expect(vMax).toBe(baseMin);
-    expect(vMin).toBeLessThan(vMax);
-    expect(vMin).toBeGreaterThanOrEqual(2);
+    const seuil = state.volume_min.abdos!;
+    expect(volumeMark(state, 'abdos')).toBeCloseTo(Math.max(2, seuil * 0.4), 6);
   });
 
+  it('muscle inconnu des repères → aucun repère', () => {
+    const state = stateInterH4x();
+    state.muscle_goals.inconnu = prio('inconnu');
+    expect(volumeMark(state, 'inconnu')).toBeNull();
+  });
 });
 
 // =============================================================================

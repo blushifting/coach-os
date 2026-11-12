@@ -69,7 +69,9 @@ const userStateSchema = z
     // anciens exports, mais non conservé dans le modèle.
     reps_pr: recordOfNumber.optional(),
     volume_min: recordOfNumber,
-    volume_max: recordOfNumber,
+    // volume_max — vestige (dump 2.4, étape 3 : zone haute commune) : accepté en
+    // import pour les anciens exports, mais non conservé dans le modèle.
+    volume_max: recordOfNumber.optional(),
     current_week_in_cycle: z.number().int().min(1).max(5),
     cycle_index: z.number().int().min(1),
     // Chantier B — plateau désormais purement indicatif : champ toléré

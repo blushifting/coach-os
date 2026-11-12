@@ -11,7 +11,6 @@ import { TrendArrow } from '@/components/icons';
 import { cn } from '@/lib/cn';
 import { MOTION } from '@/lib/motion';
 import { useEngine } from '@/hooks/useEngine';
-import { useAnimateOnMount } from '@/hooks/useMotion';
 import { useCoachOsStore } from '@/store';
 import { selectCycles, useDemoMode, useToday } from '@/store/selectors';
 import { MuscleIntention, SuggestedAction, type CycleReview } from '@/engine/models';
@@ -23,12 +22,15 @@ import {
 } from '@/engine/lifecycle';
 import {
   buildMusclesOf,
-  computeCycleVolumeByMuscle,
+  computeCycleVolume,
   exerciseLabel,
   muscleLabel,
-  type CoverageStatus,
+  volumeScale,
+  type CycleVolume,
   type MuscleCycleVolume,
 } from '@/lib/progress';
+import { dateKey } from '@/lib/dashboard';
+import { formatSets, markLabel, VolumeBar, VOLUME_TEXT } from '@/components/VolumeBar';
 import {
   overloadedMuscles,
   pickPendingCycleReview,
@@ -81,17 +83,28 @@ export default function CycleBilanPage() {
   // archivé, pas une fin de cycle en cours).
   const isArchived = targetCycleIndex !== null;
 
-  // #15 (E-3) — volume réalisé par muscle sur le cycle, calculé à la volée
-  // (pas de champ persisté). Le nombre de séances alimente la tuile "Séances".
-  const cycleVolume = useMemo<MuscleCycleVolume[]>(() => {
-    if (review === null || userState === null || catalog === null) return [];
-    return computeCycleVolumeByMuscle(
-      feedbacks,
-      review.cycle_index,
+  // #15 (E-3), dump 2.4 étape 3 — volume du cycle, calculé à la volée (pas de
+  // champ persisté). Le nombre de séances alimente la tuile « Séances ».
+  const cycleVolume = useMemo<CycleVolume | null>(() => {
+    if (review === null || userState === null || catalog === null) return null;
+    const row = cycles.find((c) => c.cycle_index === review.cycle_index);
+    if (row === undefined) return null;
+    const isCurrent = review.cycle_index === userState.cycle_index;
+    return computeCycleVolume(
       userState,
+      feedbacks,
       buildMusclesOf(catalog),
+      {
+        cycleIndex: review.cycle_index,
+        startDate: row.start_date,
+        endDate: isCurrent ? null : row.end_date,
+        recoveryTaken: isCurrent
+          ? userState.deload_decision === 'accepted'
+          : (review.recovery_taken ?? null),
+      },
+      dateKey(today),
     );
-  }, [review, userState, catalog, feedbacks]);
+  }, [review, userState, catalog, feedbacks, cycles, today]);
   const sessionCount =
     review === null
       ? 0
@@ -166,47 +179,77 @@ function ReviewKeyMetrics({
   );
 }
 
-const VOLUME_STATUS_TEXT: Record<CoverageStatus, string> = {
-  non_travaille: 'text-anthracite-300',
-  sous_min: 'text-sang-400',
-  ok: 'text-emerald-400',
-  depassement: 'text-amber-400',
-  sans_intention: 'text-anthracite-300',
-};
-
-const VOLUME_STATUS_BAR: Record<CoverageStatus, string> = {
-  non_travaille: 'bg-anthracite-500',
-  sous_min: 'bg-sang-500',
-  ok: 'bg-emerald-500',
-  depassement: 'bg-amber-500',
-  sans_intention: 'bg-anthracite-500',
-};
-
-/** Moyenne de séries sans arrondi trompeur (cf. #11) : décimale si non entier. */
-function formatSets(v: number): string {
-  return Number.isInteger(v) ? String(v) : v.toFixed(1);
-}
-
 /**
- * #15 (E-3) — volume réalisé par muscle sur le cycle (moy. séries/sem hors
- * déload) rapporté à la cible V_min–V_max. Remplace le tonnage total kg.
+ * #15 (E-3), dump 2.4 étape 3 (n° 19, D10) — volume moyen par semaine sur le
+ * cycle, sur la barre commune. La moyenne compte la semaine de récupération
+ * avec un repère divisé par deux (`computeCycleVolume`) : qui a fait toutes ses
+ * séances tombe pile sur le repère.
  *
- * Conv #76 — la carte liste les muscles SUIVIS, prioritaires en tête (badge).
- * Les muscles travaillés hors objectifs n'y figurent pas : sans cible, une
- * barre n'a rien à dire — leur progression éventuelle se lit sur la silhouette
- * juste en dessous. (Un repli « voir les autres muscles » a été essayé puis
- * retiré : il ouvrait sur des lignes sans bande de référence.)
+ * Par défaut, les muscles engagés (à développer, puis à entretenir) ; un repli
+ * fermé « voir les autres muscles » montre ceux travaillés sans objectif.
  */
-function ReviewVolume({ volume }: { volume: ReadonlyArray<MuscleCycleVolume> }) {
-  if (volume.length === 0) return null;
+function ReviewVolume({ volume }: { volume: CycleVolume | null }) {
+  const [showOthers, setShowOthers] = useState(false);
+  if (volume === null) return null;
+
+  const engaged = volume.muscles
+    .filter((m) => m.intention !== null)
+    .sort((a, b) => {
+      const pa = a.intention === MuscleIntention.DEVELOPPER ? 0 : 1;
+      const pb = b.intention === MuscleIntention.DEVELOPPER ? 0 : 1;
+      if (pa !== pb) return pa - pb;
+      if (pa === 0) return (a.priorityRank ?? 99) - (b.priorityRank ?? 99);
+      return a.muscle.localeCompare(b.muscle);
+    });
+  const others = volume.muscles.filter((m) => m.intention === null);
+  const othersWorked = others.filter((m) => m.average > 0);
+  const othersIdle = others.filter((m) => m.average === 0);
+  if (engaged.length === 0 && othersWorked.length === 0) return null;
+
+  const scale = volumeScale(volume.muscles.map((m) => m.average));
+  const recoveryCounted = volume.weeks.some(
+    (w) => w.recovery && volume.countedWeeks.includes(w.week),
+  );
+
   return (
     <Card data-testid="bilan-volume" className="flex flex-col gap-2.5">
-      <h2 className="text-sm font-semibold text-white">
-        Volume par muscle · moy./sem vs cible
-      </h2>
-      {volume.map((m, i) => (
-        <CycleVolumeRow key={m.muscle} data={m} index={i} />
+      <div>
+        <h2 className="text-sm font-semibold text-white">Volume moyen par semaine</h2>
+        {recoveryCounted && (
+          <p className="text-[11px] text-anthracite-400">
+            La semaine de récupération compte avec un repère réduit de moitié.
+          </p>
+        )}
+      </div>
+      {engaged.map((m, i) => (
+        <CycleVolumeRow key={m.muscle} data={m} scale={scale} index={i} />
       ))}
+      {othersWorked.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowOthers((v) => !v)}
+          aria-expanded={showOthers}
+          data-testid="bilan-volume-others-toggle"
+          className="mt-1 flex min-h-[44px] items-center justify-between rounded-xl border border-anthracite-700 bg-anthracite-800 px-3 text-sm text-anthracite-200"
+        >
+          {showOthers
+            ? 'Masquer les autres muscles'
+            : `Voir les autres muscles (${othersWorked.length})`}
+          <span aria-hidden="true">{showOthers ? '⌃' : '⌄'}</span>
+        </button>
+      )}
+      {showOthers && (
+        <div className="flex flex-col gap-2.5" data-testid="bilan-volume-others">
+          {othersWorked.map((m, i) => (
+            <CycleVolumeRow key={m.muscle} data={m} scale={scale} index={i} />
+          ))}
+          {othersIdle.length > 0 && (
+            <p className="text-xs text-anthracite-400">
+              Pas travaillés sur le cycle&nbsp;: {othersIdle.map((m) => muscleLabel(m.muscle)).join(', ')}.
+            </p>
+          )}
+        </div>
+      )}
     </Card>
   );
 }
@@ -218,18 +261,15 @@ function ReviewVolume({ volume }: { volume: ReadonlyArray<MuscleCycleVolume> }) 
  */
 function CycleVolumeRow({
   data,
+  scale,
   index,
 }: {
   data: MuscleCycleVolume;
+  scale: number;
   index: number;
 }) {
-  const pct = data.vMax > 0 ? Math.min(100, (data.avgSetsPerWeek / data.vMax) * 100) : 0;
-  // Conv #76 — repère du minimum visé, posé sur la barre. C'est surtout utile
-  // quand la cible n'est PAS atteinte : sans lui, une barre courte ne dit pas
-  // s'il manque une demi-série ou la moitié du travail.
-  const vMinPct = data.vMax > 0 ? Math.min(100, (data.vMin / data.vMax) * 100) : 0;
   const revealDelay = 120 + index * MOTION.stagger;
-  const shownPct = useAnimateOnMount(0, pct);
+  const mark = markLabel(data.intention, data.averageMark);
   return (
     <div
       className="flex flex-col gap-1 motion-safe:animate-reveal-up"
@@ -237,45 +277,26 @@ function CycleVolumeRow({
       data-testid={`bilan-volume-${data.muscle}`}
     >
       <div className="flex items-baseline justify-between gap-2 text-xs">
-        <span className="min-w-0 truncate text-anthracite-200">
-          {muscleLabel(data.muscle)}
-          {data.intention === MuscleIntention.DEVELOPPER && (
-            <span className="ml-2 rounded bg-sang-900/40 px-1 py-0.5 text-[10px] text-sang-300">
-              à développer
-            </span>
-          )}
-        </span>
-        <span className={cn('shrink-0 tabular-nums', VOLUME_STATUS_TEXT[data.status])}>
-          {formatSets(data.avgSetsPerWeek)}
+        <span className="min-w-0 truncate text-anthracite-200">{muscleLabel(data.muscle)}</span>
+        <span className={cn('shrink-0 tabular-nums', VOLUME_TEXT[data.averageStatus])}>
+          {formatSets(data.average)}
           <span className="text-anthracite-400">
             {' '}
-            / {data.vMin.toFixed(0)}–{data.vMax.toFixed(0)}
+            {mark === null ? 'séries / sem.' : `séries / sem. · ${mark}`}
           </span>
         </span>
       </div>
-      <div className="relative h-1.5 rounded-full bg-anthracite-700">
-        <div className="h-full overflow-hidden rounded-full">
-          <div
-            className={cn(
-              'h-full rounded-full motion-safe:transition-[width] motion-safe:ease-out',
-              VOLUME_STATUS_BAR[data.status],
-            )}
-            style={{
-              width: `${shownPct}%`,
-              transitionDuration: `${MOTION.fill}ms`,
-              // La barre part quand sa ligne a fini d'apparaître : deux mouvements
-              // simultanés sur la même ligne se brouillent.
-              transitionDelay: `${revealDelay + 200}ms`,
-            }}
-          />
-        </div>
-        <span
-          aria-hidden="true"
-          data-testid={`bilan-vmin-${data.muscle}`}
-          className="absolute -top-0.5 -bottom-0.5 w-0.5 rounded-full bg-anthracite-100"
-          style={{ left: `${vMinPct}%` }}
-        />
-      </div>
+      <VolumeBar
+        sets={data.average}
+        mark={data.averageMark}
+        status={data.averageStatus}
+        scale={scale}
+        fillOnMount
+        // La barre part quand sa ligne a fini d'apparaître : deux mouvements
+        // simultanés sur la même ligne se brouillent.
+        delayMs={revealDelay + 200}
+        testId={`bilan-bar-${data.muscle}`}
+      />
     </div>
   );
 }

@@ -15,7 +15,7 @@ import { MuscleIntention,
   makeMuscleGoal,
   makeProfile,
   makeUserState } from '@/engine/models';
-import { initialVolumeBounds } from '@/engine/volume';
+import { initialGrowthThresholds } from '@/engine/volume';
 import { Catalog } from '@/engine/catalog';
 import {
   buildSkeleton,
@@ -51,9 +51,7 @@ function makeStateForGoals(opts: {
     available_equip: EQUIP_FULL,
   });
   const state = makeUserState(profile);
-  const [vMin, vMax] = initialVolumeBounds(profile);
-  state.volume_min = { ...vMin };
-  state.volume_max = { ...vMax };
+  state.volume_min = initialGrowthThresholds(profile);
   opts.prios.forEach((muscle, i) => {
     state.muscle_goals[muscle] = makeMuscleGoal({
       muscle,

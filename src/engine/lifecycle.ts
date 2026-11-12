@@ -27,7 +27,8 @@ import {
   DELOAD_WEEK_IN_CYCLE,
   countWeeklyVolume,
   cycleAdherence,
-  effectiveVolumeBounds,
+  VOLUME_HIGH_MARK,
+  volumeMark,
 } from './volume';
 import { autoGenerateCyclePlanV3 } from './cycle_planner';
 
@@ -161,17 +162,16 @@ function classifyMusclesOutcome(
     } else if (outcome === 'down') {
       plateau.push(muscle);
     }
-    // Conv #76 — bornes EFFECTIVES (selon l'intention du muscle), les mêmes
-    // que celles affichées dans les barres du bilan.
-    // Dump 2.4 (D2) — un muscle sans intention n'est jamais « sous-entraîné » :
-    // il n'a pas de cible. Le dépassement du repère haut reste signalé.
-    const [vMin, vMax] = effectiveVolumeBounds(state, muscle);
+    // Dump 2.4 (D2, étape 3) — le repère du muscle selon son intention (seuil
+    // de croissance ou plancher d'entretien) ; un muscle sans objectif n'en a
+    // pas, il n'est donc jamais « sous-entraîné ». La surcharge se lit sur la
+    // zone haute commune, pour tous les muscles.
+    const mark = volumeMark(state, muscle);
     const vReal = (volumesTotal[muscle] ?? 0) / WORKING_WEEKS;
-    const hasIntention = state.muscle_goals[muscle] !== undefined;
-    if (hasIntention && vMin > 0 && vReal < vMin * 0.7) {
+    if (mark !== null && vReal < mark * 0.7) {
       if (!undertrained.includes(muscle)) undertrained.push(muscle);
     }
-    if (vMax > 0 && vReal > vMax * 1.1) {
+    if (vReal > VOLUME_HIGH_MARK + 0.05) {
       if (!overshoot.includes(muscle)) overshoot.push(muscle);
     }
   }
@@ -243,6 +243,7 @@ export function generateCycleReview(state: UserState, catalog: Catalog): CycleRe
     suggested_action: action,
     warnings: [],
     muscle_goals_snapshot: muscleGoalsSnapshot,
+    recovery_taken: state.deload_decision === 'accepted',
   });
 
   // Conv #76 — l'avertissement « Plafond en baisse sur <exercice> » a été
@@ -299,8 +300,6 @@ export function suggestNextAction(
  * Décision Azur : les bornes ne bougent plus que via `updateProfile` (poids,
  * âge, niveau). Le signal de surcharge n'est pas perdu — il devient une
  * **alerte lisible** dans le bilan, qui laisse l'utilisateur décider.
- * `VMAX_UP_DELTA` / `VMAX_DOWN_DELTA` restent exportés par `volume.ts` (plus
- * aucun consommateur, mais la constante documente l'ordre de grandeur).
  */
 
 // =============================================================================

@@ -649,6 +649,13 @@ export interface CycleReview {
    * portent dans l'ancien format : à lire via `migrateMuscleGoalList`.
    */
   muscle_goals_snapshot?: StoredMuscleGoal[];
+  /**
+   * Dump 2.4, étape 3 (n° 19) — la semaine de récupération a-t-elle été prise
+   * (`deload_decision === 'accepted'` à la clôture) ? La moyenne de volume du
+   * bilan compte cette semaine avec un repère divisé par deux. Absent sur les
+   * cycles clos avant la 2.3.2 : la semaine 5 est alors laissée hors moyenne.
+   */
+  recovery_taken?: boolean;
 }
 
 export interface CycleReviewInput {
@@ -664,6 +671,7 @@ export interface CycleReviewInput {
   suggested_action: SuggestedAction;
   warnings?: string[];
   muscle_goals_snapshot?: StoredMuscleGoal[];
+  recovery_taken?: boolean;
 }
 
 export function makeCycleReview(input: CycleReviewInput): CycleReview {
@@ -723,7 +731,6 @@ export interface UserState {
   e1rm: Record<string, number>;
   k_user: Record<string, number>;
   volume_min: Record<string, number>;
-  volume_max: Record<string, number>;
   current_week_in_cycle: number;
   cycle_index: number;
   history: SessionFeedback[];
@@ -817,7 +824,6 @@ export function makeUserState(profile: Profile): UserState {
     e1rm: {},
     k_user: {},
     volume_min: {},
-    volume_max: {},
     current_week_in_cycle: 1,
     cycle_index: 1,
     history: [],

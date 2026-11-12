@@ -8,10 +8,11 @@ import { displayExerciseName, kgUnitLabel } from '@/lib/catalog-filter';
 import { useGymBrand } from '@/store/selectors';
 import { GymBrand } from '@/engine/models';
 import { cn } from '@/lib/cn';
-import { easeOutProgressAt, MOTION } from '@/lib/motion';
-import { useAnimateOnMount, useCountUp, useDelayedFlag } from '@/hooks/useMotion';
+import { MOTION } from '@/lib/motion';
+import { useCountUp } from '@/hooks/useMotion';
 import { sessionDisplayName } from '@/lib/session-label';
-import { muscleLabel, type CoverageStatus } from '@/lib/progress';
+import { muscleLabel, volumeScale } from '@/lib/progress';
+import { formatSets, markLabel, VolumeBar, VOLUME_TEXT } from '@/components/VolumeBar';
 import type {
   PlafondChange,
   SessionMuscleVolume,
@@ -110,6 +111,7 @@ export function SessionSummary({
             <MuscleVolumeRow
               key={m.muscle}
               data={m}
+              scale={volumeScale(data.muscleVolume.map((v) => v.weekTotal))}
               delayMs={BAR_BASE_DELAY_MS + i * MOTION.stagger}
             />
           ))}
@@ -173,78 +175,31 @@ function RecoveryNote() {
   );
 }
 
-/** Série(s) pondérée(s) sans arrondi trompeur (cf. #11) : décimale si non entier. */
-function formatSets(v: number): string {
-  return Number.isInteger(v) ? String(v) : v.toFixed(1);
-}
-
 /**
  * Formate une valeur INTERMÉDIAIRE de compteur avec la précision de sa cible.
  * Sans ça, un compteur qui monte vers 3 afficherait « 0,8 » puis « 1,9 » puis
  * « 3 » : la décimale apparaît et disparaît en cours de route.
  */
 function formatSetsLike(v: number, target: number): string {
-  return Number.isInteger(target) ? String(Math.round(v)) : v.toFixed(1);
+  return Number.isInteger(target) ? String(Math.round(v)) : v.toFixed(1).replace('.', ',');
 }
 
-const clampPct = (v: number): number => Math.max(0, Math.min(100, v));
-
-const STATUS_TEXT: Record<CoverageStatus, string> = {
-  non_travaille: 'text-anthracite-300',
-  sous_min: 'text-sang-400',
-  ok: 'text-emerald-400',
-  depassement: 'text-amber-400',
-  sans_intention: 'text-anthracite-300',
-};
-
-const STATUS_BAR: Record<CoverageStatus, string> = {
-  non_travaille: 'bg-anthracite-500',
-  sous_min: 'bg-sang-500',
-  ok: 'bg-emerald-500',
-  depassement: 'bg-amber-500',
-  sans_intention: 'bg-anthracite-500',
-};
-
 /**
- * #13 (E-3) — ligne « volume d'un muscle ce jour » : contribution du jour (+X),
- * total hebdo rapporté à la cible V_min–V_max, et barre colorée par statut.
- * Un muscle non suivi (hors objectifs) montre sa contribution sans cible.
- *
- * Conv #66 — la barre ne s'affiche plus remplie : elle REPART de son niveau
- * d'avant-séance (`weekTotal − sessionSets`, connu sans donnée nouvelle) et
- * pousse jusqu'au total de la semaine. La part gagnée aujourd'hui est éclaircie
- * le temps de sa course, puis se fond dans la barre : on voit ce qu'on a ajouté,
- * puis on lit le total.
+ * #13 (E-3), dump 2.4 étape 3 (n° 8) — ligne « volume d'un muscle » : apport de
+ * la séance (+X), total de la semaine avec son repère, et la barre commune. Tous
+ * les muscles travaillés ont leur barre, avec ou sans objectif.
  */
 function MuscleVolumeRow({
   data,
+  scale,
   delayMs,
 }: {
   data: SessionMuscleVolume;
+  scale: number;
   delayMs: number;
 }) {
-  // Dump 2.4 (D2) — un muscle sans intention n'a pas de cible : son total de la
-  // semaine est montré en neutre, sans barre (la barre arrive à l'étape 3).
-  const tracked = data.status !== 'sans_intention' && data.vMax > 0;
-  const pctBefore = tracked
-    ? clampPct(((data.weekTotal - data.sessionSets) / data.vMax) * 100)
-    : 0;
-  const pctAfter = tracked ? clampPct((data.weekTotal / data.vMax) * 100) : 0;
-  const pctVMin = tracked ? clampPct((data.vMin / data.vMax) * 100) : 0;
-
-  const todayWidth = useAnimateOnMount(0, Math.max(0, pctAfter - pctBefore));
   const shownSets = useCountUp(data.sessionSets, MOTION.fill, delayMs);
-  const merged = useDelayedFlag(delayMs + MOTION.fill);
-
-  // La séance fait-elle franchir le minimum hebdo ? Si oui, on flashe le repère
-  // à l'instant où la barre l'atteint — pas à la fin de sa course.
-  const crossesVMin = pctBefore < pctVMin && pctVMin <= pctAfter;
-  const vMinHit = useDelayedFlag(
-    crossesVMin
-      ? delayMs +
-          MOTION.fill * easeOutProgressAt((pctVMin - pctBefore) / (pctAfter - pctBefore))
-      : 0,
-  );
+  const mark = markLabel(data.intention, data.mark);
 
   return (
     <div className="flex flex-col gap-1" data-testid={`summary-muscle-${data.muscle}`}>
@@ -255,69 +210,23 @@ function MuscleVolumeRow({
             +{formatSetsLike(shownSets, data.sessionSets)}
           </span>
         </span>
-        {tracked ? (
-          <span className={cn('shrink-0 tabular-nums', STATUS_TEXT[data.status])}>
-            {formatSets(data.weekTotal)}
-            <span className="text-anthracite-400">
-              {' '}
-              / {data.vMin.toFixed(0)}–{data.vMax.toFixed(0)}
-            </span>
+        <span className={cn('shrink-0 tabular-nums', VOLUME_TEXT[data.status])}>
+          {formatSets(data.weekTotal)}
+          <span className="text-anthracite-400">
+            {' '}
+            {mark === null ? 'séries' : `séries · ${mark}`}
           </span>
-        ) : (
-          <span className="shrink-0 tabular-nums text-anthracite-400">
-            {formatSets(data.weekTotal)} séries / sem.
-          </span>
-        )}
+        </span>
       </div>
-      {tracked && (
-        // Wrapper NON clippé : le repère V_min s'étire hors de la barre en
-        // flashant, `overflow-hidden` le rognerait.
-        <div className="relative">
-          <div className="relative h-1.5 overflow-hidden rounded-full bg-anthracite-700">
-            {/* Acquis avant cette séance — statique, c'est le point de départ. */}
-            <div
-              className={cn('absolute inset-y-0 left-0', STATUS_BAR[data.status])}
-              style={{ width: `${pctBefore}%` }}
-            />
-            {/* Gagné aujourd'hui — pousse depuis le niveau précédent. */}
-            <div
-              className={cn(
-                'absolute inset-y-0 motion-safe:transition-[width] motion-safe:ease-out',
-                STATUS_BAR[data.status],
-              )}
-              style={{
-                left: `${pctBefore}%`,
-                width: `${todayWidth}%`,
-                transitionDuration: `${MOTION.fill}ms`,
-                transitionDelay: `${delayMs}ms`,
-              }}
-            >
-              <div
-                className={cn(
-                  'h-full w-full bg-white/30 motion-safe:transition-opacity motion-safe:duration-500',
-                  merged && 'opacity-0',
-                )}
-              />
-            </div>
-          </div>
-          {/* Repère V_min — utile en soi (« voilà le minimum »), et point de
-              bascule quand la séance le fait franchir. */}
-          <div
-            aria-hidden="true"
-            className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
-            style={{ left: `${pctVMin}%` }}
-          >
-            {/* Le trait porte l'animation, pas le wrapper : `vmin-hit` anime
-                `transform`, il écraserait les translations de centrage. */}
-            <div
-              className={cn(
-                'h-2.5 w-0.5 rounded-full bg-anthracite-300',
-                crossesVMin && vMinHit && 'motion-safe:animate-vmin-hit',
-              )}
-            />
-          </div>
-        </div>
-      )}
+      <VolumeBar
+        sets={data.weekTotal}
+        mark={data.mark}
+        status={data.status}
+        scale={scale}
+        gained={data.sessionSets}
+        delayMs={delayMs}
+        testId={`summary-bar-${data.muscle}`}
+      />
     </div>
   );
 }

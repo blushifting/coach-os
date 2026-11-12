@@ -18,7 +18,7 @@ import {
   generateSession,
   startUser,
 } from '@/engine/engine';
-import { effectiveVolumeBounds } from '@/engine/volume';
+import { VOLUME_HIGH_MARK } from '@/engine/volume';
 import { autoGenerateCyclePlanV3 } from '@/engine/cycle_planner';
 import { MuscleIntention, SuggestedAction } from '@/engine/models';
 import type { Profile, SessionFeedback, UserState } from '@/engine/models';
@@ -170,7 +170,7 @@ describe('generateCycleReview', () => {
 // =============================================================================
 
 describe('fin de cycle et bornes de volume', () => {
-  it('un bilan ne touche ni volume_min ni volume_max', () => {
+  it('un bilan ne touche pas aux seuils de croissance (volume_min)', () => {
     const state = stateWithPlan();
     // Un cycle bien rempli : c'est le cas qui déclenchait `overshoot` (et donc
     // +2 sur V_max) à tous les coups avant la suppression de l'ajustement.
@@ -193,12 +193,10 @@ describe('fin de cycle et bornes de volume', () => {
     }
     state.e1rm['bench_bb'] = 100;
     const vMinBefore = { ...state.volume_min };
-    const vMaxBefore = { ...state.volume_max };
 
     endOfCycle(state, catalog);
 
     expect(state.volume_min).toEqual(vMinBefore);
-    expect(state.volume_max).toEqual(vMaxBefore);
   });
 
   it('plus de warning « Plafond en baisse » par exercice', () => {
@@ -269,18 +267,24 @@ describe('surcharge de volume (muscles_overshoot)', () => {
     state.e1rm['bench_bb'] = 100;
   }
 
-  it('un volume dans la cible ne déclenche pas la surcharge', () => {
+  // Dump 2.4, étape 3 — la surcharge se lit sur la zone haute commune (20).
+  it('un volume sous la zone haute ne déclenche pas la surcharge', () => {
     const state = stateWithPlan();
-    const [, vMax] = effectiveVolumeBounds(state, 'pectoraux');
-    fillCycle(state, Math.max(1, Math.round(vMax) - 2));
+    fillCycle(state, VOLUME_HIGH_MARK - 2);
     const review = generateCycleReview(state, catalog);
     expect(review.muscles_overshoot).not.toContain('pectoraux');
   });
 
-  it('un volume hebdo bien au-dessus de la cible haute la déclenche', () => {
+  it('le bilan retient si la semaine de récupération a été prise', () => {
     const state = stateWithPlan();
-    const [, vMax] = effectiveVolumeBounds(state, 'pectoraux');
-    fillCycle(state, Math.ceil(vMax * 2));
+    expect(generateCycleReview(state, catalog).recovery_taken).toBe(false);
+    state.deload_decision = 'accepted';
+    expect(generateCycleReview(state, catalog).recovery_taken).toBe(true);
+  });
+
+  it('un volume hebdo au-delà de la zone haute la déclenche', () => {
+    const state = stateWithPlan();
+    fillCycle(state, VOLUME_HIGH_MARK + 4);
     const review = generateCycleReview(state, catalog);
     expect(review.muscles_overshoot).toContain('pectoraux');
   });

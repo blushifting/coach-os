@@ -58,7 +58,6 @@ function makeState(overrides: Partial<UserState> = {}): UserState {
     e1rm: {},
     k_user: {},
     volume_min: {},
-    volume_max: {},
     current_week_in_cycle: 1,
     cycle_index: 1,
     history: [],

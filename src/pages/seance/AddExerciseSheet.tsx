@@ -83,7 +83,7 @@ export function AddExerciseSheet({
   );
 
   // Conv #30 — mise en garde volume : l'exo ajouté (nSets séries) ferait-il
-  // dépasser le plafond hebdo (V_max/MRV) d'un de ses muscles ? Base = séries
+  // porter un de ses muscles au-delà de la zone haute (20 séries) ? Base = séries
   // pondérées déjà engagées cette semaine (séances faites + séance en cours).
   const overshoot = useMemo(() => {
     if (picked === null || userState === null || musclesOf === null) return [];
@@ -111,7 +111,7 @@ export function AddExerciseSheet({
         }
       }
     }
-    return addedVolumeOvershoot(picked.muscles, nSets, weekly, userState);
+    return addedVolumeOvershoot(picked.muscles, nSets, weekly);
   }, [picked, nSets, userState, feedbacks, cycles, currentSessionPlan, musclesOf, today]);
 
   const results = useMemo<readonly Exercise[]>(() => {
@@ -290,8 +290,8 @@ export function AddExerciseSheet({
               >
                 <strong className="text-amber-100">Volume élevé.</strong> Ces{' '}
                 {nSets} séries poussent{' '}
-                {overshoot.map((o) => muscleLabel(o.muscle)).join(', ')} au-dessus
-                du volume conseillé cette semaine.
+                {overshoot.map((o) => muscleLabel(o.muscle)).join(', ')} au-delà de
+                20&nbsp;séries cette semaine. C'est un beau total&nbsp;: tu peux t'arrêter là.
               </p>
             ) : null}
             {serverError !== null ? (

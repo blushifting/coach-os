@@ -8,7 +8,7 @@
 
 import type { Profile, ProfileInput, UserState } from '@/engine/models';
 import { Level, makeProfile, makeUserState,  Sex } from '@/engine/models';
-import { initialVolumeBounds } from '@/engine/volume';
+import { initialGrowthThresholds } from '@/engine/volume';
 
 export const EQUIP_FULL = new Set([
   'bb_oly',
@@ -82,8 +82,6 @@ export function profile(overrides: Partial<ProfileInput> = {}): Profile {
 /** Reproduit l'init volume de `start_user` (le reste viendra en Conv #2c). */
 export function startUserStub(p: Profile): UserState {
   const state = makeUserState(p);
-  const [vMin, vMax] = initialVolumeBounds(p);
-  state.volume_min = { ...vMin };
-  state.volume_max = { ...vMax };
+  state.volume_min = initialGrowthThresholds(p);
   return state;
 }

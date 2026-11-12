@@ -16,6 +16,7 @@ import type {
 } from '@/engine/engine';
 import type {
   Exercise,
+  MuscleIntention,
   SessionFeedback,
   SessionPlan,
   SetFeedback,
@@ -30,12 +31,11 @@ import {
   targetLoad,
 } from '@/engine/prescription';
 import { aggregateE1rmWeighted, RPE_RESERVE_FLOOR } from '@/engine/feedback';
-import { effectiveVolumeBounds } from '@/engine/volume';
 import {
   buildMusclesOf,
   classifyVolume,
-  displayVolumeBounds,
   sumMuscleSets,
+  weeklyMark,
   type CoverageStatus,
 } from '@/lib/progress';
 import type { FeedbackRow } from '@/db/schema';
@@ -487,8 +487,9 @@ export interface SessionMuscleVolume {
   readonly sessionSets: number;
   /** Séries pondérées cumulées cette semaine de programme (séance incluse). */
   readonly weekTotal: number;
-  readonly vMin: number;
-  readonly vMax: number;
+  /** Repère de la semaine (seuil ou plancher), `null` sans objectif. */
+  readonly mark: number | null;
+  readonly intention: MuscleIntention | null;
   readonly status: CoverageStatus;
 }
 
@@ -556,7 +557,7 @@ export function feedbackRowVolume(
  * Calcule le bilan post-feedback (#13, E-3) :
  *  - nombre de séries effectuées + exos distincts ;
  *  - volume par muscle travaillé, rapporté à la cible hebdo (contribution de la
- *    séance + total de la semaine de programme vs V_min–V_max) ;
+ *    séance + total de la semaine de programme vs son repère) ;
  *  - évolution des plafonds mesurés (MAJ définitives).
  *
  * Le total hebdo regroupe par SEMAINE DE PROGRAMME via (cycle, semaine) —
@@ -592,18 +593,18 @@ export function computeSessionSummary(
   const weekByMuscle = sumMuscleSets([...weekPrior, feedback], musclesOf);
   const muscleVolume: SessionMuscleVolume[] = Object.keys(sessionByMuscle)
     .map((muscle) => {
-      // Conv #77 — bande ARRONDIE (cf. `displayVolumeBounds`) : la barre du
-      // bilan affichait « 2–6 » pour une bande réelle [2,4 ; 6], donc 2 séries
-      // pile sortaient en rouge, arrêtées juste avant un repère posé à 2,4.
-      const [vMin, vMax] = displayVolumeBounds(...effectiveVolumeBounds(state, muscle));
+      // Dump 2.4, étape 3 — un seul repère (arrondi au supérieur, conv #77) ;
+      // en semaine de récupération, il est divisé par deux comme les séries.
+      const weekly = weeklyMark(state, muscle);
+      const mark = weekly !== null && recoveryWeek ? weekly / 2 : weekly;
       const weekTotal = weekByMuscle[muscle] ?? 0;
       return {
         muscle,
         sessionSets: sessionByMuscle[muscle] ?? 0,
         weekTotal,
-        vMin,
-        vMax,
-        status: classifyVolume(weekTotal, vMin, vMax, state.muscle_goals[muscle] !== undefined),
+        mark,
+        intention: state.muscle_goals[muscle]?.intention ?? null,
+        status: classifyVolume(weekTotal, mark),
       };
     })
     .sort((a, b) => b.sessionSets - a.sessionSets);
