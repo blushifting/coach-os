@@ -156,7 +156,7 @@ test('profil : sheet Aide affiche les 15 entrées du glossaire', async ({
     'etire',
     'volumeHebdo',
     'vminmax',
-    'hypertrophie',
+    'intention',
     'adherence',
     'vsSem1',
     'prDuJour',
@@ -182,7 +182,8 @@ test('profil : édition priorités via onboarding partiel persistée', async ({
   // On entre directement sur Step2 (Muscles).
   await expect(page.getByTestId('muscles-list')).toBeVisible();
   await page.getByTestId('obj-fessiers-none').click();
-  await page.getByTestId('obj-pectoraux-force').click();
+  // Dump 2.4 — pectoraux passent de « Développer » à « Entretenir ».
+  await page.getByTestId('obj-pectoraux-entretenir').click();
 
   // Step 2 → 3 (Programme) → 4 (Aperçu)
   // Bloc O — le préset full-body laisse les lombaires absents (couverts par
@@ -202,5 +203,6 @@ test('profil : édition priorités via onboarding partiel persistée', async ({
   ).not.toBeVisible();
   await expect(
     page.getByTestId('profil-goal-summary-pectoraux'),
-  ).toContainText('Force');
+  ).not.toBeVisible();
+  await expect(page.getByTestId('profil-suggested-summary')).toContainText('Pectoraux');
 });

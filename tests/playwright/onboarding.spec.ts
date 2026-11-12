@@ -63,12 +63,12 @@ test("garde-fou : impossible d'avancer étape 2 sans muscle", async ({ page }) =
   await expect(page.getByTestId('onboarding-error')).toBeVisible();
 });
 
-test('popin équilibre : accepter ajoute les muscles en maintien', async ({ page }) => {
+test('popin équilibre : accepter ajoute les muscles à entretenir', async ({ page }) => {
   await page.goto('onboarding');
   await page.getByTestId('btn-next').click();
 
   // Sélection déséquilibrée : pectoraux seuls (push sans pull, pas de core).
-  await page.getByTestId('obj-pectoraux-hypertrophie').click();
+  await page.getByTestId('obj-pectoraux-developper').click();
   await page.getByTestId('btn-next').click();
 
   await expect(page.getByTestId('balance-dialog')).toBeVisible();
@@ -78,9 +78,9 @@ test('popin équilibre : accepter ajoute les muscles en maintien', async ({ page
 
   await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '3');
 
-  // Retour : les muscles acceptés apparaissent en maintien dans la liste.
+  // Retour : les muscles acceptés apparaissent « à entretenir » dans la liste.
   await page.getByTestId('btn-prev').click();
-  await expect(page.getByTestId('obj-dos_largeur-maintien')).toHaveAttribute(
+  await expect(page.getByTestId('obj-dos_largeur-entretenir')).toHaveAttribute(
     'aria-checked',
     'true',
   );
@@ -95,7 +95,7 @@ test('popin équilibre : refuser avance sans re-proposer', async ({ page }) => {
   await page.goto('onboarding');
   await page.getByTestId('btn-next').click();
 
-  await page.getByTestId('obj-pectoraux-hypertrophie').click();
+  await page.getByTestId('obj-pectoraux-developper').click();
   await page.getByTestId('btn-next').click();
   await expect(page.getByTestId('balance-dialog')).toBeVisible();
   await page.getByTestId('balance-decline').click();
