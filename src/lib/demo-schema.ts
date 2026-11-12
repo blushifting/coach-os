@@ -159,6 +159,7 @@ const serializedUserStateSchema = z.object({
   prescribed_load_floor: z.record(z.string(), z.number()).optional(),
   prescribed_reps_floor: z.record(z.string(), z.number()).optional(),
   rep_ranges: z.record(z.string(), z.string()).optional(),
+  plafond_model: z.number().int().optional(),
   // Chantier B — déload opt-in (absent des anciens snapshots, default null).
   deload_decision: z.enum(['accepted', 'declined']).nullable().optional(),
 });

@@ -15,6 +15,7 @@ import { muscleLabel, volumeScale } from '@/lib/progress';
 import { formatSets, markLabel, VolumeBar, VOLUME_TEXT } from '@/components/VolumeBar';
 import type { RepRangeSuggestion } from '@/engine/progression';
 import { RepRangeSuggestionCard } from './RepRangeSuggestionCard';
+import { plafondTrend } from '@/lib/session-runner';
 import type {
   PlafondChange,
   SessionMuscleVolume,
@@ -266,14 +267,12 @@ function chargeLabelOf(catalog: Catalog | null, exerciseId: string): string {
 /**
  * Conv #21 — Ligne d'évolution plafond pour un exo. Quatre rendus :
  *   - première calibration : "X kg · 1re mesure" (vert — on a un repère)
- *   - hausse : "X → Y kg (+Δ) ↑" (vert : progression)
- *   - stable : "X → Y kg →" (orange : plateau, on signale sans alarmer)
- *   - baisse : "X → Y kg (−Δ) ↓" (rouge : régression)
- *
- * Conv #24 (D11) — passage au code couleur feu tricolore (vert/orange/rouge),
- * aligné sur le bilan de cycle, et doublé d'une flèche de tendance pour ne pas
- * reposer sur la seule couleur (accessibilité). Avant, une hausse s'affichait
- * en sang (rouge) — contre-intuitif pour une bonne nouvelle.
+ *   - hausse d'au moins une rep : "X → Y kg (+Δ) ↑" (vert)
+ *   - moins d'une rep d'écart : "X → Y kg →" (gris : stable)
+ *   - baisse d'au moins une rep : "X → Y kg (−Δ) ↓" (ambre : avertissement)
+ * Dump 2.4, étape 5 (n° 17) — le seuil est une rep à la charge de la séance (avant :
+ * 0,05 kg), plus de rouge pour une seule séance. La flèche double la couleur
+ * (accessibilité). Une étoile signale un record (n° 9).
  */
 function PlafondRow({
   change,
@@ -284,16 +283,15 @@ function PlafondRow({
   name: string;
   chargeLabel: string;
 }) {
-  const { exerciseId, oldE, newE, deltaKg } = change;
+  const { exerciseId, oldE, newE, deltaKg, record } = change;
   const isFirst = oldE === null;
-  const isUp = deltaKg !== null && deltaKg > 0.05;
-  const isDown = deltaKg !== null && deltaKg < -0.05;
-  const trend: 'up' | 'down' | 'flat' = isUp ? 'up' : isDown ? 'down' : 'flat';
-  const toneClass = isUp
-    ? 'text-emerald-400'
-    : isDown
-      ? 'text-red-400'
-      : 'text-amber-400';
+  const trend = plafondTrend(change);
+  const toneClass =
+    trend === 'up'
+      ? 'text-emerald-400'
+      : trend === 'down'
+        ? 'text-amber-400'
+        : 'text-anthracite-300';
 
   return (
     <li
@@ -301,7 +299,14 @@ function PlafondRow({
       data-direction={isFirst ? 'first' : trend}
       className="flex items-baseline justify-between gap-2 text-sm"
     >
-      <span className="min-w-0 flex-1 truncate text-white">{name}</span>
+      <span className="min-w-0 flex-1 truncate text-white">
+        {name}
+        {record && (
+          <span className="ml-1.5 text-xs text-amber-300" data-testid={`plafond-record-${exerciseId}`}>
+            ★&nbsp;record
+          </span>
+        )}
+      </span>
       {isFirst ? (
         <span className="shrink-0 tabular-nums text-emerald-400">
           {newE.toFixed(1)} {chargeLabel} · 1re mesure

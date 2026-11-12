@@ -44,7 +44,7 @@ import {
   initialGrowthThresholds,
   isDeloadActive,
 } from '@/engine/volume';
-import { SuggestedAction, DurationCategory } from '@/engine/models';
+import { SuggestedAction, DurationCategory, PLAFOND_MODEL_VERSION } from '@/engine/models';
 import type {
   EquipmentOverride,
   MuscleGoal,
@@ -68,6 +68,7 @@ import {
   txCommitManualE1rm,
   txResetE1rm,
   txCommitSessionFeedback,
+  txReplacePlafonds,
   txEndOfCycle,
   txEndOfWeek,
   txInitUser,
@@ -77,6 +78,7 @@ import {
 } from '@/db/transactions';
 import { effectiveLoadForE1rm } from '@/engine/prescription';
 import { buildPrescription } from '@/engine/progression';
+import { replayPlafonds } from '@/engine/plafond-replay';
 import { clearLocalBackupFlags, requestBackup } from '@/lib/backup';
 import {
   importFromJsonString,
@@ -222,11 +224,12 @@ async function buildFullCatalog(): Promise<{
 export async function bootstrap(): Promise<void> {
   const store = useCoachOsStore.getState();
   if (store.bootstrapped) return;
-  const [{ catalog, customIds }, userState, history] = await Promise.all([
+  const [{ catalog, customIds }, loadedState, loadedHistory] = await Promise.all([
     buildFullCatalog(),
     loadUserState(),
     loadHistorySnapshot(),
   ]);
+  const { userState, history } = await migratePlafondModel(catalog, loadedState, loadedHistory);
   useCoachOsStore.setState({
     catalog,
     customExerciseIds: customIds,
@@ -235,6 +238,37 @@ export async function bootstrap(): Promise<void> {
     bootstrapped: true,
   });
   await tickWeekIfNeeded();
+}
+
+/**
+ * Dump 2.4, étape 5 — un historique mesuré avec un ancien calcul des Plafonds
+ * (base locale d'avant la 2.3.4, ancien export, ancienne sauvegarde en ligne)
+ * est recalculé une fois depuis ses séries, puis marqué à la version courante.
+ * Les séances ne sont pas touchées.
+ */
+async function migratePlafondModel(
+  catalog: Catalog,
+  userState: UserState | null,
+  history: HistorySnapshot,
+): Promise<{ userState: UserState | null; history: HistorySnapshot }> {
+  if (userState === null || userState.plafond_model >= PLAFOND_MODEL_VERSION) {
+    return { userState, history };
+  }
+  const result = replayPlafonds({
+    state: userState,
+    catalog,
+    feedbacks: history.feedbacks,
+    snapshots: history.e1rmSnapshots,
+    cycles: history.cycles,
+  });
+  const next: UserState = { ...userState, e1rm: result.e1rm, plafond_model: PLAFOND_MODEL_VERSION };
+  await txReplacePlafonds({
+    state: next,
+    snapshots: result.snapshots,
+    plafondsProgression: result.plafondsProgression,
+  });
+  requestBackup();
+  return { userState: next, history: await loadHistorySnapshot() };
 }
 
 /**
@@ -1216,9 +1250,6 @@ export async function recordFeedbackAndCommit(
 ): Promise<engine.RecordFeedbackResult> {
   const catalog = requireCatalog();
   const next = requireUserState();
-  // Bloc L : on passe le plan courant pour que le moteur détecte une charge
-  // soulevée plus lourd que la prescription (adoption décisive de l'e1RM).
-  const plan = useCoachOsStore.getState().currentSessionPlan;
   // Conv #16 : on identifie les exos déjà calibrés (= au moins un snapshot
   // e1RM en BDD avant cette séance) pour distinguer "1re séance" (skipEma)
   // de "séances suivantes" (EMA standard).
@@ -1229,10 +1260,7 @@ export async function recordFeedbackAndCommit(
   const isFirstFeedbackOfCycle = !useCoachOsStore
     .getState()
     .history.feedbacks.some((f) => f.cycle_index === feedback.cycle_index);
-  const summary = engine.recordFeedback(next, catalog, feedback, {
-    plan,
-    calibratedExoIds,
-  });
+  const summary = engine.recordFeedback(next, catalog, feedback, { calibratedExoIds });
   // Bloc R — ne snapshote (→ confidence 'measured') que les MAJ DÉFINITIVES :
   // une séance tout-4+ remonte l'e1RM (provisoire) mais ne marque pas l'exo
   // comme calibré (sinon le bandeau de calibration disparaîtrait à tort).
@@ -1444,11 +1472,12 @@ export async function importDataFromPayload(raw: unknown): Promise<void> {
  * séances qui les référencent pointent vers un exo inconnu).
  */
 async function reloadStoreAfterImport(): Promise<void> {
-  const [{ catalog, customIds }, userState, history] = await Promise.all([
+  const [{ catalog, customIds }, loadedState, loadedHistory] = await Promise.all([
     buildFullCatalog(),
     loadUserState(),
     loadHistorySnapshot(),
   ]);
+  const { userState, history } = await migratePlafondModel(catalog, loadedState, loadedHistory);
   useCoachOsStore.setState({
     catalog,
     customExerciseIds: customIds,

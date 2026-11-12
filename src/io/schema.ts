@@ -121,6 +121,8 @@ const userStateSchema = z
     // reste toléré (optionnel, ignoré) pour accepter les exports antérieurs.
     deload_strategy: z.union([z.null(), z.string()]).optional(),
     deload_decision: z.enum(['accepted', 'declined']).nullable().optional(),
+    // Dump 2.4, étape 5 — absent sur les exports antérieurs (Plafonds recalculés à l'import).
+    plafond_model: z.number().int().optional(),
   })
   .strict();
 

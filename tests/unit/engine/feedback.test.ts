@@ -1,43 +1,18 @@
 /**
- * Couvre : coefficient α de l'EMA, mise à jour e1RM (modèle unifié Bloc R :
- * définitif vs provisoire, Epley étendu), adoption décisive de charge (Bloc L).
+ * Couvre : lissage du Plafond, mise à jour e1RM (modèle unifié Bloc R :
+ * définitif vs provisoire, Epley étendu), pente par type d'exercice (dump 2.4, étape 5).
  */
 
 import { describe, expect, it } from 'vitest';
 
 import { Catalog } from '@/engine/catalog';
-import { computeAlpha, updateE1rmForExercise } from '@/engine/feedback';
+import { PLAFOND_SMOOTHING, updateE1rmForExercise } from '@/engine/feedback';
 import type { SetFeedback } from '@/engine/models';
+import { e1rmObserved, EPLEY_K, ISOLATION_K, slopeFor } from '@/engine/prescription';
 
 import { profileIntermediaireH, startUserStub } from './_helpers';
 
 const catalog = new Catalog();
-
-// =============================================================================
-// Coefficient alpha de l'EMA
-// =============================================================================
-
-describe('computeAlpha', () => {
-  it.each([
-    [3, 10], // n_eq=3, plus fiable
-    [5, 10], // n_eq=5, fiable
-    [8, 9], // n_eq=9, modéré
-    [10, 8], // n_eq=12 → bracket >10 → 0.10
-  ])('reps=%i rpe=%f → alpha dans [0.05, 0.35]', (reps, rpe) => {
-    const a = computeAlpha(reps, rpe);
-    expect(a).toBeGreaterThanOrEqual(0.05);
-    expect(a).toBeLessThanOrEqual(0.35);
-  });
-
-  it('Bloc R — n_eq > 15 → alpha plancher 0,1 (la mesure compte encore, en douceur)', () => {
-    expect(computeAlpha(15, 7)).toBe(0.1); // n_eq=18
-    expect(computeAlpha(20, 10)).toBe(0.1); // n_eq=20
-  });
-
-  it('série courte (3×10) > série longue (10×8)', () => {
-    expect(computeAlpha(3, 10)).toBeGreaterThan(computeAlpha(10, 8));
-  });
-});
 
 // =============================================================================
 // updateE1rmForExercise — modèle de mesure unifié
@@ -76,7 +51,7 @@ describe('updateE1rmForExercise', () => {
     const state = startUserStub(profileIntermediaireH());
     state.e1rm['bench_bb'] = 100;
     const ex = catalog.get('bench_bb');
-    // 50 kg × 20 RPE 7 → n_eq = 23 (avant : ignoré). e1rm_obs ≈ 88, EMA α=0,1.
+    // 50 kg × 20 RPE 7 → n_eq = 23 (avant : ignoré). e1rm_obs ≈ 88, lissé à PLAFOND_SMOOTHING.
     const fbs: SetFeedback[] = [
       { exercise_id: 'bench_bb', reps_done: 20, load_kg: 50, rpe_perceived: 7 },
     ];
@@ -97,7 +72,7 @@ describe('updateE1rmForExercise', () => {
     const fbs: SetFeedback[] = [
       { exercise_id: 'bench_bb', reps_done: 5, load_kg: 100, rpe_perceived: 8 },
     ];
-    const res = updateE1rmForExercise(state, ex, fbs, undefined, { skipEma: true });
+    const res = updateE1rmForExercise(state, ex, fbs, { skipEma: true });
     expect(res).not.toBeNull();
     expect(res!.old).toBe(75);
     expect(res!.next).toBeGreaterThan(120);
@@ -145,54 +120,44 @@ describe('updateE1rmForExercise', () => {
 });
 
 // =============================================================================
-// Bloc L — charge volontairement > préconisée (anti-rétrogradation)
+// Dump 2.4, étape 5 — plus d'adoption sans lissage, pente par type
 // =============================================================================
 
-describe('updateE1rmForExercise — charge > préconisée (Bloc L)', () => {
-  it('plus lourd que préco + reps dans la tolérance (≤2 sous cible) → adoption décisive', () => {
+describe('updateE1rmForExercise — lissage et pente (étape 5)', () => {
+  it('une charge plus lourde que d’habitude reste lissée (ancien Bloc L retiré)', () => {
     const state = startUserStub(profileIntermediaireH());
     state.e1rm['bench_bb'] = 100;
     const ex = catalog.get('bench_bb');
-    // Préco 80 kg × 10 ; l'user met 90 kg × 8 RPE 8 (2 reps sous la cible).
+    // 90 kg × 8 RPE 8 → observé ≈ 120 ; l'EMA n'en prend qu'une fraction.
     const fbs: SetFeedback[] = [
       { exercise_id: 'bench_bb', reps_done: 8, load_kg: 90, rpe_perceived: 8 },
     ];
-    const res = updateE1rmForExercise(state, ex, fbs, undefined, {
-      prescribed: { load_kg: 80, target_reps: 10 },
-    });
-    expect(res!.old).toBe(100);
-    expect(res!.next).toBeGreaterThan(115); // décisif, pas l'EMA amorti
+    const res = updateE1rmForExercise(state, ex, fbs);
+    expect(res!.next).toBeGreaterThan(100);
+    expect(res!.next).toBeLessThan(106);
   });
 
-  it('plus lourd mais reps trop basses (>2 sous la cible) → EMA amorti', () => {
+  it('isolation : la pente propre réduit l’écart entre deux charges de la même semaine', () => {
+    // Cas mesuré chez Azur (élévation latérale poulie) : 9 kg × 12 et 11 kg × 9,
+    // Réserve 0,5, sur les mêmes semaines.
+    const ex = catalog.get('cable_lateral_raise');
+    expect(slopeFor(ex)).toBe(ISOLATION_K);
+    expect(slopeFor(catalog.get('bench_bb'))).toBe(EPLEY_K);
+    const ecart = (k: number) => e1rmObserved(11, 9, 9.5, k) / e1rmObserved(9, 12, 9.5, k) - 1;
+    expect(ecart(EPLEY_K)).toBeGreaterThan(0.13);
+    expect(ecart(slopeFor(ex))).toBeLessThan(0.1);
+  });
+});
+
+describe('updateE1rmForExercise — fraction de lissage', () => {
+  it('le Plafond parcourt PLAFOND_SMOOTHING de l’écart avec la mesure', () => {
     const state = startUserStub(profileIntermediaireH());
     state.e1rm['bench_bb'] = 100;
     const ex = catalog.get('bench_bb');
-    // 90 kg mais seulement 6 reps vs cible 10 (4 sous la cible) → pas décisif.
-    const fbs: SetFeedback[] = [
-      { exercise_id: 'bench_bb', reps_done: 6, load_kg: 90, rpe_perceived: 8 },
-    ];
-    const res = updateE1rmForExercise(state, ex, fbs, undefined, {
-      prescribed: { load_kg: 80, target_reps: 10 },
-    });
-    expect(res!.next).toBeLessThan(108); // EMA, loin de l'e1RM observé
-  });
-
-  it('charge ≤ préconisée → EMA standard, identique à l’absence de prescribed', () => {
-    const ex = catalog.get('bench_bb');
-    const fbs: SetFeedback[] = [
-      { exercise_id: 'bench_bb', reps_done: 8, load_kg: 80, rpe_perceived: 8 },
-    ];
-    // Préco 100 kg : l'user met 80 (plus léger) → override ne se déclenche pas.
-    const s1 = startUserStub(profileIntermediaireH());
-    s1.e1rm['bench_bb'] = 130;
-    const withPresc = updateE1rmForExercise(s1, ex, fbs, undefined, {
-      prescribed: { load_kg: 100, target_reps: 10 },
-    })!.next;
-    const s2 = startUserStub(profileIntermediaireH());
-    s2.e1rm['bench_bb'] = 130;
-    const without = updateE1rmForExercise(s2, ex, fbs)!.next;
-    expect(withPresc).toBe(without);
-    expect(withPresc).toBeLessThan(130); // EMA a amorti, pas de max(old, …)
+    // 100 kg × 5 RPE 10 → mesure = 100 × (1 + 0,0333 × 5) = 116,65.
+    const res = updateE1rmForExercise(state, ex, [
+      { exercise_id: 'bench_bb', reps_done: 5, load_kg: 100, rpe_perceived: 10 },
+    ]);
+    expect(res!.next).toBeCloseTo(100 + PLAFOND_SMOOTHING * 16.65, 5);
   });
 });

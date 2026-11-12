@@ -795,7 +795,19 @@ export interface UserState {
    * de changement pour cet exercice.
    */
   rep_ranges: Record<string, RepRangeKey>;
+  /**
+   * Dump 2.4, étape 5 — version du calcul des Plafonds avec laquelle l'historique
+   * a été mesuré. Inférieure à `PLAFOND_MODEL_VERSION` : l'historique est
+   * recalculé une fois depuis les séries enregistrées (`plafond-replay.ts`).
+   */
+  plafond_model: number;
 }
+
+/**
+ * Version courante du calcul des Plafonds. 2 = pente par type d'exercice et plus
+ * d'adoption sans lissage quand la charge dépasse la prescription (dump 2.4, étape 5).
+ */
+export const PLAFOND_MODEL_VERSION = 2;
 
 /**
  * Dump 2.4, étape 4 — les trois fourchettes de reps (valeurs dans
@@ -823,5 +835,6 @@ export function makeUserState(profile: Profile): UserState {
     exercise_pick_counts: {},
     deload_decision: null,
     rep_ranges: {},
+    plafond_model: PLAFOND_MODEL_VERSION,
   };
 }

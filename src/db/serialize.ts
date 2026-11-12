@@ -88,6 +88,7 @@ export function serializeUserState(state: UserState): SerializedUserState {
     exercise_pick_counts: { ...(state.exercise_pick_counts ?? {}) },
     deload_decision: state.deload_decision ?? null,
     rep_ranges: { ...state.rep_ranges },
+    plafond_model: state.plafond_model,
   };
 }
 
@@ -135,5 +136,7 @@ export function deserializeUserState(s: SerializedUserState): UserState {
     rep_ranges: Object.fromEntries(
       Object.entries(s.rep_ranges ?? {}).filter(([, v]) => isRepRangeKey(v)),
     ) as UserState['rep_ranges'],
+    // Dump 2.4, étape 5 — absent = ancien calcul : l'historique sera recalculé.
+    plafond_model: s.plafond_model ?? 1,
   };
 }

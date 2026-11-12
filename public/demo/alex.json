@@ -2468,7 +2468,8 @@
     },
     "equipment_overrides": {},
     "weekly_volume_debt": {},
-    "deload_decision": null
+    "deload_decision": null,
+    "plafond_model": 2
   },
   "history": {
     "sessions": [

@@ -66,6 +66,7 @@ function makeState(overrides: Partial<UserState> = {}): UserState {
     current_cycle_plan: null,
     equipment_overrides: {},
     rep_ranges: {},
+    plafond_model: 2,
     ...overrides,
   };
 }

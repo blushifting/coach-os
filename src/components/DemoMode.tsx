@@ -105,12 +105,10 @@ const TOUR_STEPS: readonly TourStep[] = [
     title: "L'évolution des Plafonds",
     body: (
       <>
-        La progression d'Alex sur ses gros exercices. Les étoiles ★ marquent
-        les records perso (<Concept topic="plafond">Plafond</Concept> battu
-        d'au moins 2 kg). Quand la courbe creuse, ce n'est pas un recul&nbsp;:
-        soit la semaine a été plus dure (peu de Réserve, fatigue accumulée),
-        soit c'est une semaine de récupération qu'Alex a acceptée — Kotsh allège
-        alors les charges exprès pour faire redescendre la fatigue.
+        La progression du <Concept topic="plafond">Plafond</Concept> d'Alex,
+        exercice par exercice. Une étoile ★ marque un record perso&nbsp;: une
+        séance qui fait au moins 2&nbsp;reps de mieux que sa meilleure. Un
+        pointillé signale une pause de 3&nbsp;semaines ou plus.
       </>
     ),
     pointTo: '[data-testid="force-view"]',

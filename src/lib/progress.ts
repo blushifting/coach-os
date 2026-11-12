@@ -23,6 +23,7 @@ import { exercisePrimaires, MuscleIntention } from '@/engine/models';
 import { migrateMuscleGoalList } from '@/engine/intentions';
 import { VOLUME_HIGH_MARK, volumeMark } from '@/engine/volume';
 import { CYCLE_WEEKS, weekOfCycle } from '@/engine/cycle-week';
+import { recordDates } from '@/engine/feedback';
 import {
   addDays,
   dateKey,
@@ -529,14 +530,6 @@ export function formatCycleDates(start: string, end: string | null): string {
   return `${startStr} – ${endStr}`;
 }
 
-/** "11 mai" pour un YYYY-MM-DD. */
-export function formatWeekLabel(weekStart: string): string {
-  return parseDateKey(weekStart).toLocaleDateString('fr-FR', {
-    day: 'numeric',
-    month: 'short',
-  });
-}
-
 /**
  * Libellé court FR d'un muscle pour titres, listes et badges (Conv #14c-8).
  *
@@ -598,52 +591,21 @@ export function exerciseMusclesLabel(
 }
 
 // =============================================================================
-// Repères de changement de cycle (Conv #77) — partagés Force / Volume
-// =============================================================================
-
-export interface CycleBoundary {
-  /** Index du PREMIER point du nouveau cycle : le repère se pose juste avant. */
-  readonly index: number;
-  /** Numéro du cycle qui commence. */
-  readonly cycleIndex: number;
-}
-
-/**
- * Conv #77 — positions des changements de cycle dans une série de points déjà
- * ordonnée et déjà fenêtrée. Un changement de programme est le principal facteur
- * confondant à la lecture d'une courbe (exos substitués, volume réalloué,
- * semaine de récupération) : le repère permet de comparer À L'INTÉRIEUR d'un
- * bloc plutôt qu'au travers d'une discontinuité.
- *
- * Le premier point ne porte jamais de repère (rien à délimiter à gauche), et les
- * points sans cycle connu (`null`) n'en ouvrent pas.
- */
-export function cycleBoundaries(
-  points: ReadonlyArray<{ readonly cycleIndex: number | null }>,
-): CycleBoundary[] {
-  const out: CycleBoundary[] = [];
-  for (let i = 1; i < points.length; i++) {
-    const cur = points[i]!.cycleIndex;
-    if (cur === null || cur === points[i - 1]!.cycleIndex) continue;
-    out.push({ index: i, cycleIndex: cur });
-  }
-  return out;
-}
-
-// =============================================================================
-// Historique des plafonds (Conv #11g — onglet Progrès / Force)
+// Courbe Force (onglet Progrès) — dump 2.4, étape 5
 // =============================================================================
 
 export interface E1rmPoint {
   /** seance_date au format YYYY-MM-DD (clé d'agrégation). */
   readonly date: string;
-  /** Plafond estimé sur la meilleure série de cette date pour cet exo. */
+  /** Plafond après la séance de cette date. */
   readonly e1rm: number;
-  /**
-   * Conv #77 — cycle de la mesure (porté par le snapshot, aucun recoupement de
-   * dates nécessaire). Sert aux repères verticaux de changement de cycle.
-   */
+  /** Cycle de la mesure (porté par l'instantané). */
   readonly cycleIndex: number;
+  /**
+   * Dump 2.4, étape 5 (n° 9) — la séance de cette date bat la meilleure mesure
+   * passée de l'exercice d'au moins deux reps (`recordDates`).
+   */
+  readonly record: boolean;
 }
 
 export interface ExerciseE1rmSeries {
@@ -664,35 +626,24 @@ export interface ExerciseE1rmSeries {
 }
 
 /**
- * #63 — Historique du Plafond (onglet Force) construit à partir des SNAPSHOTS
- * e1RM persistés (`e1rmSnapshots`) plutôt que recalculé depuis les feedbacks.
+ * #63 — Historique du Plafond (onglet Force) construit à partir des instantanés
+ * persistés (`e1rmSnapshots`) : la valeur EXACTE du Plafond après chaque mesure
+ * définitive, la même que le bilan de séance. Les records se lisent, eux, sur
+ * les séries, avant lissage (`recordDates`).
  *
- * Un snapshot stocke la valeur EXACTE de `state.e1rm[exo]` (plafond EMA) au
- * moment de chaque mesure définitive — la même valeur que le bilan de fin de
- * séance affiche et que la prescription utilise. La courbe colle donc au reste
- * de l'app. L'ancienne `computeE1rmHistory` recalculait un e1RM Epley brut sur
- * la meilleure série de chaque séance, une mesure DIFFÉRENTE qui pouvait monter
- * là où le bilan disait que le plafond baissait (EMA lissée).
+ * Mises à jour provisoires (séance trop facile) : pas d'instantané, donc pas de
+ * point. Une saisie manuelle de Plafond en crée un.
  *
- * Déloads et séances "trop faciles" (mises à jour provisoires) ne créent pas de
- * snapshot → naturellement exclus. Une saisie manuelle de plafond en crée un →
- * elle apparaît sur la courbe. Valeurs gardées en flottant (pas d'arrondi).
- *
- * Ne renvoie que les exos avec ≥ 2 points (une courbe a besoin de 2 mesures).
- *
- * B-1/B-2 (dump 2.2.0) — tri par **date de la dernière mesure décroissante** :
- * ce que tu viens de travailler est en haut. L'ancien tri (nombre de points
- * décroissant) remontait mécaniquement les exos de longue date et enterrait les
- * nouveaux. **Aucune troncature ici** : l'ancien `topN = 8` écartait silencieu-
- * sement la majorité d'un catalogue réel (~20 exos) ; c'est désormais à l'UI de
- * paginer, en montrant qu'il y a une suite.
+ * Ne renvoie que les exos avec ≥ 2 points. Tri par date de la dernière mesure
+ * décroissante (B-1/B-2 du dump 2.2.0) ; aucune troncature, l'UI pagine.
  */
 export function computeE1rmSeriesFromSnapshots(
   snapshots: ReadonlyArray<E1rmSnapshotRow>,
   catalog: Catalog,
+  feedbacks: ReadonlyArray<FeedbackRow>,
+  bodyweightKg: number,
 ): ExerciseE1rmSeries[] {
-  // Un seul point par (exo, date) : le dernier snapshot de la journée fait foi
-  // (valeur la plus à jour du plafond). `snapshots` arrive trié par date.
+  // Un seul point par (exo, date) : le dernier instantané de la journée fait foi.
   const byExo = new Map<string, Map<string, { e1rm: number; cycleIndex: number }>>();
   for (const snap of snapshots) {
     if (!Number.isFinite(snap.e1rm) || snap.e1rm <= 0) continue;
@@ -705,25 +656,25 @@ export function computeE1rmSeriesFromSnapshots(
     inner.set(snap.date, { e1rm: snap.e1rm, cycleIndex: snap.cycle_index });
   }
 
+  const sessions = feedbacks.map((r) => ({ seance_date: r.seance_date, sets: r.feedback.sets }));
   const result: ExerciseE1rmSeries[] = [];
   for (const [exId, dateMap] of byExo) {
     if (dateMap.size < 2) continue;
     const exercise = catalog.get(exId);
+    const records = recordDates(
+      sessions.filter((s) => s.sets.some((f) => f.exercise_id === exId)),
+      exercise,
+      bodyweightKg,
+    );
     const points: E1rmPoint[] = [...dateMap.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, v]) => ({ date, e1rm: v.e1rm, cycleIndex: v.cycleIndex }));
-    const initial = points[0]!.e1rm;
-    const current = points[points.length - 1]!.e1rm;
-    const deltaPct = initial > 0 ? (current / initial - 1) * 100 : 0;
-    result.push({
-      exercise_id: exId,
-      nom_fr: exercise.nom_fr,
-      points,
-      current,
-      initial,
-      deltaPct,
-      charge: exercise.charge,
-    });
+      .map(([date, v]) => ({
+        date,
+        e1rm: v.e1rm,
+        cycleIndex: v.cycleIndex,
+        record: records.has(date),
+      }));
+    result.push(seriesOf(exId, exercise.nom_fr, exercise.charge, points));
   }
 
   result.sort((a, b) => {
@@ -731,12 +682,133 @@ export function computeE1rmSeriesFromSnapshots(
     const lastA = a.points[a.points.length - 1]!.date;
     const lastB = b.points[b.points.length - 1]!.date;
     if (lastA !== lastB) return lastB.localeCompare(lastA);
-    // Départages stables : plus de points mesurés, puis plafond le plus lourd.
-    if (b.points.length !== a.points.length) return b.points.length - a.points.length;
     if (b.current !== a.current) return b.current - a.current;
     return a.exercise_id.localeCompare(b.exercise_id);
   });
   return result;
+}
+
+function seriesOf(
+  exerciseId: string,
+  nom: string,
+  charge: ChargeType,
+  points: E1rmPoint[],
+): ExerciseE1rmSeries {
+  const initial = points[0]!.e1rm;
+  const current = points[points.length - 1]!.e1rm;
+  return {
+    exercise_id: exerciseId,
+    nom_fr: nom,
+    points,
+    current,
+    initial,
+    deltaPct: initial > 0 ? (current / initial - 1) * 100 : 0,
+    charge,
+  };
+}
+
+/**
+ * Dump 2.4, étape 5 (n° 21) — périodes de l'onglet Force : en nombre de séances
+ * (propre à chaque exercice), en mois, sur le cycle en cours (communes à toutes
+ * les cartes), ou tout l'historique.
+ */
+export const FORCE_WINDOW_DAYS = 91;
+export const FORCE_WINDOW_SESSIONS = 12;
+
+/** Garde les `count` dernières mesures de chaque série. */
+export function lastForceSeries(
+  series: ReadonlyArray<ExerciseE1rmSeries>,
+  count: number,
+): ExerciseE1rmSeries[] {
+  return series.map((s) =>
+    s.points.length <= count
+      ? s
+      : seriesOf(s.exercise_id, s.nom_fr, s.charge, s.points.slice(-count)),
+  );
+}
+
+/**
+ * Restreint les séries aux mesures faites depuis `fromDate` (incluse). Une série
+ * qui garde moins de deux points sort de la liste ; la variation en % se calcule
+ * sur la période gardée.
+ */
+export function windowForceSeries(
+  series: ReadonlyArray<ExerciseE1rmSeries>,
+  fromDate: string,
+): ExerciseE1rmSeries[] {
+  const out: ExerciseE1rmSeries[] = [];
+  for (const s of series) {
+    const points = s.points.filter((p) => p.date >= fromDate);
+    if (points.length < 2) continue;
+    out.push(seriesOf(s.exercise_id, s.nom_fr, s.charge, points));
+  }
+  return out;
+}
+
+/**
+ * Dump 2.4, étape 5 (n° 21) — à partir de cet écart entre deux mesures, le
+ * segment de courbe est dessiné en pointillé avec sa durée. Sur l'export d'Azur
+ * du 11/11, 90 % des écarts entre deux mesures d'un exercice font moins de
+ * 26 jours (médiane : 4) ; au-delà, c'est un exercice sorti du programme.
+ */
+export const FORCE_GAP_DAYS = 21;
+
+export interface ForceChartLayout {
+  /** Position horizontale de chaque point, de 0 (début de l'axe) à 1 (fin). */
+  readonly xs: readonly number[];
+  /** Segments longs : index du point d'arrivée et durée en semaines (arrondie). */
+  readonly gaps: ReadonlyArray<{ readonly index: number; readonly weeks: number }>;
+  /** Débuts de cycle tombant sur l'axe. */
+  readonly cycleMarks: ReadonlyArray<{ readonly x: number; readonly cycleIndex: number }>;
+  /** Premiers du mois tombant sur l'axe, avec leur libellé court (« oct. »). */
+  readonly monthTicks: ReadonlyArray<{ readonly x: number; readonly label: string }>;
+}
+
+const DAY_MS = 86_400_000;
+const dayNumber = (key: string): number => Math.round(parseDateKey(key).getTime() / DAY_MS);
+
+/**
+ * Dump 2.4, étape 5 (n° 21) — géométrie de l'axe du temps d'une courbe Force.
+ * L'axe va de `from` à `to` à l'échelle réelle : une pause garde sa vraie
+ * longueur (décision d'Azur : rester fidèle à la chronologie).
+ */
+export function forceChartLayout(
+  points: ReadonlyArray<{ readonly date: string }>,
+  from: string,
+  to: string,
+  cycleStarts: ReadonlyArray<{ readonly cycle_index: number; readonly start_date: string }>,
+): ForceChartLayout {
+  const d0 = dayNumber(from);
+  const span = Math.max(1, dayNumber(to) - d0);
+  const xOf = (key: string) => Math.min(1, Math.max(0, (dayNumber(key) - d0) / span));
+
+  const gaps: { index: number; weeks: number }[] = [];
+  for (let i = 1; i < points.length; i++) {
+    const days = dayNumber(points[i]!.date) - dayNumber(points[i - 1]!.date);
+    if (days >= FORCE_GAP_DAYS) gaps.push({ index: i, weeks: Math.round(days / 7) });
+  }
+
+  const monthTicks: { x: number; label: string }[] = [];
+  const cursor = parseDateKey(from);
+  cursor.setDate(1);
+  for (;;) {
+    cursor.setMonth(cursor.getMonth() + 1);
+    const key = dateKey(cursor);
+    if (key > to) break;
+    monthTicks.push({
+      x: xOf(key),
+      label: cursor.toLocaleDateString('fr-FR', { month: 'short' }),
+    });
+  }
+
+  return {
+    xs: points.map((p) => xOf(p.date)),
+    gaps,
+    cycleMarks: cycleStarts
+      .filter((c) => c.cycle_index > 1 && c.start_date > from && c.start_date <= to)
+      .map((c) => ({ x: xOf(c.start_date), cycleIndex: c.cycle_index })),
+    monthTicks,
+  };
 }
 
 // =============================================================================

@@ -11,11 +11,13 @@ import {
   computeCycleVolume,
   computeE1rmSeriesFromSnapshots,
   computeLastWorkedByMuscle,
-  cycleBoundaries,
+  FORCE_GAP_DAYS,
+  forceChartLayout,
+  lastForceSeries,
+  windowForceSeries,
   displayMark,
   exerciseLabel,
   formatCycleDates,
-  formatWeekLabel,
   muscleLabel,
   volumeScale,
 } from '@/lib/progress';
@@ -111,6 +113,7 @@ function makeState(overrides: Partial<UserState> = {}): UserState {
     current_cycle_plan: null,
     equipment_overrides: {},
     rep_ranges: {},
+    plafond_model: 2,
     ...overrides,
   };
 }
@@ -516,7 +519,7 @@ describe('computeE1rmSeriesFromSnapshots', () => {
   const cat = makeCatalog();
 
   it('ne renvoie pas un exo avec un seul snapshot (pas de courbe)', () => {
-    expect(computeE1rmSeriesFromSnapshots([snap('2026-05-01', 'bp', 100)], cat)).toEqual([]);
+    expect(computeE1rmSeriesFromSnapshots([snap('2026-05-01', 'bp', 100)], cat, [], 75)).toEqual([]);
   });
 
   it('trace le plafond persisté tel quel (float, sans arrondi) — baisse suivie', () => {
@@ -524,7 +527,7 @@ describe('computeE1rmSeriesFromSnapshots', () => {
       snap('2026-05-01', 'bp', 100.4),
       snap('2026-05-08', 'bp', 98.7), // le plafond EMA a BAISSÉ → la courbe suit
     ];
-    const series = computeE1rmSeriesFromSnapshots(snaps, cat);
+    const series = computeE1rmSeriesFromSnapshots(snaps, cat, [], 75);
     expect(series).toHaveLength(1);
     expect(series[0]!.points.map((p) => p.e1rm)).toEqual([100.4, 98.7]);
     expect(series[0]!.initial).toBe(100.4);
@@ -538,15 +541,15 @@ describe('computeE1rmSeriesFromSnapshots', () => {
       snap('2026-05-01', 'bp', 100),
       snap('2026-05-08', 'bp', 105), // même date, plus récent → fait foi
     ];
-    const series = computeE1rmSeriesFromSnapshots(snaps, cat);
+    const series = computeE1rmSeriesFromSnapshots(snaps, cat, [], 75);
     expect(series[0]!.points).toHaveLength(2);
-    expect(series[0]!.points[0]).toEqual({ date: '2026-05-01', e1rm: 100, cycleIndex: 1 });
-    expect(series[0]!.points[1]).toEqual({ date: '2026-05-08', e1rm: 105, cycleIndex: 1 });
+    expect(series[0]!.points[0]).toEqual({ date: '2026-05-01', e1rm: 100, cycleIndex: 1, record: false });
+    expect(series[0]!.points[1]).toEqual({ date: '2026-05-08', e1rm: 105, cycleIndex: 1, record: false });
   });
 
   it('ignore les exos absents du catalogue', () => {
     const snaps = [snap('2026-05-01', 'inconnu', 50), snap('2026-05-08', 'inconnu', 55)];
-    expect(computeE1rmSeriesFromSnapshots(snaps, cat)).toEqual([]);
+    expect(computeE1rmSeriesFromSnapshots(snaps, cat, [], 75)).toEqual([]);
   });
 
   // B-1/B-2 (dump 2.2.0)
@@ -561,7 +564,7 @@ describe('computeE1rmSeriesFromSnapshots', () => {
       snap('2026-05-20', 'curl', 30),
       snap('2026-05-27', 'curl', 32),
     ];
-    const series = computeE1rmSeriesFromSnapshots(snaps, cat);
+    const series = computeE1rmSeriesFromSnapshots(snaps, cat, [], 75);
     expect(series.map((s) => s.exercise_id)).toEqual(['curl', 'bp']);
   });
 
@@ -573,7 +576,7 @@ describe('computeE1rmSeriesFromSnapshots', () => {
       many.push(makeExercise(id, { pectoraux: 1.0 }));
       snaps.push(snap('2026-05-01', id, 50 + i), snap('2026-05-08', id, 51 + i));
     }
-    const series = computeE1rmSeriesFromSnapshots(snaps, new Catalog(many));
+    const series = computeE1rmSeriesFromSnapshots(snaps, new Catalog(many), [], 75);
     expect(series).toHaveLength(12);
   });
 });
@@ -624,10 +627,6 @@ describe('helpers formatage', () => {
   it('formatCycleDates : avec fin = plage, sans fin = "depuis le X"', () => {
     expect(formatCycleDates('2026-04-12', '2026-05-17')).toContain('avr');
     expect(formatCycleDates('2026-04-12', null)).toContain('depuis');
-  });
-
-  it('formatWeekLabel : restitue la date FR courte', () => {
-    expect(formatWeekLabel('2026-05-11')).toMatch(/mai/);
   });
 
   it('exerciseLabel : nom_fr du catalogue, fallback id', () => {
@@ -781,27 +780,70 @@ describe('repère affiché et statut ne se contredisent pas (bug lombaires #77)'
   });
 });
 
-describe('cycleBoundaries', () => {
-  it('repère chaque changement de cycle, jamais sur le premier point', () => {
-    expect(
-      cycleBoundaries([
-        { cycleIndex: 1 },
-        { cycleIndex: 1 },
-        { cycleIndex: 2 },
-        { cycleIndex: 2 },
-        { cycleIndex: 3 },
-      ]),
-    ).toEqual([
-      { index: 2, cycleIndex: 2 },
-      { index: 4, cycleIndex: 3 },
+// =============================================================================
+// Courbe Force : records, fenêtre en temps, axe du temps (dump 2.4, étape 5)
+// =============================================================================
+
+function benchSession(date: string, reps: number): FeedbackRow {
+  return {
+    seance_date: date,
+    cycle_index: 1,
+    week_in_cycle: 1,
+    session_id: null,
+    created_at: date,
+    feedback: {
+      seance_date: date,
+      week_in_cycle: 1,
+      cycle_index: 1,
+      rpe_target: 8,
+      label: 'A',
+      sets: [{ exercise_id: 'bp', reps_done: reps, load_kg: 100, rpe_perceived: 9 }],
+    },
+  };
+}
+
+describe('courbe Force — étape 5', () => {
+  const cat = makeCatalog();
+
+  it('étoile sur la séance qui bat la meilleure mesure passée de deux reps', () => {
+    const snaps = [snap('2026-05-01', 'bp', 120), snap('2026-05-08', 'bp', 121), snap('2026-05-15', 'bp', 123)];
+    const fbs = [benchSession('2026-05-01', 6), benchSession('2026-05-08', 7), benchSession('2026-05-15', 9)];
+    const [series] = computeE1rmSeriesFromSnapshots(snaps, cat, fbs, 75);
+    // 7 reps contre 6 : une seule de mieux ; 9 contre 7 : deux de mieux.
+    expect(series!.points.map((p) => p.record)).toEqual([false, false, true]);
+  });
+
+  it('12 dernières séances : garde les dernières mesures de chaque exercice', () => {
+    const snaps = Array.from({ length: 15 }, (_, i) =>
+      snap(`2026-05-${String(i + 1).padStart(2, '0')}`, 'bp', 100 + i),
+    );
+    const [last] = lastForceSeries(computeE1rmSeriesFromSnapshots(snaps, cat, [], 75), 12);
+    expect(last!.points).toHaveLength(12);
+    expect(last!.initial).toBe(103);
+  });
+
+  it('la fenêtre garde les mesures récentes et recalcule la variation', () => {
+    const snaps = [snap('2026-01-10', 'bp', 80), snap('2026-04-01', 'bp', 100), snap('2026-05-01', 'bp', 110), snap('2026-05-01', 'curl', 30), snap('2026-01-01', 'curl', 25)];
+    const series = computeE1rmSeriesFromSnapshots(snaps, cat, [], 75);
+    const recent = windowForceSeries(series, '2026-03-01');
+    // curl n'a plus qu'un point dans la fenêtre : il n'apparaît que dans « Tout ».
+    expect(recent.map((s) => s.exercise_id)).toEqual(['bp']);
+    expect(recent[0]!.initial).toBe(100);
+    expect(recent[0]!.deltaPct).toBeCloseTo(10, 5);
+  });
+
+  it('axe du temps à l’échelle réelle, pauses repérées, mois et cycles placés', () => {
+    const points = [{ date: '2026-09-01' }, { date: '2026-09-08' }, { date: '2026-10-13' }];
+    const layout = forceChartLayout(points, '2026-08-14', '2026-11-13', [
+      { cycle_index: 1, start_date: '2026-07-06' },
+      { cycle_index: 2, start_date: '2026-09-14' },
     ]);
-  });
-
-  it('série d’un seul cycle → aucun repère', () => {
-    expect(cycleBoundaries([{ cycleIndex: 1 }, { cycleIndex: 1 }])).toEqual([]);
-  });
-
-  it('cycle inconnu (null) → n’ouvre pas de repère', () => {
-    expect(cycleBoundaries([{ cycleIndex: null }, { cycleIndex: null }])).toEqual([]);
+    expect(layout.xs[0]).toBeCloseTo(18 / 91, 5);
+    expect(layout.xs[2]).toBeCloseTo(60 / 91, 5);
+    // 35 jours entre le 8/09 et le 13/10 : au-delà du seuil, 5 semaines.
+    expect(FORCE_GAP_DAYS).toBe(21);
+    expect(layout.gaps).toEqual([{ index: 2, weeks: 5 }]);
+    expect(layout.cycleMarks).toEqual([{ x: 31 / 91, cycleIndex: 2 }]);
+    expect(layout.monthTicks.map((m) => m.label)).toEqual(['sept.', 'oct.', 'nov.']);
   });
 });

@@ -32,7 +32,7 @@ import type {
 } from './models';
 import { ChargeType, makeUserState } from './models';
 import {
-  EPLEY_K,
+  slopeFor,
   effectiveIncrement,
   effectiveLoadForE1rm,
   effectivePdcOnly,
@@ -282,7 +282,7 @@ export function predictedReps(
   if (e1rmTotal === null || !(e1rmTotal > 0)) return range.low;
   const total = effectiveLoadForE1rm(extLoad, exercise, bodyweightKg);
   if (!(total > 0)) return range.high;
-  const nEq = (e1rmTotal / total - 1) / EPLEY_K;
+  const nEq = (e1rmTotal / total - 1) / slopeFor(exercise);
   const reps = Math.round(nEq - (10 - INTERNAL_RPE));
   return Math.max(range.low, Math.min(range.high, reps));
 }
@@ -354,7 +354,7 @@ export function sessionTarget(args: SessionTargetArgs): ProgressionTarget {
   if (ref === null) {
     // Exercice jamais fait : charge estimée depuis le Plafond, au milieu de la fourchette.
     const reps = Math.round((range.low + range.high) / 2);
-    const total = targetLoad(e1rmTotal, reps, INTERNAL_RPE);
+    const total = targetLoad(e1rmTotal, reps, INTERNAL_RPE, slopeFor(exercise));
     const load = Math.max(0, roundToIncrement(externalLoadFromE1rm(total, exercise, bw), inc));
     target = { load_kg: load, reps };
   } else {
@@ -409,7 +409,7 @@ function firstBodyweightReps(
   if (state.e1rm[exercise.id] === undefined || !(bw > 0)) return range.low;
   const ratio = e1rmTotal / bw;
   if (ratio <= 1) return range.low;
-  const reps = Math.round((ratio - 1) / EPLEY_K - (10 - INTERNAL_RPE));
+  const reps = Math.round((ratio - 1) / slopeFor(exercise) - (10 - INTERNAL_RPE));
   return Math.max(1, Math.min(BODYWEIGHT_REPS_CAP, reps));
 }
 

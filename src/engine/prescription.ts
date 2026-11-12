@@ -11,10 +11,32 @@
  */
 
 import type { Exercise, UserState } from './models';
-import { ChargeType } from './models';
+import { ChargeType, ExType } from './models';
 
-// Constante d'Epley standard (LeSuer 1997, Wood 2002).
+// Constante d'Epley standard (LeSuer 1997, Wood 2002) : pente des polyarticulaires.
 export const EPLEY_K = 0.0333;
+
+/**
+ * Dump 2.4, étape 5 (n° 4, n° 11) — pente des exercices d'isolation.
+ *
+ * À pourcentage égal du max, on fait moins de reps sur un exercice qui mobilise
+ * peu de muscle (Shimano et Kraemer 2006 ; Nuzzo et al. 2024 : la relation
+ * reps–charge dépend de l'exercice) : une rep y « vaut » une plus grande part de
+ * la charge. La littérature donne le sens, pas la valeur. 0,06 est la médiane de
+ * 216 comparaisons de séries à deux charges (à moins de 4 jours d'écart) sur cinq
+ * exercices d'isolation de l'export d'Azur du 11/11 ; la même mesure donne 0,030
+ * sur ses polyarticulaires, soit la valeur d'Epley. Avec 0,0333, l'élévation
+ * latérale poulie donnait un Plafond 12 % plus haut à 11 kg qu'à 9 kg sur les
+ * mêmes semaines. La pente corrige aussi la sous-estimation de la Réserve sur
+ * les séries longues (Halperin et al. 2022), puisqu'elle s'applique à la
+ * Réserve déclarée.
+ */
+export const ISOLATION_K = 0.06;
+
+/** Pente reps–charge de l'exercice, selon son type. */
+export function slopeFor(exercise: Exercise): number {
+  return exercise.type === ExType.ISOLATION ? ISOLATION_K : EPLEY_K;
+}
 
 // =============================================================================
 // 1. e1RM observé à partir d'une série réalisée

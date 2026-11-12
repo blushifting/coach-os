@@ -6,9 +6,14 @@ import {
   buildMusclesOf,
   computeCycleVolume,
   computeE1rmSeriesFromSnapshots,
+  FORCE_WINDOW_DAYS,
+  FORCE_WINDOW_SESSIONS,
+  lastForceSeries,
+  type ExerciseE1rmSeries,
+  windowForceSeries,
   computeLastWorkedByMuscle,
 } from '@/lib/progress';
-import { dateKey } from '@/lib/dashboard';
+import { addDays, dateKey, parseDateKey } from '@/lib/dashboard';
 import { weekOfCycle } from '@/engine/cycle-week';
 import { useCoachOsStore } from '@/store';
 import { useToday } from '@/store/selectors';
@@ -38,14 +43,6 @@ function parseTab(raw: string | null): Tab | null {
 }
 
 /**
- * #12 (E-3) — fenêtre glissante par défaut de l'onglet Force : nombre max de
- * points affichés par courbe, les plus récents. Sans borne, une courbe accumule
- * tous ses points depuis le début (40-50 après quelques cycles, illisibles).
- * Le compteur « N séances » de chaque carte garde, lui, le total réel.
- */
-const FORCE_WINDOW_POINTS = 12;
-
-/**
  * Onglet Progrès — Conv #6a, fusion Couverture+Volume Conv #17.
  *
  * 3 vues navigables par tabs :
@@ -62,10 +59,10 @@ export default function ProgresPage() {
   const today = useToday();
   const [search] = useSearchParams();
   const [tab, setTab] = useState<Tab>(() => parseTab(search.get('tab')) ?? 'volume');
-  // B-3 — échelle de temps des courbes Force. Un seul réglage pour tout
-  // l'écran plutôt qu'un sélecteur par carte. (L'onglet Volume se lit par cycle
-  // depuis l'étape 3 du dump 2.4.)
-  const [fullHistory, setFullHistory] = useState(false);
+  // B-3 — période des courbes Force. Un seul réglage pour tout l'écran plutôt
+  // qu'un sélecteur par carte. (L'onglet Volume se lit par cycle depuis l'étape 3
+  // du dump 2.4.)
+  const [forceRange, setForceRange] = useState<ForceRange>('months');
 
   // Conv #66 — sens du glissement : on entre par la droite quand on va vers un
   // onglet situé plus à droite. `prevTabIdx` n'est mis à jour qu'en effet (donc
@@ -112,7 +109,16 @@ export default function ProgresPage() {
       cycles: buildCycleHistory(history.cycles),
       // #63 — la courbe Force lit désormais les SNAPSHOTS e1RM (= plafond du
       // bilan de séance), pas un recalcul Epley brut des feedbacks.
-      force: computeE1rmSeriesFromSnapshots(history.e1rmSnapshots, catalog),
+      force: computeE1rmSeriesFromSnapshots(
+        history.e1rmSnapshots,
+        catalog,
+        history.feedbacks,
+        userState.profile.bodyweight_kg,
+      ),
+      // Dump 2.4, étape 5 (n° 21) — périodes à axe du temps commun.
+      monthsFrom: dateKey(addDays(parseDateKey(todayKey), -FORCE_WINDOW_DAYS)),
+      cycleFrom: currentCycle?.start_date ?? todayKey,
+      todayKey,
     };
   }, [userState, catalog, history, today]);
 
@@ -151,20 +157,16 @@ export default function ProgresPage() {
       {tab === 'force' && (
         <div className="flex justify-end" data-testid="progres-range">
           <div className="inline-flex gap-0.5 rounded-lg bg-anthracite-900 p-0.5">
-            <RangeButton
-              active={!fullHistory}
-              onClick={() => setFullHistory(false)}
-              testId="range-recent"
-            >
-              {`${FORCE_WINDOW_POINTS} dernières séances`}
-            </RangeButton>
-            <RangeButton
-              active={fullHistory}
-              onClick={() => setFullHistory(true)}
-              testId="range-all"
-            >
-              Tout l'historique
-            </RangeButton>
+            {FORCE_RANGES.map((r) => (
+              <RangeButton
+                key={r.id}
+                active={forceRange === r.id}
+                onClick={() => setForceRange(r.id)}
+                testId={`range-${r.id}`}
+              >
+                {r.label}
+              </RangeButton>
+            ))}
           </div>
         </div>
       )}
@@ -190,15 +192,54 @@ export default function ProgresPage() {
           />
         )}
         {tab === 'force' && (
-          <ForceView
-            series={data.force}
-            windowPoints={fullHistory ? null : FORCE_WINDOW_POINTS}
-          />
+          <ForceView {...forceViewData(forceRange, data)} cycleStarts={history.cycles} />
         )}
         {tab === 'cycles' && <CyclesView items={data.cycles} catalog={catalog} />}
       </div>
     </section>
   );
+}
+
+/** Dump 2.4, étape 5 (n° 21) — une période en séances, en mois, en cycle, et tout. */
+type ForceRange = 'sessions' | 'months' | 'cycle' | 'all';
+
+const FORCE_RANGES: ReadonlyArray<{ id: ForceRange; label: ReactNode }> = [
+  { id: 'sessions', label: <>{FORCE_WINDOW_SESSIONS}&nbsp;séances</> },
+  { id: 'months', label: <>3&nbsp;mois</> },
+  { id: 'cycle', label: 'Ce cycle' },
+  { id: 'all', label: 'Tout' },
+];
+
+/**
+ * Séries et axe du temps selon la période. En séances et sur tout l'historique,
+ * chaque courbe va de sa première à sa dernière mesure ; en mois et sur le cycle,
+ * l'axe est commun à toutes les cartes et va jusqu'à aujourd'hui.
+ */
+function forceViewData(
+  range: ForceRange,
+  data: {
+    force: ExerciseE1rmSeries[];
+    monthsFrom: string;
+    cycleFrom: string;
+    todayKey: string;
+  },
+): { series: ExerciseE1rmSeries[]; axis: { from: string; to: string } | null } {
+  switch (range) {
+    case 'sessions':
+      return { series: lastForceSeries(data.force, FORCE_WINDOW_SESSIONS), axis: null };
+    case 'months':
+      return {
+        series: windowForceSeries(data.force, data.monthsFrom),
+        axis: { from: data.monthsFrom, to: data.todayKey },
+      };
+    case 'cycle':
+      return {
+        series: windowForceSeries(data.force, data.cycleFrom),
+        axis: { from: data.cycleFrom, to: data.todayKey },
+      };
+    case 'all':
+      return { series: data.force, axis: null };
+  }
 }
 
 interface RangeButtonProps {

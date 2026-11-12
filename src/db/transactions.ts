@@ -8,7 +8,7 @@
  */
 
 import type { CycleReview, SessionFeedback, SessionPlan, UserState } from '@/engine/models';
-import { getDb } from './schema';
+import { getDb, type E1rmSnapshotRow } from './schema';
 import { serializeUserState } from './serialize';
 
 const SINGLETON_ID = 1 as const;
@@ -330,5 +330,36 @@ export async function txEndOfCycle(args: EndOfCycleArgs): Promise<void> {
       .equals(closedCycleIndex)
       .and((s) => s.status === 'planned')
       .delete();
+  });
+}
+
+// =============================================================================
+// Dump 2.4, étape 5 — remplacement des Plafonds après recalcul de l'historique.
+// Les séances et leurs séries ne sont pas touchées : seuls les Plafonds, leurs
+// instantanés et les écarts de Plafond des bilans de cycle archivés changent.
+// =============================================================================
+
+export interface ReplacePlafondsArgs {
+  state: UserState;
+  snapshots: ReadonlyArray<Omit<E1rmSnapshotRow, 'id'>>;
+  plafondsProgression: Readonly<Record<number, Record<string, number>>>;
+}
+
+export async function txReplacePlafonds(args: ReplacePlafondsArgs): Promise<void> {
+  const { state, snapshots, plafondsProgression } = args;
+  const db = getDb();
+  await db.transaction('rw', [db.userState, db.e1rmSnapshots, db.cycles], async () => {
+    await putUserStateInTx(state);
+    await db.e1rmSnapshots.clear();
+    if (snapshots.length > 0) {
+      await db.e1rmSnapshots.bulkAdd(snapshots.map((s) => ({ ...s })));
+    }
+    for (const [cycleIndex, progression] of Object.entries(plafondsProgression)) {
+      const cycle = await db.cycles.get(Number(cycleIndex));
+      if (cycle?.review == null) continue;
+      await db.cycles.update(Number(cycleIndex), {
+        review: { ...cycle.review, plafonds_progression: progression },
+      });
+    }
   });
 }

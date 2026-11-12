@@ -131,12 +131,10 @@ const FAQ: readonly FaqItem[] = [
     id: 'plafond-baisse',
     question: "Mon Plafond a baissé après une mauvaise séance, c'est normal ?",
     answer:
-      "L'algo utilise une moyenne mobile pondérée (EMA) : il intègre les nouvelles " +
-      "mesures sans tout écraser, mais une vraie mauvaise journée laisse une trace " +
-      "temporaire. La courbe Force, elle, trace ton Plafond séance après séance : " +
-      "elle peut donc redescendre ponctuellement, mais les étoiles records qui la " +
-      "jalonnent ne reculent jamais. C'est volontaire : la prescription doit coller " +
-      "à ta forme du moment, ton record historique, lui, reste acquis.",
+      "Oui. Chaque séance ne déplace ton Plafond que d'une partie de l'écart avec " +
+      "ta performance du jour : une mauvaise journée laisse une petite trace, qui " +
+      "s'efface au fil des séances suivantes. Les étoiles de la courbe Force marquent " +
+      "tes records, et elles restent.",
   },
 ];
 

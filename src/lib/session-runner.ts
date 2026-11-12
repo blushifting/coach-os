@@ -26,11 +26,16 @@ import type { Catalog } from '@/engine/catalog';
 import {
   effectiveLoadForE1rm,
   externalLoadFromE1rm,
-  EPLEY_K,
+  slopeFor,
   roundToIncrement,
   targetLoad,
 } from '@/engine/prescription';
-import { aggregateE1rmWeighted, RPE_RESERVE_FLOOR } from '@/engine/feedback';
+import {
+  aggregateE1rmWeighted,
+  isRecord,
+  RPE_RESERVE_FLOOR,
+  sessionMeasure,
+} from '@/engine/feedback';
 import { nextSetTarget } from '@/engine/progression';
 import {
   buildMusclesOf,
@@ -230,9 +235,10 @@ export function suggestNextLoadAfterTooEasy(args: {
   // que e1rmObserved, mais accepté quel que soit n_équiv puisqu'on n'a que ça).
   const totalLoad = effectiveLoadForE1rm(load_kg, exercise, bodyweightKg);
   if (totalLoad <= 0) return null;
-  const extrapolatedE1rm = totalLoad * (1 + EPLEY_K * (reps + (10 - rpe)));
+  const k = slopeFor(exercise);
+  const extrapolatedE1rm = totalLoad * (1 + k * (reps + (10 - rpe)));
   // Cible : ~5 reps à RPE 7.5 → bonne calibration.
-  const targetTotal = targetLoad(extrapolatedE1rm, 5, 7.5);
+  const targetTotal = targetLoad(extrapolatedE1rm, 5, 7.5, k);
   const extLoad = externalLoadFromE1rm(targetTotal, exercise, bodyweightKg);
   const inc = exercise.inc_kg > 0 ? exercise.inc_kg : 1.25;
   const rounded = roundToIncrement(extLoad, inc);
@@ -343,7 +349,11 @@ export function recalibrateUpcomingSets(args: {
             planRpe <= 10
           ) {
             target = roundToIncrement(
-              externalLoadFromE1rm(targetLoad(liveE1rm, planReps, planRpe), exo, bodyweightKg),
+              externalLoadFromE1rm(
+                targetLoad(liveE1rm, planReps, planRpe, slopeFor(exo)),
+                exo,
+                bodyweightKg,
+              ),
               inc,
             );
           }
@@ -539,6 +549,22 @@ export interface PlafondChange {
   readonly newE: number;
   /** `null` si première calibration ; sinon `newE - oldE` (peut être négatif). */
   readonly deltaKg: number | null;
+  /**
+   * Dump 2.4, étape 5 (n° 17) — ce que vaut une rep en Plafond à la charge de la
+   * séance : en deçà, la variation est jugée stable. `null` sans série informative.
+   */
+  readonly repKg: number | null;
+  /** Dump 2.4, étape 5 (n° 9) — la séance bat la meilleure mesure passée de 2 reps. */
+  readonly record: boolean;
+}
+
+/** Sens d'une variation de Plafond, à une rep près (n° 17). */
+export function plafondTrend(change: PlafondChange): 'up' | 'down' | 'flat' {
+  const { deltaKg, repKg } = change;
+  if (deltaKg === null || repKg === null) return 'flat';
+  if (deltaKg >= repKg) return 'up';
+  if (deltaKg <= -repKg) return 'down';
+  return 'flat';
 }
 
 /**
@@ -629,6 +655,7 @@ export function computeSessionSummary(
     .sort((a, b) => b.sessionSets - a.sessionSets);
 
   const plafondChanges: PlafondChange[] = [];
+  const bw = state.profile.bodyweight_kg;
   for (const [exId, update] of Object.entries(summary)) {
     if (update === null) continue;
     // Bloc R — on ignore les MAJ provisoires (séance tout-4+) : pas de plafond
@@ -640,11 +667,22 @@ export function computeSessionSummary(
     }
     const { old: oldE, next: newE } = update;
     const wasCalibrated = previouslyCalibratedExoIds.has(exId);
+    const ex = catalog.has(exId) ? catalog.get(exId) : null;
+    const measure = ex === null ? null : sessionMeasure(feedback.sets, ex, bw);
+    let bestBefore: number | null = null;
+    if (ex !== null) {
+      for (const row of previousFeedbacks) {
+        const m = sessionMeasure(row.feedback.sets, ex, bw);
+        if (m !== null) bestBefore = bestBefore === null ? m.measured : Math.max(bestBefore, m.measured);
+      }
+    }
     plafondChanges.push({
       exerciseId: exId,
       oldE: wasCalibrated ? oldE : null,
       newE,
       deltaKg: wasCalibrated ? newE - oldE : null,
+      repKg: measure?.repKg ?? null,
+      record: measure !== null && isRecord(measure, bestBefore),
     });
   }
   // Tri : premières calibrations en tête (event saillant), puis évolutions par

@@ -22,7 +22,7 @@ import {
   exercisePrimaires,
   makeCycleReview,
 } from './models';
-import { e1rmObserved, effectiveLoadForE1rm } from './prescription';
+import { e1rmObserved, effectiveLoadForE1rm, slopeFor } from './prescription';
 import {
   DELOAD_WEEK_IN_CYCLE,
   countWeeklyVolume,
@@ -53,8 +53,9 @@ function computeE1rmDeltaPerExercise(
     for (const f of s.sets) {
       if (!(f.exercise_id in firstE1rm) && catalog.has(f.exercise_id)) {
         try {
-          const totalLoad = effectiveLoadForE1rm(f.load_kg, catalog.get(f.exercise_id), bw);
-          const baseline = e1rmObserved(totalLoad, f.reps_done, f.rpe_perceived);
+          const ex = catalog.get(f.exercise_id);
+          const totalLoad = effectiveLoadForE1rm(f.load_kg, ex, bw);
+          const baseline = e1rmObserved(totalLoad, f.reps_done, f.rpe_perceived, slopeFor(ex));
           firstE1rm[f.exercise_id] = baseline;
         } catch {
           // reps/rpe hors plage : on ignore

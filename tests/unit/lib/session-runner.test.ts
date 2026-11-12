@@ -7,6 +7,7 @@ import {
   buildSessionFeedback,
   computeLiveE1rmFromEntries,
   computeSessionSummary,
+  plafondTrend,
   computeSessionVolume,
   countDoneSets,
   countPlannedSets,
@@ -266,6 +267,7 @@ describe('computeSessionSummary', () => {
   // bench_press n'existe pas dans le catalog réel → muscleVolume vide, mais
   // setsCount / exerciseCount / plafondChanges restent testables.
   const emptyState = {
+    profile: { bodyweight_kg: 75 },
     volume_min: {},
     volume_max: {},
     muscle_goals: {},
@@ -283,7 +285,8 @@ describe('computeSessionSummary', () => {
     const primary = Object.keys(muscles)[0]!;
     const coef = muscles[primary]!;
     const state = {
-      volume_min: { [primary]: 8 },
+      profile: { bodyweight_kg: 75 },
+    volume_min: { [primary]: 8 },
       volume_max: { [primary]: 14 },
       muscle_goals: {
         [primary]: {
@@ -344,6 +347,54 @@ describe('computeSessionSummary', () => {
     expect(byId.get('squat')!.deltaKg).toBe(0);
     // Tri : 1re calibration en tête.
     expect(r.plafondChanges[0]!.exerciseId).toBe('pullup');
+  });
+
+  it('étape 5 (n° 17) — moins d’une rep de variation : stable ; au-delà : hausse ou baisse', () => {
+    // 100 kg sur un polyarticulaire : une rep vaut 100 × 0,0333 = 3,33 kg de Plafond.
+    const today: SessionFeedback = {
+      ...fb,
+      sets: [{ exercise_id: 'bench_bb', reps_done: 5, load_kg: 100, rpe_perceived: 8 }],
+    };
+    const trendFor = (next: number) => {
+      const r = computeSessionSummary(
+        today,
+        { bench_bb: { old: 120, next, definitive: true } },
+        [],
+        catalog,
+        emptyState,
+        new Set(['bench_bb']),
+      );
+      return plafondTrend(r.plafondChanges[0]!);
+    };
+    expect(trendFor(123)).toBe('flat');
+    expect(trendFor(117)).toBe('flat');
+    expect(trendFor(123.5)).toBe('up');
+    expect(trendFor(116.5)).toBe('down');
+  });
+
+  it('étape 5 (n° 9) — record : la séance bat la meilleure mesure passée de 2 reps', () => {
+    const past = (reps: number): FeedbackRow => ({
+      ...makeFeedbackRow('Push', 1, 1, []),
+      feedback: {
+        ...makeFeedbackRow('Push', 1, 1, []).feedback,
+        sets: [{ exercise_id: 'bench_bb', reps_done: reps, load_kg: 100, rpe_perceived: 9 }],
+      },
+    });
+    const today: SessionFeedback = {
+      ...fb,
+      sets: [{ exercise_id: 'bench_bb', reps_done: 8, load_kg: 100, rpe_perceived: 9 }],
+    };
+    const recordAfter = (bestReps: number) =>
+      computeSessionSummary(
+        today,
+        { bench_bb: { old: 120, next: 122, definitive: true } },
+        [past(4), past(bestReps)],
+        catalog,
+        emptyState,
+        new Set(['bench_bb']),
+      ).plafondChanges[0]!.record;
+    expect(recordAfter(6)).toBe(true); // 8 reps contre 6 au mieux
+    expect(recordAfter(7)).toBe(false); // une rep seulement
   });
 
   it('#73 A-3 — récup : les Plafonds déjà calibrés restent affichés à Δ 0', () => {

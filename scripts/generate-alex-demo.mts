@@ -599,6 +599,7 @@ function serializeUserState(state: UserState): SerializedUserState {
     equipment_overrides: { ...state.equipment_overrides },
     weekly_volume_debt: { ...state.weekly_volume_debt },
     deload_decision: state.deload_decision ?? null,
+    plafond_model: state.plafond_model,
   };
 }
 

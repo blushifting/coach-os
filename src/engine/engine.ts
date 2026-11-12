@@ -25,7 +25,7 @@ import {
   exercisePrimaires,
   makeUserState,
 } from './models';
-import { e1rmObserved, effectiveLoadForE1rm } from './prescription';
+import { e1rmObserved, effectiveLoadForE1rm, slopeFor } from './prescription';
 import { buildPrescription } from './progression';
 import { updateE1rmForExercise, type E1rmUpdate } from './feedback';
 import {
@@ -78,7 +78,7 @@ export function calibrateInitialE1rm(
   for (const fb of testResults) {
     const ex = catalog.get(fb.exercise_id);
     const totalLoad = effectiveLoadForE1rm(fb.load_kg, ex, bw);
-    const e1rmO = e1rmObserved(totalLoad, fb.reps_done, fb.rpe_perceived);
+    const e1rmO = e1rmObserved(totalLoad, fb.reps_done, fb.rpe_perceived, slopeFor(ex));
     (setE1rms[fb.exercise_id] ??= []).push(e1rmO);
   }
   for (const [exId, vals] of Object.entries(setE1rms)) {
@@ -363,12 +363,6 @@ export type RecordFeedbackResult = Record<string, E1rmUpdate | null>;
 
 export interface RecordFeedbackOptions {
   /**
-   * Plan d'origine de la séance — si fourni, sert à détecter qu'une charge a été
-   * soulevée plus lourd que la prescription (Bloc L, `prescribed` de
-   * `updateE1rmForExercise`).
-   */
-  plan?: SessionPlan | null;
-  /**
    * Ensemble des exos qui étaient déjà calibrés *avant* cette séance (= un
    * snapshot e1RM existait pour eux en BDD). Les exos absents sont en
    * première vraie mesure : on saute le filtre EMA pour ne pas mélanger
@@ -411,34 +405,15 @@ export function recordFeedback(
 
   const calibrated = options.calibratedExoIds ?? null;
 
-  // Bloc L — charge/reps préconisées par exo (1re série, toutes identiques),
-  // pour détecter une charge volontairement plus lourde que la prescription.
-  const prescribedByExo = new Map<
-    string,
-    { load_kg: number; target_reps: number }
-  >();
-  if (options.plan) {
-    for (const item of options.plan.items) {
-      const first = item.sets[0];
-      if (first) {
-        prescribedByExo.set(item.exercise_id, {
-          load_kg: first.load_kg,
-          target_reps: first.reps,
-        });
-      }
-    }
-  }
-
   const summary: RecordFeedbackResult = {};
   for (const [exId, fbs] of Object.entries(byEx)) {
     const ex = catalog.get(exId);
     // En récup, un exo jamais mesuré n'est pas calibré par une séance allégée :
     // `updateE1rmForExercise` renvoie `null` et le bilan saute l'entrée.
     const skipEma = calibrated !== null && !calibrated.has(exId);
-    const e1rmUpdate = updateE1rmForExercise(state, ex, fbs, undefined, {
+    const e1rmUpdate = updateE1rmForExercise(state, ex, fbs, {
       skipEma: skipEma && !recoveryWeek,
       ratchetUpOnly: recoveryWeek,
-      prescribed: prescribedByExo.get(exId),
     });
     summary[exId] = e1rmUpdate;
   }

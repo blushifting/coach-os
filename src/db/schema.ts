@@ -83,6 +83,8 @@ export interface SerializedUserState {
   exercise_pick_counts?: Record<string, number>;
   /** Chantier B (plan 11) — décision déload opt-in du cycle courant. Absent sur anciens blobs (default null). */
   deload_decision?: 'accepted' | 'declined' | null;
+  /** Dump 2.4, étape 5 — version du calcul des Plafonds. Absent sur anciens blobs (= 1, à recalculer). */
+  plafond_model?: number;
 }
 
 // =============================================================================

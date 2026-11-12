@@ -6,8 +6,12 @@
  * SVG (polyline) qui visualise l'évolution chronologique de l'e1RM.
  *
  * Refonte #14a-1 : axe Y avec 3 ticks (min/mid/max) en kg, ligne pointillée
- * au plafond courant, polyline plus épaisse, chips PR sur les points qui
- * battent le record précédent d'au moins +2 kg.
+ * au plafond courant, polyline plus épaisse, étoiles sur les points record.
+ *
+ * Dump 2.4, étape 5 — l'axe horizontal suit les dates (n° 21) : une pause garde
+ * sa vraie longueur, son segment passe en pointillé avec sa durée. Une étoile
+ * marque une séance record (n° 9 : deux reps de mieux que la meilleure mesure
+ * passée).
  */
 
 import { useEffect, useState } from 'react';
@@ -18,7 +22,7 @@ import { displayExerciseName, kgUnitLabel } from '@/lib/catalog-filter';
 import { useCatalog, useGymBrand } from '@/store/selectors';
 import { cn } from '@/lib/cn';
 import { MOTION } from '@/lib/motion';
-import { cycleBoundaries, formatWeekLabel } from '@/lib/progress';
+import { forceChartLayout } from '@/lib/progress';
 import type { E1rmPoint, ExerciseE1rmSeries } from '@/lib/progress';
 
 /**
@@ -30,16 +34,32 @@ import type { E1rmPoint, ExerciseE1rmSeries } from '@/lib/progress';
  */
 const FORCE_PAGE_SIZE = 10;
 
-interface ForceViewProps {
-  readonly series: ReadonlyArray<ExerciseE1rmSeries>;
-  /**
-   * B-3 — nombre de points affichés par courbe, `null` = tout l'historique.
-   * Piloté par le sélecteur de période de l'écran Progrès.
-   */
-  readonly windowPoints: number | null;
+/** Début de cycle, pour les repères verticaux. */
+export interface CycleStart {
+  readonly cycle_index: number;
+  readonly start_date: string;
 }
 
-export function ForceView({ series, windowPoints }: ForceViewProps) {
+interface ForceViewProps {
+  /** Séries déjà restreintes à la période choisie. */
+  readonly series: ReadonlyArray<ExerciseE1rmSeries>;
+  /**
+   * Axe du temps commun à toutes les cartes (période « 3 derniers mois »), ou
+   * `null` : chaque courbe va de sa première à sa dernière mesure (« Tout »).
+   */
+  readonly axis: { readonly from: string; readonly to: string } | null;
+  readonly cycleStarts: ReadonlyArray<CycleStart>;
+}
+
+/** Bornes de l'axe du temps d'une carte. */
+function axisOf(
+  points: ReadonlyArray<E1rmPoint>,
+  axis: ForceViewProps['axis'],
+): { from: string; to: string } {
+  return axis ?? { from: points[0]!.date, to: points[points.length - 1]!.date };
+}
+
+export function ForceView({ series, axis, cycleStarts }: ForceViewProps) {
   const catalog = useCatalog();
   const brand = useGymBrand() ?? undefined;
   const [visibleCount, setVisibleCount] = useState(FORCE_PAGE_SIZE);
@@ -69,30 +89,12 @@ export function ForceView({ series, windowPoints }: ForceViewProps) {
     );
   }
 
-  // Conv #77 — la légende des repères de cycle ne s'affiche que si la fenêtre en
-  // contient au moins un (sur « 12 dernières séances », souvent aucun).
-  const showCycleLegend = series.some(
-    (s) =>
-      cycleBoundaries(windowPoints === null ? s.points : s.points.slice(-windowPoints))
-        .length > 0,
-  );
-
   return (
     <div className="flex flex-col gap-3" data-testid="force-view">
-      <header className="flex flex-col gap-1">
+      <header>
         <h2 className="text-sm font-semibold text-white">
           <Concept topic="plafond">Plafond</Concept> par exercice
         </h2>
-        {showCycleLegend && (
-          <p
-            className="text-[11px] leading-snug text-anthracite-300"
-            data-testid="force-cycle-legend"
-          >
-            Les traits verticaux marquent un changement de cycle&nbsp;: d'un cycle
-            à l'autre, les exercices et le volume changent — la progression se lit
-            surtout à l'intérieur d'un même bloc.
-          </p>
-        )}
       </header>
       {series.slice(0, visibleCount).map((s) => (
         <Card
@@ -126,10 +128,12 @@ export function ForceView({ series, windowPoints }: ForceViewProps) {
               <span
                 className={cn(
                   'text-[10px] leading-none tabular-nums',
+                  // Dump 2.4, étape 5 — une baisse est un avertissement (ambre),
+                  // pas un problème (rouge).
                   s.deltaPct > 0.5
                     ? 'text-emerald-400'
                     : s.deltaPct < -0.5
-                      ? 'text-sang-400'
+                      ? 'text-amber-400'
                       : 'text-anthracite-300',
                 )}
                 data-testid={`force-delta-${s.exercise_id}`}
@@ -140,8 +144,10 @@ export function ForceView({ series, windowPoints }: ForceViewProps) {
             </div>
           </header>
           <MiniLine
-            points={windowPoints === null ? s.points : s.points.slice(-windowPoints)}
+            points={s.points}
             current={s.current}
+            axis={axisOf(s.points, axis)}
+            cycleStarts={cycleStarts}
             testId={`force-chart-${s.exercise_id}`}
           />
         </Card>
@@ -164,31 +170,33 @@ export function ForceView({ series, windowPoints }: ForceViewProps) {
 }
 
 interface MiniLineProps {
-  /** #12 (E-3) — points datés (fenêtre glissante déjà appliquée par l'appelant). */
+  /** Points datés, déjà restreints à la période choisie. */
   readonly points: ReadonlyArray<E1rmPoint>;
   readonly current: number;
+  /** Bornes de l'axe du temps (dates YYYY-MM-DD). */
+  readonly axis: { readonly from: string; readonly to: string };
+  readonly cycleStarts: ReadonlyArray<CycleStart>;
   readonly testId?: string;
 }
 
-/** Saut minimum (en kg) pour qu'un nouveau maximum soit qualifié de PR. */
-const PR_THRESHOLD_KG = 2;
-
 /**
- * Mini-courbe polyline avec axe Y (3 ticks en kg), ligne pointillée au
- * plafond courant, chips "PR" au-dessus des points records, et labels de date
- * sous la courbe (1er / milieu / dernier point).
+ * Mini-courbe avec axe Y (3 ticks en kg), ligne pointillée au plafond courant,
+ * étoiles sur les séances record, axe du temps à l'échelle réelle (mois en bas,
+ * repères de cycle en haut) et pauses en pointillé avec leur durée.
  *
  * Layout :
- *   viewBox 320×96. Marge gauche 28 px pour les labels de l'axe Y, marge haute
- *   16 px pour les étoiles records, marge basse 16 px pour les dates.
+ *   viewBox 320×104. Marge gauche 34 px pour les labels de l'axe Y, marge haute
+ *   16 px pour les étoiles et les repères de cycle, marge basse 24 px pour la
+ *   durée des pauses et les mois.
  */
-function MiniLine({ points, current, testId }: MiniLineProps) {
+function MiniLine({ points, current, axis, cycleStarts, testId }: MiniLineProps) {
   const W = 320;
-  const H = 96;
-  const ML = 28; // marge gauche (labels Y)
-  const MT = 16; // marge haute (étoiles records — clearance constante au-dessus du point max)
-  const MB = 16; // marge basse (labels de date)
-  const innerW = W - ML;
+  const H = 104;
+  const ML = 34; // marge gauche (labels Y)
+  const MR = 4; // marge droite (le dernier point ne touche pas le bord)
+  const MT = 16; // marge haute (étoiles records, repères de cycle)
+  const MB = 24; // marge basse (durée des pauses, mois)
+  const innerW = W - ML - MR;
   const innerH = H - MT - MB;
   if (points.length < 2) return null;
 
@@ -196,33 +204,27 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min || 1;
+  const layout = forceChartLayout(points, axis.from, axis.to, cycleStarts);
 
   /** Projette une valeur e1rm sur la coordonnée Y du SVG. */
   const yOf = (v: number) => MT + innerH - ((v - min) / range) * innerH;
-  /** Projette l'index temporel sur X. */
-  const xOf = (i: number) => ML + (i / (points.length - 1)) * innerW;
+  /** Projette une position 0–1 de l'axe du temps sur X. */
+  const xOf = (f: number) => ML + f * innerW;
 
-  const xy = values.map((v, i) => [xOf(i), yOf(v)] as const);
-  const polyline = xy.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const xy = values.map((v, i) => [xOf(layout.xs[i]!), yOf(v)] as const);
   const lastXy = xy[xy.length - 1];
+  const gapAt = new Map(layout.gaps.map((g) => [g.index, g.weeks]));
 
-  // Détection des PR : un point est PR s'il dépasse strictement le max
-  // running précédent d'au moins PR_THRESHOLD_KG. Le tout premier point
-  // n'est jamais marqué (pas de "précédent").
-  const prFlags: boolean[] = values.map(() => false);
-  let runningMax = values[0]!;
-  for (let i = 1; i < values.length; i++) {
-    const v = values[i]!;
-    if (v >= runningMax + PR_THRESHOLD_KG) {
-      prFlags[i] = true;
-    }
-    if (v > runningMax) runningMax = v;
+  // Tracé continu découpé aux pauses : chaque morceau est une polyline pleine,
+  // chaque pause un segment pointillé (aucune mesure entre les deux points).
+  const runs: Array<Array<readonly [number, number]>> = [[xy[0]!]];
+  for (let i = 1; i < xy.length; i++) {
+    if (gapAt.has(i)) runs.push([xy[i]!]);
+    else runs[runs.length - 1]!.push(xy[i]!);
   }
 
   // Ticks Y : extrémités + milieu, puis déduplication par LIBELLÉ affiché
-  // (extrémités prioritaires). #63 — libellés à 1 décimale (avant : arrondi
-  // à l'entier, qui masquait les petites variations de plafond ; l'user l'a
-  // signalé). La dédup empêche deux ticks au même libellé sur une plage serrée.
+  // (extrémités prioritaires). #63 — libellés à 1 décimale.
   const tickCandidates = min === max ? [min] : [max, min, (min + max) / 2];
   const seenTickLabels = new Set<string>();
   const tickValues = tickCandidates.filter((v) => {
@@ -233,11 +235,6 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
   });
 
   const currentY = yOf(current);
-
-  // Conv #77 — repères de changement de cycle. L'axe X est l'INDEX du point, pas
-  // le temps : le trait se pose donc à mi-chemin entre la dernière mesure du
-  // cycle qui s'achève et la première du suivant.
-  const boundaries = cycleBoundaries(points);
 
   return (
     <svg
@@ -253,14 +250,7 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
         const y = yOf(v);
         return (
           <g key={`tick-${i}`}>
-            <line
-              x1={ML}
-              x2={W}
-              y1={y}
-              y2={y}
-              stroke="rgba(154,160,170,0.10)"
-              strokeWidth={1}
-            />
+            <line x1={ML} x2={W} y1={y} y2={y} stroke="rgba(154,160,170,0.10)" strokeWidth={1} />
             <text
               x={ML - 4}
               y={y}
@@ -276,13 +266,12 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
         );
       })}
 
-      {/* Conv #77 — délimitations de cycle, dessinées SOUS la courbe pour
-          rester un fond de lecture. */}
-      {boundaries.map(({ index, cycleIndex }) => {
-        const x = (xOf(index - 1) + xOf(index)) / 2;
+      {/* Conv #77 — repères de début de cycle, à leur vraie date, sous la courbe. */}
+      {layout.cycleMarks.map(({ x: f, cycleIndex }) => {
+        const x = xOf(f);
         const nearRightEdge = x > W - 20;
         return (
-          <g key={`cycle-${index}`} data-testid={`force-cycle-${cycleIndex}`}>
+          <g key={`cycle-${cycleIndex}`} data-testid={`force-cycle-${cycleIndex}`}>
             <line
               x1={x}
               x2={x}
@@ -305,8 +294,7 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
         );
       })}
 
-      {/* Ligne pointillée au plafond courant (Conv #14a) — repère visuel
-          du "niveau atteint aujourd'hui". */}
+      {/* Ligne pointillée au plafond courant (Conv #14a). */}
       <line
         x1={ML}
         x2={W}
@@ -319,49 +307,75 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
         data-testid="force-current-line"
       />
 
-      {/* Conv #11i — tracé animé `draw-line` via pathLength=1 + dasharray=1.
-          La ligne se trace progressivement à l'apparition de la card.
-          Conv #14a — strokeWidth passé de 2.5 à 3 pour plus de présence. */}
-      <polyline
-        points={polyline}
-        fill="none"
-        stroke="#dc2626"
-        strokeWidth="3"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        pathLength={1}
-        className="motion-safe:animate-draw-line"
-        style={{ strokeDasharray: 1 }}
-      />
+      {/* Pauses : segment pointillé, durée écrite dessous. */}
+      {layout.gaps.map(({ index, weeks }) => {
+        const [x1, y1] = xy[index - 1]!;
+        const [x2, y2] = xy[index]!;
+        return (
+          <g key={`gap-${index}`} data-testid="force-gap">
+            <line
+              x1={x1}
+              y1={y1}
+              x2={x2}
+              y2={y2}
+              stroke="#dc2626"
+              strokeWidth={2}
+              strokeDasharray="3 4"
+              strokeLinecap="round"
+              opacity={0.6}
+            />
+            <text
+              x={(x1 + x2) / 2}
+              y={MT + innerH + 10}
+              textAnchor="middle"
+              fontSize="8"
+              fill="#9aa0aa"
+              className="tabular-nums"
+            >
+              {weeks}&nbsp;sem.
+            </text>
+          </g>
+        );
+      })}
 
-      {/* Conv #20.5 — Points de la courbe : fade-in opacité pure, synchronisé
-          sur le tracé de la polyline (900 ms total). Chaque point apparaît en
-          place quand la ligne le traverse — fini le "saut d'en bas" via
-          reveal-up qui donnait l'impression que les points venaient d'un autre
-          plan. Les étoiles records (plus bas) gardent reveal-up : leur slide
-          marque visuellement le "PR célébré". */}
+      {/* Conv #11i — tracé animé `draw-line` via pathLength=1 + dasharray=1. */}
+      {runs
+        .filter((run) => run.length > 1)
+        .map((run, r) => (
+          <polyline
+            key={`run-${r}`}
+            points={run.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ')}
+            fill="none"
+            stroke="#dc2626"
+            strokeWidth="3"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            pathLength={1}
+            className="motion-safe:animate-draw-line"
+            style={{ strokeDasharray: 1 }}
+          />
+        ))}
+
+      {/* Conv #20.5 — points en fondu, synchronisés sur le tracé. */}
       {xy.map(([x, y], i) => {
-        const tracePct = points.length > 1 ? i / (points.length - 1) : 0;
-        const delayMs = tracePct * MOTION.draw;
+        const delayMs = layout.xs[i]! * MOTION.draw;
+        const record = points[i]!.record;
         return (
           <circle
             key={i}
             cx={x}
             cy={y}
-            r={prFlags[i] ? 3.5 : 2.5}
+            r={record ? 3.5 : 2.5}
             fill="#dc2626"
-            stroke={prFlags[i] ? '#fff' : 'none'}
-            strokeWidth={prFlags[i] ? 1 : 0}
+            stroke={record ? '#fff' : 'none'}
+            strokeWidth={record ? 1 : 0}
             className="motion-safe:animate-point-fade-in"
             style={{ animationDelay: `${delayMs}ms` }}
           />
         );
       })}
 
-      {/* Conv #66 — onde sur le DERNIER point une fois le tracé arrivé : c'est
-          le seul point qui répond à « où j'en suis maintenant », les autres sont
-          de l'historique. Une seule fois, pas en boucle : sur un écran qu'on
-          regarde longtemps, une pulsation perpétuelle devient un parasite. */}
+      {/* Conv #66 — onde sur le DERNIER point une fois le tracé arrivé. */}
       {lastXy !== undefined && (
         <circle
           cx={lastXy[0]}
@@ -376,33 +390,18 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
         />
       )}
 
-      {/* Étoiles "record" — au-dessus de chaque point qui bat le précédent
-          record d'au moins +2 kg. Étoile dorée pleine avec liseré pour
-          ressortir sur la polyline.
-
-          Conv #16 — fix positionnement : on wrappe l'animation `reveal-up`
-          dans un <g> INTERNE. L'animation CSS pose un `transform` qui
-          écrasait le `transform="translate(...)"` SVG si appliqué sur le
-          même nœud, et toutes les étoiles s'empilaient en 0,0. Avec deux
-          niveaux de <g> (externe = position, interne = animation), les
-          transforms ne se marchent plus dessus. */}
+      {/* Étoiles « record » au-dessus des séances record. Conv #16 — deux niveaux
+          de <g> : l'externe positionne, l'interne anime (sinon le transform CSS
+          de l'animation écrase celui du SVG). */}
       {xy.map(([x, y], i) => {
-        if (!prFlags[i]) return null;
-        const cx = x;
-        const cy = y - 9;
+        if (!points[i]!.record) return null;
         return (
-          <g
-            key={`pr-${i}`}
-            transform={`translate(${cx} ${cy})`}
-            data-testid="force-pr-chip"
-          >
+          <g key={`pr-${i}`} transform={`translate(${x} ${y - 9})`} data-testid="force-pr-chip">
             <g
               className="motion-safe:animate-reveal-up"
               style={{ animationDelay: `${700 + i * 60}ms`, animationFillMode: 'both' }}
             >
-              {/* Étoile record en doré : petit accent décoratif ponctuel de
-                  célébration (pas une couleur d'état) — toléré à cette échelle.
-                  amber-400 = #fbbf24. */}
+              {/* Étoile record en doré : accent décoratif ponctuel (amber-400). */}
               <polygon
                 points="0,-5 1.5,-1.5 5,-1.5 2.2,0.7 3.3,4.5 0,2.2 -3.3,4.5 -2.2,0.7 -5,-1.5 -1.5,-1.5"
                 fill="#fbbf24"
@@ -414,27 +413,23 @@ function MiniLine({ points, current, testId }: MiniLineProps) {
           </g>
         );
       })}
-      {/* #12 (E-3) — labels de date sous la courbe : 1er, dernier, et milieu
-          si ≥ 4 points. Situe la progression dans le temps (une pause se voit). */}
-      {points.map((p, i) => {
-        const show =
-          i === 0 ||
-          i === points.length - 1 ||
-          (points.length >= 4 && i === Math.floor(points.length / 2));
-        if (!show) return null;
-        const anchor = i === 0 ? 'start' : i === points.length - 1 ? 'end' : 'middle';
+
+      {/* Mois sous la courbe, au premier du mois. */}
+      {layout.monthTicks.map(({ x: f, label }) => {
+        const x = xOf(f);
         return (
-          <text
-            key={`date-${i}`}
-            x={xOf(i)}
-            y={H - 3}
-            textAnchor={anchor}
-            fontSize="8"
-            fill="#9aa0aa"
-            className="tabular-nums"
-          >
-            {formatWeekLabel(p.date)}
-          </text>
+          <g key={`month-${label}-${f}`}>
+            <line x1={x} x2={x} y1={MT + innerH} y2={MT + innerH + 3} stroke="rgba(154,160,170,0.45)" />
+            <text
+              x={x}
+              y={H - 3}
+              textAnchor={x > W - 16 ? 'end' : x < ML + 16 ? 'start' : 'middle'}
+              fontSize="8"
+              fill="#9aa0aa"
+            >
+              {label}
+            </text>
+          </g>
         );
       })}
     </svg>
