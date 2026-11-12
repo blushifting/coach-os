@@ -13,7 +13,7 @@ import { autoGenerateCyclePlanV3 } from '../src/engine/cycle_planner';
 import {
   DurationCategory,
   ExType,
-  MuscleStatus,
+  MuscleIntention,
   exercisePrimaires,
 } from '../src/engine/models';
 import { effectiveCycleTargetVolume } from '../src/engine/volume';
@@ -22,7 +22,6 @@ import {
   buildProfile,
   buildMuscleGoals,
   computeBalanceSuggestions,
-  deriveGlobalObjective,
   PRESET_DEFAULT_PRIORITIES,
   PRESET_DEFAULT_MAINTENANCE,
   type OnboardingDraft,
@@ -39,17 +38,17 @@ function buildState(sessionsPerWeek: number) {
     durationCategory: DurationCategory.MEDIUM,
   };
   const suggestions = computeBalanceSuggestions(draft.priorities, draft.maintenance);
-  const profile = buildProfile(draft, deriveGlobalObjective(draft));
+  const profile = buildProfile(draft);
   const muscleGoals = buildMuscleGoals(draft, suggestions);
-  const state = startUser(profile, catalog, { muscleGoals, applyBalance: false });
+  const state = startUser(profile, catalog, { muscleGoals });
   return state;
 }
 
 function statusTag(state: ReturnType<typeof buildState>, muscle: string): string {
   const g = state.muscle_goals[muscle];
   if (!g) return '—';
-  if (g.status === MuscleStatus.PRIORITAIRE) return `PRIO(${g.objective})`;
-  if (g.status === MuscleStatus.SUGGERE) return 'maintien';
+  if (g.intention === MuscleIntention.DEVELOPPER) return `DEV(${g.priority_rank})`;
+  if (g.intention === MuscleIntention.ENTRETENIR) return 'entretien';
   return 'non_couvert';
 }
 

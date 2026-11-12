@@ -73,10 +73,10 @@ const FAQ: readonly FaqItem[] = [
   {
     id: 'prio-2-sur-3',
     question:
-      "Pourquoi mon muscle prioritaire n'apparaît que 2 fois sur 3 séances ?",
+      "Pourquoi un muscle à développer n'apparaît que 2 fois sur 3 séances ?",
     answer:
       "Schoenfeld 2019 (méta-analyse fréquence) montre que 2 séances/semaine " +
-      "est optimal pour l'hypertrophie : passer à 3× même volume total ne donne " +
+      "est optimal pour faire grossir un muscle : passer à 3× même volume total ne donne " +
       "pas plus de gain et coûte plus en récupération. Kotsh divise ton volume " +
       "cible par les ~5 séries/séance optimales par muscle pour calculer la " +
       "fréquence. Pour un muscle à 10 séries/sem, ça donne 2 séances. Tu peux " +
@@ -102,8 +102,8 @@ const FAQ: readonly FaqItem[] = [
       "sont saturés en continu par tout exo de pectoraux (développé couché, dips, " +
       "pompes…) et de presse verticale. En ajouter un quota séparé créerait du " +
       "sur-volume systémique. À l'inverse, les postérieurs sont sous-développés " +
-      "chez quasi tous les pratiquants — Kotsh les ajoute automatiquement en " +
-      "Maintien dès que tu travailles pectoraux, deltos latéraux ou triceps " +
+      "chez quasi tous les pratiquants — Kotsh te propose de les entretenir " +
+      "dès que tu développes pectoraux, deltos latéraux ou triceps " +
       "(règle R4, Cools 2014 — prévention du conflit sous-acromial, la blessure " +
       "d'épaule la plus fréquente en muscu).",
   },
@@ -157,7 +157,7 @@ const SOURCES: readonly SourceItem[] = [
     id: 'schoenfeld-2019',
     cite: 'Schoenfeld et al. (2019). Resistance training frequency. Sports Med.',
     topic:
-      'Fréquence 2× / sem optimale pour l\'hypertrophie à volume égal.',
+      'Fréquence 2× / sem optimale pour la prise de muscle à volume égal.',
   },
   {
     id: 'helms-2018',
@@ -218,7 +218,7 @@ const GLOSSARY_ORDER: readonly HelpTopic[] = [
   'etire',
   'volumeHebdo',
   'vminmax',
-  'hypertrophie',
+  'intention',
   'adherence',
   'vsSem1',
   'prDuJour',

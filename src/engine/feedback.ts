@@ -23,7 +23,7 @@ import {
   exerciseUsesLoadFloor,
   exerciseUsesRepsFloor,
   nEquiv,
-  resolveTargetReps,
+  targetReps as targetRepsFor,
   roundToIncrement,
 } from './prescription';
 
@@ -393,7 +393,7 @@ export function updatePrescribedLoadFloorForExercise(
   const seedBest = bestNeq(feedbacks);
   if (seedBest === null) return;
 
-  const targetReps = resolveTargetReps(state, exercise);
+  const targetReps = targetRepsFor(exercise);
   const inc = effectiveIncrement(state, exercise);
   const cur = state.prescribed_load_floor[exercise.id] ?? seedBest.load;
 

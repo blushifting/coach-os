@@ -29,7 +29,7 @@ import type {
 } from './models';
 import {
   DurationCategory,
-  MuscleStatus,
+  MuscleIntention,
   Pattern,
   makeSkeletonTemplate,
 } from './models';
@@ -85,7 +85,6 @@ export function computeMuscleDemands(state: UserState): MuscleDemand[] {
   const demands: MuscleDemand[] = [];
   const cap = state.profile.sessions_per_week;
   for (const [muscle, goal] of Object.entries(state.muscle_goals)) {
-    if (goal.status === MuscleStatus.NON_COUVERT) continue;
     const vTarget = effectiveCycleTargetVolume(state, muscle);
     if (vTarget <= 0) continue;
     demands.push({
@@ -95,10 +94,10 @@ export function computeMuscleDemands(state: UserState): MuscleDemand[] {
       target_frequency: frequencyFor(vTarget, cap),
     });
   }
-  // Tri : prioritaires d'abord, puis priority_rank (maintien en dernier).
+  // Tri : muscles à développer d'abord, puis priority_rank (entretien en dernier).
   demands.sort((a, b) => {
-    const sa = a.goal.status === MuscleStatus.PRIORITAIRE ? 0 : 1;
-    const sb = b.goal.status === MuscleStatus.PRIORITAIRE ? 0 : 1;
+    const sa = a.goal.intention === MuscleIntention.DEVELOPPER ? 0 : 1;
+    const sb = b.goal.intention === MuscleIntention.DEVELOPPER ? 0 : 1;
     if (sa !== sb) return sa - sb;
     return a.goal.priority_rank - b.goal.priority_rank;
   });
@@ -348,7 +347,7 @@ function realizeSession(
   for (const m of muscles) {
     const planned = columnVolumes.get(m) ?? 0;
     const target = residual.get(m) ?? 0;
-    const isPrio = goalOf(m)?.status === MuscleStatus.PRIORITAIRE;
+    const isPrio = goalOf(m)?.intention === MuscleIntention.DEVELOPPER;
     // Un muscle de MAINTIEN ne perd son exo dédié que si le crédit incident a
     // réellement couvert sa dose (résidu tombé sous la moitié du plan). L'ancien
     // seuil fixe (résidu < 3) éliminait d'office les petits muscles dont la dose

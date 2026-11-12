@@ -26,12 +26,10 @@ import { recordFeedback } from '@/engine/engine';
 import { Catalog } from '@/engine/catalog';
 import type { SetFeedback, SessionFeedback, UserState } from '@/engine/models';
 import {
-  MuscleObjective,
-  MuscleStatus,
+  MuscleIntention,
   makeEquipmentOverride,
   makeMuscleGoal,
-  makeUserState,
-} from '@/engine/models';
+  makeUserState } from '@/engine/models';
 
 import { profile } from './_helpers';
 
@@ -40,13 +38,13 @@ const PUSHUP = 'pushup'; // poids du corps PUR (charge externe = 0), pectoraux p
 const PUSHUP_LOADED = 'pushup_loaded'; // bodyweight_loaded → PDC par défaut (#63).
 const BENCH = 'bench_bb'; // barre → piloté par le cliquet de CHARGE.
 
-const prio = (muscle: string, obj: MuscleObjective) =>
-  makeMuscleGoal({ muscle, objective: obj, status: MuscleStatus.PRIORITAIRE, priority_rank: 1 });
+const prio = (muscle: string) =>
+  makeMuscleGoal({ muscle, intention: MuscleIntention.DEVELOPPER, priority_rank: 1 });
 
 /** State avec un objectif pectoraux donné (pilote pushup / pushup_loaded). */
-function stateFor(obj: MuscleObjective = MuscleObjective.HYPERTROPHIE): UserState {
+function stateFor(): UserState {
   const s = makeUserState(profile());
-  s.muscle_goals = { pectoraux: prio('pectoraux', obj) };
+  s.muscle_goals = { pectoraux: prio('pectoraux') };
   return s;
 }
 
@@ -139,7 +137,6 @@ describe('seed du plancher de reps', () => {
     const s = stateFor();
     expect(s.prescribed_reps_floor[PUSHUP]).toBeUndefined();
     const pres = buildPrescription(catalog.get(PUSHUP), 100, s.profile, 1, {
-      muscleGoals: s.muscle_goals,
       state: s,
     });
     expect(s.prescribed_reps_floor[PUSHUP]).toBe(10);
@@ -156,7 +153,6 @@ describe('seed du plancher de reps', () => {
     // objectif). On simule donc un plafond mesuré.
     s.e1rm[PUSHUP_LOADED] = e1rm;
     const pres = buildPrescription(catalog.get(PUSHUP_LOADED), e1rm, s.profile, 1, {
-      muscleGoals: s.muscle_goals,
       state: s,
     });
     const expected = targetRepsForPdc(e1rm, s.profile.bodyweight_kg, 7);
@@ -170,7 +166,6 @@ describe('seed du plancher de reps', () => {
     const s = stateFor();
     s.prescribed_reps_floor[PUSHUP] = 17;
     const pres = buildPrescription(catalog.get(PUSHUP), 100, s.profile, 1, {
-      muscleGoals: s.muscle_goals,
       state: s,
     });
     expect(pres.reps).toBe(17);

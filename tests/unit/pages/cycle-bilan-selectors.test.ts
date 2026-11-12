@@ -8,9 +8,10 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { developGoals } from '@/test-utils/fixtures';
 import { Catalog } from '@/engine/catalog';
 import { autoGenerateCyclePlanV3 } from '@/engine/cycle_planner';
-import { bootstrapMuscleGoalsFromProfile, startUser } from '@/engine/engine';
+import { startUser } from '@/engine/engine';
 import { SuggestedAction, makeCycleReview } from '@/engine/models';
 import type { CycleReview, SessionFeedback, UserState } from '@/engine/models';
 import type { CycleRow, FeedbackRow } from '@/db/schema';
@@ -27,7 +28,7 @@ const START = '2026-06-01';
 
 function stateWithPlan(): UserState {
   const p = profile();
-  const goals = bootstrapMuscleGoalsFromProfile(p, [
+  const goals = developGoals([
     'pectoraux',
     'dos_largeur',
     'quadriceps',

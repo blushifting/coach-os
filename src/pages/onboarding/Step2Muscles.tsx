@@ -1,17 +1,18 @@
 /**
- * Étape 2 de l'onboarding (refonte Conv #28) : muscles + objectif par muscle.
+ * Étape 2 de l'onboarding (refonte Conv #28, dump 2.4) : muscles + intention.
  *
- * Modèle « pinceau » : un sélecteur d'objectif (Hypertrophie / Force /
- * Endurance / Maintien) au-dessus de la silhouette ; taper un muscle lui
- * applique l'objectif courant, retaper avec le même pinceau le retire.
+ * Modèle « pinceau » : un sélecteur d'intention (Développer / Entretenir)
+ * au-dessus de la silhouette ; taper un muscle lui applique l'intention
+ * courante, retaper avec le même pinceau la retire. Un muscle sans intention
+ * reste suivi (D1), sans cible.
  *
- * Le ranking drag&drop disparaît de l'UI mais `priority_rank` reste
- * alimenté : rang = ordre de sélection, visible (numéro) et réordonnable
- * (poignée de drag) dans la liste sous la silhouette.
+ * `priority_rank` reste alimenté pour les muscles à développer : rang = ordre
+ * de sélection, visible (numéro) et réordonnable (poignée de drag) dans la
+ * liste sous la silhouette.
  *
- * La liste des 15 muscles est l'autre vue du même état : prioritaires en
- * tête (ordre de rang), maintiens ensuite, non-sélectionnés en ordre
- * anatomique. Chaque ligne porte un contrôle 5 positions (– / H / F / E / M).
+ * La liste des 15 muscles est l'autre vue du même état : muscles à développer
+ * en tête (ordre de rang), à entretenir ensuite, sans intention en ordre
+ * anatomique. Chaque ligne porte un contrôle 3 positions (– / D / E).
  */
 
 import { useMemo, useState } from 'react';
@@ -32,7 +33,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { MUSCLES, MuscleObjective, type Muscle } from '@/engine/models';
+import { MUSCLES, MuscleIntention, type Muscle } from '@/engine/models';
 import {
   AnatomicalSilhouette,
   type SilhouetteStatus,
@@ -60,9 +61,9 @@ interface Step2Props {
   readonly onPresetApplied?: () => void;
 }
 
-/** Style par objectif — voir la doc palette `objective` de la silhouette. */
-const OBJECTIVE_UI: Record<
-  MuscleObjective,
+/** Style par intention — voir la doc palette `objective` de la silhouette. */
+const INTENTION_UI: Record<
+  MuscleIntention,
   {
     readonly label: string;
     readonly letter: string;
@@ -71,66 +72,47 @@ const OBJECTIVE_UI: Record<
     readonly silhouette: SilhouetteStatus;
   }
 > = {
-  [MuscleObjective.HYPERTROPHIE]: {
-    label: 'Hypertrophie',
-    letter: 'H',
+  [MuscleIntention.DEVELOPPER]: {
+    label: 'Développer',
+    letter: 'D',
     dot: 'bg-amber-400',
     chipActive: 'border-amber-400 bg-amber-400/15 text-amber-300',
     silhouette: 'highlight',
   },
-  [MuscleObjective.FORCE]: {
-    label: 'Force',
-    letter: 'F',
-    dot: 'bg-sang-500',
-    chipActive: 'border-sang-500 bg-sang-900/40 text-sang-400',
-    silhouette: 'high',
-  },
-  [MuscleObjective.ENDURANCE]: {
-    label: 'Endurance',
+  [MuscleIntention.ENTRETENIR]: {
+    label: 'Entretenir',
     letter: 'E',
-    dot: 'bg-cyan-500',
-    chipActive: 'border-cyan-500 bg-cyan-500/15 text-cyan-300',
-    silhouette: 'low',
-  },
-  [MuscleObjective.MAINTIEN]: {
-    label: 'Maintien',
-    letter: 'M',
     dot: 'bg-amber-700',
     chipActive: 'border-amber-700 bg-amber-700/20 text-amber-600',
     silhouette: 'ok',
   },
 };
 
-const BRUSHES: readonly MuscleObjective[] = [
-  MuscleObjective.HYPERTROPHIE,
-  MuscleObjective.FORCE,
-  MuscleObjective.ENDURANCE,
-  MuscleObjective.MAINTIEN,
+const BRUSHES: readonly MuscleIntention[] = [
+  MuscleIntention.DEVELOPPER,
+  MuscleIntention.ENTRETENIR,
 ];
 
-/** Objectif courant d'un muscle dans le draft, ou `null` si non sélectionné. */
-function muscleObjective(
+/** Intention courante d'un muscle dans le draft, ou `null` s'il n'en a pas. */
+function muscleIntention(
   draft: OnboardingDraft,
   m: string,
-): MuscleObjective | null {
-  const prio = draft.priorities.find((p) => p.muscle === m);
-  if (prio !== undefined) return prio.objective;
-  if (draft.maintenance.has(m)) return MuscleObjective.MAINTIEN;
+): MuscleIntention | null {
+  if (draft.priorities.some((p) => p.muscle === m)) return MuscleIntention.DEVELOPPER;
+  if (draft.maintenance.has(m)) return MuscleIntention.ENTRETENIR;
   return null;
 }
 
 export function Step2Muscles({ draft, onChange, onPresetApplied }: Step2Props) {
-  const [brush, setBrush] = useState<MuscleObjective>(
-    MuscleObjective.HYPERTROPHIE,
-  );
+  const [brush, setBrush] = useState<MuscleIntention>(MuscleIntention.DEVELOPPER);
 
   const silhouetteHighlights = useMemo(() => {
     const out: Record<string, SilhouetteStatus> = {};
     for (const p of draft.priorities) {
-      out[p.muscle] = OBJECTIVE_UI[p.objective].silhouette;
+      out[p.muscle] = INTENTION_UI[MuscleIntention.DEVELOPPER].silhouette;
     }
     for (const m of draft.maintenance) {
-      out[m] = OBJECTIVE_UI[MuscleObjective.MAINTIEN].silhouette;
+      out[m] = INTENTION_UI[MuscleIntention.ENTRETENIR].silhouette;
     }
     return out;
   }, [draft.priorities, draft.maintenance]);
@@ -141,32 +123,27 @@ export function Step2Muscles({ draft, onChange, onPresetApplied }: Step2Props) {
   );
 
   /**
-   * Applique `obj` au muscle `m` (ou le retire si `obj` est déjà son état,
-   * ou si `obj` est null). Un prio qui change d'objectif H/F/E garde son rang.
+   * Applique `intention` au muscle `m` (ou la retire si c'est déjà son état,
+   * ou si `intention` est null). Un muscle déjà à développer garde son rang.
    */
-  function setMuscle(m: string, obj: MuscleObjective | null) {
-    const current = muscleObjective(draft, m);
-    const target = current === obj ? null : obj;
+  function setMuscle(m: string, intention: MuscleIntention | null) {
+    const current = muscleIntention(draft, m);
+    const target = current === intention ? null : intention;
 
     const maintenance = new Set(draft.maintenance);
     maintenance.delete(m);
     let priorities: readonly RankedPriority[] = draft.priorities;
 
-    if (target === null) {
-      priorities = priorities.filter((p) => p.muscle !== m);
-    } else if (target === MuscleObjective.MAINTIEN) {
-      priorities = priorities.filter((p) => p.muscle !== m);
-      maintenance.add(m);
-    } else if (priorities.some((p) => p.muscle === m)) {
-      priorities = priorities.map((p) =>
-        p.muscle === m ? { muscle: m, objective: target } : p,
-      );
+    if (target === MuscleIntention.DEVELOPPER) {
+      if (!priorities.some((p) => p.muscle === m)) {
+        priorities = [...priorities, { muscle: m }];
+      }
     } else {
-      priorities = [...priorities, { muscle: m, objective: target }];
+      priorities = priorities.filter((p) => p.muscle !== m);
+      if (target === MuscleIntention.ENTRETENIR) maintenance.add(m);
     }
     onChange({ priorities, maintenance });
   }
-
   function onDragEnd(ev: DragEndEvent) {
     const { active, over } = ev;
     if (over === null || active.id === over.id) return;
@@ -184,12 +161,12 @@ export function Step2Muscles({ draft, onChange, onPresetApplied }: Step2Props) {
     onPresetApplied?.();
   }
 
-  // Liste : prios (ordre de rang), puis maintiens et non-sélectionnés en
+  // Liste : à développer (ordre de rang), puis à entretenir et sans intention en
   // ordre anatomique (MUSCLES). Ordre stable → pas de lignes qui sautent
   // de façon imprévisible, mais le changement de section reste un feedback.
   const maintenanceRows = MUSCLES.filter((m) => draft.maintenance.has(m));
   const unselectedRows = MUSCLES.filter(
-    (m) => muscleObjective(draft, m) === null,
+    (m) => muscleIntention(draft, m) === null,
   );
   const hasSelection =
     draft.priorities.length > 0 || draft.maintenance.size > 0;
@@ -201,28 +178,24 @@ export function Step2Muscles({ draft, onChange, onPresetApplied }: Step2Props) {
           Tes muscles cibles
         </h1>
         <p className="text-sm leading-relaxed text-anthracite-300">
-          Choisis les muscles à faire progresser, et l'objectif de chacun.
+          Choisis les muscles à développer, et ceux à entretenir.
         </p>
         <details className="rounded-xl border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-xs leading-relaxed text-anthracite-200">
           <summary className="cursor-pointer text-white">
-            Quel objectif choisir&nbsp;?
+            Que choisir pour chaque muscle&nbsp;?
           </summary>
           <ul className="mt-3 space-y-1.5 pl-1 text-anthracite-300">
             <li>
-              <strong className="text-white">Hypertrophie</strong> — faire
-              grossir le muscle. Le plus courant.
+              <strong className="text-white">Développer</strong> — faire
+              progresser ce muscle.
             </li>
             <li>
-              <strong className="text-white">Force</strong> — soulever lourd,
-              grossit un peu moins.
+              <strong className="text-white">Entretenir</strong> — maintenir ce
+              muscle à son niveau.
             </li>
             <li>
-              <strong className="text-white">Endurance</strong> — tenir
-              longtemps sans fatiguer.
-            </li>
-            <li>
-              <strong className="text-white">Maintien</strong> — entretenir
-              sans faire grossir.
+              <strong className="text-white">Sans objectif</strong> — muscle
+              travaillé occasionnellement, pas en priorité.
             </li>
           </ul>
         </details>
@@ -255,24 +228,24 @@ export function Step2Muscles({ draft, onChange, onPresetApplied }: Step2Props) {
         className="flex flex-col items-center gap-2 p-3"
         data-testid="step2-silhouette"
       >
-        {/* Pinceau : objectif appliqué au prochain tap sur la silhouette. */}
+        {/* Pinceau : intention appliquée au prochain tap sur la silhouette. */}
         <div
           className="flex w-full gap-1"
           role="radiogroup"
-          aria-label="Objectif à appliquer"
+          aria-label="Choix à appliquer"
           data-testid="brush-selector"
         >
-          {BRUSHES.map((obj) => {
-            const ui = OBJECTIVE_UI[obj];
-            const selected = brush === obj;
+          {BRUSHES.map((intention) => {
+            const ui = INTENTION_UI[intention];
+            const selected = brush === intention;
             return (
               <button
-                key={obj}
+                key={intention}
                 type="button"
                 role="radio"
                 aria-checked={selected}
-                onClick={() => setBrush(obj)}
-                data-testid={`brush-${obj}`}
+                onClick={() => setBrush(intention)}
+                data-testid={`brush-${intention}`}
                 className={cn(
                   'flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-1 py-1.5',
                   'text-[11px] font-medium transition',
@@ -300,7 +273,7 @@ export function Step2Muscles({ draft, onChange, onPresetApplied }: Step2Props) {
           testId="onboarding-silhouette"
         />
         <p className="text-center text-[10px] leading-tight text-anthracite-300">
-          Touche un muscle pour lui appliquer l'objectif&nbsp;; retouche pour le
+          Touche un muscle pour lui appliquer ce choix&nbsp;; retouche pour le
           retirer.
         </p>
       </Card>
@@ -328,24 +301,24 @@ export function Step2Muscles({ draft, onChange, onPresetApplied }: Step2Props) {
                   key={p.muscle}
                   rank={i + 1}
                   muscle={p.muscle}
-                  objective={p.objective}
-                  onSet={(obj) => setMuscle(p.muscle, obj)}
+                  intention={MuscleIntention.DEVELOPPER}
+                  onSet={(i) => setMuscle(p.muscle, i)}
                 />
               ))}
               {maintenanceRows.map((m) => (
                 <MuscleRow
                   key={m}
                   muscle={m}
-                  objective={MuscleObjective.MAINTIEN}
-                  onSet={(obj) => setMuscle(m, obj)}
+                  intention={MuscleIntention.ENTRETENIR}
+                  onSet={(i) => setMuscle(m, i)}
                 />
               ))}
               {unselectedRows.map((m) => (
                 <MuscleRow
                   key={m}
                   muscle={m}
-                  objective={null}
-                  onSet={(obj) => setMuscle(m, obj)}
+                  intention={null}
+                  onSet={(i) => setMuscle(m, i)}
                 />
               ))}
             </ul>
@@ -358,48 +331,48 @@ export function Step2Muscles({ draft, onChange, onPresetApplied }: Step2Props) {
 
 interface MuscleRowProps {
   readonly muscle: Muscle | string;
-  readonly objective: MuscleObjective | null;
-  readonly onSet: (obj: MuscleObjective | null) => void;
-  /** Rang affiché (prioritaires uniquement). */
+  readonly intention: MuscleIntention | null;
+  readonly onSet: (intention: MuscleIntention | null) => void;
+  /** Rang affiché (muscles à développer uniquement). */
   readonly rank?: number;
 }
 
-/** Contrôle 5 positions (– / H / F / E / M) d'une ligne muscle. */
-function ObjectiveControl({
+/** Contrôle 3 positions (– / D / E) d'une ligne muscle. */
+function IntentionControl({
   muscle,
-  objective,
+  intention,
   onSet,
 }: Omit<MuscleRowProps, 'rank'>) {
   return (
-    <div className="flex shrink-0 gap-1" role="radiogroup" aria-label={`Objectif ${muscleLabel(muscle)}`}>
+    <div className="flex shrink-0 gap-1" role="radiogroup" aria-label={`Choix pour ${muscleLabel(muscle)}`}>
       <button
         type="button"
         role="radio"
-        aria-checked={objective === null}
-        aria-label="Aucun"
+        aria-checked={intention === null}
+        aria-label="Sans objectif"
         onClick={() => onSet(null)}
         data-testid={`obj-${muscle}-none`}
         className={cn(
           'h-7 w-7 rounded border text-[11px] font-semibold transition',
-          objective === null
+          intention === null
             ? 'border-anthracite-500 bg-anthracite-700 text-white'
             : 'border-anthracite-700 bg-anthracite-800 text-anthracite-400 hover:text-white',
         )}
       >
         –
       </button>
-      {BRUSHES.map((obj) => {
-        const ui = OBJECTIVE_UI[obj];
-        const active = objective === obj;
+      {BRUSHES.map((b) => {
+        const ui = INTENTION_UI[b];
+        const active = intention === b;
         return (
           <button
-            key={obj}
+            key={b}
             type="button"
             role="radio"
             aria-checked={active}
             aria-label={ui.label}
-            onClick={() => onSet(obj)}
-            data-testid={`obj-${muscle}-${obj}`}
+            onClick={() => onSet(b)}
+            data-testid={`obj-${muscle}-${b}`}
             className={cn(
               'h-7 w-7 rounded border text-[11px] font-semibold transition',
               active
@@ -415,15 +388,15 @@ function ObjectiveControl({
   );
 }
 
-/** Ligne non-prioritaire (maintien ou non sélectionné) — pas de drag. */
-function MuscleRow({ muscle, objective, onSet }: MuscleRowProps) {
-  const ui = objective !== null ? OBJECTIVE_UI[objective] : null;
+/** Ligne à entretenir ou sans intention — pas de drag. */
+function MuscleRow({ muscle, intention, onSet }: MuscleRowProps) {
+  const ui = intention !== null ? INTENTION_UI[intention] : null;
   return (
     <li
       data-testid={`muscle-row-${muscle}`}
       className={cn(
         'flex items-center gap-2 rounded-lg border bg-anthracite-900 p-1.5',
-        objective !== null ? 'border-anthracite-600' : 'border-anthracite-700',
+        intention !== null ? 'border-anthracite-600' : 'border-anthracite-700',
       )}
     >
       <span className="w-7 shrink-0" aria-hidden="true" />
@@ -436,13 +409,13 @@ function MuscleRow({ muscle, objective, onSet }: MuscleRowProps) {
         )}
         {muscleLabel(muscle)}
       </span>
-      <ObjectiveControl muscle={muscle} objective={objective} onSet={onSet} />
+      <IntentionControl muscle={muscle} intention={intention} onSet={onSet} />
     </li>
   );
 }
 
-/** Ligne prioritaire : rang visible + poignée de drag pour réordonner. */
-function SortableMuscleRow({ rank, muscle, objective, onSet }: MuscleRowProps) {
+/** Ligne à développer : rang visible + poignée de drag pour réordonner. */
+function SortableMuscleRow({ rank, muscle, intention, onSet }: MuscleRowProps) {
   const {
     attributes,
     listeners,
@@ -458,7 +431,7 @@ function SortableMuscleRow({ rank, muscle, objective, onSet }: MuscleRowProps) {
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const ui = objective !== null ? OBJECTIVE_UI[objective] : null;
+  const ui = intention !== null ? INTENTION_UI[intention] : null;
 
   return (
     <li
@@ -491,7 +464,7 @@ function SortableMuscleRow({ rank, muscle, objective, onSet }: MuscleRowProps) {
         )}
         {muscleLabel(muscle)}
       </span>
-      <ObjectiveControl muscle={muscle} objective={objective} onSet={onSet} />
+      <IntentionControl muscle={muscle} intention={intention} onSet={onSet} />
     </li>
   );
 }

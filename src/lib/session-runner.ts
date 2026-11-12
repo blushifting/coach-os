@@ -603,7 +603,7 @@ export function computeSessionSummary(
         weekTotal,
         vMin,
         vMax,
-        status: classifyVolume(weekTotal, vMin, vMax),
+        status: classifyVolume(weekTotal, vMin, vMax, state.muscle_goals[muscle] !== undefined),
       };
     })
     .sort((a, b) => b.sessionSets - a.sessionSets);

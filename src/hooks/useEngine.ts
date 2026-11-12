@@ -26,7 +26,6 @@ import {
   listUserExercises,
 } from '@/db/repositories/userAddedExercises.repo';
 import * as engine from '@/engine/engine';
-import { applyBalanceRules } from '@/engine/balance';
 import {
   autoGenerateCyclePlanV3,
   generateCyclePlanV3,
@@ -341,7 +340,6 @@ export async function refreshHistory(): Promise<void> {
 export interface StartUserArgs {
   profile: Profile;
   muscleGoals?: Record<string, MuscleGoal> | null;
-  applyBalance?: boolean;
   /** Bloc O — 'auto' (moteur) ou 'manual' (grille à la main). Default 'auto'. */
   buildMode?: 'auto' | 'manual';
 }
@@ -350,7 +348,6 @@ export async function startUser(args: StartUserArgs): Promise<UserState> {
   const catalog = requireCatalog();
   const newState = engine.startUser(args.profile, catalog, {
     muscleGoals: args.muscleGoals ?? null,
-    applyBalance: args.applyBalance ?? true,
   });
   newState.build_mode = args.buildMode ?? 'auto';
   await txInitUser(newState);
@@ -765,8 +762,6 @@ export async function addExerciseToCurrentSession(
     next.profile,
     next.current_week_in_cycle,
     {
-      muscleGoals:
-        Object.keys(next.muscle_goals).length > 0 ? next.muscle_goals : null,
       deloadActive: isDeloadActive(next),
       state: next,
     },
@@ -1160,8 +1155,6 @@ export async function setManualE1rm(args: SetManualE1rmArgs): Promise<UserState>
       next.profile,
       next.current_week_in_cycle,
       {
-        muscleGoals:
-          Object.keys(next.muscle_goals).length > 0 ? next.muscle_goals : null,
         deloadActive: isDeloadActive(next),
         state: next,
       },
@@ -1331,29 +1324,6 @@ export async function updateProfile(profile: Profile): Promise<UserState> {
   const [vMin, vMax] = initialVolumeBounds(profile);
   next.volume_min = vMin;
   next.volume_max = vMax;
-  await txSaveUserStateOnly(next);
-  useCoachOsStore.setState({ userState: next });
-  requestBackup();
-  return next;
-}
-
-/**
- * Remplace le `muscle_goals` courant et applique R1-R4 par-dessus.
- * `newGoals` doit contenir au minimum les PRIORITAIRE choisis par l'utilisateur ;
- * R1-R4 complète avec les SUGGERE manquants. Les NON_COUVERT explicites
- * fournis dans `newGoals` sont respectés (cf. contrat `applyBalanceRules`).
- */
-export async function updateMuscleGoals(
-  newGoals: Record<string, MuscleGoal>,
-): Promise<UserState> {
-  const next = requireUserState();
-  const goals: Record<string, MuscleGoal> = { ...newGoals };
-  for (const sg of applyBalanceRules(goals)) {
-    if (goals[sg.muscle] === undefined) {
-      goals[sg.muscle] = sg;
-    }
-  }
-  next.muscle_goals = goals;
   await txSaveUserStateOnly(next);
   useCoachOsStore.setState({ userState: next });
   requestBackup();
@@ -1537,54 +1507,14 @@ export async function endOfCycle(args: EndOfCycleArgs = {}) {
   // que soit l'action. Cas typique : l'onboarding partiel peut changer
   // les priorités musculaires ET le mode de construction en un seul flux ;
   // les deux modifs doivent tomber dans l'état.
+  // Dump 2.4 (D2) — les intentions sont prises telles quelles : la fenêtre
+  // « Équilibre » a déjà proposé les muscles à entretenir, rien n'est ajouté.
   if (args.newMuscleGoals) {
-    const goals: Record<string, MuscleGoal> = { ...args.newMuscleGoals };
-    for (const sg of applyBalanceRules(goals)) {
-      if (goals[sg.muscle] === undefined) goals[sg.muscle] = sg;
-    }
-    next.muscle_goals = goals;
+    next.muscle_goals = { ...args.newMuscleGoals };
   }
 
-  // Bloc R (A2) — un muscle qui change d'objectif change les reps cibles de ses
-  // exos → leur plafond "faux mais cohérent" (biaisé par les reps) devient
-  // incohérent. Décision Azur : on remet ces exos à zéro (bootstrap, comme
-  // jamais faits) plutôt que de laisser fuiter l'info entre deux cycles de modes
-  // différents. La courbe de force de l'exo repart à zéro (assumé).
-  const resetExoIds: string[] = [];
-  if (args.newMuscleGoals) {
-    const changedMuscles = new Set<string>();
-    for (const m of new Set([
-      ...Object.keys(before.muscle_goals),
-      ...Object.keys(next.muscle_goals),
-    ])) {
-      if (before.muscle_goals[m]?.objective !== next.muscle_goals[m]?.objective) {
-        changedMuscles.add(m);
-      }
-    }
-    if (changedMuscles.size > 0) {
-      for (const exId of Object.keys(next.e1rm)) {
-        let ex;
-        try {
-          ex = catalog.get(exId);
-        } catch {
-          continue;
-        }
-        const primaryChanged = Object.entries(ex.muscles).some(
-          ([m, coef]) => coef >= 1.0 && changedMuscles.has(m),
-        );
-        if (primaryChanged) {
-          delete next.e1rm[exId];
-          // Refonte progression — l'objectif change ⇒ R change ⇒ le plancher
-          // (lié à R) devient incohérent : on le remet à zéro avec l'e1RM.
-          delete next.prescribed_load_floor[exId];
-          // Chantier D — idem pour le cliquet de reps (le plancher de reps est
-          // lié à l'objectif via son seed).
-          delete next.prescribed_reps_floor[exId];
-          resetExoIds.push(exId);
-        }
-      }
-    }
-  }
+  // Dump 2.4 (D4, n° 24) — plus aucune remise à zéro de Plafond ni de courbe
+  // quand une intention change : le Plafond mesure, il ne dépend d'aucune cible.
   if (args.nextBuildMode !== undefined) {
     next.build_mode = args.nextBuildMode;
   }
@@ -1623,7 +1553,6 @@ export async function endOfCycle(args: EndOfCycleArgs = {}) {
     state: next,
     review,
     closedCycleIndex,
-    resetSnapshotExoIds: resetExoIds,
   });
   await refreshHistory();
   useCoachOsStore.setState({
@@ -1672,7 +1601,6 @@ export interface EngineApi {
   endOfWeek: typeof endOfWeek;
   endOfCycle: typeof endOfCycle;
   updateProfile: typeof updateProfile;
-  updateMuscleGoals: typeof updateMuscleGoals;
   setEquipmentOverride: typeof setEquipmentOverride;
   clearEquipmentOverride: typeof clearEquipmentOverride;
   resetApp: typeof resetApp;
@@ -1725,7 +1653,6 @@ export function useEngine(): EngineApi {
       endOfWeek,
       endOfCycle,
       updateProfile,
-      updateMuscleGoals,
       setEquipmentOverride,
       clearEquipmentOverride,
       resetApp,

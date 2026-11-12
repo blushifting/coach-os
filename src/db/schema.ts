@@ -37,7 +37,8 @@ export interface SerializedProfile {
   sex: string;
   age: number;
   level: string;
-  objective: string;
+  /** Objectif global, supprimé en 2.4 (D3) : présent sur les anciens blobs, ignoré. */
+  objective?: string;
   sessions_per_week: number;
   bodyweight_kg: number;
   available_equip: string[];
@@ -59,10 +60,8 @@ export interface SerializedUserState {
   cycle_index: number;
   history: SessionFeedback[];
   last_used_for_muscle: Record<string, string>;
-  muscle_goals: Record<
-    string,
-    { muscle: string; objective: string; status: string; priority_rank: number }
-  >;
+  /** Nouveau format (`intention`) ou ancien (`objective` + `status`), migré à la lecture. */
+  muscle_goals: Record<string, import('@/engine/intentions').StoredMuscleGoal>;
   current_cycle_plan: import('@/engine/models').WeeklyTemplate | null;
   /** Bloc O — mode de construction ('auto'|'manual'). Absent sur anciens blobs (default 'auto'). */
   build_mode?: 'auto' | 'manual';

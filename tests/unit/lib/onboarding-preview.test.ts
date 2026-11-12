@@ -7,8 +7,9 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { developGoals } from '@/test-utils/fixtures';
 import { Catalog } from '@/engine/catalog';
-import { bootstrapMuscleGoalsFromProfile, startUser } from '@/engine/engine';
+import { startUser } from '@/engine/engine';
 import {
   analyzeProgramTension,
   applyVariantsToTemplate,
@@ -21,7 +22,7 @@ import {
 } from '@/lib/onboarding-preview';
 import {
   ExType,
-  Objective,
+  
   type DayTemplate,
   type MuscleGoal,
   type Profile,
@@ -37,7 +38,7 @@ const catalog = new Catalog();
  * `buildPreviewTemplate`, retiré au Bloc O avec les programmes tout faits).
  */
 function previewTemplate(p: Profile, goals: Record<string, MuscleGoal>) {
-  const tmp = startUser(p, catalog, { muscleGoals: goals, applyBalance: false });
+  const tmp = startUser(p, catalog, { muscleGoals: goals });
   return {
     template: autoGenerateCyclePlanV3(tmp, catalog),
     blocking: [] as readonly string[],
@@ -47,7 +48,7 @@ function previewTemplate(p: Profile, goals: Record<string, MuscleGoal>) {
 describe('preview custom template', () => {
   it('mode custom : retourne un WeeklyTemplate non-null sans blocking', () => {
     const p = profile();
-    const goals = bootstrapMuscleGoalsFromProfile(p, [
+    const goals = developGoals([
       'pectoraux',
       'dos_largeur',
       'quadriceps',
@@ -60,7 +61,7 @@ describe('preview custom template', () => {
 
   it('preview ne touche pas un éventuel state existant (in-memory pur)', () => {
     const p = profile();
-    const goals = bootstrapMuscleGoalsFromProfile(p, ['pectoraux']);
+    const goals = developGoals(['pectoraux']);
     // Sentinel : un state existant.
     const sentinel = startUser(p, catalog, { muscleGoals: goals });
     const before = JSON.stringify(sentinel);
@@ -72,7 +73,7 @@ describe('preview custom template', () => {
 describe('weeklyVolumeByMuscle', () => {
   it('accumule base_sets par muscle primaire', () => {
     const p = profile();
-    const goals = bootstrapMuscleGoalsFromProfile(p, ['pectoraux', 'quadriceps']);
+    const goals = developGoals(['pectoraux', 'quadriceps']);
     const { template } = previewTemplate(p, goals);
     expect(template).not.toBeNull();
     const volume = weeklyVolumeByMuscle(template!, catalog);
@@ -84,7 +85,7 @@ describe('weeklyVolumeByMuscle', () => {
 
   it('weightedWeeklyVolumeByMuscle pondère (synergistes inclus) ≥ primaires seuls', () => {
     const p = profile();
-    const goals = bootstrapMuscleGoalsFromProfile(p, ['pectoraux', 'quadriceps']);
+    const goals = developGoals(['pectoraux', 'quadriceps']);
     const { template } = previewTemplate(p, goals);
     expect(template).not.toBeNull();
     const weighted = weightedWeeklyVolumeByMuscle(template!, catalog);
@@ -99,7 +100,7 @@ describe('weeklyVolumeByMuscle', () => {
 describe('applyVariantsToTemplate', () => {
   it('remplace uniquement exercise_id, conserve base_sets et progression', () => {
     const p = profile();
-    const goals = bootstrapMuscleGoalsFromProfile(p, ['pectoraux']);
+    const goals = developGoals(['pectoraux']);
     const { template } = previewTemplate(p, goals);
     expect(template).not.toBeNull();
     const firstSlot = template!.days[0]?.exercises[0];
@@ -122,7 +123,7 @@ describe('applyVariantsToTemplate', () => {
 
   it('liste vide → retourne le template original', () => {
     const p = profile();
-    const goals = bootstrapMuscleGoalsFromProfile(p, ['pectoraux']);
+    const goals = developGoals(['pectoraux']);
     const { template } = previewTemplate(p, goals);
     const next = applyVariantsToTemplate(template!, []);
     expect(next).toBe(template); // identité référentielle
@@ -130,7 +131,7 @@ describe('applyVariantsToTemplate', () => {
 
   it('index hors plage → silencieusement ignoré', () => {
     const p = profile();
-    const goals = bootstrapMuscleGoalsFromProfile(p, ['pectoraux']);
+    const goals = developGoals(['pectoraux']);
     const { template } = previewTemplate(p, goals);
     const next = applyVariantsToTemplate(template!, [
       { dayIndex: 99, slotIndex: 99, newExerciseId: 'inexistant' },
@@ -254,9 +255,8 @@ describe('estimateExerciseDurationMinutes / analyzeProgramTension (Conv #11h)', 
   it('full-body 3j default : durées équilibrées entre les jours (Conv #15-11)', () => {
     const p = profile({
       sessions_per_week: 3,
-      objective: Objective.HYPERTROPHIE,
     });
-    const goals = bootstrapMuscleGoalsFromProfile(p, [
+    const goals = developGoals([
       'pectoraux',
       'dos_largeur',
       'quadriceps',

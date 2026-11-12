@@ -6,6 +6,8 @@
  * consomment ces structures sans en définir.
  */
 
+import type { StoredMuscleGoal } from './intentions';
+
 // =============================================================================
 // Enums
 // =============================================================================
@@ -103,34 +105,19 @@ export enum GymBrand {
 }
 
 /**
- * Objectif global du profil utilisateur (path "rapide" de l'onboarding).
- * Conservé pour rétrocompat. Pour les décisions algorithmiques fines (par muscle),
- * voir `MuscleObjective`. Puissance retirée en V1 (cf. 09 §3.5).
+ * Dump 2.4, étape 2 (D2, D3) — intention de l'utilisateur pour un muscle.
+ *
+ * Elle ne règle que la DOSE (séries par semaine), jamais la manière (reps,
+ * effort). Un muscle sans intention n'a pas d'entrée dans `muscle_goals` : il
+ * reste suivi (mêmes repères de volume), sans cible.
+ *
+ * Remplace les objectifs Force / Hypertrophie / Endurance / Maintien et les
+ * statuts prioritaire / suggéré / non couvert (migrés à la lecture, cf.
+ * `migrateMuscleGoals`).
  */
-export enum Objective {
-  HYPERTROPHIE = 'hypertrophie',
-  FORCE = 'force',
-  ENDURANCE = 'endurance',
-}
-
-/**
- * Objectif appliqué à un muscle dans le nouveau modèle (cf. 09 §2.1).
- * MAINTIEN n'existe pas au niveau profil global (un user ne peut pas vouloir
- * "maintenir tous ses muscles" comme objectif principal — c'est un statut
- * par muscle).
- */
-export enum MuscleObjective {
-  FORCE = 'force',
-  HYPERTROPHIE = 'hypertrophie',
-  ENDURANCE = 'endurance',
-  MAINTIEN = 'maintien',
-}
-
-/** Statut algorithmique d'un muscle dans le programme courant (cf. 09 §3.1). */
-export enum MuscleStatus {
-  PRIORITAIRE = 'prioritaire',
-  SUGGERE = 'suggere',
-  NON_COUVERT = 'non_couvert',
+export enum MuscleIntention {
+  DEVELOPPER = 'developper',
+  ENTRETENIR = 'entretenir',
 }
 
 /** Règle de progression hebdo d'un PlannedExercise (cf. 09 §2.1). */
@@ -193,18 +180,6 @@ export function chargesForPreference(
     default:
       return null;
   }
-}
-
-// Mapping legacy Objective → MuscleObjective (cf. 09 §2.7).
-const LEGACY_TO_MUSCLE: Record<Objective, MuscleObjective> = {
-  [Objective.FORCE]: MuscleObjective.FORCE,
-  [Objective.HYPERTROPHIE]: MuscleObjective.HYPERTROPHIE,
-  [Objective.ENDURANCE]: MuscleObjective.ENDURANCE,
-};
-
-/** Convertit un Objective global en MuscleObjective. */
-export function objectiveToMuscleObjective(obj: Objective): MuscleObjective {
-  return LEGACY_TO_MUSCLE[obj];
 }
 
 // Liste canonique des 15 muscles cibles (cf. 06 §1.3, 03 §8.1).
@@ -332,7 +307,6 @@ export interface Profile {
   age: number;
   /** @deprecated Conv #22 — non lu par le nouveau path, conservé pour rétrocompat. */
   level: Level;
-  objective: Objective;
   /** 2..6 */
   sessions_per_week: number;
   bodyweight_kg: number;
@@ -365,7 +339,6 @@ export interface ProfileInput {
   sex: Sex;
   age: number;
   level: Level;
-  objective: Objective;
   sessions_per_week: number;
   bodyweight_kg: number;
   available_equip?: Set<string> | Iterable<string>;
@@ -389,7 +362,6 @@ export function makeProfile(input: ProfileInput): Profile {
     sex: input.sex,
     age: input.age,
     level: input.level,
-    objective: input.objective,
     sessions_per_week: input.sessions_per_week,
     bodyweight_kg: input.bodyweight_kg,
     available_equip: new Set(input.available_equip ?? []),
@@ -470,31 +442,34 @@ export interface SessionFeedback {
 // =============================================================================
 
 /**
- * Objectif appliqué à un muscle dans le programme courant.
- * `priority_rank` : 1 = plus haute priorité parmi les PRIORITAIRES.
- * SUGGERE et NON_COUVERT ont rank = 99 par convention.
+ * Intention choisie pour un muscle (cf. `MuscleIntention`).
+ * `priority_rank` : 1, 2, 3… parmi les muscles à développer (ordre d'affichage
+ * et du générateur) ; 99 par convention pour un muscle à entretenir.
  */
 export interface MuscleGoal {
   muscle: string;
-  objective: MuscleObjective;
-  status: MuscleStatus;
+  intention: MuscleIntention;
   priority_rank: number;
 }
 
 export interface MuscleGoalInput {
   muscle: string;
-  objective: MuscleObjective;
-  status: MuscleStatus;
+  intention: MuscleIntention;
   priority_rank?: number;
 }
 
 export function makeMuscleGoal(input: MuscleGoalInput): MuscleGoal {
   return {
     muscle: input.muscle,
-    objective: input.objective,
-    status: input.status,
-    priority_rank: input.priority_rank ?? 99,
+    intention: input.intention,
+    priority_rank:
+      input.intention === MuscleIntention.DEVELOPPER ? (input.priority_rank ?? 99) : 99,
   };
+}
+
+/** Le muscle est-il à développer ? (`undefined` = sans intention.) */
+export function isDevelop(goal: MuscleGoal | undefined): boolean {
+  return goal?.intention === MuscleIntention.DEVELOPPER;
 }
 
 // =============================================================================
@@ -670,9 +645,10 @@ export interface CycleReview {
    * Conv #14c-7 — snapshot de `state.muscle_goals` posé au moment du bilan
    * (≈ état des objectifs en fin de cycle). Sert à afficher "visé vs fait"
    * dans l'historique des cycles. Optionnel : les anciens cycles clôturés
-   * avant cette feature n'auront pas ce champ.
+   * avant cette feature n'auront pas ce champ. Les cycles clos avant la 2.4 le
+   * portent dans l'ancien format : à lire via `migrateMuscleGoalList`.
    */
-  muscle_goals_snapshot?: MuscleGoal[];
+  muscle_goals_snapshot?: StoredMuscleGoal[];
 }
 
 export interface CycleReviewInput {
@@ -687,7 +663,7 @@ export interface CycleReviewInput {
   PRs: Array<[string, number]>;
   suggested_action: SuggestedAction;
   warnings?: string[];
-  muscle_goals_snapshot?: MuscleGoal[];
+  muscle_goals_snapshot?: StoredMuscleGoal[];
 }
 
 export function makeCycleReview(input: CycleReviewInput): CycleReview {

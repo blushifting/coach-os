@@ -27,7 +27,7 @@ import {
 import { ImportValidationError } from '@/io/import';
 import { exportToJsonString } from '@/io/export';
 import { Sex, type Profile } from '@/engine/models';
-import { muscleLabel, objectiveLabel } from '@/lib/balance-reasons';
+import { muscleLabel } from '@/lib/balance-reasons';
 import {
   goalsDraftFromState,
   profileDraftFromState,
@@ -208,14 +208,14 @@ export default function ProfilPage() {
           />
           {/* Conv #22 — Niveau et équipement retirés de l'identité (auto-
               calibration cycle / révélés par les choix d'exos). Conv #20 —
-              Séances/sem + Objectif gérés via "Priorités & programme". */}
+              Séances/sem gérées via "Priorités & programme". */}
         </dl>
       </Card>
 
       <Card>
         <div className="mb-3 flex items-center justify-between">
           <span className="text-sm font-semibold text-white">
-            Objectifs musculaires
+            Tes muscles
           </span>
           <Button
             variant="ghost"
@@ -233,38 +233,36 @@ export default function ProfilPage() {
         </p>
         {goalsDraft.priorities.length === 0 ? (
           <p className="text-sm text-anthracite-300">
-            Aucun muscle prioritaire pour l'instant.
+            Aucun muscle à développer pour l'instant.
           </p>
         ) : (
           <ul
             className="flex flex-col gap-1.5"
             data-testid="profil-goals-summary"
           >
-            {goalsDraft.priorities.map((p, i) => (
+            {goalsDraft.priorities.map((m, i) => (
               <li
-                key={p.muscle}
-                data-testid={`profil-goal-summary-${p.muscle}`}
+                key={m}
+                data-testid={`profil-goal-summary-${m}`}
                 className="flex items-center justify-between rounded-lg bg-anthracite-900 px-3 py-2 text-sm"
               >
                 <span className="text-white">
                   <span className="mr-2 font-semibold text-sang-500 tabular-nums">
                     #{i + 1}
                   </span>
-                  {muscleLabel(p.muscle)}
+                  {muscleLabel(m)}
                 </span>
-                <span className="text-xs text-anthracite-300">
-                  {objectiveLabel(p.objective)}
-                </span>
+                <span className="text-xs text-anthracite-300">Développer</span>
               </li>
             ))}
           </ul>
         )}
-        {goalsDraft.acceptedSuggestions.size > 0 && (
+        {goalsDraft.maintenance.size > 0 && (
           <div
             className="mt-3 text-xs text-anthracite-300"
             data-testid="profil-suggested-summary"
           >
-            Équilibre&nbsp;: {[...goalsDraft.acceptedSuggestions].map(muscleLabel).join(', ')}.
+            À entretenir&nbsp;: {[...goalsDraft.maintenance].map(muscleLabel).join(', ')}.
           </div>
         )}
       </Card>

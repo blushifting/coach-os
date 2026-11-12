@@ -21,10 +21,12 @@ import { z } from 'zod';
 // Sous-schémas : modèles métier
 // =============================================================================
 
+// Dump 2.4 — nouveau format (`intention`) ; l'ancien reste lisible (migré à la lecture).
 const muscleGoalSchema = z.object({
   muscle: z.string(),
-  objective: z.enum(['force', 'hypertrophie', 'endurance', 'maintien']),
-  status: z.enum(['prioritaire', 'suggere', 'non_couvert']),
+  intention: z.enum(['developper', 'entretenir']).optional(),
+  objective: z.enum(['force', 'hypertrophie', 'endurance', 'maintien']).optional(),
+  status: z.enum(['prioritaire', 'suggere', 'non_couvert']).optional(),
   priority_rank: z.number().int(),
 });
 
@@ -129,7 +131,7 @@ const serializedProfileSchema = z.object({
   sex: z.string(),
   age: z.number().int(),
   level: z.string(),
-  objective: z.string(),
+  objective: z.string().optional(),
   sessions_per_week: z.number().int(),
   bodyweight_kg: z.number(),
   available_equip: z.array(z.string()),

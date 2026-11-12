@@ -22,7 +22,8 @@ import type {
   SessionFeedback,
   UserState,
 } from '@/engine/models';
-import { exercisePrimaires, MuscleStatus } from '@/engine/models';
+import { exercisePrimaires, MuscleIntention } from '@/engine/models';
+import { migrateMuscleGoalList } from '@/engine/intentions';
 import { effectiveVolumeBounds } from '@/engine/volume';
 import {
   addDays,
@@ -81,14 +82,16 @@ export function sumMuscleSets(
  * - `sous_min` : < V_min effectif (sous-dosé).
  * - `ok` : V_min ≤ x ≤ V_max.
  * - `depassement` : > V_max (sur-volume).
- * - `hors_scope` : muscle non couvert par les objectifs (V_min = 0).
+ * - `sans_intention` : muscle sans intention (dump 2.4, D2) : suivi, sans cible,
+ *   donc jamais d'alerte. Ne se déduit plus de bornes nulles : tous les muscles
+ *   ont des repères.
  */
 export type CoverageStatus =
   | 'non_travaille'
   | 'sous_min'
   | 'ok'
   | 'depassement'
-  | 'hors_scope';
+  | 'sans_intention';
 
 export interface MuscleCoverage {
   readonly muscle: string;
@@ -140,8 +143,9 @@ export function classifyVolume(
   sets: number,
   vMin: number,
   vMax: number,
+  hasIntention = true,
 ): CoverageStatus {
-  if (vMin === 0 && vMax === 0) return 'hors_scope';
+  if (!hasIntention || (vMin === 0 && vMax === 0)) return 'sans_intention';
   if (sets === 0) return 'non_travaille';
   if (sets < vMin - 0.05) return 'sous_min';
   if (sets > vMax + 0.05) return 'depassement';
@@ -183,7 +187,7 @@ export function computeCoverageThisWeek(
       ...effectiveVolumeBounds(state as UserState, muscle),
     );
     const sets = counts[muscle] ?? 0;
-    const status = classifyVolume(sets, vMin, vMax);
+    const status = classifyVolume(sets, vMin, vMax, state.muscle_goals[muscle] !== undefined);
     const denom = vMax > 0 ? vMax : Math.max(1, sets);
     const intensity = Math.min(1, sets / denom);
     out.push({ muscle, sets, vMin, vMax, status, intensity });
@@ -255,10 +259,8 @@ export interface MuscleVolumeSeries {
   readonly vMax: number;
   /** Séries pondérées par semaine, ordre chronologique ancien → récent. */
   readonly points: ReadonlyArray<WeeklyVolumePoint>;
-  /** Conv #14c-6 — statut du muscle (PRIORITAIRE / SUGGERE / NON_COUVERT). */
-  readonly status: string;
-  /** Objectif du muscle (hypertrophie / force / maintien). */
-  readonly objective: string;
+  /** Intention du muscle, ou `null` s'il n'en a pas (suivi sans cible). */
+  readonly intention: MuscleIntention | null;
 }
 
 /**
@@ -339,14 +341,12 @@ export function computeVolumeHistory(
         cycleIndex: cycleByWeek.get(ws) ?? null,
       };
     });
-    const goal = state.muscle_goals[muscle];
     return {
       muscle,
       vMin,
       vMax,
       points,
-      status: goal?.status ?? 'NON_COUVERT',
-      objective: goal?.objective ?? 'maintien',
+      intention: state.muscle_goals[muscle]?.intention ?? null,
     };
   });
 }
@@ -362,16 +362,16 @@ export interface MuscleCycleVolume {
   readonly vMin: number;
   readonly vMax: number;
   readonly status: CoverageStatus;
-  /** PRIORITAIRE / SUGGERE / NON_COUVERT — tri + badge éventuel. */
-  readonly goalStatus: string;
+  /** Intention du muscle — tri. */
+  readonly intention: MuscleIntention;
 }
 
 /**
  * #15 (E-3) — volume réalisé par muscle sur un cycle, en séries pondérées
  * MOYENNES par semaine de travail (les `workingWeeks` semaines hors déload),
  * comparé à la bande cible V_min–V_max. Répond à « as-tu tenu ta cible hebdo
- * sur le cycle ? ». Ne renvoie que les muscles suivis (V_max > 0), prioritaires
- * d'abord. Calculé à la volée depuis les feedbacks — rien de persisté (les
+ * sur le cycle ? ». Ne renvoie que les muscles qui ont une intention, ceux à
+ * développer d'abord. Calculé à la volée depuis les feedbacks — rien de persisté (les
  * bornes utilisées sont celles de l'état COURANT, exactes pour le cycle en
  * cours ; approximation acceptable pour un bilan archivé si les objectifs ont
  * changé depuis).
@@ -391,11 +391,12 @@ export function computeCycleVolumeByMuscle(
     musclesOf,
   );
   const out: MuscleCycleVolume[] = [];
-  // Muscles SUIVIS uniquement. Un muscle travaillé hors objectifs n'a pas de
-  // bande cible : sa barre n'aurait aucune référence à montrer. Sa progression
-  // se lit sur la silhouette du bilan (Conv #76 — un temps listés ici, retirés
-  // après essai).
+  // Muscles qui ont une intention (D10 : les muscles engagés). Les autres
+  // restent visibles sur la silhouette du bilan ; leur repli « voir les autres
+  // muscles » arrive avec les écrans de volume (étape 3).
   for (const muscle of Object.keys(state.volume_min)) {
+    const goal = state.muscle_goals[muscle];
+    if (goal === undefined) continue;
     const [vMin, vMax] = displayVolumeBounds(
       ...effectiveVolumeBounds(state as UserState, muscle),
     );
@@ -407,13 +408,13 @@ export function computeCycleVolumeByMuscle(
       vMin,
       vMax,
       status: classifyVolume(avg, vMin, vMax),
-      goalStatus: state.muscle_goals[muscle]?.status ?? MuscleStatus.NON_COUVERT,
+      intention: goal.intention,
     });
   }
-  // Prioritaires d'abord (rank croissant), puis alpha.
+  // À développer d'abord (rank croissant), puis alpha.
   out.sort((a, b) => {
-    const aPrio = a.goalStatus === MuscleStatus.PRIORITAIRE ? 0 : 1;
-    const bPrio = b.goalStatus === MuscleStatus.PRIORITAIRE ? 0 : 1;
+    const aPrio = a.intention === MuscleIntention.DEVELOPPER ? 0 : 1;
+    const bPrio = b.intention === MuscleIntention.DEVELOPPER ? 0 : 1;
     if (aPrio !== bPrio) return aPrio - bPrio;
     if (aPrio === 0) {
       const ra = state.muscle_goals[a.muscle]?.priority_rank ?? 99;
@@ -456,7 +457,7 @@ export interface CycleHistoryItem {
    * `progresses/plateau/undertrained/overshoot`. `null` si le cycle n'a pas
    * été clôturé avec la nouvelle feature (rétrocompat).
    */
-  readonly objectivesByMuscle: ReadonlyArray<MuscleObjectiveOutcome> | null;
+  readonly objectivesByMuscle: ReadonlyArray<MuscleIntentionOutcome> | null;
 }
 
 export type MuscleOutcomeStatus =
@@ -466,13 +467,11 @@ export type MuscleOutcomeStatus =
   | 'overshoot'
   | 'unknown';
 
-export interface MuscleObjectiveOutcome {
+export interface MuscleIntentionOutcome {
   readonly muscle: string;
-  /** ex: hypertrophie / force / maintien (string libre côté UI). */
-  readonly objective: string;
-  /** Statut du muscle dans le programme courant (PRIORITAIRE, SUGGERE, ...). */
-  readonly status: string;
-  /** Rang de priorité (1 = top) — utilisé pour trier les PRIORITAIRES. */
+  /** Intention du muscle à la clôture du cycle (ancien format migré). */
+  readonly intention: MuscleIntention;
+  /** Rang (1 = top) — trie les muscles à développer. */
   readonly priorityRank: number;
   /** Comment ce muscle a fini le cycle d'après la classification. */
   readonly outcome: MuscleOutcomeStatus;
@@ -542,15 +541,16 @@ export function buildCycleHistory(
 
 function buildObjectivesByMuscle(
   review: CycleReview,
-): ReadonlyArray<MuscleObjectiveOutcome> | null {
-  const snapshot = review.muscle_goals_snapshot;
-  if (snapshot === undefined || snapshot.length === 0) return null;
+): ReadonlyArray<MuscleIntentionOutcome> | null {
+  // Dump 2.4 — les cycles clos avant la 2.4 portent l'ancien format.
+  const snapshot = migrateMuscleGoalList(review.muscle_goals_snapshot ?? []);
+  if (snapshot.length === 0) return null;
   const progressed = new Set(review.muscles_progresses);
   const plateau = new Set(review.muscles_plateau);
   const undertrained = new Set(review.muscles_undertrained);
   const overshoot = new Set(review.muscles_overshoot);
 
-  const items: MuscleObjectiveOutcome[] = snapshot.map((g) => {
+  const items: MuscleIntentionOutcome[] = snapshot.map((g) => {
     let outcome: MuscleOutcomeStatus = 'unknown';
     if (progressed.has(g.muscle)) outcome = 'progressed';
     else if (plateau.has(g.muscle)) outcome = 'plateau';
@@ -558,17 +558,16 @@ function buildObjectivesByMuscle(
     else if (overshoot.has(g.muscle)) outcome = 'overshoot';
     return {
       muscle: g.muscle,
-      objective: g.objective,
-      status: g.status,
+      intention: g.intention,
       priorityRank: g.priority_rank,
       outcome,
     };
   });
 
-  // Tri : PRIORITAIRE (rank croissant) puis le reste par muscle alphabétique.
+  // Tri : à développer (rank croissant) puis le reste par muscle alphabétique.
   items.sort((a, b) => {
-    const aPrio = a.status === MuscleStatus.PRIORITAIRE ? 0 : 1;
-    const bPrio = b.status === MuscleStatus.PRIORITAIRE ? 0 : 1;
+    const aPrio = a.intention === MuscleIntention.DEVELOPPER ? 0 : 1;
+    const bPrio = b.intention === MuscleIntention.DEVELOPPER ? 0 : 1;
     if (aPrio !== bPrio) return aPrio - bPrio;
     if (aPrio === 0) return a.priorityRank - b.priorityRank;
     return a.muscle.localeCompare(b.muscle);

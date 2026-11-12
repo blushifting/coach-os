@@ -3,7 +3,7 @@
  *
  * `generateSession(state, catalog, day_index, date)` lit
  * `state.current_cycle_plan.days[day_index]` et calcule les charges live via
- * `buildPrescription` (muscle_goals + state).
+ * `buildPrescription` (state).
  */
 
 import type { Catalog } from './catalog';
@@ -22,11 +22,8 @@ import type {
 import {
   ChargeType,
   ExType,
-  MuscleStatus,
   exercisePrimaires,
-  makeMuscleGoal,
   makeUserState,
-  objectiveToMuscleObjective,
 } from './models';
 import {
   buildPrescription,
@@ -47,7 +44,6 @@ import {
   isDeloadWeek,
 } from './volume';
 import { prescriptionWeek } from './cycle-week';
-import { applyBalanceRules } from './balance';
 import { generateCycleReview } from './lifecycle';
 
 // =============================================================================
@@ -55,8 +51,12 @@ import { generateCycleReview } from './lifecycle';
 // =============================================================================
 
 export interface StartUserOptions {
+  /**
+   * Intentions choisies par l'utilisateur, telles quelles. Dump 2.4 (D2) : les
+   * muscles proposés par la fenêtre « Équilibre » n'y figurent que s'il les a
+   * acceptés ; rien n'est ajouté ici.
+   */
   muscleGoals?: Record<string, MuscleGoal> | null;
-  applyBalance?: boolean;
 }
 
 export function startUser(
@@ -65,7 +65,6 @@ export function startUser(
   options: StartUserOptions = {},
 ): UserState {
   const muscleGoals = options.muscleGoals ?? null;
-  const applyBalance = options.applyBalance ?? true;
 
   const [vMin, vMax] = initialVolumeBounds(profile);
   const state = makeUserState(profile);
@@ -74,31 +73,9 @@ export function startUser(
 
   if (muscleGoals && Object.keys(muscleGoals).length > 0) {
     state.muscle_goals = { ...muscleGoals };
-    if (applyBalance) {
-      for (const sg of applyBalanceRules(state.muscle_goals)) {
-        state.muscle_goals[sg.muscle] = sg;
-      }
-    }
   }
 
   return state;
-}
-
-export function bootstrapMuscleGoalsFromProfile(
-  profile: Profile,
-  priorityMuscles: readonly string[],
-): Record<string, MuscleGoal> {
-  const targetObj = objectiveToMuscleObjective(profile.objective);
-  const goals: Record<string, MuscleGoal> = {};
-  priorityMuscles.forEach((m, i) => {
-    goals[m] = makeMuscleGoal({
-      muscle: m,
-      objective: targetObj,
-      status: MuscleStatus.PRIORITAIRE,
-      priority_rank: i + 1,
-    });
-  });
-  return goals;
 }
 
 export function calibrateInitialE1rm(
@@ -249,8 +226,6 @@ export function generateSession(
     const prescription: SetPrescription = buildPrescription(
       ex, e1rmTotal, state.profile, prescriptionWeek(weekInCycle),
       {
-        muscleGoals:
-          Object.keys(state.muscle_goals).length > 0 ? state.muscle_goals : null,
         deloadActive,
         state,
       },
@@ -320,8 +295,6 @@ export function buildCustomSessionPlan(
       state.profile,
       prescriptionWeek(week),
       {
-        muscleGoals:
-          Object.keys(state.muscle_goals).length > 0 ? state.muscle_goals : null,
         deloadActive: isDeloadWeek(state, week),
         state,
       },
@@ -376,8 +349,6 @@ export function replaceSessionItem(
   const prescription: SetPrescription = buildPrescription(
     newEx, e1rmTotal, state.profile, state.current_week_in_cycle,
     {
-      muscleGoals:
-        Object.keys(state.muscle_goals).length > 0 ? state.muscle_goals : null,
       deloadActive: isDeloadActive(state),
       state,
     },

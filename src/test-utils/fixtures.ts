@@ -5,9 +5,7 @@
 
 import {
   Level,
-  MuscleObjective,
-  MuscleStatus,
-  Objective,
+  MuscleIntention,
   Sex,
   makeMuscleGoal,
   makeProfile,
@@ -30,7 +28,6 @@ export function makeTestProfile(overrides: Partial<Profile> = {}): Profile {
     sex: Sex.HOMME,
     age: 30,
     level: Level.INTERMEDIAIRE,
-    objective: Objective.HYPERTROPHIE,
     sessions_per_week: 4,
     bodyweight_kg: 80,
     available_equip: EQUIP_FULL,
@@ -42,21 +39,31 @@ export function makeTestMuscleGoals(): Record<string, MuscleGoal> {
   return {
     pectoraux: makeMuscleGoal({
       muscle: 'pectoraux',
-      objective: MuscleObjective.HYPERTROPHIE,
-      status: MuscleStatus.PRIORITAIRE,
+      intention: MuscleIntention.DEVELOPPER,
       priority_rank: 1,
     }),
     dos_largeur: makeMuscleGoal({
       muscle: 'dos_largeur',
-      objective: MuscleObjective.HYPERTROPHIE,
-      status: MuscleStatus.PRIORITAIRE,
+      intention: MuscleIntention.DEVELOPPER,
       priority_rank: 2,
     }),
     quadriceps: makeMuscleGoal({
       muscle: 'quadriceps',
-      objective: MuscleObjective.HYPERTROPHIE,
-      status: MuscleStatus.PRIORITAIRE,
+      intention: MuscleIntention.DEVELOPPER,
       priority_rank: 3,
     }),
   };
+}
+
+/** Muscles à développer, rangés dans l'ordre donné (1, 2, 3…). */
+export function developGoals(muscles: readonly string[]): Record<string, MuscleGoal> {
+  const goals: Record<string, MuscleGoal> = {};
+  muscles.forEach((m, i) => {
+    goals[m] = makeMuscleGoal({
+      muscle: m,
+      intention: MuscleIntention.DEVELOPPER,
+      priority_rank: i + 1,
+    });
+  });
+  return goals;
 }

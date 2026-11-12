@@ -161,13 +161,14 @@ function classifyMusclesOutcome(
     } else if (outcome === 'down') {
       plateau.push(muscle);
     }
-    // Conv #76 — bornes EFFECTIVES (pondérées par l'objectif du muscle), les
-    // mêmes que celles affichées dans les barres du bilan. Avant : bornes
-    // brutes, donc un muscle en Force était jugé sur 6–10 pendant que sa barre
-    // annonçait 4,2–7.
+    // Conv #76 — bornes EFFECTIVES (selon l'intention du muscle), les mêmes
+    // que celles affichées dans les barres du bilan.
+    // Dump 2.4 (D2) — un muscle sans intention n'est jamais « sous-entraîné » :
+    // il n'a pas de cible. Le dépassement du repère haut reste signalé.
     const [vMin, vMax] = effectiveVolumeBounds(state, muscle);
     const vReal = (volumesTotal[muscle] ?? 0) / WORKING_WEEKS;
-    if (vMin > 0 && vReal < vMin * 0.7) {
+    const hasIntention = state.muscle_goals[muscle] !== undefined;
+    if (hasIntention && vMin > 0 && vReal < vMin * 0.7) {
       if (!undertrained.includes(muscle)) undertrained.push(muscle);
     }
     if (vMax > 0 && vReal > vMax * 1.1) {
@@ -225,8 +226,7 @@ export function generateCycleReview(state: UserState, catalog: Catalog): CycleRe
   // pouvoir afficher "visé vs fait" dans l'historique des cycles.
   const muscleGoalsSnapshot = Object.values(state.muscle_goals).map((g) => ({
     muscle: g.muscle,
-    objective: g.objective,
-    status: g.status,
+    intention: g.intention,
     priority_rank: g.priority_rank,
   }));
 

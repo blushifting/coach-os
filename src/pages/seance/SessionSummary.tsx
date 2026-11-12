@@ -194,7 +194,7 @@ const STATUS_TEXT: Record<CoverageStatus, string> = {
   sous_min: 'text-sang-400',
   ok: 'text-emerald-400',
   depassement: 'text-amber-400',
-  hors_scope: 'text-anthracite-300',
+  sans_intention: 'text-anthracite-300',
 };
 
 const STATUS_BAR: Record<CoverageStatus, string> = {
@@ -202,7 +202,7 @@ const STATUS_BAR: Record<CoverageStatus, string> = {
   sous_min: 'bg-sang-500',
   ok: 'bg-emerald-500',
   depassement: 'bg-amber-500',
-  hors_scope: 'bg-anthracite-500',
+  sans_intention: 'bg-anthracite-500',
 };
 
 /**
@@ -223,7 +223,9 @@ function MuscleVolumeRow({
   data: SessionMuscleVolume;
   delayMs: number;
 }) {
-  const tracked = data.vMax > 0;
+  // Dump 2.4 (D2) — un muscle sans intention n'a pas de cible : son total de la
+  // semaine est montré en neutre, sans barre (la barre arrive à l'étape 3).
+  const tracked = data.status !== 'sans_intention' && data.vMax > 0;
   const pctBefore = tracked
     ? clampPct(((data.weekTotal - data.sessionSets) / data.vMax) * 100)
     : 0;
@@ -262,7 +264,9 @@ function MuscleVolumeRow({
             </span>
           </span>
         ) : (
-          <span className="shrink-0 text-anthracite-400">hors objectifs</span>
+          <span className="shrink-0 tabular-nums text-anthracite-400">
+            {formatSets(data.weekTotal)} séries / sem.
+          </span>
         )}
       </div>
       {tracked && (

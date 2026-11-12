@@ -24,7 +24,7 @@ import type {
 import {
   EquipmentPreference,
   ExType,
-  MuscleObjective,
+  MuscleIntention,
   chargesForPreference,
   exercisePrimaires,
   makePlannedExercise,
@@ -98,7 +98,7 @@ export function enforceLengthenedBias(
   const hypMuscles: string[] = [];
   for (const [muscle, goal] of Object.entries(state.muscle_goals)) {
     if (
-      goal.objective === MuscleObjective.HYPERTROPHIE &&
+      goal.intention === MuscleIntention.DEVELOPPER &&
       !hypMuscles.includes(muscle)
     ) {
       hypMuscles.push(muscle);

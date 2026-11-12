@@ -630,7 +630,7 @@ export function statusToSilhouette(s: CoverageStatus): SilhouetteStatus {
     case 'depassement':
       return 'high';
     case 'non_travaille':
-    case 'hors_scope':
+    case 'sans_intention':
       return 'off';
   }
 }

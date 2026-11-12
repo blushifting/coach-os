@@ -7,8 +7,8 @@
  *   - un `Record<string, MuscleGoal>` final via `buildMuscleGoals()`
  *
  * Le moteur (`engine.startUser`) est appelé une seule fois, à la validation
- * finale, avec `applyBalance: false` puisqu'on a déjà arbitré les SUGGERE
- * via la popin d'équilibre de l'étape 2.
+ * finale, avec les intentions telles que choisies (les muscles proposés par la
+ * fenêtre « Équilibre » n'y sont que s'ils ont été acceptés).
  */
 
 import {
@@ -16,9 +16,7 @@ import {
   EquipmentPreference,
   GymBrand,
   Level,
-  MuscleObjective,
-  MuscleStatus,
-  Objective,
+  MuscleIntention,
   Sex,
   makeMuscleGoal,
   makeProfile,
@@ -28,9 +26,9 @@ import {
 } from '@/engine/models';
 import { applyBalanceRules } from '@/engine/balance';
 
+/** Un muscle à développer ; l'ordre de la liste fait office de rang. */
 export interface RankedPriority {
   readonly muscle: string;
-  readonly objective: MuscleObjective;
 }
 
 export interface OnboardingDraft {
@@ -43,12 +41,12 @@ export interface OnboardingDraft {
   /** Codes du catalogue exercises.json — voir EQUIPMENT_OPTIONS. */
   readonly equipment: ReadonlySet<string>;
 
-  // Étape 2 : muscles prioritaires (dans l'ordre du ranking ; l'ordre de
+  // Étape 2 : muscles à développer (dans l'ordre du ranking ; l'ordre de
   // sélection fait office de rang, réordonnable dans la liste)
   readonly priorities: readonly RankedPriority[];
 
-  // Étape 2 : muscles en entretien (peints « Maintien » ou acceptés via la
-  // popin d'équilibre R1-R4). Statut final = SUGGERE / MAINTIEN / rank 99.
+  // Étape 2 : muscles à entretenir (choisis à la main ou acceptés via la
+  // popin d'équilibre R1-R4).
   readonly maintenance: ReadonlySet<string>;
 
   // Étape 3 : mode de construction
@@ -90,7 +88,7 @@ export interface OnboardingDraft {
 /**
  * Préset full-body « réfléchi » (Bloc O).
  *
- * 5 prios Hypertrophie qui couvrent les grands patterns (poussée H, tirage V,
+ * 5 muscles à développer qui couvrent les grands patterns (poussée H, tirage V,
  * squat, charnière/hinge, élévations) + un maintien CIBLÉ (6 muscles), pas
  * « tous les autres ». Le reste (trapèzes hauts, mollets, obliques, lombaires)
  * est volontairement ABSENT : il est couvert par proxy via les
@@ -115,11 +113,11 @@ export interface OnboardingDraft {
  * `onPresetApplied` dans OnboardingPage), sans repasser lombaires en maintien.
  */
 export const PRESET_DEFAULT_PRIORITIES: readonly RankedPriority[] = [
-  { muscle: 'pectoraux', objective: MuscleObjective.HYPERTROPHIE },
-  { muscle: 'dos_largeur', objective: MuscleObjective.HYPERTROPHIE },
-  { muscle: 'quadriceps', objective: MuscleObjective.HYPERTROPHIE },
-  { muscle: 'ischios', objective: MuscleObjective.HYPERTROPHIE },
-  { muscle: 'deltos_lateraux', objective: MuscleObjective.HYPERTROPHIE },
+  { muscle: 'pectoraux' },
+  { muscle: 'dos_largeur' },
+  { muscle: 'quadriceps' },
+  { muscle: 'ischios' },
+  { muscle: 'deltos_lateraux' },
 ];
 
 /** Maintien ciblé du préset full-body (6 muscles, pas « tous les autres »). */
@@ -169,15 +167,9 @@ export function draftFromUserState(state: UserState): OnboardingDraft {
   const priorities: RankedPriority[] = [];
   const maintenance = new Set<string>();
   for (const g of Object.values(state.muscle_goals)) {
-    if (g.status === MuscleStatus.PRIORITAIRE) {
-      // Conv #28 — un PRIORITAIRE/MAINTIEN hérité des anciennes convs est
-      // remappé sur le nouvel état « entretien » unique.
-      if (g.objective === MuscleObjective.MAINTIEN) {
-        maintenance.add(g.muscle);
-      } else {
-        priorities.push({ muscle: g.muscle, objective: g.objective });
-      }
-    } else if (g.status === MuscleStatus.SUGGERE) {
+    if (g.intention === MuscleIntention.DEVELOPPER) {
+      priorities.push({ muscle: g.muscle });
+    } else {
       maintenance.add(g.muscle);
     }
   }
@@ -210,8 +202,8 @@ export function draftFromUserState(state: UserState): OnboardingDraft {
 // =============================================================================
 
 /**
- * À partir des PRIORITAIRE + maintiens de l'étape 2, calcule la liste des
- * muscles SUGGERE par R1-R4 (fonction pure de `balance.ts`). Les muscles
+ * À partir des muscles à développer et à entretenir de l'étape 2, calcule la
+ * liste des muscles à proposer en entretien par R1-R4 (fonction pure de `balance.ts`). Les muscles
  * déjà en entretien sont vus comme couverts → seuls les vrais trous sortent.
  */
 /**
@@ -226,7 +218,7 @@ export function balanceKeyOf(
   maintenance: ReadonlySet<string>,
 ): string {
   return JSON.stringify({
-    prios: priorities.map((p) => `${p.muscle}:${p.objective}`),
+    prios: priorities.map((p) => p.muscle),
     maintenance: [...maintenance].sort(),
   });
 }
@@ -239,19 +231,13 @@ export function computeBalanceSuggestions(
   priorities.forEach((p, i) => {
     goals[p.muscle] = makeMuscleGoal({
       muscle: p.muscle,
-      objective: p.objective,
-      status: MuscleStatus.PRIORITAIRE,
+      intention: MuscleIntention.DEVELOPPER,
       priority_rank: i + 1,
     });
   });
   for (const m of maintenance) {
     if (goals[m] !== undefined) continue;
-    goals[m] = makeMuscleGoal({
-      muscle: m,
-      objective: MuscleObjective.MAINTIEN,
-      status: MuscleStatus.SUGGERE,
-      priority_rank: 99,
-    });
+    goals[m] = makeMuscleGoal({ muscle: m, intention: MuscleIntention.ENTRETENIR });
   }
   return applyBalanceRules(goals);
 }
@@ -260,57 +246,11 @@ export function computeBalanceSuggestions(
 // Finalisation : Profile + MuscleGoals à passer à engine.startUser
 // =============================================================================
 
-/**
- * Dérive l'`Objective` global (champ legacy de `Profile`) depuis le draft.
- * `MuscleObjective` majoritaire parmi les PRIORITAIRE, mappé. `MAINTIEN`
- * n'existe pas au niveau global → fallback `HYPERTROPHIE`. L'appelant peut
- * surcharger via le paramètre `override`.
- */
-export function deriveGlobalObjective(
-  draft: OnboardingDraft,
-  override?: MuscleObjective,
-): Objective {
-  const source = override ?? majorityMuscleObjective(draft.priorities);
-  switch (source) {
-    case MuscleObjective.FORCE:
-      return Objective.FORCE;
-    case MuscleObjective.ENDURANCE:
-      return Objective.ENDURANCE;
-    case MuscleObjective.HYPERTROPHIE:
-    case MuscleObjective.MAINTIEN:
-    default:
-      return Objective.HYPERTROPHIE;
-  }
-}
-
-function majorityMuscleObjective(
-  priorities: readonly RankedPriority[],
-): MuscleObjective {
-  if (priorities.length === 0) return MuscleObjective.HYPERTROPHIE;
-  const counts = new Map<MuscleObjective, number>();
-  for (const p of priorities) {
-    counts.set(p.objective, (counts.get(p.objective) ?? 0) + 1);
-  }
-  let best: MuscleObjective = MuscleObjective.HYPERTROPHIE;
-  let bestCount = -1;
-  for (const [obj, n] of counts) {
-    if (n > bestCount) {
-      best = obj;
-      bestCount = n;
-    }
-  }
-  return best;
-}
-
-export function buildProfile(
-  draft: OnboardingDraft,
-  globalObjective: Objective,
-): Profile {
+export function buildProfile(draft: OnboardingDraft): Profile {
   return makeProfile({
     sex: draft.sex,
     age: draft.age,
     level: draft.level,
-    objective: globalObjective,
     sessions_per_week: draft.sessionsPerWeek,
     bodyweight_kg: draft.bodyweightKg,
     // Conv #29 — PdC strict : aucun matériel disponible, pour que TOUTES les
@@ -326,51 +266,27 @@ export function buildProfile(
 }
 
 /**
- * Assemble le `Record<string, MuscleGoal>` final, prêt pour `engine.startUser`
- * avec `applyBalance: false`.
+ * Assemble le `Record<string, MuscleGoal>` final, prêt pour `engine.startUser`.
  *
- * - PRIORITAIRE : un par muscle de `draft.priorities`, dans l'ordre du ranking.
- * - SUGGERE / MAINTIEN : muscles de `draft.maintenance` (peints en entretien
- *   ou acceptés via la popin d'équilibre).
- * - NON_COUVERT : muscles suggérés par R1-R4 mais refusés. On les inscrit
- *   explicitement pour que le moteur respecte le choix utilisateur (cf.
- *   contrat de balance.ts : "respecte les NON_COUVERT explicites").
- *
- * @param suggestions Output de `computeBalanceSuggestions(draft.priorities,
- *                    draft.maintenance)` au moment de la popin.
+ * - Développer : un par muscle de `draft.priorities`, dans l'ordre du ranking.
+ * - Entretenir : muscles de `draft.maintenance` (choisis à la main ou acceptés
+ *   via la popin d'équilibre).
+ * Un muscle proposé par R1-R4 puis refusé n'a simplement pas d'intention.
  */
-export function buildMuscleGoals(
-  draft: OnboardingDraft,
-  suggestions: readonly MuscleGoal[],
-): Record<string, MuscleGoal> {
+export function buildMuscleGoals(draft: OnboardingDraft): Record<string, MuscleGoal> {
   const goals: Record<string, MuscleGoal> = {};
 
   draft.priorities.forEach((p, i) => {
     goals[p.muscle] = makeMuscleGoal({
       muscle: p.muscle,
-      objective: p.objective,
-      status: MuscleStatus.PRIORITAIRE,
+      intention: MuscleIntention.DEVELOPPER,
       priority_rank: i + 1,
     });
   });
 
   for (const m of draft.maintenance) {
-    if (goals[m] !== undefined) continue; // déjà PRIORITAIRE
-    goals[m] = makeMuscleGoal({
-      muscle: m,
-      objective: MuscleObjective.MAINTIEN,
-      status: MuscleStatus.SUGGERE,
-      priority_rank: 99,
-    });
-  }
-
-  for (const sg of suggestions) {
-    if (goals[sg.muscle] !== undefined) continue; // déjà couvert
-    goals[sg.muscle] = makeMuscleGoal({
-      muscle: sg.muscle,
-      objective: MuscleObjective.MAINTIEN,
-      status: MuscleStatus.NON_COUVERT,
-    });
+    if (goals[m] !== undefined) continue; // déjà à développer
+    goals[m] = makeMuscleGoal({ muscle: m, intention: MuscleIntention.ENTRETENIR });
   }
 
   return goals;
@@ -381,9 +297,9 @@ export function buildMuscleGoals(
 // =============================================================================
 
 /**
- * Vrai si l'utilisateur n'a aucun muscle PRIORITAIRE (H/F/E). Des maintiens
- * seuls ne suffisent pas : le moteur a besoin d'au moins une priorité pour
- * dimensionner le programme.
+ * Vrai si l'utilisateur n'a aucun muscle à développer. Des muscles à
+ * entretenir seuls ne suffisent pas : le moteur a besoin d'au moins un muscle
+ * à développer pour dimensionner le programme.
  */
 export function isEmptySelection(draft: OnboardingDraft): boolean {
   return draft.priorities.length === 0;

@@ -37,7 +37,7 @@ describe('serialize.ts — round-trip UserState ↔ SerializedUserState', () => 
     expect(restored.profile.available_equip.size).toBe(state.profile.available_equip.size);
   });
 
-  it('préserve muscle_goals avec leurs enums', () => {
+  it('préserve muscle_goals avec leurs intentions', () => {
     const profile = makeTestProfile();
     const catalog = new Catalog();
     const state = startUser(profile, catalog, { muscleGoals: makeTestMuscleGoals() });
@@ -46,8 +46,8 @@ describe('serialize.ts — round-trip UserState ↔ SerializedUserState', () => 
     expect(Object.keys(restored.muscle_goals).sort()).toEqual(
       Object.keys(state.muscle_goals).sort(),
     );
-    expect(restored.muscle_goals['pectoraux']?.objective).toBe(
-      state.muscle_goals['pectoraux']?.objective,
+    expect(restored.muscle_goals['pectoraux']?.intention).toBe(
+      state.muscle_goals['pectoraux']?.intention,
     );
     expect(restored.muscle_goals['pectoraux']?.priority_rank).toBe(1);
   });

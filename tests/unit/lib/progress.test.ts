@@ -31,16 +31,13 @@ import type {
   UserState,
   Level,
 } from '@/engine/models';
-import {
+import { MuscleIntention,
   ChargeType,
   ExType,
-  MuscleObjective,
-  MuscleStatus,
   Pattern,
   Sex,
   SuggestedAction,
-  exerciseFromDict,
-} from '@/engine/models';
+  exerciseFromDict } from '@/engine/models';
 
 // =============================================================================
 // Fixtures
@@ -86,7 +83,6 @@ function makeState(overrides: Partial<UserState> = {}): UserState {
       sex: Sex.HOMME,
       age: 30,
       level: 'intermediaire' as Level,
-      objective: 'hypertrophie',
       sessions_per_week: 4,
       bodyweight_kg: 75,
       available_equip: new Set(),
@@ -102,20 +98,17 @@ function makeState(overrides: Partial<UserState> = {}): UserState {
     muscle_goals: {
       pectoraux: {
         muscle: 'pectoraux',
-        objective: MuscleObjective.HYPERTROPHIE,
-        status: MuscleStatus.PRIORITAIRE,
+        intention: MuscleIntention.DEVELOPPER,
         priority_rank: 1,
       },
       biceps: {
         muscle: 'biceps',
-        objective: MuscleObjective.HYPERTROPHIE,
-        status: MuscleStatus.PRIORITAIRE,
+        intention: MuscleIntention.DEVELOPPER,
         priority_rank: 2,
       },
       quadriceps: {
         muscle: 'quadriceps',
-        objective: MuscleObjective.HYPERTROPHIE,
-        status: MuscleStatus.PRIORITAIRE,
+        intention: MuscleIntention.DEVELOPPER,
         priority_rank: 3,
       },
     },
@@ -267,28 +260,23 @@ describe('computeCoverageThisWeek', () => {
     expect(pec?.status).toBe('depassement');
   });
 
-  it("marque hors_scope les muscles avec V_min=0 (NON_COUVERT)", () => {
+  it("marque sans_intention un muscle sans intention, qui garde ses repères (D1)", () => {
     const state = makeState({
       volume_min: { pectoraux: 10, mollets: 6 },
       volume_max: { pectoraux: 18, mollets: 12 },
       muscle_goals: {
         pectoraux: {
           muscle: 'pectoraux',
-          objective: MuscleObjective.HYPERTROPHIE,
-          status: MuscleStatus.PRIORITAIRE,
+          intention: MuscleIntention.DEVELOPPER,
           priority_rank: 1,
-        },
-        mollets: {
-          muscle: 'mollets',
-          objective: MuscleObjective.HYPERTROPHIE,
-          status: MuscleStatus.NON_COUVERT,
-          priority_rank: 99,
         },
       },
     });
     const cov = computeCoverageThisWeek(state, [], musclesOf, NOW);
     const m = cov.find((c) => c.muscle === 'mollets');
-    expect(m?.status).toBe('hors_scope');
+    expect(m?.status).toBe('sans_intention');
+    expect(m?.vMin).toBe(6);
+    expect(m?.vMax).toBe(12);
   });
 
   it("intensity reste clampée à [0, 1]", () => {
@@ -491,11 +479,10 @@ describe('buildCycleHistory', () => {
     expect(items[0]!.deltaAdherencePts).toBe(0);
   });
 
-  it('objectivesByMuscle : un muscle PRIORITAIRE (rank 1) précède un non-prioritaire alphabétiquement antérieur', () => {
+  it('objectivesByMuscle : un muscle à développer (rang 1) précède un muscle à entretenir alphabétiquement antérieur', () => {
     // 'abducteurs' passe avant 'pectoraux' en alphabétique, mais 'pectoraux'
-    // est PRIORITAIRE (rank 1) → il doit remonter en tête. Le statut du snapshot
-    // vaut l'enum minuscule ('prioritaire'), d'où le bug historique du littéral
-    // majuscule qui laissait tomber le tri sur l'ordre alphabétique.
+    // est à développer (rang 1) → il doit remonter en tête. Le bilan mélange
+    // ici l'ancien format (statut « suggéré », migré en entretien) et le nouveau.
     const items = buildCycleHistory([
       makeCycleRow(
         1,
@@ -508,14 +495,13 @@ describe('buildCycleHistory', () => {
           muscle_goals_snapshot: [
             {
               muscle: 'abducteurs',
-              objective: MuscleObjective.HYPERTROPHIE,
-              status: MuscleStatus.SUGGERE,
+              objective: 'maintien',
+              status: 'suggere',
               priority_rank: 99,
             },
             {
               muscle: 'pectoraux',
-              objective: MuscleObjective.HYPERTROPHIE,
-              status: MuscleStatus.PRIORITAIRE,
+              intention: MuscleIntention.DEVELOPPER,
               priority_rank: 1,
             },
           ],
@@ -524,9 +510,10 @@ describe('buildCycleHistory', () => {
     ]);
     const obj = items[0]!.objectivesByMuscle!;
     expect(obj.map((o) => o.muscle)).toEqual(['pectoraux', 'abducteurs']);
+    expect(obj[1]!.intention).toBe(MuscleIntention.ENTRETENIR);
   });
 
-  it('objectivesByMuscle : plusieurs PRIORITAIRES sont triés par priorityRank croissant', () => {
+  it('objectivesByMuscle : plusieurs muscles à développer sont triés par rang croissant', () => {
     const items = buildCycleHistory([
       makeCycleRow(
         1,
@@ -539,14 +526,12 @@ describe('buildCycleHistory', () => {
           muscle_goals_snapshot: [
             {
               muscle: 'dos',
-              objective: MuscleObjective.HYPERTROPHIE,
-              status: MuscleStatus.PRIORITAIRE,
+              intention: MuscleIntention.DEVELOPPER,
               priority_rank: 2,
             },
             {
               muscle: 'jambes',
-              objective: MuscleObjective.HYPERTROPHIE,
-              status: MuscleStatus.PRIORITAIRE,
+              intention: MuscleIntention.DEVELOPPER,
               priority_rank: 1,
             },
           ],
@@ -802,8 +787,7 @@ describe('bande affichée et statut ne se contredisent plus (bug lombaires #77)'
     muscle_goals: {
       lombaires: {
         muscle: 'lombaires',
-        objective: MuscleObjective.MAINTIEN,
-        status: MuscleStatus.SUGGERE,
+        intention: MuscleIntention.ENTRETENIR,
         priority_rank: 99,
       },
     },
@@ -890,9 +874,9 @@ describe('types', () => {
       sets: 0,
       vMin: 0,
       vMax: 0,
-      status: 'hors_scope',
+      status: 'sans_intention',
       intensity: 0,
     };
-    expect(x.status).toBe('hors_scope');
+    expect(x.status).toBe('sans_intention');
   });
 });

@@ -8,7 +8,6 @@
  * Sources : 04 §3.1, 09 §4.2.
  */
 
-import type { MuscleObjective } from '@/engine/models';
 import {
   CORE_MUSCLES,
   PULL_MUSCLES,
@@ -112,19 +111,4 @@ export function explainSuggestion(
     rule: 'R1',
     text: 'Suggéré par les règles d\'équilibre musculaire.',
   };
-}
-
-export function objectiveLabel(obj: MuscleObjective): string {
-  switch (obj) {
-    case 'force':
-      return 'Force';
-    case 'hypertrophie':
-      return 'Hypertrophie';
-    case 'endurance':
-      return 'Endurance';
-    case 'maintien':
-      return 'Maintien';
-    default:
-      return obj;
-  }
 }

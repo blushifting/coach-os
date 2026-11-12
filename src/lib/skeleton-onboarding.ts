@@ -45,10 +45,7 @@ export function buildOnboardingSkeleton(
   durationCategory: DurationCategory,
   catalog: Catalog,
 ): { skeleton: SkeletonTemplate; tmpState: UserState } {
-  const tmpState = engineStartUser(profile, catalog, {
-    muscleGoals,
-    applyBalance: false,
-  });
+  const tmpState = engineStartUser(profile, catalog, { muscleGoals });
   const skeleton = buildSkeleton(tmpState, durationCategory);
   return { skeleton, tmpState };
 }

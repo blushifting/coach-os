@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { Catalog } from '@/engine/catalog';
+import { MuscleIntention } from '@/engine/models';
 import { Card } from '@/components/Card';
 import { cn } from '@/lib/cn';
 import {
@@ -7,7 +8,7 @@ import {
   formatCycleDates,
   muscleLabel,
   type CycleHistoryItem,
-  type MuscleObjectiveOutcome,
+  type MuscleIntentionOutcome,
   type MuscleOutcomeStatus,
 } from '@/lib/progress';
 
@@ -135,11 +136,9 @@ function CycleCard({ item, catalog }: CycleCardProps) {
 // Visé vs fait par muscle (Conv #14c-7)
 // =============================================================================
 
-const OBJECTIVE_LABEL: Readonly<Record<string, string>> = {
-  hypertrophie: 'Hypertrophie',
-  force: 'Force',
-  endurance: 'Endurance',
-  maintien: 'Maintien',
+const INTENTION_LABEL: Readonly<Record<MuscleIntention, string>> = {
+  [MuscleIntention.DEVELOPPER]: 'Développer',
+  [MuscleIntention.ENTRETENIR]: 'Entretenir',
 };
 
 const OUTCOME_LABEL: Readonly<Record<MuscleOutcomeStatus, string>> = {
@@ -161,12 +160,11 @@ const OUTCOME_TONE: Readonly<Record<MuscleOutcomeStatus, string>> = {
 function ObjectivesOutcomeSection({
   items,
 }: {
-  readonly items: ReadonlyArray<MuscleObjectiveOutcome>;
+  readonly items: ReadonlyArray<MuscleIntentionOutcome>;
 }) {
-  const prioritaires = items.filter((i) => i.status === 'PRIORITAIRE');
-  // On affiche prioritaires d'abord. Le reste reste accessible mais
-  // n'est pas le focus de la comparaison "visé vs fait".
-  const visible = prioritaires.length > 0 ? prioritaires : items;
+  const developed = items.filter((i) => i.intention === MuscleIntention.DEVELOPPER);
+  // Les muscles à développer d'abord : c'est le focus de « visé vs fait ».
+  const visible = developed.length > 0 ? developed : items;
   if (visible.length === 0) return null;
   return (
     <div
@@ -185,7 +183,7 @@ function ObjectivesOutcomeSection({
             <span className="min-w-0 truncate">
               {muscleLabel(o.muscle)}
               <span className="ml-1 text-anthracite-400">
-                — {OBJECTIVE_LABEL[o.objective] ?? o.objective}
+                — {INTENTION_LABEL[o.intention]}
               </span>
             </span>
             <span

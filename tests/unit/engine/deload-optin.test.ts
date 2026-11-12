@@ -8,9 +8,9 @@
  *   séries de semaine 4) ET les mesures (e1RM) tournent.
  */
 import { describe, expect, it } from 'vitest';
+import { developGoals } from '@/test-utils/fixtures';
 import { Catalog } from '@/engine/catalog';
 import {
-  bootstrapMuscleGoalsFromProfile,
   generateSession,
   recordFeedback,
   startUser,
@@ -29,7 +29,7 @@ const catalog = new Catalog();
 
 function setup(): UserState {
   const p = profile();
-  const goals = bootstrapMuscleGoalsFromProfile(p, [
+  const goals = developGoals([
     'pectoraux', 'dos_largeur', 'quadriceps', 'ischios',
   ]);
   const state = startUser(p, catalog, { muscleGoals: goals });

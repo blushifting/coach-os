@@ -14,7 +14,7 @@ import { useEngine } from '@/hooks/useEngine';
 import { useAnimateOnMount } from '@/hooks/useMotion';
 import { useCoachOsStore } from '@/store';
 import { selectCycles, useDemoMode, useToday } from '@/store/selectors';
-import { MuscleStatus, SuggestedAction, type CycleReview } from '@/engine/models';
+import { MuscleIntention, SuggestedAction, type CycleReview } from '@/engine/models';
 import {
   FORCE_DELTA_THRESHOLD,
   classifyForceDelta,
@@ -171,7 +171,7 @@ const VOLUME_STATUS_TEXT: Record<CoverageStatus, string> = {
   sous_min: 'text-sang-400',
   ok: 'text-emerald-400',
   depassement: 'text-amber-400',
-  hors_scope: 'text-anthracite-300',
+  sans_intention: 'text-anthracite-300',
 };
 
 const VOLUME_STATUS_BAR: Record<CoverageStatus, string> = {
@@ -179,7 +179,7 @@ const VOLUME_STATUS_BAR: Record<CoverageStatus, string> = {
   sous_min: 'bg-sang-500',
   ok: 'bg-emerald-500',
   depassement: 'bg-amber-500',
-  hors_scope: 'bg-anthracite-500',
+  sans_intention: 'bg-anthracite-500',
 };
 
 /** Moyenne de séries sans arrondi trompeur (cf. #11) : décimale si non entier. */
@@ -239,9 +239,9 @@ function CycleVolumeRow({
       <div className="flex items-baseline justify-between gap-2 text-xs">
         <span className="min-w-0 truncate text-anthracite-200">
           {muscleLabel(data.muscle)}
-          {data.goalStatus === MuscleStatus.PRIORITAIRE && (
+          {data.intention === MuscleIntention.DEVELOPPER && (
             <span className="ml-2 rounded bg-sang-900/40 px-1 py-0.5 text-[10px] text-sang-300">
-              prioritaire
+              à développer
             </span>
           )}
         </span>
@@ -488,9 +488,9 @@ function OverloadAlert({ muscles }: { muscles: ReadonlyArray<string> }) {
         tu en fais plus que tu ne récupères.
       </p>
       <p className="mt-1">
-        Au prochain cycle, allège-les au lieu d'en ajouter. Passe-les en Force
-        ou en Maintien depuis «&nbsp;Changer mes objectifs&nbsp;»&nbsp;: ces deux
-        objectifs demandent moins de séries.
+        Au prochain cycle, allège-les au lieu d'en ajouter. Passe-les en
+        «&nbsp;Entretenir&nbsp;» depuis «&nbsp;Changer mes objectifs&nbsp;»&nbsp;:
+        ils demanderont moins de séries.
       </p>
     </div>
   );

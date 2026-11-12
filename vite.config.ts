@@ -13,6 +13,15 @@ export default defineConfig({
   base: '/coach-os/',
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
+    // Aperçu de développement sans compte : `KOTSH_HORS_LIGNE=1` neutralise la
+    // couche en ligne même si `.env.local` la configure (la garde de compte est
+    // alors inerte, cf. `RequireAccount`). Jamais posé par le build de production.
+    ...(process.env.KOTSH_HORS_LIGNE === '1'
+      ? {
+          'import.meta.env.VITE_SUPABASE_URL': '""',
+          'import.meta.env.VITE_SUPABASE_ANON_KEY': '""',
+        }
+      : {}),
   },
   plugins: [
     react(),

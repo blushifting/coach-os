@@ -12,7 +12,7 @@ import type {
   SessionFeedback,
   Muscle,
 } from './models';
-import { Sex, Level, MuscleObjective, MuscleStatus } from './models';
+import { Sex, Level, MuscleIntention } from './models';
 
 // =============================================================================
 // 1. V_min par muscle, niveau (cf. 03_§8.1)
@@ -71,17 +71,6 @@ export const DELOAD_WEEK_IN_CYCLE = 5;
 export const VMAX_UP_DELTA = 2;
 export const VMAX_DOWN_DELTA = 2;
 
-// =============================================================================
-// 2. Facteurs de volume par MuscleObjective (cf. 09 §3.3)
-// =============================================================================
-
-export const OBJECTIVE_VOLUME_FACTOR: Record<MuscleObjective, number> = {
-  [MuscleObjective.FORCE]: 0.7,
-  [MuscleObjective.HYPERTROPHIE]: 1.0,
-  [MuscleObjective.ENDURANCE]: 1.25,
-  [MuscleObjective.MAINTIEN]: 0.4,
-};
-
 // Cf. 09 §5.1 — rendement décroissant >5-6 séries/exo (Schoenfeld 2017).
 export const SETS_PER_SESSION_OPTIMAL = 5;
 export const MAX_SETS_PER_SESSION_PER_MUSCLE = 10;
@@ -96,6 +85,7 @@ export const MAX_SETS_PER_EXERCISE_PER_SESSION = 5;
 
 // Volume "maintenance" : 2 séries minimum, sinon 40 % de V_min (Bickel 2011).
 export const MAINTENANCE_MIN_SETS = 2.0;
+export const MAINTENANCE_FACTOR = 0.4;
 
 // =============================================================================
 // 3. Initialisation des bornes
@@ -130,25 +120,16 @@ export function initialVolumeBounds(
 // =============================================================================
 
 /**
- * V_min/V_max effectifs pour ce muscle, pondérés par MuscleGoal.
- *   - NON_COUVERT ou absent → (0, 0)
- *   - MAINTIEN (SUGGERE, ou PRIORITAIRE hérité) → bande [MV, MEV] (cf. infra)
- *   - PRIORITAIRE non-maintien → (base_min × factor, base_max × factor)
+ * Bande de volume (séries pondérées par semaine) de ce muscle, selon son
+ * intention (dump 2.4, D2). `state.volume_min[muscle]` est le **seuil de
+ * croissance** (MEV), `state.volume_max[muscle]` le repère haut.
+ *   - Développer → [seuil de croissance, repère haut].
+ *   - Entretenir → [plancher d'entretien, seuil de croissance] : le plancher
+ *     vaut 40 % du seuil, au moins 2 séries (Bickel 2011).
+ *   - Sans intention → les repères de « Développer », sans cible : le muscle
+ *     reste suivi (D1), c'est la lecture qui reste neutre.
  *
- * Maintien — bande de lecture uniforme (Conv #29) :
- *   `state.volume_min[muscle]` joue le rôle de **MEV** (Minimum Effective
- *   Volume, seuil de croissance). Un muscle « en maintien » se prescrit au bas
- *   de la bande (V_min = MV ≈ 0,4×MEV, Bickel 2011) mais reçoit un **plafond
- *   explicite V_max = MEV** : au-delà, ce n'est plus du maintien mais de la
- *   prise. La bande maintien [MV, MEV] se loge ainsi juste sous la bande
- *   hypertrophie [MEV, V_max_hyp] — la lecture des courbes de progrès est
- *   identique pour tous les muscles, seules les bornes changent.
- *
- *   La borne BASSE est INCHANGÉE : le volume *prescrit*
- *   (`effectiveCycleTargetVolume` = borne basse) reste le même, seul le plafond
- *   d'affichage/dépassement s'ouvre. Aucun impact sur l'allocation de séries —
- *   les muscles SUGGERE sont des priorityTargets, et `sets_allocator` ne
- *   consomme jamais ce V_max maintien comme cap (il saute les priorityTargets).
+ * Seul un muscle absent des repères (inconnu du modèle) renvoie (0, 0).
  */
 export function effectiveVolumeBounds(
   state: UserState,
@@ -159,24 +140,15 @@ export function effectiveVolumeBounds(
   }
   const baseMin = state.volume_min[muscle]!;
   const baseMax = state.volume_max[muscle]!;
-  const goal = state.muscle_goals[muscle];
+  if (state.muscle_goals[muscle]?.intention === MuscleIntention.ENTRETENIR) {
+    return [maintenanceFloor(baseMin), baseMin];
+  }
+  return [baseMin, baseMax];
+}
 
-  if (!goal || goal.status === MuscleStatus.NON_COUVERT) {
-    return [0, 0];
-  }
-  if (
-    goal.status === MuscleStatus.SUGGERE ||
-    goal.objective === MuscleObjective.MAINTIEN
-  ) {
-    const vMin = Math.max(
-      MAINTENANCE_MIN_SETS,
-      baseMin * OBJECTIVE_VOLUME_FACTOR[MuscleObjective.MAINTIEN],
-    );
-    return [vMin, baseMin];
-  }
-  // PRIORITAIRE non-maintien
-  const factor = OBJECTIVE_VOLUME_FACTOR[goal.objective];
-  return [baseMin * factor, baseMax * factor];
+/** Plancher d'entretien : 40 % du seuil de croissance, au moins 2 séries (Bickel 2011). */
+export function maintenanceFloor(growthThreshold: number): number {
+  return Math.max(MAINTENANCE_MIN_SETS, growthThreshold * MAINTENANCE_FACTOR);
 }
 
 /**
@@ -198,21 +170,18 @@ export const CYCLE_TARGET_VOLUME_RATIO = 0.2;
  * La progression intra-cycle passe par l'intensité (charge/RPE) et les reps ;
  * le volume monte d'un cycle à l'autre via la recalibration de fin de cycle.
  *
- *   - NON_COUVERT / absent → 0
- *   - SUGGERE / MAINTIEN   → borne basse (V_maintien fixe ~4), INCHANGÉ
- *   - PRIORITAIRE          → V_min + ratio × (V_max − V_min)
+ *   - sans intention → 0 (suivi, mais aucune cible : D1)
+ *   - Entretenir     → borne basse (plancher d'entretien)
+ *   - Développer     → V_min + ratio × (V_max − V_min)
  */
 export function effectiveCycleTargetVolume(
   state: UserState,
   muscle: string,
 ): number {
-  const [lo, hi] = effectiveVolumeBounds(state, muscle);
   const goal = state.muscle_goals[muscle];
-  const isPriority =
-    goal !== undefined &&
-    goal.status === MuscleStatus.PRIORITAIRE &&
-    goal.objective !== MuscleObjective.MAINTIEN;
-  if (isPriority) {
+  if (goal === undefined) return 0;
+  const [lo, hi] = effectiveVolumeBounds(state, muscle);
+  if (goal.intention === MuscleIntention.DEVELOPPER) {
     return lo + CYCLE_TARGET_VOLUME_RATIO * (hi - lo);
   }
   return lo;

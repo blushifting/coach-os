@@ -35,7 +35,7 @@ import {
   type MuscleCoverage,
   type MuscleVolumeSeries,
 } from '@/lib/progress';
-import { MUSCLES, MuscleStatus, type MuscleGoal } from '@/engine/models';
+import { MUSCLES, MuscleIntention, type MuscleGoal } from '@/engine/models';
 
 /** Conv #17b — alias clic silhouette : certains muscles partagent une zone
  *  visuelle (cas deltos_anterieurs / lateraux : front_deltoids). Si l'user
@@ -69,7 +69,7 @@ export function VolumeView({
   }, [coverage]);
 
   // Highlights pour la silhouette : on s'appuie sur la couverture hebdo
-  // **en cours**. hors_scope → off (gris discret).
+  // **en cours**. sans_intention → off (gris discret).
   const highlights = useMemo(() => {
     const h: Record<string, SilhouetteStatus> = {};
     for (const c of coverage) {
@@ -99,15 +99,14 @@ export function VolumeView({
   // Les muscles sans `muscle_goals[m]` → traités comme NON_COUVERT.
   const displayMuscles = useMemo(() => {
     const statusOrder: Record<string, number> = {
-      [MuscleStatus.PRIORITAIRE]: 0,
-      [MuscleStatus.SUGGERE]: 1,
-      [MuscleStatus.NON_COUVERT]: 2,
+      [MuscleIntention.DEVELOPPER]: 0,
+      [MuscleIntention.ENTRETENIR]: 1,
     };
     const items = MUSCLES.map((m) => {
       const cov = coverageByMuscle.get(m);
       const ser = seriesByMuscle.get(m);
       const goal = muscleGoals[m];
-      const goalStatus: MuscleStatus = goal?.status ?? MuscleStatus.NON_COUVERT;
+      const goalStatus: MuscleIntention | null = goal?.intention ?? null;
       const rank = goal?.priority_rank ?? 99;
       return {
         muscle: m,
@@ -119,8 +118,8 @@ export function VolumeView({
       };
     });
     items.sort((a, b) => {
-      const sA = statusOrder[a.goalStatus] ?? 3;
-      const sB = statusOrder[b.goalStatus] ?? 3;
+      const sA = statusOrder[a.goalStatus ?? ''] ?? 2;
+      const sB = statusOrder[b.goalStatus ?? ''] ?? 2;
       if (sA !== sB) return sA - sB;
       if (a.lastWorked !== b.lastWorked) {
         // Jamais travaillé → toujours en fin de bloc.
@@ -256,7 +255,7 @@ interface MuscleVolumeCardProps {
   readonly muscle: string;
   readonly series: MuscleVolumeSeries | null;
   readonly coverage: MuscleCoverage | null;
-  readonly goalStatus: MuscleStatus;
+  readonly goalStatus: MuscleIntention | null;
   readonly cardRef: (el: HTMLDivElement | null) => void;
   readonly isSelected: boolean;
   readonly onSelect: () => void;
@@ -274,18 +273,19 @@ function MuscleVolumeCard({
   onSelect,
   index,
 }: MuscleVolumeCardProps) {
-  // Conv #17b — 3 niveaux d'affichage selon les données disponibles :
-  //  1. coverage présent + non hors_scope → carte pleine (séries vs cible).
-  //  2. coverage hors_scope OU absent → carte "pas suivi" (muscle pas dans
-  //     muscle_goals). On invite l'user à l'ajouter via Profil > Objectifs.
+  // Conv #17b, dump 2.4 (D1) — tout muscle est suivi :
+  //  1. coverage présent → séries de la semaine ; la cible n'est affichée que
+  //     si le muscle a une intention (sans intention : ton neutre, sans cible).
+  //  2. coverage absent → carte vide.
   //  3. série vide → on n'affiche pas la mini-courbe.
-  const isTracked = coverage !== null && coverage.status !== 'hors_scope';
-  const tone = isTracked ? STATUS_TONE[coverage.status] : STATUS_TONE.hors_scope;
+  const isTracked = coverage !== null;
+  const hasTarget = coverage !== null && coverage.status !== 'sans_intention';
+  const tone = isTracked ? STATUS_TONE[coverage.status] : STATUS_TONE.sans_intention;
   return (
     <div
       ref={cardRef}
       data-testid={`volume-card-${muscle}`}
-      data-status={coverage?.status ?? 'hors_scope'}
+      data-status={coverage?.status ?? 'sans_intention'}
       data-tracked={isTracked ? 'true' : 'false'}
       data-selected={isSelected ? 'true' : undefined}
       className={cn(
@@ -314,7 +314,9 @@ function MuscleVolumeCard({
               {coverage.sets.toFixed(1)}
             </span>
             <span className="text-[10px] text-anthracite-300 tabular-nums">
-              / {coverage.vMin.toFixed(0)}–{coverage.vMax.toFixed(0)} séries
+              {hasTarget
+                ? `/ ${coverage.vMin.toFixed(0)}–${coverage.vMax.toFixed(0)} séries`
+                : 'séries'}
             </span>
           </div>
         ) : (
@@ -326,16 +328,15 @@ function MuscleVolumeCard({
       {isTracked && coverage !== null ? (
         <span className="text-[10px] uppercase tracking-wide text-anthracite-300">
           {STATUS_LABEL[coverage.status]}
-          {goalStatus === MuscleStatus.PRIORITAIRE && (
+          {goalStatus === MuscleIntention.DEVELOPPER && (
             <span className="ml-2 rounded bg-sang-900/40 px-1 py-0.5 text-sang-300">
-              prioritaire
+              à développer
             </span>
           )}
         </span>
       ) : (
         <p className="text-[11px] leading-snug text-anthracite-300">
-          Pas dans tes objectifs. Pour suivre ce muscle, ajoute-le depuis{' '}
-          <span className="text-anthracite-100">Profil → Objectifs musculaires</span>.
+          Pas encore de séance enregistrée.
         </p>
       )}
       {series !== null && series.points.length > 0 && (
@@ -637,7 +638,7 @@ const STATUS_LABEL: Record<CoverageStatus, string> = {
   sous_min: 'sous le minimum',
   ok: 'dans la cible',
   depassement: 'au-dessus de la cible',
-  hors_scope: 'hors objectifs',
+  sans_intention: 'sans objectif',
 };
 
 interface ToneClasses {
@@ -649,5 +650,5 @@ const STATUS_TONE: Record<CoverageStatus, ToneClasses> = {
   sous_min: { text: 'text-sang-400' },
   ok: { text: 'text-emerald-400' },
   depassement: { text: 'text-amber-400' },
-  hors_scope: { text: 'text-anthracite-300' },
+  sans_intention: { text: 'text-anthracite-300' },
 };

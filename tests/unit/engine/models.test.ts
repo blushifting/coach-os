@@ -4,7 +4,7 @@
  * Vérifie :
  *   - Création des nouveaux enums et dataclasses
  *   - Rétrocompat de UserState (ancien constructeur sans muscle_goals)
- *   - Conversion Objective → MuscleObjective
+ *   - Intentions par muscle (dump 2.4)
  *   - Helpers et invariants simples
  *   - Validation Profile (port de Profile.__post_init__)
  *   - Helpers Exercise (from_dict, primaires, synergistes)
@@ -16,10 +16,8 @@ import {
   // Enums existants
   Sex,
   Level,
-  Objective,
   // Nouveaux enums
-  MuscleObjective,
-  MuscleStatus,
+  MuscleIntention,
   ProgressionRule,
   SuggestedAction,
   // Dataclasses + factories
@@ -38,75 +36,41 @@ import {
   ExType,
   ChargeType,
   type ExerciseDict,
-  // Helper de conversion
-  objectiveToMuscleObjective,
 } from '@/engine/models';
 
 // =============================================================================
-// 1. Puissance retirée
+// 1. Intentions (dump 2.4, D2)
 // =============================================================================
 
-describe('Objective — Puissance retirée en V1 (cf. 09 §3.5)', () => {
-  it("L'objectif Puissance n'existe pas dans Objective", () => {
-    expect((Objective as Record<string, string>).PUISSANCE).toBeUndefined();
-  });
-
-  it("MuscleObjective n'a pas non plus de Puissance", () => {
-    expect((MuscleObjective as Record<string, string>).PUISSANCE).toBeUndefined();
-  });
-
-  it('Objective V1 = {force, hypertrophie, endurance}', () => {
-    expect(new Set(Object.values(Objective))).toEqual(
-      new Set(['force', 'hypertrophie', 'endurance']),
-    );
-  });
-
-  it('MuscleObjective V1 = {force, hypertrophie, endurance, maintien}', () => {
-    expect(new Set(Object.values(MuscleObjective))).toEqual(
-      new Set(['force', 'hypertrophie', 'endurance', 'maintien']),
+describe('MuscleIntention', () => {
+  it('deux intentions seulement : développer, entretenir', () => {
+    expect(new Set(Object.values(MuscleIntention))).toEqual(
+      new Set(['developper', 'entretenir']),
     );
   });
 });
 
 // =============================================================================
-// 2. Conversion Objective → MuscleObjective
-// =============================================================================
-
-describe('objectiveToMuscleObjective — round trip', () => {
-  it('FORCE → FORCE', () => {
-    expect(objectiveToMuscleObjective(Objective.FORCE)).toBe(MuscleObjective.FORCE);
-  });
-  it('HYPERTROPHIE → HYPERTROPHIE', () => {
-    expect(objectiveToMuscleObjective(Objective.HYPERTROPHIE)).toBe(MuscleObjective.HYPERTROPHIE);
-  });
-  it('ENDURANCE → ENDURANCE', () => {
-    expect(objectiveToMuscleObjective(Objective.ENDURANCE)).toBe(MuscleObjective.ENDURANCE);
-  });
-});
-
-// =============================================================================
-// 3. MuscleGoal — création, statuts, rangs
+// 3. MuscleGoal — création, intentions, rangs
 // =============================================================================
 
 describe('MuscleGoal', () => {
-  it('PRIORITAIRE avec rank explicite', () => {
+  it('Développer avec rang explicite', () => {
     const g = makeMuscleGoal({
       muscle: 'pectoraux',
-      objective: MuscleObjective.HYPERTROPHIE,
-      status: MuscleStatus.PRIORITAIRE,
+      intention: MuscleIntention.DEVELOPPER,
       priority_rank: 1,
     });
     expect(g.muscle).toBe('pectoraux');
-    expect(g.objective).toBe(MuscleObjective.HYPERTROPHIE);
-    expect(g.status).toBe(MuscleStatus.PRIORITAIRE);
+    expect(g.intention).toBe(MuscleIntention.DEVELOPPER);
     expect(g.priority_rank).toBe(1);
   });
 
-  it('SUGGERE prend rank 99 par défaut (cf. 09 §2.2)', () => {
+  it('Entretenir prend toujours le rang 99', () => {
     const g = makeMuscleGoal({
       muscle: 'abdos',
-      objective: MuscleObjective.MAINTIEN,
-      status: MuscleStatus.SUGGERE,
+      intention: MuscleIntention.ENTRETENIR,
+      priority_rank: 3,
     });
     expect(g.priority_rank).toBe(99);
   });
@@ -208,7 +172,6 @@ function buildProfile() {
     sex: Sex.HOMME,
     age: 30,
     level: Level.INTERMEDIAIRE,
-    objective: Objective.HYPERTROPHIE,
     sessions_per_week: 4,
     bodyweight_kg: 80,
   });
@@ -227,8 +190,7 @@ describe('UserState', () => {
     const state = makeUserState(buildProfile());
     state.muscle_goals['pectoraux'] = makeMuscleGoal({
       muscle: 'pectoraux',
-      objective: MuscleObjective.HYPERTROPHIE,
-      status: MuscleStatus.PRIORITAIRE,
+      intention: MuscleIntention.DEVELOPPER,
       priority_rank: 1,
     });
     expect(state.muscle_goals['pectoraux']!.priority_rank).toBe(1);
@@ -259,7 +221,6 @@ describe('makeProfile — validation', () => {
         sex: Sex.HOMME,
         age: 13,
         level: Level.DEBUTANT,
-        objective: Objective.HYPERTROPHIE,
         sessions_per_week: 3,
         bodyweight_kg: 70,
       }),
@@ -272,7 +233,6 @@ describe('makeProfile — validation', () => {
         sex: Sex.HOMME,
         age: 101,
         level: Level.DEBUTANT,
-        objective: Objective.HYPERTROPHIE,
         sessions_per_week: 3,
         bodyweight_kg: 70,
       }),
@@ -285,7 +245,6 @@ describe('makeProfile — validation', () => {
         sex: Sex.FEMME,
         age: 30,
         level: Level.INTERMEDIAIRE,
-        objective: Objective.FORCE,
         sessions_per_week: 1,
         bodyweight_kg: 60,
       }),
@@ -298,7 +257,6 @@ describe('makeProfile — validation', () => {
         sex: Sex.FEMME,
         age: 30,
         level: Level.INTERMEDIAIRE,
-        objective: Objective.FORCE,
         sessions_per_week: 7,
         bodyweight_kg: 60,
       }),
@@ -311,7 +269,6 @@ describe('makeProfile — validation', () => {
         sex: Sex.HOMME,
         age: 30,
         level: Level.INTERMEDIAIRE,
-        objective: Objective.HYPERTROPHIE,
         sessions_per_week: 4,
         bodyweight_kg: 0,
       }),
@@ -323,7 +280,6 @@ describe('makeProfile — validation', () => {
       sex: Sex.HOMME,
       age: 30,
       level: Level.INTERMEDIAIRE,
-      objective: Objective.HYPERTROPHIE,
       sessions_per_week: 4,
       bodyweight_kg: 80,
       available_equip: ['bb_oly', 'rack'],

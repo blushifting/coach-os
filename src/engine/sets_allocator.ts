@@ -18,7 +18,7 @@ import type {
   UserState,
 } from './models';
 import {
-  MuscleStatus,
+  MuscleIntention,
   ProgressionRule,
   makePlannedExercise,
 } from './models';
@@ -95,7 +95,7 @@ export function allocateSets(
   // Diagnostic : muscles prio sous leur cible.
   const undershoot: string[] = [];
   for (const [muscle, goal] of Object.entries(state.muscle_goals)) {
-    if (goal.status !== MuscleStatus.PRIORITAIRE) continue;
+    if (goal.intention !== MuscleIntention.DEVELOPPER) continue;
     const target = effectiveCycleTargetVolume(state, muscle);
     const got = realized[muscle] ?? 0;
     if (target > 0 && got < target - 0.5) {

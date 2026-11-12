@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   Level,
-  Objective,
+  
   Sex,
   makeProfile,
   type SessionFeedback,
@@ -31,7 +31,6 @@ function profile(opts: {
     sex: opts.sex ?? Sex.HOMME,
     age: opts.age ?? 30,
     level: opts.level ?? Level.INTERMEDIAIRE,
-    objective: Objective.HYPERTROPHIE,
     sessions_per_week: 4,
     bodyweight_kg: opts.sex === Sex.FEMME ? 60 : 80,
   });

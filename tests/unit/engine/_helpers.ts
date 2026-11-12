@@ -7,7 +7,7 @@
  */
 
 import type { Profile, ProfileInput, UserState } from '@/engine/models';
-import { Level, makeProfile, makeUserState, Objective, Sex } from '@/engine/models';
+import { Level, makeProfile, makeUserState,  Sex } from '@/engine/models';
 import { initialVolumeBounds } from '@/engine/volume';
 
 export const EQUIP_FULL = new Set([
@@ -49,7 +49,6 @@ export function profileIntermediaireH(): Profile {
     sex: Sex.HOMME,
     age: 30,
     level: Level.INTERMEDIAIRE,
-    objective: Objective.HYPERTROPHIE,
     sessions_per_week: 4,
     bodyweight_kg: 80,
     available_equip: EQUIP_FULL,
@@ -61,7 +60,6 @@ export function profileDebutantH(): Profile {
     sex: Sex.HOMME,
     age: 22,
     level: Level.DEBUTANT,
-    objective: Objective.HYPERTROPHIE,
     sessions_per_week: 3,
     bodyweight_kg: 70,
     available_equip: EQUIP_FULL,
@@ -74,7 +72,6 @@ export function profile(overrides: Partial<ProfileInput> = {}): Profile {
     sex: Sex.HOMME,
     age: 30,
     level: Level.INTERMEDIAIRE,
-    objective: Objective.HYPERTROPHIE,
     sessions_per_week: 4,
     bodyweight_kg: 80,
     available_equip: EQUIP_FULL,

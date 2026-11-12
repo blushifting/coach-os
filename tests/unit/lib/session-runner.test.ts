@@ -20,7 +20,7 @@ import {
   type SessionEntries,
 } from '@/lib/session-runner';
 import type { SessionFeedback, SessionPlan, UserState } from '@/engine/models';
-import { MuscleObjective, MuscleStatus } from '@/engine/models';
+import { MuscleIntention } from '@/engine/models';
 import type { FeedbackRow } from '@/db/schema';
 import type { RecordFeedbackResult } from '@/engine/engine';
 import { Catalog } from '@/engine/catalog';
@@ -286,8 +286,7 @@ describe('computeSessionSummary', () => {
       volume_max: { [primary]: 14 },
       muscle_goals: {
         [primary]: {
-          objective: MuscleObjective.HYPERTROPHIE,
-          status: MuscleStatus.PRIORITAIRE,
+          intention: MuscleIntention.DEVELOPPER,
           priority_rank: 1,
         },
       },

@@ -5,7 +5,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { addedVolumeOvershoot } from '@/lib/progress';
-import { MuscleObjective, MuscleStatus, type UserState } from '@/engine/models';
+import { MuscleIntention,
+  type UserState } from '@/engine/models';
 
 // Muscle PRIORITAIRE hypertrophie → facteur 1.0 → V_max = volume_max.
 // pectoraux : V_max = 18 · triceps : V_max = 14.
@@ -16,14 +17,12 @@ function st(): Pick<UserState, 'volume_min' | 'volume_max' | 'muscle_goals'> {
     muscle_goals: {
       pectoraux: {
         muscle: 'pectoraux',
-        objective: MuscleObjective.HYPERTROPHIE,
-        status: MuscleStatus.PRIORITAIRE,
+        intention: MuscleIntention.DEVELOPPER,
         priority_rank: 1,
       },
       triceps: {
         muscle: 'triceps',
-        objective: MuscleObjective.HYPERTROPHIE,
-        status: MuscleStatus.PRIORITAIRE,
+        intention: MuscleIntention.DEVELOPPER,
         priority_rank: 2,
       },
     },

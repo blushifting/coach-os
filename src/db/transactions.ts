@@ -290,27 +290,17 @@ export interface EndOfCycleArgs {
   review: CycleReview;
   /** cycle_index de celui qui se termine (peut différer de state.cycle_index). */
   closedCycleIndex: number;
-  /**
-   * Bloc R (A2) — exos dont le muscle a changé d'objectif au nouveau cycle :
-   * on efface leurs snapshots e1RM (le caller a déjà retiré `state.e1rm[id]`)
-   * pour qu'ils repartent en calibration de zéro, sans fuite d'info entre deux
-   * cycles de modes différents.
-   */
-  resetSnapshotExoIds?: readonly string[];
 }
 
 export async function txEndOfCycle(args: EndOfCycleArgs): Promise<void> {
-  const { state, review, closedCycleIndex, resetSnapshotExoIds } = args;
+  const { state, review, closedCycleIndex } = args;
   const db = getDb();
   const today = nowIso().slice(0, 10);
   await db.transaction(
     'rw',
-    [db.userState, db.cycles, db.sessions, db.e1rmSnapshots],
+    [db.userState, db.cycles, db.sessions],
     async () => {
     await putUserStateInTx(state);
-    if (resetSnapshotExoIds && resetSnapshotExoIds.length > 0) {
-      await db.e1rmSnapshots.where('exercise_id').anyOf([...resetSnapshotExoIds]).delete();
-    }
     const closed = await db.cycles.get(closedCycleIndex);
     await db.cycles.put({
       cycle_index: closedCycleIndex,

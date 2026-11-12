@@ -11,16 +11,17 @@
  *   - R4 (Rear delts) : Cools 2014, Borstad 2006 (ratio rotateurs ant/post)
  *
  * Contrat de `applyBalanceRules` :
- *   - Entrée : Record<muscle, MuscleGoal> courant (PRIORITAIRES + éventuels overrides).
- *   - Sortie : MuscleGoal[] des SUGGERE à AJOUTER.
- *     - Ne contient QUE les nouveaux muscles, pas ceux déjà présents.
- *     - Tous en objective=MAINTIEN, status=SUGGERE, priority_rank=99.
+ *   - Entrée : Record<muscle, MuscleGoal> courant (muscles à développer et à entretenir).
+ *   - Sortie : MuscleGoal[] des muscles à PROPOSER en entretien (fenêtre « Équilibre »).
+ *     - Ne contient QUE des muscles sans intention.
+ *     - Tous en intention=ENTRETENIR, priority_rank=99.
  *     - Pas de doublons.
- *     - Respecte les NON_COUVERT explicites (pas de re-suggestion).
+ *   Dump 2.4 (D2) : ce ne sont que des propositions. Rien ne les ajoute sans
+ *   l’accord de l’utilisateur ; un muscle retiré n’est pas ré-imposé.
  */
 
 import type { MuscleGoal } from './models';
-import { MuscleObjective, MuscleStatus } from './models';
+import { MuscleIntention } from './models';
 
 // =============================================================================
 // Catégorisation des muscles
@@ -64,7 +65,7 @@ export const LOWER_BODY = [
 // R3 — Core
 export const CORE_MUSCLES = ['abdos', 'lombaires'] as const;
 
-// R4 — Si l'un de ces muscles est PRIORITAIRE, deltos_posterieurs en MAINTIEN.
+// R4 — Si l'un de ces muscles est à développer, deltos_posterieurs en entretien.
 export const R4_TRIGGERS = ['pectoraux', 'deltos_lateraux', 'triceps'] as const;
 
 // =============================================================================
@@ -72,23 +73,11 @@ export const R4_TRIGGERS = ['pectoraux', 'deltos_lateraux', 'triceps'] as const;
 // =============================================================================
 
 function makeSuggested(muscle: string): MuscleGoal {
-  return {
-    muscle,
-    objective: MuscleObjective.MAINTIEN,
-    status: MuscleStatus.SUGGERE,
-    priority_rank: 99,
-  };
+  return { muscle, intention: MuscleIntention.ENTRETENIR, priority_rank: 99 };
 }
 
 function isAlreadyCovered(muscle: string, goals: Record<string, MuscleGoal>): boolean {
-  const g = goals[muscle];
-  if (!g) return false;
-  return g.status !== MuscleStatus.NON_COUVERT;
-}
-
-function isNonCouvert(muscle: string, goals: Record<string, MuscleGoal>): boolean {
-  const g = goals[muscle];
-  return g !== undefined && g.status === MuscleStatus.NON_COUVERT;
+  return goals[muscle] !== undefined;
 }
 
 function addUnique(
@@ -99,7 +88,6 @@ function addUnique(
 ): void {
   if (alreadyAdded.has(muscle)) return;
   if (isAlreadyCovered(muscle, goals)) return;
-  if (isNonCouvert(muscle, goals)) return;
   suggested.push(makeSuggested(muscle));
   alreadyAdded.add(muscle);
 }
@@ -107,7 +95,7 @@ function addUnique(
 function getPriorities(goals: Record<string, MuscleGoal>): Set<string> {
   const out = new Set<string>();
   for (const [m, g] of Object.entries(goals)) {
-    if (g.status === MuscleStatus.PRIORITAIRE) out.add(m);
+    if (g.intention === MuscleIntention.DEVELOPPER) out.add(m);
   }
   return out;
 }
@@ -169,7 +157,7 @@ function applyR4RearDelts(
 // =============================================================================
 
 /**
- * Applique R1-R4 et retourne la liste des SUGGERE à ajouter.
+ * Applique R1-R4 et retourne la liste des muscles à proposer en entretien.
  * Cf. 09_programmation.md §4.3.
  */
 export function applyBalanceRules(

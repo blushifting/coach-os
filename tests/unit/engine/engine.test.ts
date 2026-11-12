@@ -3,9 +3,9 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { developGoals } from '@/test-utils/fixtures';
 import { Catalog } from '@/engine/catalog';
 import {
-  bootstrapMuscleGoalsFromProfile,
   endOfCycle,
   endOfWeek,
   generateSession,
@@ -56,7 +56,7 @@ function addDays(iso: string, days: number): string {
 describe('Engine e2e', () => {
   it('1 cycle complet (5 semaines × 4 séances) sans crash', () => {
     const p = profile();
-    const goals = bootstrapMuscleGoalsFromProfile(p, [
+    const goals = developGoals([
       'pectoraux', 'dos_largeur', 'quadriceps', 'ischios',
     ]);
     const state = startUser(p, catalog, { muscleGoals: goals });
@@ -79,7 +79,7 @@ describe('Engine e2e', () => {
 
   it('endOfCycle + applyUserActionAfterCycle(CONTINUER) → nouveau plan', () => {
     const p = profile();
-    const goals = bootstrapMuscleGoalsFromProfile(p, [
+    const goals = developGoals([
       'pectoraux', 'dos_largeur', 'quadriceps', 'ischios',
     ]);
     const state = startUser(p, catalog, { muscleGoals: goals });
@@ -112,7 +112,7 @@ describe('Engine e2e', () => {
 describe('replaceSessionItem', () => {
   it('remplace l\'exo à l\'index donné en conservant le nombre de séries', () => {
     const p = profile();
-    const goals = bootstrapMuscleGoalsFromProfile(p, [
+    const goals = developGoals([
       'pectoraux', 'dos_largeur', 'quadriceps', 'ischios',
     ]);
     const state = startUser(p, catalog, { muscleGoals: goals });
@@ -136,7 +136,7 @@ describe('replaceSessionItem', () => {
 
   it('lève si itemIndex hors plage', () => {
     const p = profile();
-    const goals = bootstrapMuscleGoalsFromProfile(p, ['pectoraux']);
+    const goals = developGoals(['pectoraux']);
     const state = startUser(p, catalog, { muscleGoals: goals });
     state.current_cycle_plan = autoGenerateCyclePlanV3(state, catalog);
     const plan = generateSession(state, catalog, 0, '2026-01-05');
@@ -153,7 +153,7 @@ describe('recordFeedback — charge > préconisée (Bloc L)', () => {
     const p = profile();
     const mkState = () =>
       startUser(p, catalog, {
-        muscleGoals: bootstrapMuscleGoalsFromProfile(p, ['pectoraux']),
+        muscleGoals: developGoals(['pectoraux']),
       });
 
     // Plan minimal : bench_bb préconisé 80 kg × 10.

@@ -13,7 +13,7 @@ import {
   splitVolumeIntoSessions,
   substitute,
 } from '@/engine/selection';
-import { ExType, Level, Objective, Sex, makeProfile } from '@/engine/models';
+import { ExType, Level,  Sex, makeProfile } from '@/engine/models';
 
 import { profileIntermediaireH, startUserStub } from './_helpers';
 
@@ -32,7 +32,6 @@ describe('candidatesForMuscle', () => {
       sex: Sex.HOMME,
       age: 30,
       level: Level.INTERMEDIAIRE,
-      objective: Objective.HYPERTROPHIE,
       sessions_per_week: 3,
       bodyweight_kg: 80,
       available_equip: new Set(['db', 'bench_flat', 'bench_incl']),

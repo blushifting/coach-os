@@ -34,7 +34,7 @@ const FILL_TONE: Record<CoverageStatus, string> = {
   sous_min: 'bg-amber-500',
   ok: 'bg-emerald-500',
   depassement: 'bg-sang-500',
-  hors_scope: 'bg-anthracite-500',
+  sans_intention: 'bg-anthracite-500',
 };
 
 const STATUS_LABEL: Record<CoverageStatus, string> = {
@@ -42,7 +42,7 @@ const STATUS_LABEL: Record<CoverageStatus, string> = {
   sous_min: 'sous la cible',
   ok: 'dans la cible',
   depassement: 'au-dessus',
-  hors_scope: '',
+  sans_intention: '',
 };
 
 const STATUS_TEXT_TONE: Record<CoverageStatus, string> = {
@@ -50,7 +50,7 @@ const STATUS_TEXT_TONE: Record<CoverageStatus, string> = {
   sous_min: 'text-amber-400',
   ok: 'text-emerald-400',
   depassement: 'text-sang-400',
-  hors_scope: 'text-anthracite-400',
+  sans_intention: 'text-anthracite-400',
 };
 
 interface GaugeRow {
@@ -70,7 +70,7 @@ export function VolumeGauges({ template, state, catalog }: Props) {
       const [vMin, vMax] = displayVolumeBounds(
         ...effectiveVolumeBounds(state as UserState, muscle),
       );
-      if (vMax <= 0) continue; // muscle hors scope (pas de plafond)
+      if (vMax <= 0) continue; // muscle inconnu des repères
       const sets = weighted[muscle] ?? 0;
       out.push({ muscle, sets, vMin, vMax, status: classifyVolume(sets, vMin, vMax) });
     }

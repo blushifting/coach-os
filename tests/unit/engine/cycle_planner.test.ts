@@ -19,12 +19,10 @@ import {
   enforceLengthenedBias,
 } from '@/engine/cycle_planner';
 import {
-  MuscleObjective,
-  MuscleStatus,
+  MuscleIntention,
   type MuscleGoal,
   type UserState,
-  exercisePrimaires,
-} from '@/engine/models';
+  exercisePrimaires } from '@/engine/models';
 import { orderSession, totalSets } from '@/engine/selection';
 import {
   effectiveVolumeBounds,
@@ -40,19 +38,14 @@ const catalog = new Catalog();
 // Helpers
 // =============================================================================
 
-function prio(
-  muscle: string,
-  obj: MuscleObjective = MuscleObjective.HYPERTROPHIE,
-  rank = 1,
-): MuscleGoal {
-  return { muscle, objective: obj, status: MuscleStatus.PRIORITAIRE, priority_rank: rank };
+function prio(muscle: string, rank = 1): MuscleGoal {
+  return { muscle, intention: MuscleIntention.DEVELOPPER, priority_rank: rank };
 }
 
 function suggested(muscle: string): MuscleGoal {
   return {
     muscle,
-    objective: MuscleObjective.MAINTIEN,
-    status: MuscleStatus.SUGGERE,
+    intention: MuscleIntention.ENTRETENIR,
     priority_rank: 99,
   };
 }
@@ -63,9 +56,9 @@ function stateInterH4x(): UserState {
 
 function typicalGoals(): Record<string, MuscleGoal> {
   const goals: Record<string, MuscleGoal> = {
-    pectoraux: prio('pectoraux', MuscleObjective.HYPERTROPHIE, 1),
-    dos_largeur: prio('dos_largeur', MuscleObjective.HYPERTROPHIE, 2),
-    quadriceps: prio('quadriceps', MuscleObjective.HYPERTROPHIE, 3),
+    pectoraux: prio('pectoraux', 1),
+    dos_largeur: prio('dos_largeur', 2),
+    quadriceps: prio('quadriceps', 3),
   };
   for (const sg of applyBalanceRules(goals)) goals[sg.muscle] = sg;
   return goals;
@@ -76,20 +69,27 @@ function typicalGoals(): Record<string, MuscleGoal> {
 // =============================================================================
 
 describe('effectiveVolumeBounds', () => {
-  it('NON_COUVERT → (0, 0)', () => {
+  // Dump 2.4 (D1) — un muscle sans intention reste suivi : il garde ses repères.
+  it('sans intention → repères de « Développer », jamais (0, 0)', () => {
     const state = stateInterH4x();
-    state.muscle_goals.pectoraux = {
-      muscle: 'pectoraux',
-      objective: MuscleObjective.HYPERTROPHIE,
-      status: MuscleStatus.NON_COUVERT,
-      priority_rank: 99,
-    };
-    expect(effectiveVolumeBounds(state, 'pectoraux')).toEqual([0, 0]);
+    expect(effectiveVolumeBounds(state, 'pectoraux')).toEqual([
+      state.volume_min.pectoraux,
+      state.volume_max.pectoraux,
+    ]);
+  });
+
+  it('Développer → [seuil de croissance, repère haut]', () => {
+    const state = stateInterH4x();
+    state.muscle_goals.pectoraux = prio('pectoraux');
+    expect(effectiveVolumeBounds(state, 'pectoraux')).toEqual([
+      state.volume_min.pectoraux,
+      state.volume_max.pectoraux,
+    ]);
   });
 
   // Conv #29 — maintien = bande [MV, MEV] = [0.4×Vmin (plancher 2), Vmin].
   // Le plafond V_max = MEV (= baseMin) pour une lecture de progrès uniforme.
-  it('SUGGERE (maintien) → bande [MV, MEV], V_min < V_max', () => {
+  it('Entretenir → bande [MV, MEV], V_min < V_max', () => {
     const state = stateInterH4x();
     state.muscle_goals.abdos = suggested('abdos');
     const baseMin = state.volume_min.abdos!;
@@ -100,21 +100,6 @@ describe('effectiveVolumeBounds', () => {
     expect(vMin).toBeGreaterThanOrEqual(2);
   });
 
-  it('FORCE → facteur 0.7', () => {
-    const state = stateInterH4x();
-    state.muscle_goals.pectoraux = prio('pectoraux', MuscleObjective.FORCE);
-    const baseMin = state.volume_min.pectoraux!;
-    const [vMin] = effectiveVolumeBounds(state, 'pectoraux');
-    expect(vMin).toBeCloseTo(baseMin * 0.7, 6);
-  });
-
-  it('ENDURANCE → facteur 1.25', () => {
-    const state = stateInterH4x();
-    state.muscle_goals.pectoraux = prio('pectoraux', MuscleObjective.ENDURANCE);
-    const baseMin = state.volume_min.pectoraux!;
-    const [vMin] = effectiveVolumeBounds(state, 'pectoraux');
-    expect(vMin).toBeCloseTo(baseMin * 1.25, 6);
-  });
 });
 
 // =============================================================================
@@ -124,7 +109,7 @@ describe('effectiveVolumeBounds', () => {
 describe('targetFrequencyV2', () => {
   it('hypertrophie inter → fréquence 1-4', () => {
     const state = stateInterH4x();
-    state.muscle_goals.pectoraux = prio('pectoraux', MuscleObjective.HYPERTROPHIE);
+    state.muscle_goals.pectoraux = prio('pectoraux');
     const f = targetFrequencyV2('pectoraux', state);
     expect(f).toBeGreaterThanOrEqual(1);
     expect(f).toBeLessThanOrEqual(4);
@@ -137,7 +122,7 @@ describe('targetFrequencyV2', () => {
 
   it('cappée par sessions_per_week', () => {
     const state = stateInterH4x();
-    state.muscle_goals.pectoraux = prio('pectoraux', MuscleObjective.ENDURANCE);
+    state.muscle_goals.pectoraux = prio('pectoraux');
     expect(targetFrequencyV2('pectoraux', state)).toBeLessThanOrEqual(
       state.profile.sessions_per_week,
     );
@@ -225,7 +210,7 @@ describe('autoGenerateCyclePlanV3', () => {
     const plan = autoGenerateCyclePlanV3(state, catalog);
 
     for (const [muscle, goal] of Object.entries(state.muscle_goals)) {
-      if (goal.status !== MuscleStatus.PRIORITAIRE) continue;
+      if (goal.intention !== MuscleIntention.DEVELOPPER) continue;
       let daysWithMuscle = 0;
       for (const day of plan.days) {
         for (const p of day.exercises) {
@@ -276,7 +261,7 @@ describe('enforceLengthenedBias', () => {
   it('substitue si HYP + ≥2 exos et aucun lengthened_bias', () => {
     const state = stateInterH4x();
     state.muscle_goals = {
-      fessiers: prio('fessiers', MuscleObjective.HYPERTROPHIE, 1),
+      fessiers: prio('fessiers', 1),
     };
     const plan = autoGenerateCyclePlanV3(state, catalog);
     const fessiersExos = plan.days.flatMap((d) =>
@@ -294,7 +279,7 @@ describe('enforceLengthenedBias', () => {
   it('idempotent : 2e appel ne change rien si déjà couvert', () => {
     const state = stateInterH4x();
     state.muscle_goals = {
-      fessiers: prio('fessiers', MuscleObjective.HYPERTROPHIE, 1),
+      fessiers: prio('fessiers', 1),
     };
     const plan = autoGenerateCyclePlanV3(state, catalog);
     const before = plan.days.map((d) => d.exercises.map((p) => p.exercise_id));

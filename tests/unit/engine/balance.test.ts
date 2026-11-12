@@ -12,38 +12,20 @@ import {
   UPPER_BODY,
   LOWER_BODY,
 } from '@/engine/balance';
-import {
-  MuscleObjective,
-  MuscleStatus,
-  type MuscleGoal,
-} from '@/engine/models';
+import { MuscleIntention, type MuscleGoal } from '@/engine/models';
 
 // =============================================================================
 // Helpers
 // =============================================================================
 
-function prio(
-  muscle: string,
-  objective: MuscleObjective = MuscleObjective.HYPERTROPHIE,
-  rank = 1,
-): MuscleGoal {
-  return { muscle, objective, status: MuscleStatus.PRIORITAIRE, priority_rank: rank };
+function prio(muscle: string, rank = 1): MuscleGoal {
+  return { muscle, intention: MuscleIntention.DEVELOPPER, priority_rank: rank };
 }
 
 function suggested(muscle: string): MuscleGoal {
   return {
     muscle,
-    objective: MuscleObjective.MAINTIEN,
-    status: MuscleStatus.SUGGERE,
-    priority_rank: 99,
-  };
-}
-
-function nonCouvert(muscle: string): MuscleGoal {
-  return {
-    muscle,
-    objective: MuscleObjective.MAINTIEN,
-    status: MuscleStatus.NON_COUVERT,
+    intention: MuscleIntention.ENTRETENIR,
     priority_rank: 99,
   };
 }
@@ -55,9 +37,7 @@ function suggestedMuscles(result: MuscleGoal[]): Set<string> {
 function allInMaintien(result: MuscleGoal[]): boolean {
   return result.every(
     (g) =>
-      g.objective === MuscleObjective.MAINTIEN &&
-      g.status === MuscleStatus.SUGGERE &&
-      g.priority_rank === 99,
+      g.intention === MuscleIntention.ENTRETENIR && g.priority_rank === 99,
   );
 }
 
@@ -131,8 +111,8 @@ describe('R1 — Push/Pull', () => {
 
   it('pec + dos_largeur équilibrés → pas de compensation R1', () => {
     const result = applyBalanceRules({
-      pectoraux: prio('pectoraux', MuscleObjective.HYPERTROPHIE, 1),
-      dos_largeur: prio('dos_largeur', MuscleObjective.HYPERTROPHIE, 2),
+      pectoraux: prio('pectoraux', 1),
+      dos_largeur: prio('dos_largeur', 2),
     });
     const m = suggestedMuscles(result);
     const pushAdded = inter(m, PUSH_SET);
@@ -160,8 +140,8 @@ describe('R2 — Quadri ↔ Ischios', () => {
   it('quad + ischios déjà prioritaires → pas de doublon', () => {
     const m = suggestedMuscles(
       applyBalanceRules({
-        quadriceps: prio('quadriceps', MuscleObjective.HYPERTROPHIE, 1),
-        ischios: prio('ischios', MuscleObjective.HYPERTROPHIE, 2),
+        quadriceps: prio('quadriceps', 1),
+        ischios: prio('ischios', 2),
       }),
     );
     expect(m.has('quadriceps')).toBe(false);
@@ -180,22 +160,11 @@ describe('R3 — Core', () => {
     expect(m.has('lombaires')).toBe(true);
   });
 
-  it('opt-out abdos NON_COUVERT respecté', () => {
-    const m = suggestedMuscles(
-      applyBalanceRules({
-        pectoraux: prio('pectoraux'),
-        abdos: nonCouvert('abdos'),
-      }),
-    );
-    expect(m.has('abdos')).toBe(false);
-    expect(m.has('lombaires')).toBe(true);
-  });
-
   it('abdos déjà prioritaire → pas de re-suggestion', () => {
     const m = suggestedMuscles(
       applyBalanceRules({
         pectoraux: prio('pectoraux'),
-        abdos: prio('abdos', MuscleObjective.HYPERTROPHIE, 2),
+        abdos: prio('abdos', 2),
       }),
     );
     expect(m.has('abdos')).toBe(false);
@@ -246,7 +215,7 @@ describe('R4 — Rear delts', () => {
 describe('cas combinés', () => {
   it('pec rank 1 → R1 + R3 + R4 toutes appliquées', () => {
     const m = suggestedMuscles(
-      applyBalanceRules({ pectoraux: prio('pectoraux', MuscleObjective.HYPERTROPHIE, 1) }),
+      applyBalanceRules({ pectoraux: prio('pectoraux', 1) }),
     );
     expect(m.has('abdos')).toBe(true);
     expect(m.has('lombaires')).toBe(true);
@@ -256,17 +225,17 @@ describe('cas combinés', () => {
 
   it('pas de doublons dans la liste finale', () => {
     const result = applyBalanceRules({
-      pectoraux: prio('pectoraux', MuscleObjective.HYPERTROPHIE, 1),
-      triceps: prio('triceps', MuscleObjective.HYPERTROPHIE, 2),
+      pectoraux: prio('pectoraux', 1),
+      triceps: prio('triceps', 2),
     });
     const muscles = result.map((g) => g.muscle);
     expect(muscles.length).toBe(new Set(muscles).size);
   });
 
-  it('tous les goals retournés sont MAINTIEN/SUGGERE/rank=99', () => {
+  it('tous les goals retournés sont à entretenir, rang 99', () => {
     const result = applyBalanceRules({
-      pectoraux: prio('pectoraux', MuscleObjective.HYPERTROPHIE, 1),
-      quadriceps: prio('quadriceps', MuscleObjective.HYPERTROPHIE, 2),
+      pectoraux: prio('pectoraux', 1),
+      quadriceps: prio('quadriceps', 2),
     });
     expect(allInMaintien(result)).toBe(true);
   });

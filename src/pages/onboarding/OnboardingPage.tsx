@@ -39,7 +39,6 @@ import {
   buildMuscleGoals,
   buildProfile,
   computeBalanceSuggestions,
-  deriveGlobalObjective,
   draftFromUserState,
   isEmptySelection,
   makeInitialDraft,
@@ -123,13 +122,8 @@ export default function OnboardingPage() {
     if (isManual || catalog === null) return null;
     if (step < LAST_STEP) return null;
     try {
-      const globalObjective = deriveGlobalObjective(draft);
-      const profile = buildProfile(draft, globalObjective);
-      const suggestions = computeBalanceSuggestions(
-        draft.priorities,
-        draft.maintenance,
-      );
-      const muscleGoals = buildMuscleGoals(draft, suggestions);
+      const profile = buildProfile(draft);
+      const muscleGoals = buildMuscleGoals(draft);
       return buildOnboardingSkeleton(
         profile,
         muscleGoals,
@@ -149,16 +143,9 @@ export default function OnboardingPage() {
   const gaugeState = useMemo<UserState | null>(() => {
     if (catalog === null || step < LAST_STEP || !isManual) return null;
     try {
-      const profile = buildProfile(draft, deriveGlobalObjective(draft));
-      const suggestions = computeBalanceSuggestions(
-        draft.priorities,
-        draft.maintenance,
-      );
-      const muscleGoals = buildMuscleGoals(draft, suggestions);
-      return engineStartUser(profile, catalog, {
-        muscleGoals,
-        applyBalance: false,
-      });
+      const profile = buildProfile(draft);
+      const muscleGoals = buildMuscleGoals(draft);
+      return engineStartUser(profile, catalog, { muscleGoals });
     } catch {
       return null;
     }
@@ -257,7 +244,7 @@ export default function OnboardingPage() {
   const inputsKey = useMemo(
     () =>
       JSON.stringify({
-        prios: draft.priorities.map((p) => `${p.muscle}:${p.objective}`),
+        prios: draft.priorities.map((p) => p.muscle),
         maintenance: [...draft.maintenance].sort(),
         sessions: draft.sessionsPerWeek,
         duration: draft.durationCategory,
@@ -305,7 +292,7 @@ export default function OnboardingPage() {
     setError(null);
     if (step === 2 && !canAdvanceFromStep2) {
       setError(
-        'Sélectionne au moins un muscle à développer (Hypertrophie, Force ou Endurance), ou utilise la sélection par défaut.',
+        'Choisis au moins un muscle à développer, ou utilise la sélection par défaut.',
       );
       return;
     }
@@ -365,13 +352,8 @@ export default function OnboardingPage() {
     }
     setSubmitting(true);
     try {
-      const globalObjective = deriveGlobalObjective(draft);
-      const profile = buildProfile(draft, globalObjective);
-      const suggestions = computeBalanceSuggestions(
-        draft.priorities,
-        draft.maintenance,
-      );
-      const muscleGoals = buildMuscleGoals(draft, suggestions);
+      const profile = buildProfile(draft);
+      const muscleGoals = buildMuscleGoals(draft);
 
       if (isRestart && userState !== null) {
         await updateProfile(profile);
@@ -420,7 +402,6 @@ export default function OnboardingPage() {
       await startUser({
         profile,
         muscleGoals,
-        applyBalance: false,
         buildMode: draft.buildMode,
       });
       if (isManual) {

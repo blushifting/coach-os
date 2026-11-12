@@ -10,7 +10,6 @@
       "sex": "homme",
       "age": 30,
       "level": "intermediaire",
-      "objective": "hypertrophie",
       "sessions_per_week": 4,
       "bodyweight_kg": 75,
       "available_equip": [
@@ -2206,92 +2205,62 @@
     "muscle_goals": {
       "pectoraux": {
         "muscle": "pectoraux",
-        "objective": "force",
-        "status": "prioritaire",
+        "intention": "developper",
         "priority_rank": 1
       },
       "quadriceps": {
         "muscle": "quadriceps",
-        "objective": "force",
-        "status": "prioritaire",
+        "intention": "developper",
         "priority_rank": 2
       },
       "dos_largeur": {
         "muscle": "dos_largeur",
-        "objective": "force",
-        "status": "prioritaire",
+        "intention": "developper",
         "priority_rank": 3
       },
       "dos_epaisseur": {
         "muscle": "dos_epaisseur",
-        "objective": "force",
-        "status": "prioritaire",
+        "intention": "developper",
         "priority_rank": 4
       },
       "ischios": {
         "muscle": "ischios",
-        "objective": "force",
-        "status": "prioritaire",
+        "intention": "developper",
         "priority_rank": 5
       },
       "fessiers": {
         "muscle": "fessiers",
-        "objective": "force",
-        "status": "prioritaire",
+        "intention": "developper",
         "priority_rank": 6
       },
       "deltos_lateraux": {
         "muscle": "deltos_lateraux",
-        "objective": "hypertrophie",
-        "status": "suggere",
+        "intention": "entretenir",
         "priority_rank": 99
       },
       "biceps": {
         "muscle": "biceps",
-        "objective": "hypertrophie",
-        "status": "suggere",
+        "intention": "entretenir",
         "priority_rank": 99
       },
       "triceps": {
         "muscle": "triceps",
-        "objective": "hypertrophie",
-        "status": "suggere",
+        "intention": "entretenir",
         "priority_rank": 99
       },
       "trapezes_hauts": {
         "muscle": "trapezes_hauts",
-        "objective": "hypertrophie",
-        "status": "suggere",
-        "priority_rank": 99
-      },
-      "mollets": {
-        "muscle": "mollets",
-        "objective": "maintien",
-        "status": "non_couvert",
-        "priority_rank": 99
-      },
-      "abdos": {
-        "muscle": "abdos",
-        "objective": "maintien",
-        "status": "non_couvert",
+        "intention": "entretenir",
         "priority_rank": 99
       },
       "deltos_posterieurs": {
         "muscle": "deltos_posterieurs",
-        "objective": "hypertrophie",
-        "status": "suggere",
-        "priority_rank": 99
-      },
-      "obliques": {
-        "muscle": "obliques",
-        "objective": "maintien",
-        "status": "non_couvert",
+        "intention": "entretenir",
         "priority_rank": 99
       },
       "lombaires": {
         "muscle": "lombaires",
-        "objective": "maintien",
-        "status": "suggere",
+        "intention": "entretenir",
         "priority_rank": 99
       }
     },

@@ -8,7 +8,7 @@ export type HelpTopic =
   | 'etire'
   | 'volumeHebdo'
   | 'vminmax'
-  | 'hypertrophie'
+  | 'intention'
   | 'vsSem1'
   | 'prDuJour'
   | 'adherence'
@@ -59,11 +59,11 @@ export const HELP_GLOSSARY: Readonly<Record<HelpTopic, HelpEntry>> = {
   },
   iso: {
     title: 'Isolation',
-    body: 'Mobilise une seule articulation. Curl biceps, leg extension, élévation latérale. Pour cibler un muscle précis, utile en hypertrophie.',
+    body: 'Mobilise une seule articulation. Curl biceps, leg extension, élévation latérale. Pour cibler un muscle précis.',
   },
   etire: {
     title: 'Étiré (lengthened bias)',
-    body: 'Variante où le muscle est travaillé en position allongée — meilleure stimulation hypertrophique. Ex : curl incliné pour le biceps, extension triceps au-dessus de la tête.',
+    body: 'Variante où le muscle est travaillé en position allongée — meilleure stimulation pour la prise de muscle. Ex : curl incliné pour le biceps, extension triceps au-dessus de la tête.',
   },
   volumeHebdo: {
     title: 'Volume hebdo',
@@ -73,9 +73,9 @@ export const HELP_GLOSSARY: Readonly<Record<HelpTopic, HelpEntry>> = {
     title: 'Volume minimal / maximal',
     body: 'Intervalle de séries par semaine. Le minimum (V_min) est le seuil en dessous duquel tu stagnes ; le maximum (V_max), celui au-dessus duquel la fatigue annule les gains. Kotsh les ajuste à chaque bilan de cycle.',
   },
-  hypertrophie: {
-    title: 'Hypertrophie',
-    body: 'Croissance de la taille du muscle. À ne pas confondre avec le « volume hebdo » (juste le nombre de séries par semaine).',
+  intention: {
+    title: 'Développer, entretenir ou sans objectif',
+    body: "Développer : faire progresser ce muscle. Entretenir : maintenir ce muscle à son niveau. Sans objectif : muscle travaillé occasionnellement, pas en priorité.",
   },
   vsSem1: {
     title: 'Progression intra-cycle',

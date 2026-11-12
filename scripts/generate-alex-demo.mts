@@ -25,9 +25,7 @@ import { startUser } from '../src/engine/engine';
 import {
   ChargeType,
   Level,
-  MuscleObjective,
-  MuscleStatus,
-  Objective,
+  MuscleIntention,
   ProgressionRule,
   Sex,
   makeMuscleGoal,
@@ -70,7 +68,6 @@ const ALEX_PROFILE = {
   age: 30,
   level: Level.INTERMEDIAIRE,
   /** objectif global = path "force+hypertrophie 50/50" via muscle_goals fins ci-dessous */
-  objective: Objective.HYPERTROPHIE,
   sessions_per_week: 4,
   bodyweight_kg: 75,
   available_equip: new Set([
@@ -583,7 +580,6 @@ function serializeUserState(state: UserState): SerializedUserState {
       sex: state.profile.sex,
       age: state.profile.age,
       level: state.profile.level,
-      objective: state.profile.objective,
       sessions_per_week: state.profile.sessions_per_week,
       bodyweight_kg: state.profile.bodyweight_kg,
       available_equip: [...state.profile.available_equip],
@@ -617,21 +613,18 @@ function main(): void {
   // Objectifs muscle force+hypertrophie 50/50 : priorité force sur 6 muscles
   // structurants, hypertrophie sur les bras/épaules.
   const muscleGoals = {
-    pectoraux: makeMuscleGoal({ muscle: 'pectoraux', objective: MuscleObjective.FORCE, status: MuscleStatus.PRIORITAIRE, priority_rank: 1 }),
-    quadriceps: makeMuscleGoal({ muscle: 'quadriceps', objective: MuscleObjective.FORCE, status: MuscleStatus.PRIORITAIRE, priority_rank: 2 }),
-    dos_largeur: makeMuscleGoal({ muscle: 'dos_largeur', objective: MuscleObjective.FORCE, status: MuscleStatus.PRIORITAIRE, priority_rank: 3 }),
-    dos_epaisseur: makeMuscleGoal({ muscle: 'dos_epaisseur', objective: MuscleObjective.FORCE, status: MuscleStatus.PRIORITAIRE, priority_rank: 4 }),
-    ischios: makeMuscleGoal({ muscle: 'ischios', objective: MuscleObjective.FORCE, status: MuscleStatus.PRIORITAIRE, priority_rank: 5 }),
-    fessiers: makeMuscleGoal({ muscle: 'fessiers', objective: MuscleObjective.FORCE, status: MuscleStatus.PRIORITAIRE, priority_rank: 6 }),
-    deltos_lateraux: makeMuscleGoal({ muscle: 'deltos_lateraux', objective: MuscleObjective.HYPERTROPHIE, status: MuscleStatus.SUGGERE, priority_rank: 99 }),
-    biceps: makeMuscleGoal({ muscle: 'biceps', objective: MuscleObjective.HYPERTROPHIE, status: MuscleStatus.SUGGERE, priority_rank: 99 }),
-    triceps: makeMuscleGoal({ muscle: 'triceps', objective: MuscleObjective.HYPERTROPHIE, status: MuscleStatus.SUGGERE, priority_rank: 99 }),
-    trapezes_hauts: makeMuscleGoal({ muscle: 'trapezes_hauts', objective: MuscleObjective.HYPERTROPHIE, status: MuscleStatus.SUGGERE, priority_rank: 99 }),
-    mollets: makeMuscleGoal({ muscle: 'mollets', objective: MuscleObjective.MAINTIEN, status: MuscleStatus.NON_COUVERT, priority_rank: 99 }),
-    abdos: makeMuscleGoal({ muscle: 'abdos', objective: MuscleObjective.MAINTIEN, status: MuscleStatus.NON_COUVERT, priority_rank: 99 }),
-    deltos_posterieurs: makeMuscleGoal({ muscle: 'deltos_posterieurs', objective: MuscleObjective.HYPERTROPHIE, status: MuscleStatus.SUGGERE, priority_rank: 99 }),
-    obliques: makeMuscleGoal({ muscle: 'obliques', objective: MuscleObjective.MAINTIEN, status: MuscleStatus.NON_COUVERT, priority_rank: 99 }),
-    lombaires: makeMuscleGoal({ muscle: 'lombaires', objective: MuscleObjective.MAINTIEN, status: MuscleStatus.SUGGERE, priority_rank: 99 }),
+    pectoraux: makeMuscleGoal({ muscle: 'pectoraux', intention: MuscleIntention.DEVELOPPER, priority_rank: 1 }),
+    quadriceps: makeMuscleGoal({ muscle: 'quadriceps', intention: MuscleIntention.DEVELOPPER, priority_rank: 2 }),
+    dos_largeur: makeMuscleGoal({ muscle: 'dos_largeur', intention: MuscleIntention.DEVELOPPER, priority_rank: 3 }),
+    dos_epaisseur: makeMuscleGoal({ muscle: 'dos_epaisseur', intention: MuscleIntention.DEVELOPPER, priority_rank: 4 }),
+    ischios: makeMuscleGoal({ muscle: 'ischios', intention: MuscleIntention.DEVELOPPER, priority_rank: 5 }),
+    fessiers: makeMuscleGoal({ muscle: 'fessiers', intention: MuscleIntention.DEVELOPPER, priority_rank: 6 }),
+    deltos_lateraux: makeMuscleGoal({ muscle: 'deltos_lateraux', intention: MuscleIntention.ENTRETENIR, priority_rank: 99 }),
+    biceps: makeMuscleGoal({ muscle: 'biceps', intention: MuscleIntention.ENTRETENIR, priority_rank: 99 }),
+    triceps: makeMuscleGoal({ muscle: 'triceps', intention: MuscleIntention.ENTRETENIR, priority_rank: 99 }),
+    trapezes_hauts: makeMuscleGoal({ muscle: 'trapezes_hauts', intention: MuscleIntention.ENTRETENIR, priority_rank: 99 }),
+    deltos_posterieurs: makeMuscleGoal({ muscle: 'deltos_posterieurs', intention: MuscleIntention.ENTRETENIR, priority_rank: 99 }),
+    lombaires: makeMuscleGoal({ muscle: 'lombaires', intention: MuscleIntention.ENTRETENIR, priority_rank: 99 }),
   };
 
   const state = startUser(profile, catalog, { muscleGoals });

@@ -19,15 +19,12 @@ import { autoGenerateCyclePlanV3 } from '@/engine/cycle_planner';
 import { buildSkeleton, splitAlternationOk } from '@/engine/skeleton_builder';
 import { ALL_SPLITS } from '@/engine/split';
 import { estimateDayDurationMinutes } from '@/lib/onboarding-preview';
-import {
+import { MuscleIntention,
   DurationCategory,
-  MuscleObjective,
-  MuscleStatus,
   type MuscleGoal,
   type SkeletonDay,
   type UserState,
-  exercisePrimaires,
-} from '@/engine/models';
+  exercisePrimaires } from '@/engine/models';
 
 import { profile, startUserStub } from './_helpers';
 
@@ -36,8 +33,7 @@ const catalog = new Catalog();
 function prio(muscle: string, rank: number): MuscleGoal {
   return {
     muscle,
-    objective: MuscleObjective.HYPERTROPHIE,
-    status: MuscleStatus.PRIORITAIRE,
+    intention: MuscleIntention.DEVELOPPER,
     priority_rank: rank,
   };
 }
@@ -143,7 +139,7 @@ describe('autoGenerateCyclePlanV3 — haut du corps seul (4×)', () => {
     // Refonte 09b : seuls les PRIORITAIRES sont garantis en primaire ≥ 1× ; les
     // muscles de maintien peuvent être couverts par le seul volume incident.
     for (const [muscle, goal] of Object.entries(upperOnly.muscle_goals)) {
-      if (goal.status !== MuscleStatus.PRIORITAIRE) continue;
+      if (goal.intention !== MuscleIntention.DEVELOPPER) continue;
       const covered = plan.days.some((d) =>
         d.exercises.some(
           (p) =>

@@ -7,17 +7,14 @@
 
 import { describe, expect, it } from 'vitest';
 
-import {
+import { MuscleIntention,
   DurationCategory,
-  MuscleObjective,
-  MuscleStatus,
   Sex,
   Level,
-  Objective,
+  
   makeMuscleGoal,
   makeProfile,
-  makeUserState,
-} from '@/engine/models';
+  makeUserState } from '@/engine/models';
 import { initialVolumeBounds } from '@/engine/volume';
 import { Catalog } from '@/engine/catalog';
 import {
@@ -41,14 +38,14 @@ import { EQUIP_FULL } from './_helpers';
 
 function makeStateForGoals(opts: {
   sessions_per_week: number;
-  prios: Array<[string, MuscleObjective]>;
+  /** Muscles à développer, dans l'ordre du rang. */
+  prios: string[];
   suggested?: string[];
 }) {
   const profile = makeProfile({
     sex: Sex.HOMME,
     age: 30,
     level: Level.INTERMEDIAIRE,
-    objective: Objective.HYPERTROPHIE,
     sessions_per_week: opts.sessions_per_week,
     bodyweight_kg: 80,
     available_equip: EQUIP_FULL,
@@ -57,19 +54,17 @@ function makeStateForGoals(opts: {
   const [vMin, vMax] = initialVolumeBounds(profile);
   state.volume_min = { ...vMin };
   state.volume_max = { ...vMax };
-  opts.prios.forEach(([muscle, obj], i) => {
+  opts.prios.forEach((muscle, i) => {
     state.muscle_goals[muscle] = makeMuscleGoal({
       muscle,
-      objective: obj,
-      status: MuscleStatus.PRIORITAIRE,
+      intention: MuscleIntention.DEVELOPPER,
       priority_rank: i + 1,
     });
   });
   for (const m of opts.suggested ?? []) {
     state.muscle_goals[m] = makeMuscleGoal({
       muscle: m,
-      objective: MuscleObjective.MAINTIEN,
-      status: MuscleStatus.SUGGERE,
+      intention: MuscleIntention.ENTRETENIR,
     });
   }
   return state;
@@ -85,7 +80,7 @@ describe('Conv #22.4 — V_cible et fréquence', () => {
   it('V_cible = V_min + 0,2×(V_max−V_min) pour PRIORITAIRE (refonte 09b)', () => {
     const state = makeStateForGoals({
       sessions_per_week: 4,
-      prios: [['pectoraux', MuscleObjective.HYPERTROPHIE]],
+      prios: ['pectoraux'],
     });
     const v = effectiveCycleTargetVolume(state, 'pectoraux');
     // pec inter homme : vMin=10, vMax=18 → 10 + 0,2×8 = 11,6.
@@ -95,7 +90,7 @@ describe('Conv #22.4 — V_cible et fréquence', () => {
   it('targetFrequencyV2 = ceil(V_cible / 5), capée à sessions/sem', () => {
     const state = makeStateForGoals({
       sessions_per_week: 4,
-      prios: [['pectoraux', MuscleObjective.HYPERTROPHIE]],
+      prios: ['pectoraux'],
     });
     // V_cible 11,6 / 5 = 2,32 → ceil = 3.
     expect(targetFrequencyV2('pectoraux', state)).toBe(3);
@@ -104,7 +99,7 @@ describe('Conv #22.4 — V_cible et fréquence', () => {
   it('SUGGERE → freq 1, V_target = V_maintien fixe', () => {
     const state = makeStateForGoals({
       sessions_per_week: 4,
-      prios: [['pectoraux', MuscleObjective.HYPERTROPHIE]],
+      prios: ['pectoraux'],
       suggested: ['deltos_posterieurs'],
     });
     expect(targetFrequencyV2('deltos_posterieurs', state)).toBeGreaterThanOrEqual(1);
@@ -119,9 +114,9 @@ describe('Conv #22 — Profil 1 (Inter 4× MEDIUM, pec/lats/quad)', () => {
   const state = makeStateForGoals({
     sessions_per_week: 4,
     prios: [
-      ['pectoraux', MuscleObjective.HYPERTROPHIE],
-      ['dos_largeur', MuscleObjective.HYPERTROPHIE],
-      ['quadriceps', MuscleObjective.HYPERTROPHIE],
+      'pectoraux',
+      'dos_largeur',
+      'quadriceps',
     ],
     suggested: ['ischios', 'deltos_posterieurs', 'abdos', 'lombaires'],
   });
@@ -164,10 +159,10 @@ describe('Conv #22 — Profil 2 (Inter 3× SHORT, full body diffuse)', () => {
   const state = makeStateForGoals({
     sessions_per_week: 3,
     prios: [
-      ['pectoraux', MuscleObjective.HYPERTROPHIE],
-      ['dos_epaisseur', MuscleObjective.HYPERTROPHIE],
-      ['quadriceps', MuscleObjective.HYPERTROPHIE],
-      ['ischios', MuscleObjective.HYPERTROPHIE],
+      'pectoraux',
+      'dos_epaisseur',
+      'quadriceps',
+      'ischios',
     ],
     suggested: ['deltos_posterieurs', 'abdos', 'lombaires'],
   });
@@ -201,11 +196,11 @@ describe('Conv #22 — Profil 3 (Inter 5× MEDIUM, upper-heavy)', () => {
   const state = makeStateForGoals({
     sessions_per_week: 5,
     prios: [
-      ['pectoraux', MuscleObjective.HYPERTROPHIE],
-      ['dos_largeur', MuscleObjective.HYPERTROPHIE],
-      ['dos_epaisseur', MuscleObjective.HYPERTROPHIE],
-      ['deltos_lateraux', MuscleObjective.HYPERTROPHIE],
-      ['biceps', MuscleObjective.HYPERTROPHIE],
+      'pectoraux',
+      'dos_largeur',
+      'dos_epaisseur',
+      'deltos_lateraux',
+      'biceps',
     ],
     suggested: ['triceps', 'deltos_posterieurs', 'abdos', 'lombaires'],
   });
@@ -232,8 +227,8 @@ describe('Refonte 09b — peu de prios + 5 séances', () => {
     const state = makeStateForGoals({
       sessions_per_week: 5,
       prios: [
-        ['pectoraux', MuscleObjective.HYPERTROPHIE],
-        ['quadriceps', MuscleObjective.HYPERTROPHIE],
+        'pectoraux',
+        'quadriceps',
       ],
       suggested: ['deltos_posterieurs', 'abdos', 'lombaires'],
     });
@@ -257,9 +252,9 @@ describe('Conv #22 — sets_allocator (étape F)', () => {
     const state = makeStateForGoals({
       sessions_per_week: 4,
       prios: [
-        ['pectoraux', MuscleObjective.HYPERTROPHIE],
-        ['dos_largeur', MuscleObjective.HYPERTROPHIE],
-        ['quadriceps', MuscleObjective.HYPERTROPHIE],
+        'pectoraux',
+        'dos_largeur',
+        'quadriceps',
       ],
       suggested: ['ischios', 'deltos_posterieurs', 'abdos', 'lombaires'],
     });
@@ -281,7 +276,7 @@ describe('Conv #22 — sets_allocator (étape F)', () => {
   it('plancher 3 séries / exo, plafond 5 / exo (règle 3-5, Bloc L)', () => {
     const state = makeStateForGoals({
       sessions_per_week: 4,
-      prios: [['pectoraux', MuscleObjective.HYPERTROPHIE]],
+      prios: ['pectoraux'],
       suggested: ['deltos_posterieurs', 'abdos', 'lombaires'],
     });
     const plan = autoGenerateCyclePlanV3(state, catalog, DurationCategory.MEDIUM);
@@ -309,7 +304,7 @@ describe('advanceWeek — avancement du cycle', () => {
   function stateInWeek(w: number) {
     const state = makeStateForGoals({
       sessions_per_week: 4,
-      prios: [['pectoraux', MuscleObjective.HYPERTROPHIE]],
+      prios: ['pectoraux'],
     });
     state.current_week_in_cycle = w;
     state.cycle_index = 1;
@@ -403,7 +398,7 @@ describe('Conv #22 — Sanity', () => {
   it('computeMuscleDemands produit ≥ 1 entrée par prio', () => {
     const state = makeStateForGoals({
       sessions_per_week: 4,
-      prios: [['pectoraux', MuscleObjective.HYPERTROPHIE]],
+      prios: ['pectoraux'],
     });
     const demands = computeMuscleDemands(state);
     expect(demands.find((d) => d.muscle === 'pectoraux')).toBeDefined();
@@ -417,10 +412,10 @@ describe('Conv #22 — Sanity', () => {
     const state = makeStateForGoals({
       sessions_per_week: 4,
       prios: [
-        ['pectoraux', MuscleObjective.HYPERTROPHIE],
-        ['dos_largeur', MuscleObjective.HYPERTROPHIE],
-        ['quadriceps', MuscleObjective.HYPERTROPHIE],
-        ['ischios', MuscleObjective.HYPERTROPHIE],
+        'pectoraux',
+        'dos_largeur',
+        'quadriceps',
+        'ischios',
       ],
       suggested: ['abdos', 'lombaires'],
     });
@@ -433,15 +428,15 @@ describe('Conv #22 — Sanity', () => {
     const a = computeMuscleDemands(
       makeStateForGoals({
         sessions_per_week: 4,
-        prios: [['pectoraux', MuscleObjective.HYPERTROPHIE]],
+        prios: ['pectoraux'],
       }),
     );
     const b = computeMuscleDemands(
       makeStateForGoals({
         sessions_per_week: 4,
         prios: [
-          ['pectoraux', MuscleObjective.HYPERTROPHIE],
-          ['dos_largeur', MuscleObjective.HYPERTROPHIE],
+          'pectoraux',
+          'dos_largeur',
         ],
       }),
     );

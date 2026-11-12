@@ -20,24 +20,22 @@ import {
 import { Catalog } from '@/engine/catalog';
 import type { SetFeedback, SessionFeedback } from '@/engine/models';
 import {
-  MuscleObjective,
-  MuscleStatus,
+  MuscleIntention,
   makeMuscleGoal,
-  makeUserState,
-} from '@/engine/models';
+  makeUserState } from '@/engine/models';
 
 import { profile } from './_helpers';
 
 const catalog = new Catalog();
 const BENCH = 'bench_bb';
 
-const prio = (muscle: string, obj: MuscleObjective) =>
-  makeMuscleGoal({ muscle, objective: obj, status: MuscleStatus.PRIORITAIRE, priority_rank: 1 });
+const prio = (muscle: string) =>
+  makeMuscleGoal({ muscle, intention: MuscleIntention.DEVELOPPER, priority_rank: 1 });
 
-/** State avec un objectif pectoraux donné (pilote bench_bb). */
-function stateFor(obj: MuscleObjective) {
+/** State avec les pectoraux à développer (pilote bench_bb). */
+function stateFor() {
   const s = makeUserState(profile());
-  s.muscle_goals = { pectoraux: prio('pectoraux', obj) };
+  s.muscle_goals = { pectoraux: prio('pectoraux') };
   return s;
 }
 
@@ -57,7 +55,7 @@ function pastSession(sets: SetFeedback[]): SessionFeedback {
   };
 }
 
-const inc = (s = stateFor(MuscleObjective.HYPERTROPHIE)) =>
+const inc = (s = stateFor()) =>
   effectiveIncrement(s, catalog.get(BENCH));
 
 describe('GRADUATION_RESERVE', () => {
@@ -74,20 +72,18 @@ describe('ADOPTION_RESERVE', () => {
 
 describe('seed du plancher', () => {
   it('1re prescription : seed = la charge dérivée de l’e1RM', () => {
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     expect(s.prescribed_load_floor[BENCH]).toBeUndefined();
     const pres = buildPrescription(catalog.get(BENCH), 100, s.profile, 1, {
-      muscleGoals: s.muscle_goals,
       state: s,
     });
     expect(s.prescribed_load_floor[BENCH]).toBe(pres.load_kg);
   });
 
   it('prescriptions suivantes : la charge = le plancher (plus l’e1RM)', () => {
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     s.prescribed_load_floor[BENCH] = 42.5;
     const pres = buildPrescription(catalog.get(BENCH), 200, s.profile, 1, {
-      muscleGoals: s.muscle_goals,
       state: s,
     });
     expect(pres.load_kg).toBe(42.5);
@@ -96,7 +92,7 @@ describe('seed du plancher', () => {
 
 describe('graduation R+3 (hypertrophie compound, R=10 → seuil n_équiv 13)', () => {
   it('meilleure série à n_équiv 13 → +1 incrément', () => {
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     s.prescribed_load_floor[BENCH] = 50;
     // 10 reps RIR 3 (rpe 7) → n_équiv = 13.
     updatePrescribedLoadFloorForExercise(s, catalog.get(BENCH), [fb(50, 10, 7)]);
@@ -104,7 +100,7 @@ describe('graduation R+3 (hypertrophie compound, R=10 → seuil n_équiv 13)', (
   });
 
   it('fatigue ignorée : 1 série à 13, les autres plus basses → gradue quand même', () => {
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     s.prescribed_load_floor[BENCH] = 50;
     updatePrescribedLoadFloorForExercise(s, catalog.get(BENCH), [
       fb(50, 10, 7), // n_équiv 13 (la meilleure)
@@ -115,7 +111,7 @@ describe('graduation R+3 (hypertrophie compound, R=10 → seuil n_équiv 13)', (
   });
 
   it('gros dépassement → toujours +1 incrément seulement (pas multi-crans)', () => {
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     s.prescribed_load_floor[BENCH] = 50;
     // 13 reps RIR 3 → n_équiv 16, bien au-delà du seuil.
     updatePrescribedLoadFloorForExercise(s, catalog.get(BENCH), [fb(50, 13, 7)]);
@@ -123,7 +119,7 @@ describe('graduation R+3 (hypertrophie compound, R=10 → seuil n_équiv 13)', (
   });
 
   it('sous le seuil (n_équiv 12) → pas de graduation', () => {
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     s.prescribed_load_floor[BENCH] = 50;
     updatePrescribedLoadFloorForExercise(s, catalog.get(BENCH), [fb(50, 10, 8)]);
     expect(s.prescribed_load_floor[BENCH]).toBe(50);
@@ -132,7 +128,7 @@ describe('graduation R+3 (hypertrophie compound, R=10 → seuil n_équiv 13)', (
 
 describe('anti-régression (charge réelle plus lourde)', () => {
   it('plus lourd + charge de croisière (RIR 2 = n_équiv R+2) → plancher adopte la charge', () => {
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     s.prescribed_load_floor[BENCH] = 50;
     // 60 kg × 10 reps RIR 2 → n_équiv 12 = R(10) + ADOPTION_RESERVE(2) : tout
     // juste assez de réserve pour être adoptée comme plancher tenable.
@@ -141,7 +137,7 @@ describe('anti-régression (charge réelle plus lourde)', () => {
   });
 
   it('plus lourd mais menée à l’échec au nombre cible (RIR 0 = n_équiv R) → NON adoptée', () => {
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     s.prescribed_load_floor[BENCH] = 50;
     // 60 kg × 10 reps à l'échec (rpe 10) → n_équiv 10 = R, sous R+ADOPTION_RESERVE :
     // une série à l'échec n'est pas un plancher tenable → le plancher ne bouge pas.
@@ -150,7 +146,7 @@ describe('anti-régression (charge réelle plus lourde)', () => {
   });
 
   it('plus lourd à RIR 1 (n_équiv R+1) → encore trop juste, NON adoptée', () => {
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     s.prescribed_load_floor[BENCH] = 50;
     // 60 kg × 10 reps RIR 1 (rpe 9) → n_équiv 11 < 12 → non adoptée.
     updatePrescribedLoadFloorForExercise(s, catalog.get(BENCH), [fb(60, 10, 9)]);
@@ -158,7 +154,7 @@ describe('anti-régression (charge réelle plus lourde)', () => {
   });
 
   it('plus lourd mais série ratée (< R) → on n’adopte pas', () => {
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     s.prescribed_load_floor[BENCH] = 50;
     // 60 kg × 2 reps à l'échec → n_équiv 2 : pas solide.
     updatePrescribedLoadFloorForExercise(s, catalog.get(BENCH), [fb(60, 2, 10)]);
@@ -166,7 +162,7 @@ describe('anti-régression (charge réelle plus lourde)', () => {
   });
 
   it('plus lourd ET facile (R+3) → adopte la charge puis +1 incrément', () => {
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     s.prescribed_load_floor[BENCH] = 50;
     // 55 kg × 10 reps RIR 3 → n_équiv 13.
     updatePrescribedLoadFloorForExercise(s, catalog.get(BENCH), [fb(55, 10, 7)]);
@@ -176,7 +172,7 @@ describe('anti-régression (charge réelle plus lourde)', () => {
 
 describe('descente (hystérésis : 2 séances de suite sous R)', () => {
   it('1 seule séance sous R → pas de descente (no-op)', () => {
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     s.prescribed_load_floor[BENCH] = 50;
     // 5 reps à l'échec → n_équiv 5 < R=10, mais historique vide.
     updatePrescribedLoadFloorForExercise(s, catalog.get(BENCH), [fb(50, 5, 10)]);
@@ -184,7 +180,7 @@ describe('descente (hystérésis : 2 séances de suite sous R)', () => {
   });
 
   it('séance précédente ET courante sous R → −1 incrément', () => {
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     s.prescribed_load_floor[BENCH] = 50;
     s.history.push(pastSession([fb(50, 6, 10)])); // n_équiv 6 < 10
     updatePrescribedLoadFloorForExercise(s, catalog.get(BENCH), [fb(50, 5, 10)]);
@@ -194,7 +190,7 @@ describe('descente (hystérésis : 2 séances de suite sous R)', () => {
 
 describe('Conv #77 — le plancher ne se juge que sur les séries faites au plancher', () => {
   it('série facile mais PLUS LÉGÈRE que le plancher → pas de graduation', () => {
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     s.prescribed_load_floor[BENCH] = 50;
     // 40 kg × 13 reps RIR 3 → n_équiv 16, largement au-dessus du seuil de
     // graduation… mais 10 kg SOUS le plancher : ça ne dit rien de la tenue de 50.
@@ -203,7 +199,7 @@ describe('Conv #77 — le plancher ne se juge que sur les séries faites au plan
   });
 
   it('deux séances de suite sans jamais atteindre le plancher → −1 incrément', () => {
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     s.prescribed_load_floor[BENCH] = 50;
     // Cas réel (élévation latérale poulie) : l'user allège de son propre chef et
     // fait de belles séries à la charge allégée. L'ancienne règle y lisait « il
@@ -214,7 +210,7 @@ describe('Conv #77 — le plancher ne se juge que sur les séries faites au plan
   });
 
   it('une seule séance sous le plancher → pas encore de descente (hystérésis)', () => {
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     s.prescribed_load_floor[BENCH] = 50;
     s.history.push(pastSession([fb(50, 10, 8)])); // séance d'avant : plancher tenu
     updatePrescribedLoadFloorForExercise(s, catalog.get(BENCH), [fb(45, 12, 8)]);
@@ -222,7 +218,7 @@ describe('Conv #77 — le plancher ne se juge que sur les séries faites au plan
   });
 
   it('séries mixtes : la série AU plancher fait foi, pas la plus légère', () => {
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     s.prescribed_load_floor[BENCH] = 50;
     // La série la plus « facile » du lot est à 40 kg (n_équiv 16) ; celle qui
     // compte est celle faite à 50 (n_équiv 13) → graduation normale.
@@ -234,7 +230,7 @@ describe('Conv #77 — le plancher ne se juge que sur les séries faites au plan
   });
 
   it('seed inchangé : sans plancher connu, la charge réellement faite fait référence', () => {
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     // Aucun plancher : le filtre se cale sur la charge de la meilleure série,
     // qui reste donc jugée normalement (ici graduation depuis 40).
     updatePrescribedLoadFloorForExercise(s, catalog.get(BENCH), [fb(40, 13, 7)]);
@@ -244,12 +240,12 @@ describe('Conv #77 — le plancher ne se juge que sur les séries faites au plan
 
 describe('exos sans charge externe additive', () => {
   it('bench (barre) est piloté par le cliquet', () => {
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     expect(exerciseUsesLoadFloor(s, catalog.get(BENCH))).toBe(true);
   });
 
   it('graduation ignorée (no-op) sur un exo non piloté (poids du corps / assisté)', () => {
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     const exo = [...catalog].find((e) => !exerciseUsesLoadFloor(s, e));
     expect(exo).toBeDefined();
     const before = { ...s.prescribed_load_floor };
@@ -262,10 +258,9 @@ describe('exos sans charge externe additive', () => {
 
 describe('déload (semaine 5) — charge allégée d’un facteur', () => {
   it('déload actif → charge = plancher × 0,9 arrondie', () => {
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     s.prescribed_load_floor[BENCH] = 50;
     const pres = buildPrescription(catalog.get(BENCH), 100, s.profile, 5, {
-      muscleGoals: s.muscle_goals,
       state: s,
       deloadActive: true,
     });
@@ -276,15 +271,13 @@ describe('déload (semaine 5) — charge allégée d’un facteur', () => {
     // Plancher gonflé (20) très au-dessus de ce que le Plafond MESURÉ (14)
     // rend physiquement possible. Avant le fix, la branche déload sautait le
     // garde-fou et redonnait 0,9 × 20 = 18 (« Plafond 14 → prescrit 18 »).
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     s.prescribed_load_floor[BENCH] = 20;
     s.e1rm[BENCH] = 14;
     const normale = buildPrescription(catalog.get(BENCH), 14, s.profile, 1, {
-      muscleGoals: s.muscle_goals,
       state: s,
     });
     const recup = buildPrescription(catalog.get(BENCH), 14, s.profile, 5, {
-      muscleGoals: s.muscle_goals,
       state: s,
       deloadActive: true,
     });
@@ -298,10 +291,9 @@ describe('déload (semaine 5) — charge allégée d’un facteur', () => {
   it('#73 A-1 — plancher NON réparé tant que le Plafond n’est pas mesuré', () => {
     // Sans mesure, le « Plafond » n'est qu'un bootstrap : on ne borne pas sur
     // une devinette, et on ne détruit surtout pas la mémoire du cliquet.
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     s.prescribed_load_floor[BENCH] = 20;
     const pres = buildPrescription(catalog.get(BENCH), 14, s.profile, 1, {
-      muscleGoals: s.muscle_goals,
       state: s,
     });
     expect(pres.load_kg).toBe(20);
@@ -309,9 +301,8 @@ describe('déload (semaine 5) — charge allégée d’un facteur', () => {
   });
 
   it('#73 A-1 — récupération : pas de seed de plancher sur un exo neuf', () => {
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     buildPrescription(catalog.get(BENCH), 100, s.profile, 5, {
-      muscleGoals: s.muscle_goals,
       state: s,
       deloadActive: true,
     });
@@ -319,10 +310,9 @@ describe('déload (semaine 5) — charge allégée d’un facteur', () => {
   });
 
   it('semaine 5 REFUSÉE (déload non actif) → charge = plancher (pas de ×0,9)', () => {
-    const s = stateFor(MuscleObjective.HYPERTROPHIE);
+    const s = stateFor();
     s.prescribed_load_floor[BENCH] = 50;
     const pres = buildPrescription(catalog.get(BENCH), 100, s.profile, 5, {
-      muscleGoals: s.muscle_goals,
       state: s,
     });
     expect(pres.load_kg).toBe(50);

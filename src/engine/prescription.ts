@@ -5,31 +5,18 @@
  *   - recherche/03_modele_mathematique.md, §3, §4, §8 (formules e1RM legacy)
  *   - recherche/09_programmation.md, §3, §9.2 (refacto par MuscleGoal)
  *
- * Deux voies coexistent :
- *   - Voie legacy (Profile.objective global) : `targetRpe`, `targetReps`.
- *   - Voie muscle_goals (objectif-par-muscle) : `targetRpeForExercise`,
- *     `targetRepsForExercise`.
- *
- * `buildPrescription` accepte muscle_goals optionnel : si fourni ET au moins
- * un muscle primaire de l'exo y est, on bascule sur la voie nouvelle ; sinon
- * fallback sur la voie legacy.
+ * Dump 2.4, étape 2 (D3) — les reps et l'effort visés ne dépendent plus d'un
+ * objectif (ni du profil, ni du muscle) : une seule table pour tous les
+ * exercices, en attendant la fourchette propre à chaque exercice (étape 4).
  */
 
 import type {
   Exercise,
   Profile,
-  MuscleGoal,
   UserState,
   SetPrescription,
 } from './models';
-import {
-  Objective,
-  ChargeType,
-  ExType,
-  MuscleObjective,
-  MuscleStatus,
-  objectiveToMuscleObjective,
-} from './models';
+import { ChargeType, ExType } from './models';
 import { DELOAD_LOAD_FACTOR } from './volume';
 
 // Constante d'Epley standard (LeSuer 1997, Wood 2002).
@@ -220,232 +207,46 @@ export function targetRepsForPdc(
 }
 
 // =============================================================================
-// 4. Reps cibles, repos, RPE par phase — voie legacy (Profile.objective)
+// 4. Reps, effort et repos visés (dump 2.4, étape 2 : une seule table)
 // =============================================================================
 
-// Reps cibles FIXES par objectif × type d'exo (Conv #29 — décision Azur).
+// Reps cibles FIXES par type d'exercice, pour TOUS les exercices (D3 : plus
+// d'objectif par muscle ni de profil). Valeurs de l'ancien objectif
+// hypertrophie, validées par Azur en conv #80 en attendant la fourchette propre
+// à chaque exercice (étape 4).
 //
-// Une valeur RONDE, facile à suivre en salle, dans la partie HAUTE de la
-// fourchette classique (plus de reps = plus de volume/stimulus), mais
-// PLAFONNÉE pour rester exploitable par Epley : on veut garder
-//   n_équiv = reps + (10 − RPE) ≤ 15   (cf. `measurementIsReliable`),
-// soit reps ≲ 12 aux RPE de travail (7-9). Au-delà, l'e1RM dérivé est trop
-// bruité pour recalibrer.
-//
-//   - FORCE : volontairement BAS (spécificité force, charges lourdes) ;
-//     Epley très fiable. On ne « monte » donc PAS en haut de fourchette ici.
-//   - HYPERTROPHIE : 10 (poly) / 12 (iso) — haut de fourchette, rond, Epley OK.
-//   - ENDURANCE : haut assumé, hors zone Epley fiable (le recalibrage e1RM est
-//     de toute façon filtré par `measurementIsReliable` — attendu pour ce public).
-//   - MAINTIEN : modéré, dans la zone Epley fiable → lecture de progrès propre.
-const TARGET_REPS: Record<MuscleObjective, { compound: number; isolation: number }> = {
-  [MuscleObjective.FORCE]: { compound: 5, isolation: 8 },
-  [MuscleObjective.HYPERTROPHIE]: { compound: 10, isolation: 12 },
-  [MuscleObjective.ENDURANCE]: { compound: 15, isolation: 20 },
-  [MuscleObjective.MAINTIEN]: { compound: 8, isolation: 10 },
-};
+// Une valeur RONDE, facile à suivre en salle, plafonnée pour rester exploitable
+// par Epley : n_équiv = reps + (10 − RPE) ≤ 15 (cf. `measurementIsReliable`).
+const TARGET_REPS = { compound: 10, isolation: 12 } as const;
 
-/** Reps cibles fixes pour cet objectif de muscle et ce type d'exo. */
-export function fixedReps(objective: MuscleObjective, exType: ExType): number {
-  const t = TARGET_REPS[objective];
-  return exType === ExType.ISOLATION ? t.isolation : t.compound;
+/** Reps cibles de cet exercice. */
+export function targetReps(exercise: Exercise): number {
+  return exercise.type === ExType.ISOLATION ? TARGET_REPS.isolation : TARGET_REPS.compound;
 }
 
-/** Reps cibles pour cet exo (voie legacy : Profile.objective global). */
-export function targetReps(profile: Profile, exercise: Exercise): number {
-  return fixedReps(objectiveToMuscleObjective(profile.objective), exercise.type);
-}
+// Effort de RÉFÉRENCE constant (RPE 7, soit une Réserve de 3) : il sert à SEED
+// la charge, le plancher `prescribed_load_floor` prend ensuite le relais. La
+// semaine de récupération acceptée l'abaisse.
+export const BASE_RPE = 7.0;
+export const DELOAD_RPE = 6.0;
 
-// Refonte progression — plus de rampe RPE intra-cycle (reliquat de la montée de
-// volume Israetel, virée Bloc L). Un RPE de RÉFÉRENCE constant par objectif sert
-// seulement à SEED la charge (le cliquet `prescribed_load_floor` prend ensuite le
-// relais) ; le déload (sem 5) abaisse le RPE. (Voie legacy Profile.objective.)
-const BASE_RPE_LEGACY: Record<Objective, number> = {
-  [Objective.HYPERTROPHIE]: 7.0,
-  [Objective.FORCE]: 7.0,
-  [Objective.ENDURANCE]: 7.0,
-};
-
-/** RPE de référence (constant, déload mis à part) pour cette semaine (voie legacy).
- *  Chantier B — l'abaissement déload dépend de `deloadActive` (semaine 5 acceptée),
- *  plus du numéro de semaine : une semaine 5 refusée garde le RPE normal. */
-export function targetRpe(
-  objective: Objective,
-  weekInCycle: number,
-  deloadActive = false,
-): number {
+/** RPE visé pour cette semaine (abaissé en récupération effective). */
+export function targetRpe(weekInCycle: number, deloadActive = false): number {
   if (!(weekInCycle >= 1 && weekInCycle <= 5)) {
     throw new Error(`Semaine hors plage 1..5 : ${weekInCycle}`);
   }
-  return deloadActive ? DELOAD_RPE : BASE_RPE_LEGACY[objective];
+  return deloadActive ? DELOAD_RPE : BASE_RPE;
 }
 
-/** Repos en secondes. Le catalogue donne déjà une valeur, on peut la moduler. */
-export function targetRest(exercise: Exercise, objective: Objective): number {
-  const base = exercise.repos_s;
-  if (objective === Objective.FORCE && exercise.type === ExType.COMPOUND) {
-    return base + 30;
-  }
-  if (objective === Objective.ENDURANCE) {
-    return Math.max(60, Math.trunc(base * 0.7));
-  }
-  return base;
-}
-
-// =============================================================================
-// 5. Voie muscle_goals (cf. 09 §3.3 & §9.2)
-// =============================================================================
-
-// Hiérarchie en cas d'égalité de rang : Force > Hyp > End > Maintien.
-const HIERARCHY_OBJECTIVE: readonly MuscleObjective[] = [
-  MuscleObjective.FORCE,
-  MuscleObjective.HYPERTROPHIE,
-  MuscleObjective.ENDURANCE,
-  MuscleObjective.MAINTIEN,
-];
-
-// Refonte progression — plus de courbe RPE intra-cycle. Un RPE de RÉFÉRENCE
-// constant par objectif (= ex-base de semaine 1) sert à SEED la charge.
-const BASE_RPE: Record<MuscleObjective, number> = {
-  [MuscleObjective.FORCE]: 7.0,
-  [MuscleObjective.HYPERTROPHIE]: 7.0,
-  [MuscleObjective.ENDURANCE]: 8.0,
-  [MuscleObjective.MAINTIEN]: 6.0,
-};
-export const DELOAD_RPE = 6.0;
-
-/**
- * Retourne le MuscleGoal du muscle PRIMAIRE de plus haut rang.
- *
- * Règles (cf. 09 §3.2) :
- *   - Ne considère que les muscles avec coef ≥ 1.0 (synergistes coef 0.5 ignorés).
- *   - Exclut les NON_COUVERT.
- *   - Tri : rank ascendant (1 = plus prioritaire), puis hiérarchie objectif
- *     (Force > Hyp > End > Maintien).
- *   - Renvoie null si aucun candidat valide.
- */
-export function primaryMuscleGoal(
-  exercise: Exercise,
-  muscleGoals: Record<string, MuscleGoal>,
-): MuscleGoal | null {
-  const candidates: MuscleGoal[] = [];
-  for (const [muscle, coef] of Object.entries(exercise.muscles)) {
-    if (coef >= 1.0 && muscle in muscleGoals) {
-      const g = muscleGoals[muscle]!;
-      if (g.status !== MuscleStatus.NON_COUVERT) {
-        candidates.push(g);
-      }
-    }
-  }
-  if (candidates.length === 0) {
-    return null;
-  }
-  candidates.sort((a, b) => {
-    if (a.priority_rank !== b.priority_rank) {
-      return a.priority_rank - b.priority_rank;
-    }
-    return (
-      HIERARCHY_OBJECTIVE.indexOf(a.objective) - HIERARCHY_OBJECTIVE.indexOf(b.objective)
-    );
-  });
-  return candidates[0]!;
-}
-
-/** RPE de référence (constant, déload mis à part) pour cet objectif et cette semaine.
- *  Chantier B — l'abaissement déload dépend de `deloadActive`, plus du n° de semaine. */
-function baseRpeFromMuscleObjective(
-  objective: MuscleObjective,
-  week: number,
-  deloadActive: boolean,
-): number {
-  if (!(week >= 1 && week <= 5)) {
-    throw new Error(`Semaine hors plage 1..5 : ${week}`);
-  }
-  if (deloadActive) {
-    return DELOAD_RPE;
-  }
-  return BASE_RPE[objective];
-}
-
-/**
- * RPE cible pour cet exo, dérivé de l'objectif du muscle primaire #1.
- * Si aucun muscle primaire n'est dans muscle_goals → fallback Hypertrophie.
- * Récupération effective (semaine 5 acceptée, `deloadActive`) → RPE abaissé (6).
- */
-export function targetRpeForExercise(
-  exercise: Exercise,
-  weekInCycle: number,
-  muscleGoals: Record<string, MuscleGoal>,
-  deloadActive = false,
-): number {
-  const goal = primaryMuscleGoal(exercise, muscleGoals);
-  const objective = goal ? goal.objective : MuscleObjective.HYPERTROPHIE;
-  return baseRpeFromMuscleObjective(objective, weekInCycle, deloadActive);
-}
-
-/**
- * Reps cibles pour cet exo (valeur fixe selon l'objectif du muscle primaire).
- * Si aucun muscle primaire n'est dans muscle_goals → fallback Hypertrophie.
- */
-export function targetRepsForExercise(
-  exercise: Exercise,
-  muscleGoals: Record<string, MuscleGoal>,
-): number {
-  const goal = primaryMuscleGoal(exercise, muscleGoals);
-  const objective = goal ? goal.objective : MuscleObjective.HYPERTROPHIE;
-  return fixedReps(objective, exercise.type);
-}
-
-/**
- * Reps cibles `R` pour cet exo selon la voie active (muscle_goals si un muscle
- * primaire y est, sinon legacy Profile.objective). Mutualise la sélection de voie
- * de `buildPrescription` pour le cliquet de progression (cf. feedback.ts).
- */
-export function resolveTargetReps(state: UserState, exercise: Exercise): number {
-  const mg = Object.keys(state.muscle_goals).length > 0 ? state.muscle_goals : null;
-  if (mg !== null) {
-    const goal = primaryMuscleGoal(exercise, mg);
-    // Point 5 (décision Azur) — un muscle travaillé mais NON couvert (aucun muscle
-    // primaire dans muscle_goals) passe en Maintien, plus l'objectif global hérité.
-    return fixedReps(goal !== null ? goal.objective : MuscleObjective.MAINTIEN, exercise.type);
-  }
-  return targetReps(state.profile, exercise);
-}
-
-/**
- * Reps + RPE cibles pour cet exo selon la voie active. Mutualisé par
- * `buildPrescription` et le garde-fou de charge (feedback.ts) pour garantir la
- * cohérence de la cible :
- *   - un muscle primaire (coef ≥ 1) est couvert dans `muscleGoals` → objectif de
- *     ce muscle (le plus prioritaire) ;
- *   - `muscleGoals` défini mais AUCUN primaire couvert → **Maintien** (point 5) :
- *     un muscle travaillé hors priorités n'hérite plus de l'objectif global (qui
- *     pouvait le mettre en Force) ;
- *   - `muscleGoals` absent (null / vide) → voie legacy `profile.objective`.
- */
+/** Reps + RPE visés pour cet exercice et cette semaine. */
 export function resolvePrescriptionTargets(
   exercise: Exercise,
-  profile: Profile,
   weekInCycle: number,
-  muscleGoals: Record<string, MuscleGoal> | null,
   deloadActive: boolean,
 ): { reps: number; rpe: number } {
-  const goal = muscleGoals !== null ? primaryMuscleGoal(exercise, muscleGoals) : null;
-  if (goal !== null) {
-    return {
-      reps: fixedReps(goal.objective, exercise.type),
-      rpe: baseRpeFromMuscleObjective(goal.objective, weekInCycle, deloadActive),
-    };
-  }
-  if (muscleGoals !== null) {
-    return {
-      reps: fixedReps(MuscleObjective.MAINTIEN, exercise.type),
-      rpe: baseRpeFromMuscleObjective(MuscleObjective.MAINTIEN, weekInCycle, deloadActive),
-    };
-  }
   return {
-    reps: targetReps(profile, exercise),
-    rpe: targetRpe(profile.objective, weekInCycle, deloadActive),
+    reps: targetReps(exercise),
+    rpe: targetRpe(weekInCycle, deloadActive),
   };
 }
 
@@ -499,7 +300,6 @@ export function externalLoadFromE1rm(
 
 export interface BuildPrescriptionOptions {
   k?: number;
-  muscleGoals?: Record<string, MuscleGoal> | null;
   /**
    * Récupération EFFECTIVE (semaine 5 + déload accepté par l'user). Calculé par
    * les appelants moteur via `isDeloadActive(state)`. Abaisse le RPE à 6 et la
@@ -513,10 +313,7 @@ export interface BuildPrescriptionOptions {
 /**
  * Construit une prescription cohérente pour une série d'un exercice donné.
  *
- * Voie de calcul :
- *   - Si muscleGoals est fourni ET au moins un muscle primaire de l'exo y est :
- *     voie nouvelle (targetRpeForExercise / targetRepsForExercise).
- *   - Sinon : voie legacy (targetRpe / targetReps via profile.objective).
+ * Reps et RPE visés : `resolvePrescriptionTargets` (table unique, D3).
  *
  * Si state est fourni, l'incrément utilisé est `effectiveIncrement(state, exercise)`
  * (qui consulte equipment_overrides). Sinon, exercise.inc_kg du catalogue.
@@ -532,13 +329,10 @@ export function buildPrescription(
   options: BuildPrescriptionOptions = {},
 ): SetPrescription {
   const k = options.k ?? EPLEY_K;
-  const muscleGoals = options.muscleGoals ?? null;
   const deloadActive = options.deloadActive ?? false;
   const state = options.state ?? null;
 
-  const targets = resolvePrescriptionTargets(
-    exercise, profile, weekInCycle, muscleGoals, deloadActive,
-  );
+  const targets = resolvePrescriptionTargets(exercise, weekInCycle, deloadActive);
   const rpe = targets.rpe;
   let reps = targets.reps;
 
@@ -625,7 +419,7 @@ export function buildPrescription(
       }
     }
   }
-  const rest = targetRest(exercise, profile.objective);
+  const rest = exercise.repos_s;
 
   return {
     exercise_id: exercise.id,

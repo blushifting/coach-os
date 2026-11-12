@@ -10,7 +10,7 @@
  */
 
 import { z } from 'zod';
-import { Level, MuscleObjective, MuscleStatus, Objective, Sex } from '@/engine/models';
+import { Level, MuscleIntention, Sex } from '@/engine/models';
 import type {
   CycleRow,
   E1rmSnapshotRow,
@@ -29,7 +29,8 @@ const profileSchema = z
     sex: z.nativeEnum(Sex),
     age: z.number().int().min(14).max(100),
     level: z.nativeEnum(Level),
-    objective: z.nativeEnum(Objective),
+    // Objectif global, supprimé en 2.4 (D3) : toléré sur les anciens exports.
+    objective: z.string().optional(),
     sessions_per_week: z.number().int().min(2).max(6),
     bodyweight_kg: z.number().positive(),
     available_equip: z.array(z.string()),
@@ -41,14 +42,20 @@ const profileSchema = z
   })
   .strict();
 
+// Dump 2.4 — nouveau format (`intention`) ou ancien (`objective` + `status`) :
+// les deux s'importent, l'ancien est migré à la lecture (`migrateMuscleGoals`).
 const muscleGoalSchema = z
   .object({
     muscle: z.string(),
-    objective: z.nativeEnum(MuscleObjective),
-    status: z.nativeEnum(MuscleStatus),
+    intention: z.nativeEnum(MuscleIntention).optional(),
+    objective: z.enum(['force', 'hypertrophie', 'endurance', 'maintien']).optional(),
+    status: z.enum(['prioritaire', 'suggere', 'non_couvert']).optional(),
     priority_rank: z.number().int(),
   })
-  .strict();
+  .strict()
+  .refine((g) => g.intention !== undefined || g.status !== undefined, {
+    message: 'Réglage de muscle sans intention ni statut',
+  });
 
 const recordOfNumber = z.record(z.string(), z.number());
 const recordOfString = z.record(z.string(), z.string());

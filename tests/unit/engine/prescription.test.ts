@@ -5,9 +5,8 @@
  *   - Inversion (target_load round-trip).
  *   - Domaine de validité des mesures (n_équiv ≤ 15).
  *   - Arrondi (incrément, plancher, bascule 5kg ≥ 150 kg).
- *   - RPE par phase / objectif (legacy).
- *   - Voie muscle_goals : primaryMuscleGoal, target_rpe/reps_for_exercise.
- *   - effective_increment et build_prescription (legacy + nouveau).
+ *   - RPE et reps visés : table unique (dump 2.4).
+ *   - effective_increment et build_prescription.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -19,23 +18,17 @@ import {
   effectiveIncrement,
   measurementIsReliable,
   nEquiv,
-  primaryMuscleGoal,
   roundToIncrement,
   targetLoad,
-  targetRepsForExercise,
+  targetReps,
   targetRpe,
-  targetRpeForExercise,
 } from '@/engine/prescription';
 import { Catalog } from '@/engine/catalog';
-import {
+import { MuscleIntention,
   ExType,
-  MuscleObjective,
-  MuscleStatus,
-  Objective,
   makeEquipmentOverride,
   makeMuscleGoal,
-  makeUserState,
-} from '@/engine/models';
+  makeUserState } from '@/engine/models';
 
 import { profile } from './_helpers';
 
@@ -137,25 +130,21 @@ describe('roundToIncrement', () => {
 });
 
 // =============================================================================
-// 6. RPE par phase / objectif (legacy)
+// 6. RPE visé (dump 2.4 : une seule valeur, déload mis à part)
 // =============================================================================
 
-describe('targetRpe (legacy)', () => {
+describe('targetRpe', () => {
   // Chantier B — RPE de référence CONSTANT ; l'abaissement déload dépend de
   // `deloadActive` (semaine 5 acceptée), plus du numéro de semaine : une
   // semaine 5 refusée garde le RPE normal.
   it('constant sem 1..5 hors déload ; déload actif = 6', () => {
-    expect(targetRpe(Objective.HYPERTROPHIE, 1)).toBe(7);
-    expect(targetRpe(Objective.HYPERTROPHIE, 4)).toBe(7);
-    expect(targetRpe(Objective.HYPERTROPHIE, 5)).toBe(7);
-    expect(targetRpe(Objective.HYPERTROPHIE, 5, true)).toBe(6);
-  });
-  it('même valeur quel que soit l’objectif (hors déload)', () => {
-    expect(targetRpe(Objective.FORCE, 4)).toBe(7);
-    expect(targetRpe(Objective.ENDURANCE, 2)).toBe(7);
+    expect(targetRpe(1)).toBe(7);
+    expect(targetRpe(4)).toBe(7);
+    expect(targetRpe(5)).toBe(7);
+    expect(targetRpe(5, true)).toBe(6);
   });
   it('hors plage → throw', () => {
-    expect(() => targetRpe(Objective.HYPERTROPHIE, 6)).toThrow();
+    expect(() => targetRpe(6)).toThrow();
   });
 });
 
@@ -173,158 +162,44 @@ describe('e1rmObserved — plage RPE', () => {
 });
 
 // =============================================================================
-// 8. primaryMuscleGoal — sélection du goal qui pilote la prescription
+// 8. Reps visées — table unique (dump 2.4, D3)
 // =============================================================================
 
-const prio = (
-  muscle: string,
-  obj: MuscleObjective = MuscleObjective.HYPERTROPHIE,
-  rank = 1,
-) => makeMuscleGoal({ muscle, objective: obj, status: MuscleStatus.PRIORITAIRE, priority_rank: rank });
-
-describe('primaryMuscleGoal', () => {
-  it('un seul primaire dans goals → renvoie ce goal', () => {
-    const bench = catalog.get('bench_bb');
-    const goals = { pectoraux: prio('pectoraux', MuscleObjective.FORCE, 1) };
-    const g = primaryMuscleGoal(bench, goals);
-    expect(g).not.toBeNull();
-    expect(g!.muscle).toBe('pectoraux');
-    expect(g!.objective).toBe(MuscleObjective.FORCE);
-  });
-
-  it('synergiste (coef < 1.0) ne pilote jamais la prescription', () => {
-    const bench = catalog.get('bench_bb');
-    const synCoef = bench.muscles['triceps'] ?? 0;
-    if (synCoef < 1.0) {
-      const goals = { triceps: prio('triceps', MuscleObjective.FORCE, 1) };
-      expect(primaryMuscleGoal(bench, goals)).toBeNull();
-    }
-  });
-
-  it('aucun primaire dans goals → null', () => {
-    expect(primaryMuscleGoal(catalog.get('bench_bb'), {})).toBeNull();
-  });
-
-  it('NON_COUVERT exclu', () => {
-    const bench = catalog.get('bench_bb');
-    const goals = {
-      pectoraux: makeMuscleGoal({
-        muscle: 'pectoraux',
-        objective: MuscleObjective.HYPERTROPHIE,
-        status: MuscleStatus.NON_COUVERT,
-        priority_rank: 99,
-      }),
-    };
-    expect(primaryMuscleGoal(bench, goals)).toBeNull();
-  });
-
-  it('rang le plus petit gagne (deadlift_conv : ischios + lombaires)', () => {
-    const dl = catalog.get('deadlift_conv');
-    const primaires = Object.entries(dl.muscles)
-      .filter(([, c]) => c >= 1.0)
-      .map(([m]) => m);
-    expect(primaires.length).toBeGreaterThanOrEqual(2);
-    const [m1, m2] = primaires;
-    const goals = {
-      [m1!]: prio(m1!, MuscleObjective.HYPERTROPHIE, 5),
-      [m2!]: prio(m2!, MuscleObjective.HYPERTROPHIE, 1),
-    };
-    expect(primaryMuscleGoal(dl, goals)!.muscle).toBe(m2);
-  });
-
-  it('égalité de rang : Force > Hypertrophie', () => {
-    const dl = catalog.get('deadlift_conv');
-    const primaires = Object.entries(dl.muscles)
-      .filter(([, c]) => c >= 1.0)
-      .map(([m]) => m);
-    const [m1, m2] = primaires;
-    const goals = {
-      [m1!]: prio(m1!, MuscleObjective.HYPERTROPHIE, 1),
-      [m2!]: prio(m2!, MuscleObjective.FORCE, 1),
-    };
-    expect(primaryMuscleGoal(dl, goals)!.objective).toBe(MuscleObjective.FORCE);
-  });
-
-  it('pec rank 1 vs triceps rank 4 sur bench → bench suit pec', () => {
-    const bench = catalog.get('bench_bb');
-    const goals = {
-      pectoraux: prio('pectoraux', MuscleObjective.HYPERTROPHIE, 1),
-      triceps: prio('triceps', MuscleObjective.FORCE, 4),
-    };
-    const g = primaryMuscleGoal(bench, goals)!;
-    expect(g.muscle).toBe('pectoraux');
-    expect(g.objective).toBe(MuscleObjective.HYPERTROPHIE);
-  });
-});
-
-// =============================================================================
-// 9. targetRpeForExercise — courbes par MuscleObjective + déload opt-in
-// =============================================================================
-
-describe('targetRpeForExercise', () => {
-  const bench = catalog.get('bench_bb');
-
-  it('Force semaine 1 → 7.0', () => {
-    const goals = { pectoraux: prio('pectoraux', MuscleObjective.FORCE, 1) };
-    expect(targetRpeForExercise(bench, 1, goals)).toBe(7.0);
-  });
-
-  it('Hypertrophie constant (plus de rampe) → 7.0', () => {
-    const goals = { pectoraux: prio('pectoraux', MuscleObjective.HYPERTROPHIE, 1) };
-    expect(targetRpeForExercise(bench, 1, goals)).toBe(7.0);
-    expect(targetRpeForExercise(bench, 4, goals)).toBe(7.0);
-  });
-
-  it('Maintien → 6.0', () => {
-    const goals = { pectoraux: prio('pectoraux', MuscleObjective.MAINTIEN, 1) };
-    expect(targetRpeForExercise(bench, 4, goals)).toBe(6.0);
-  });
-
-  it('Déload actif (semaine 5 acceptée) → 6.0 quel que soit l’objectif', () => {
-    for (const obj of Object.values(MuscleObjective)) {
-      const goals = { pectoraux: prio('pectoraux', obj, 1) };
-      expect(targetRpeForExercise(bench, 5, goals, true)).toBe(6.0);
-    }
-  });
-
-  it('semaine 5 refusée (déload non actif) → RPE normal de l’objectif', () => {
-    const goals = { pectoraux: prio('pectoraux', MuscleObjective.ENDURANCE, 1) };
-    expect(targetRpeForExercise(bench, 5, goals)).toBe(8.0);
-  });
-
-  it('fallback Hypertrophie si aucun goal → sem 1 = 7.0', () => {
-    expect(targetRpeForExercise(bench, 1, {})).toBe(7.0);
-  });
-});
-
-// =============================================================================
-// 10. targetRepsForExercise — fourchettes par MuscleObjective + poly/iso
-// =============================================================================
-
-describe('targetRepsForExercise', () => {
-  // Conv #29 — reps FIXES par objectif × type (cf. TARGET_REPS).
-  it('Force compound → 5', () => {
+describe('targetReps — même table pour tous les exercices', () => {
+  it('polyarticulaire → 10', () => {
     const bench = catalog.get('bench_bb');
     expect(bench.type).toBe(ExType.COMPOUND);
-    const goals = { pectoraux: prio('pectoraux', MuscleObjective.FORCE, 1) };
-    expect(targetRepsForExercise(bench, goals)).toBe(5);
+    expect(targetReps(bench)).toBe(10);
   });
 
-  it('Hypertrophie compound → 10', () => {
+  it('isolation → 12', () => {
+    const iso = [...catalog].find((e) => e.type === ExType.ISOLATION);
+    expect(iso).toBeDefined();
+    expect(targetReps(iso!)).toBe(12);
+  });
+
+  it("l'intention du muscle ne change ni les reps ni l'effort", () => {
     const bench = catalog.get('bench_bb');
-    const goals = { pectoraux: prio('pectoraux', MuscleObjective.HYPERTROPHIE, 1) };
-    expect(targetRepsForExercise(bench, goals)).toBe(10);
-  });
-
-  it('Hypertrophie isolation → 12', () => {
-    const isoBiceps = [...catalog].find(
-      (e) =>
-        e.type === ExType.ISOLATION &&
-        Object.entries(e.muscles).some(([m, c]) => m === 'biceps' && c >= 1.0),
-    );
-    expect(isoBiceps).toBeDefined();
-    const goals = { biceps: prio('biceps', MuscleObjective.HYPERTROPHIE, 1) };
-    expect(targetRepsForExercise(isoBiceps!, goals)).toBe(12);
+    const base = makeUserState(profile());
+    const developper = makeUserState(profile());
+    developper.muscle_goals = {
+      pectoraux: makeMuscleGoal({
+        muscle: 'pectoraux',
+        intention: MuscleIntention.DEVELOPPER,
+        priority_rank: 1,
+      }),
+    };
+    const entretenir = makeUserState(profile());
+    entretenir.muscle_goals = {
+      pectoraux: makeMuscleGoal({ muscle: 'pectoraux', intention: MuscleIntention.ENTRETENIR }),
+    };
+    const ref = buildPrescription(bench, 100, base.profile, 1, { state: base });
+    for (const st of [developper, entretenir]) {
+      const p = buildPrescription(bench, 100, st.profile, 1, { state: st });
+      expect(p.reps).toBe(ref.reps);
+      expect(p.rpe_target).toBe(ref.rpe_target);
+      expect(p.load_kg).toBe(ref.load_kg);
+    }
   });
 });
 
@@ -370,24 +245,12 @@ describe('buildPrescription', () => {
     expect(pres.rpe_target).toBe(7.0);
   });
 
-  it('avec muscle_goals (Force pec rank 1) : RPE 7.0, reps 5', () => {
-    const bench = catalog.get('bench_bb');
-    const p = profile();
-    const state = makeUserState(p);
-    const goals = { pectoraux: prio('pectoraux', MuscleObjective.FORCE, 1) };
-    const pres = buildPrescription(bench, 100, p, 1, { muscleGoals: goals, state });
-    expect(pres.rpe_target).toBe(7.0);
-    expect(pres.reps).toBe(5);
-  });
-
   it('déload actif via buildPrescription → RPE 6 + charge plancher ×0,9', () => {
     const bench = catalog.get('bench_bb');
     const p = profile();
     const state = makeUserState(p);
     state.prescribed_load_floor[bench.id] = 100;
-    const goals = { pectoraux: prio('pectoraux', MuscleObjective.HYPERTROPHIE, 1) };
     const pres = buildPrescription(bench, 100, p, 5, {
-      muscleGoals: goals,
       state,
       deloadActive: true,
     });
@@ -443,20 +306,6 @@ describe('buildPrescription', () => {
 // 13. Point 5 — muscle travaillé mais NON couvert → Maintien (pas l'objectif global)
 // =============================================================================
 
-describe('buildPrescription — muscle non couvert (point 5)', () => {
-  it('muscle_goals défini mais aucun muscle primaire couvert → Maintien (reps 8, RPE 6)', () => {
-    // Programme haut du corps : seul biceps couvert (en Force). Le bench
-    // (primaire pectoraux) n'est dans aucun muscle_goal → doit passer en
-    // Maintien, PAS hériter du Force global.
-    const bench = catalog.get('bench_bb');
-    const p = profile();
-    const state = makeUserState(p);
-    const goals = { biceps: prio('biceps', MuscleObjective.FORCE, 1) };
-    const pres = buildPrescription(bench, 100, p, 1, { muscleGoals: goals, state });
-    expect(pres.reps).toBe(8); // fixedReps(MAINTIEN, compound)
-    expect(pres.rpe_target).toBe(6.0); // baseRpe(MAINTIEN)
-  });
-});
 
 // =============================================================================
 // 14. Point 4 — garde-fou : plancher jamais prescrit au-dessus du Plafond mesuré
@@ -474,8 +323,7 @@ describe('buildPrescription — garde-fou plancher > Plafond (point 4)', () => {
     const state = makeUserState(p);
     state.e1rm['bench_bb'] = 14; // Plafond mesuré bas
     state.prescribed_load_floor['bench_bb'] = 18; // plancher hérité trop haut (bug bootstrap)
-    const goals = { pectoraux: prio('pectoraux', MuscleObjective.HYPERTROPHIE, 1) };
-    const pres = buildPrescription(bench, 14, p, 1, { muscleGoals: goals, state });
+    const pres = buildPrescription(bench, 14, p, 1, { state });
     // targetLoad(14, 10 reps, RPE 10) ≈ 10,5 → borne ≈ 10 < 18.
     expect(pres.load_kg).toBeLessThan(18);
     expect(pres.load_kg).toBeLessThanOrEqual(11);
@@ -489,8 +337,7 @@ describe('buildPrescription — garde-fou plancher > Plafond (point 4)', () => {
     const p = profile();
     const state = makeUserState(p);
     state.prescribed_load_floor['bench_bb'] = 18; // pas de state.e1rm → non mesuré
-    const goals = { pectoraux: prio('pectoraux', MuscleObjective.HYPERTROPHIE, 1) };
-    const pres = buildPrescription(bench, 14, p, 1, { muscleGoals: goals, state });
+    const pres = buildPrescription(bench, 14, p, 1, { state });
     expect(pres.load_kg).toBe(18);
   });
 });

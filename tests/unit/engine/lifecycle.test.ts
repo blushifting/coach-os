@@ -3,6 +3,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { developGoals } from '@/test-utils/fixtures';
 import { Catalog } from '@/engine/catalog';
 import {
   FORCE_DELTA_THRESHOLD,
@@ -13,20 +14,13 @@ import {
   suggestNextAction,
 } from '@/engine/lifecycle';
 import {
-  bootstrapMuscleGoalsFromProfile,
   endOfCycle,
   generateSession,
   startUser,
 } from '@/engine/engine';
 import { effectiveVolumeBounds } from '@/engine/volume';
 import { autoGenerateCyclePlanV3 } from '@/engine/cycle_planner';
-import {
-  MuscleObjective,
-  MuscleStatus,
-  Objective,
-  SuggestedAction,
-  makeMuscleGoal,
-} from '@/engine/models';
+import { MuscleIntention, SuggestedAction } from '@/engine/models';
 import type { Profile, SessionFeedback, UserState } from '@/engine/models';
 import { e1rmObserved, effectiveLoadForE1rm } from '@/engine/prescription';
 import { profile } from './_helpers';
@@ -39,7 +33,7 @@ function profileTest(): Profile {
 
 function stateWithPlan(): UserState {
   const p = profileTest();
-  const goals = bootstrapMuscleGoalsFromProfile(p, [
+  const goals = developGoals([
     'pectoraux', 'dos_largeur', 'quadriceps', 'ischios',
   ]);
   const state = startUser(p, catalog, { muscleGoals: goals });
@@ -336,38 +330,15 @@ describe('generateSession', () => {
 });
 
 // =============================================================================
-// 7. bootstrapMuscleGoalsFromProfile
+// 7. startUser — intentions prises telles quelles (dump 2.4, D2)
 // =============================================================================
 
-describe('bootstrapMuscleGoalsFromProfile', () => {
-  it('rangs dans l\'ordre', () => {
-    const p = profileTest();
-    const goals = bootstrapMuscleGoalsFromProfile(p, ['pectoraux', 'dos_largeur', 'biceps']);
-    expect(goals['pectoraux']!.priority_rank).toBe(1);
-    expect(goals['dos_largeur']!.priority_rank).toBe(2);
-    expect(goals['biceps']!.priority_rank).toBe(3);
-  });
-
-  it('objective correspond au profile', () => {
-    const p = profile({ objective: Objective.FORCE });
-    const goals = bootstrapMuscleGoalsFromProfile(p, ['pectoraux']);
-    expect(goals['pectoraux']!.objective).toBe(MuscleObjective.FORCE);
-  });
-
-  it('startUser avec muscle_goals applique R1-R4', () => {
-    const p = profileTest();
-    const goals = {
-      pectoraux: makeMuscleGoal({
-        muscle: 'pectoraux',
-        objective: MuscleObjective.HYPERTROPHIE,
-        status: MuscleStatus.PRIORITAIRE,
-        priority_rank: 1,
-      }),
-    };
-    const state = startUser(p, catalog, { muscleGoals: goals, applyBalance: true });
-    expect('abdos' in state.muscle_goals).toBe(true);
-    expect('lombaires' in state.muscle_goals).toBe(true);
-    expect('deltos_posterieurs' in state.muscle_goals).toBe(true);
+describe('startUser et intentions', () => {
+  it('startUser garde les intentions choisies, sans en ajouter (plus de « suggéré » imposé)', () => {
+    const goals = developGoals(['pectoraux']);
+    const state = startUser(profileTest(), catalog, { muscleGoals: goals });
+    expect(Object.keys(state.muscle_goals)).toEqual(['pectoraux']);
+    expect(state.muscle_goals['pectoraux']!.intention).toBe(MuscleIntention.DEVELOPPER);
   });
 
   it('startUser sans muscle_goals → dict vide', () => {
