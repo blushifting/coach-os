@@ -21,7 +21,7 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/Button';
 import { Sheet } from '@/components/Sheet';
-import { MUSCLES, SYNERGISTES_SANS_QUOTA } from '@/engine/models';
+import { MUSCLES } from '@/engine/models';
 import { useEngine } from '@/hooks/useEngine';
 import { cn } from '@/lib/cn';
 import {
@@ -49,8 +49,8 @@ const COEF_LABELS: Record<string, string> = {
   '1': 'principal',
 };
 
-/** Liste des muscles affichés dans le picker (15 cibles + deltos antérieurs). */
-const PICKER_MUSCLES: readonly string[] = [...MUSCLES, ...SYNERGISTES_SANS_QUOTA];
+/** Liste des muscles affichés dans le picker (les 17 muscles suivis). */
+const PICKER_MUSCLES: readonly string[] = MUSCLES;
 
 /**
  * Conv #21b-fix — Liste des équipements connus, groupés par famille. Source :

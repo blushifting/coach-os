@@ -92,9 +92,9 @@ export function calibrateInitialE1rm(
 // =============================================================================
 
 const BOOTSTRAP_PCT: Record<string, number> = {
-  pectoraux: 0.7, quadriceps: 1.0, ischios: 1.2, fessiers: 1.5,
+  pectoraux: 0.7, quadriceps: 1.0, ischios: 1.2, fessiers: 1.5, adducteurs: 1.0,
   dos_largeur: 0.6, dos_epaisseur: 0.7, trapezes_hauts: 1.0,
-  deltos_lateraux: 0.4, deltos_posterieurs: 0.2,
+  deltos_anterieurs: 0.4, deltos_lateraux: 0.4, deltos_posterieurs: 0.2,
   biceps: 0.4, triceps: 0.5, abdos: 0.3,
   obliques: 0.2, lombaires: 0.5, mollets: 1.0,
 };

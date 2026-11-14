@@ -215,6 +215,15 @@ export const EXERCISE_SYNONYMES: Readonly<Record<string, readonly string[]>> = {
     'élévations latérales machine', 'lateral raise machine',
     'selection lateral raise', 'machine side raise',
   ],
+  db_front_raise: [
+    'élévation frontale', 'élévations frontales', 'front raise',
+    'dumbbell front raise', 'élévation frontale disque', 'plate front raise',
+    'élévation frontale barre', 'barbell front raise',
+  ],
+  cable_front_raise: [
+    'élévation frontale poulie', 'cable front raise', 'front raise poulie',
+    'prise supination', 'paumes vers le haut', 'élévation frontale corde',
+  ],
   face_pull: ['face pull', 'cable face pull'],
   rear_delt_db_fly: ['oiseau', 'rear delt fly', 'rear delt', 'élévations buste penché', 'oiseau torse appuyé', 'chest supported rear delt', 'seated bent over rear delt'],
   cable_rear_delt_fly: ['rear delt poulie', 'cable rear delt', 'cable rear delt fly'],

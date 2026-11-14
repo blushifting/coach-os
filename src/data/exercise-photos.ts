@@ -14,7 +14,7 @@
  * composant `ExercisePhoto` alterne entre les 2 pour donner un effet
  * GIF-like du mouvement.
  *
- * Couverture : **121/121 exos Coach OS mappés** (tous ont une photo). Bloc Q-3
+ * Couverture : **123/123 exos Coach OS mappés** (tous ont une photo). Bloc Q-3
  * (import free-exercise-db) a ajouté 9 exos et retiré `side_plank_loaded`. Conv
  * #23 avait retiré 10 exos sans photo ; Bloc Q (Conv #46) a fusionné 25 variantes
  * redondantes (prise / angle / stance), dont les entrées photo avaient été
@@ -50,6 +50,7 @@ const FREE_DB_MAP: Readonly<Record<string, string>> = {
   cable_crunch: 'Cable_Crunch',
   cable_curl: 'Standing_Biceps_Cable_Curl',
   cable_kickback: 'Glute_Kickback',
+  cable_front_raise: 'Front_Cable_Raise',
   cable_lateral_raise: 'Side_Lateral_Raise',
   cable_pull_through: 'Pull_Through',
   cable_pullover: 'Bent-Arm_Dumbbell_Pullover',
@@ -68,6 +69,7 @@ const FREE_DB_MAP: Readonly<Record<string, string>> = {
   crunch_machine: 'Ab_Crunch_Machine',
   db_curl_alt: 'Alternate_Hammer_Curl',
   db_fly_flat: 'Dumbbell_Flyes',
+  db_front_raise: 'Front_Dumbbell_Raise',
   db_lateral_raise: 'Side_Lateral_Raise',
   db_pullover: 'Bent-Arm_Dumbbell_Pullover',
   db_row: 'One-Arm_Dumbbell_Row',

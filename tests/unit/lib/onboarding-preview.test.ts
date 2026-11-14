@@ -30,6 +30,13 @@ import {
 } from '@/engine/models';
 import { autoGenerateCyclePlanV3 } from '@/engine/cycle_planner';
 import { profile } from '../engine/_helpers';
+import {
+  buildMuscleGoals,
+  buildProfile,
+  makeInitialDraft,
+  PRESET_DEFAULT_MAINTENANCE,
+  PRESET_DEFAULT_PRIORITIES,
+} from '@/lib/onboarding-state';
 
 const catalog = new Catalog();
 
@@ -273,5 +280,21 @@ describe('estimateExerciseDurationMinutes / analyzeProgramTension (Conv #11h)', 
     // Tolérance : on accepte jusqu'à 18 min de disparité (ratio ~1.45 sur
     // un max ~50 min). Au-delà, c'est le déséquilibre Azur.
     expect(max - min).toBeLessThanOrEqual(18);
+  });
+});
+
+describe('préset full-body (dump 2.4, étape 6)', () => {
+  it('3 séances : aucune séance ne dépasse le seuil d\'alerte de durée', () => {
+    const draft = {
+      ...makeInitialDraft(),
+      sessionsPerWeek: 3,
+      priorities: [...PRESET_DEFAULT_PRIORITIES],
+      maintenance: new Set(PRESET_DEFAULT_MAINTENANCE),
+    };
+    const state = startUser(buildProfile(draft), catalog, {
+      muscleGoals: buildMuscleGoals(draft),
+    });
+    const tension = analyzeProgramTension(autoGenerateCyclePlanV3(state, catalog), catalog);
+    expect(tension.maxMin).toBeLessThanOrEqual(SESSION_DURATION_WARN_MIN);
   });
 });

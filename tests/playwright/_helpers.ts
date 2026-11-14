@@ -3,8 +3,8 @@ import { expect, type Page } from '@playwright/test';
 /**
  * Onboarding minimal — 4 étapes unifiées (Conv #28).
  *
- * Path : Profil → Muscles → Programme → Récap. Le préset full-body couvre
- * tous les muscles → pas de popin d'équilibre sur ce chemin. Le mode custom
+ * Path : Profil → Muscles → Programme → Récap. La popin d'équilibre est
+ * pré-déclinée quand on applique le préset full-body → pas de popin sur ce chemin. Le mode custom
  * auto-fill les exos via la préférence équipement (NO_PREFERENCE par défaut
  * → convention salle).
  *

@@ -26,7 +26,12 @@ export const V_MIN_BASE: Readonly<Record<string, Record<Level, number>>> = {
   quadriceps: { [Level.DEBUTANT]: 8, [Level.INTERMEDIAIRE]: 10, [Level.AVANCE]: 12 },
   ischios: { [Level.DEBUTANT]: 6, [Level.INTERMEDIAIRE]: 8, [Level.AVANCE]: 10 },
   fessiers: { [Level.DEBUTANT]: 6, [Level.INTERMEDIAIRE]: 10, [Level.AVANCE]: 12 },
+  // Dump 2.4, étape 6 — antérieurs et adducteurs : aucune source propre
+  // trouvée (conv #84) ; valeurs des petits muscles, comme les ischios et les
+  // deltos postérieurs. Les développés comptent déjà 0,5 sur les antérieurs.
+  adducteurs: { [Level.DEBUTANT]: 6, [Level.INTERMEDIAIRE]: 8, [Level.AVANCE]: 10 },
   mollets: { [Level.DEBUTANT]: 6, [Level.INTERMEDIAIRE]: 10, [Level.AVANCE]: 12 },
+  deltos_anterieurs: { [Level.DEBUTANT]: 6, [Level.INTERMEDIAIRE]: 8, [Level.AVANCE]: 10 },
   deltos_lateraux: { [Level.DEBUTANT]: 8, [Level.INTERMEDIAIRE]: 10, [Level.AVANCE]: 12 },
   deltos_posterieurs: { [Level.DEBUTANT]: 6, [Level.INTERMEDIAIRE]: 8, [Level.AVANCE]: 10 },
   biceps: { [Level.DEBUTANT]: 6, [Level.INTERMEDIAIRE]: 8, [Level.AVANCE]: 10 },

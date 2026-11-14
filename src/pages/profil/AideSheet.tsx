@@ -95,17 +95,15 @@ const FAQ: readonly FaqItem[] = [
   },
   {
     id: 'deltoides',
-    question: 'Pourquoi 2 deltoïdes seulement (latéral + postérieur) ?',
+    question: 'Pourquoi mes deltoïdes antérieurs travaillent sans exercice dédié ?',
     answer:
-      "Le deltoïde a 3 chefs : antérieur, latéral, postérieur. Kotsh ne suit que " +
-      "les latéraux et postérieurs — pas les antérieurs. Raison : les antérieurs " +
-      "sont saturés en continu par tout exo de pectoraux (développé couché, dips, " +
-      "pompes…) et de presse verticale. En ajouter un quota séparé créerait du " +
-      "sur-volume systémique. À l'inverse, les postérieurs sont sous-développés " +
-      "chez quasi tous les pratiquants — Kotsh te propose de les entretenir " +
-      "dès que tu développes pectoraux, deltos latéraux ou triceps " +
-      "(règle R4, Cools 2014 — prévention du conflit sous-acromial, la blessure " +
-      "d'épaule la plus fréquente en muscu).",
+      "Le deltoïde a trois parties : l'avant (antérieur), le côté (latéral) et " +
+      "l'arrière (postérieur). L'avant travaille dans tous les développés, les dips, " +
+      "les pompes et les écartés : chaque série y compte pour une demi-série. Sa barre " +
+      "se remplit donc souvent sans exercice dédié : regarde-la avant d'ajouter des " +
+      "élévations frontales. L'arrière, lui, est souvent délaissé : Kotsh te propose " +
+      "de l'entretenir dès que tu développes les pectoraux, les épaules ou les triceps " +
+      "(Cools 2014).",
   },
   {
     id: 'rpe-min-6',

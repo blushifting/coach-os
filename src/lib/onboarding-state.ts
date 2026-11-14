@@ -86,46 +86,36 @@ export interface OnboardingDraft {
 // =============================================================================
 
 /**
- * Préset full-body « réfléchi » (Bloc O).
+ * Préset full-body : un programme léger pour qui ne veut pas choisir muscle par
+ * muscle (dump 2.4, étape 6, choix d'Azur en conv #84).
  *
- * 5 muscles à développer qui couvrent les grands patterns (poussée H, tirage V,
- * squat, charnière/hinge, élévations) + un maintien CIBLÉ (6 muscles), pas
- * « tous les autres ». Le reste (trapèzes hauts, mollets, obliques, lombaires)
- * est volontairement ABSENT : il est couvert par proxy via les
- * polyarticulaires, sans forcer d'isolation inutile. La silhouette n'est donc
- * plus pleine, mais le programme est honnête.
+ * 3 muscles à développer, les trois grands mouvements (poussée, tirage
+ * vertical, squat), + 4 à entretenir. Simulé à 3 séances : 19, 17 et 16
+ * séries, environ 67, 57 et 40 min (l'ancien préset à 5 + 6 muscles donnait
+ * 27, 23 et 20 séries, jusqu'à 92 min, au-delà de l'alerte de 75 min).
  *
- * Choix sourcés :
- *  - ~10-12 séries/sem directes par muscle (Schoenfeld 2017, V_min) n'est
- *    tenable que sur ~4-5 muscles dans un budget 3 séances × 1h30 → 5 prios.
- *  - Ischios en prio (Bloc O) : équilibre la chaîne postérieure, absente des
- *    prios « tout quad » d'avant.
- *  - Maintien ciblé : dos épaisseur (tirage H/posture), fessiers (proxy
- *    squat+hinge déjà fort), biceps (isolation-only au catalogue), triceps
- *    (équilibre pressing), deltos postérieurs (équilibre vs deltos antérieurs),
- *    abdos (gainage léger).
- *  - Absents couverts par proxy (Gentil et al. 2013) : trapèzes hauts
- *    (soulevé/tirages), mollets (optionnel), obliques (gainage des
- *    polyarticulaires), lombaires (squat/hinge déjà très sollicitants).
+ *  - Entretien : ischios (équilibre des quadriceps, règle R2), deltos latéraux
+ *    (des élévations latérales, pas de développé), deltos postérieurs
+ *    (équilibre de l'épaule), abdos (gainage).
+ *  - Absents, couverts par les polyarticulaires : dos épaisseur (tractions,
+ *    soulevé de terre), fessiers et adducteurs (squats), biceps (tractions),
+ *    triceps et deltos antérieurs (développés), trapèzes hauts, mollets,
+ *    obliques, lombaires.
  *
- * NB : avec ce préset, R3 (core) suggérerait `lombaires` (absent) → la popin
- * d'équilibre est pré-déclinée à l'application du préset (cf. `balanceKeyOf` +
- * `onPresetApplied` dans OnboardingPage), sans repasser lombaires en maintien.
+ * NB : la popin d'équilibre suggérerait des muscles absents (dos épaisseur,
+ * biceps, lombaires…) → elle est pré-déclinée à l'application du préset (cf.
+ * `balanceKeyOf` + `onPresetApplied` dans OnboardingPage).
  */
 export const PRESET_DEFAULT_PRIORITIES: readonly RankedPriority[] = [
   { muscle: 'pectoraux' },
   { muscle: 'dos_largeur' },
   { muscle: 'quadriceps' },
-  { muscle: 'ischios' },
-  { muscle: 'deltos_lateraux' },
 ];
 
-/** Maintien ciblé du préset full-body (6 muscles, pas « tous les autres »). */
+/** Entretien ciblé du préset full-body (4 muscles, pas « tous les autres »). */
 export const PRESET_DEFAULT_MAINTENANCE: ReadonlySet<string> = new Set([
-  'dos_epaisseur',
-  'fessiers',
-  'biceps',
-  'triceps',
+  'ischios',
+  'deltos_lateraux',
   'deltos_posterieurs',
   'abdos',
 ]);

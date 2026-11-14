@@ -182,7 +182,9 @@ export function chargesForPreference(
   }
 }
 
-// Liste canonique des 15 muscles cibles (cf. 06 §1.3, 03 §8.1).
+// Liste canonique des 17 muscles suivis, dans l'ordre d'affichage. Dump 2.4,
+// étape 6 : deltos antérieurs (jadis comptés sans être suivis) et adducteurs
+// (jadis comptés en ischios) ont leur propre entrée.
 export const MUSCLES = [
   'pectoraux',
   'dos_largeur',
@@ -191,7 +193,9 @@ export const MUSCLES = [
   'quadriceps',
   'ischios',
   'fessiers',
+  'adducteurs',
   'mollets',
+  'deltos_anterieurs',
   'deltos_lateraux',
   'deltos_posterieurs',
   'biceps',
@@ -202,8 +206,6 @@ export const MUSCLES = [
 ] as const;
 
 export type Muscle = (typeof MUSCLES)[number];
-
-export const SYNERGISTES_SANS_QUOTA = ['deltos_anterieurs'] as const;
 
 // =============================================================================
 // Exercice (immuable, chargé depuis exercises.json)

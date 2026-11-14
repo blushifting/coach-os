@@ -34,6 +34,8 @@
  *         à 0,78, et le n° 3 avait collé le grand dorsal au triceps) ; les
  *         creux larges volontaires (pli du coude, entrejambe, fourche basse
  *         des quadriceps) sont conservés.
+ *  - Dump 2.4, étape 6 — épaule de face coupée en antérieurs / latéraux,
+ *    adducteurs rendus (face et dos), toucher au plus proche (`muscleAtPoint`).
  *  - Rendu en <path> aux angles arrondis (rayon 3) au lieu de <polygon>,
  *    pour adoucir le côté anguleux sans déplacer aucun sommet.
  *  - Statut par muscle (off / low / ok / high / highlight / synergist) →
@@ -45,6 +47,7 @@
  *  - `pages/catalogue/MiniSilhouette` (face uniquement, h-20, mini cards)
  */
 
+import type { MouseEvent } from 'react';
 import { cn } from '@/lib/cn';
 import type { CoverageStatus } from '@/lib/progress';
 
@@ -167,26 +170,39 @@ const STROKE = 'stroke-anthracite-400';
 // =============================================================================
 // Polygones FACE (dérivés de react-body-highlighter — anteriorData, coordonnées
 // re-bakées Conv #67, cf. en-tête). viewBox local 0 0 100 196.
-// Conv #67 — le groupe `abductors` (intérieur de cuisse), absent de CO_TO_FACE
-// donc jamais rendu, est supprimé : l'enflage des quadriceps couvre désormais
-// ce territoire.
+//
+// Dump 2.4, étape 6 (maquette `Kotsh/maquettes/etape6_jambes.html`) :
+//  - Épaule : la pointe basse de l'ancien `neck` (descendue jusqu'à la
+//    clavicule, là où est l'avant de l'épaule) passe aux antérieurs ; l'ancien
+//    `front_deltoids` est coupé en deux, antérieurs dedans, latéraux dehors,
+//    la coupe placée pour que les deux zones aient la même surface.
+//  - Cuisse : la figure d'origine avait une zone « intérieur de cuisse »
+//    (nommée `abductors` par la bibliothèque, à tort), supprimée en conv #67 et
+//    absorbée par le fuseau intérieur du quadriceps. On la rend aux adducteurs,
+//    agrandie pour le doigt (creux de l'aine → mi-cuisse), coupe oblique comme
+//    le couturier ; le quadriceps garde la « goutte » du vaste interne.
+// Coutures de 1,7 conservées. Formes définies à droite puis mises en miroir.
 // =============================================================================
 
 const FACE_POLYS = {
   head: [
     '42.45 2.86 40 11.84 42.04 19.59 46.12 23.27 50 25.31 53.88 23.27 57.96 19.59 60 11.84 57.55 2.86 50 0',
   ],
-  neck: [
-    '62.04 39.59 51.43 39.18 51.02 33.88 55.51 24.49 58.78 30.2 63.67 35.1 69.76 37.14 70.82 44.84',
-    '29.18 44.84 30.24 37.14 36.33 35.1 41.22 30.2 44.49 24.49 48.98 33.88 48.57 39.18 37.96 39.59',
+  trapezius: [
+    '51.43 39.18 51.02 33.88 55.51 24.49 58.78 30.2 62.2 33.6 60.5 39.4',
+    '48.57 39.18 48.98 33.88 44.49 24.49 41.22 30.2 37.8 33.6 39.5 39.4',
   ],
   chest: [
     '61.94 42.04 51.08 42.04 50.93 57.14 58.31 60.22 68.47 57.61 70.16 47.23',
     '29.84 47.23 31.53 57.61 41.69 60.22 49.23 57.14 48.92 42.04 38.06 42.04',
   ],
-  front_deltoids: [
-    '73.06 43.27 71.47 37.14 75.51 37.14 79.59 40.82 80 47.76 78.81 53.02 71.86 47.35',
-    '28.14 47.35 21.19 53.02 20 47.76 20.41 40.82 24.49 37.14 28.53 37.14 26.94 43.27',
+  anterior_deltoids: [
+    '63.67 35.1 69.76 37.14 71.9 37.14 73.4 48.61 71.86 47.35 70.82 44.84 62.04 39.59',
+    '36.33 35.1 30.24 37.14 28.1 37.14 26.6 48.61 28.14 47.35 29.18 44.84 37.96 39.59',
+  ],
+  lateral_deltoids: [
+    '73.6 37.14 75.51 37.14 79.59 40.82 80 47.76 78.81 53.02 75.1 49.99',
+    '26.4 37.14 24.49 37.14 20.41 40.82 20 47.76 21.19 53.02 24.9 49.99',
   ],
   biceps: [
     '16.73 68.16 17.95 71.39 22.41 65.88 28.98 53.88 27.99 49.67 20.41 55.92',
@@ -206,11 +222,15 @@ const FACE_POLYS = {
   ],
   quadriceps: [
     '35.68 94.05 38.3 104.37 38.14 125.82 35.23 136.21 31.6 131.28 29.79 117.37 28.43 107.95 29.79 96.29 32.96 89.56',
-    '40.41 123.96 39.93 101.39 43.28 109.45 47.1 123.96 45.19 131.48 41.85 145.99 37.54 146.53 36.59 137.93',
+    '39.34 127.86 36.59 137.93 37.54 146.53 41.85 145.99 44.03 136.5',
     '33.42 137.56 26.6 145.62 25.71 135.76 25.71 125.45 27.07 111.09 29.79 132.18',
     '67.04 89.56 70.21 96.29 71.57 107.95 70.21 117.37 68.4 131.28 64.77 136.21 61.86 125.82 61.7 104.37 64.32 94.05',
-    '63.41 137.93 62.46 146.53 58.15 145.99 54.81 131.48 52.9 123.96 56.72 109.45 60.07 101.39 59.59 123.96',
+    '60.66 127.86 63.41 137.93 62.46 146.53 58.15 145.99 55.97 136.5',
     '70.21 132.18 72.93 111.09 74.29 125.45 74.29 135.76 73.4 145.62 66.58 137.56',
+  ],
+  adductors: [
+    '40.3 97.5 39.93 101.39 40.41 123.96 39.99 125.5 44.61 134 45.19 131.48 47.1 123.96 44.8 108.6 42.4 103.5',
+    '59.7 97.5 60.07 101.39 59.59 123.96 60.01 125.5 55.39 134 54.81 131.48 52.9 123.96 55.2 108.6 57.6 103.5',
   ],
   knees: [
     '33.88 140 34.69 143.27 35.51 147.35 36.33 151.02 35.1 156.69 29.8 156.73 27.35 152.65 27.35 147.35 30.2 144.08',
@@ -319,7 +339,10 @@ const BACK_POLYS = {
     '44.68 97.33 30.21 104.91 29.79 113.57 31.82 119.59 47.23 115.58 49.07 110.32',
     '50.77 110.32 52.77 115.58 68.18 119.59 70.21 113.57 69.79 104.91 55.32 97.33',
   ],
-  abductor: [
+  // Intérieur de la cuisse vu de dos (grand adducteur, gracile) : nommé
+  // `adductor` par la bibliothèque d'origine. Rattaché aux fessiers jusqu'à
+  // l'étape 6 du dump 2.4.
+  adductor: [
     '48.09 117.18 44.88 117.95 41.28 119.34 45.11 135.22 48.51 128 48.94 122.59',
     '51.06 122.59 51.49 128 54.89 135.22 58.72 119.34 55.12 117.95 51.91 117.18',
   ],
@@ -350,19 +373,11 @@ const BACK_POLYS = {
 /** Muscles Coach OS visibles côté face, et les groupes RBH qui les représentent. */
 const CO_TO_FACE: Record<string, readonly string[]> = {
   pectoraux: FACE_POLYS.chest,
-  trapezes_hauts: FACE_POLYS.neck,
-  // FRONT_DELTOIDS représente l'épaule de face — couvre les deltos antérieurs
-  // ET latéraux (ils se chevauchent visuellement de face).
-  // Conv #17b — ordre : deltos_anterieurs **puis** deltos_lateraux pour que
-  // le `<g>` cliquable de deltos_lateraux soit rendu en dernier (donc gagne
-  // le click). Important parce que deltos_anterieurs n'est pas un muscle
-  // suivi (`SYNERGISTES_SANS_QUOTA`) → cliquer doit cibler le muscle suivi
-  // (lateraux). La coloration est sans dommage : si l'un des deux a un
-  // status ≠ off et l'autre off, le `<g>` rendu en dernier gagne ; donc
-  // un exo qui n'active que deltos_anterieurs apparaîtra atténué à juste
-  // titre (mais le helpTopic `deltoides` explique cette logique).
-  deltos_anterieurs: FACE_POLYS.front_deltoids,
-  deltos_lateraux: FACE_POLYS.front_deltoids,
+  trapezes_hauts: FACE_POLYS.trapezius,
+  deltos_anterieurs: FACE_POLYS.anterior_deltoids,
+  // Les latéraux ne sont dessinés que de face (choix d'Azur, étape 6) : de dos,
+  // l'épaule reste entière aux postérieurs pour garder une zone assez grande.
+  deltos_lateraux: FACE_POLYS.lateral_deltoids,
   biceps: FACE_POLYS.biceps,
   triceps: FACE_POLYS.triceps,
   abdos: FACE_POLYS.abs,
@@ -374,6 +389,7 @@ const CO_TO_FACE: Record<string, readonly string[]> = {
   // étaient aussi mappés sur `FACE_POLYS.abductors` → égalité face/dos →
   // pickBestSide retournait `face` par défaut → mauvaise vue.
   quadriceps: FACE_POLYS.quadriceps,
+  adducteurs: FACE_POLYS.adductors,
   mollets: FACE_POLYS.calves,
 };
 
@@ -390,8 +406,8 @@ const CO_TO_BACK: Record<string, readonly string[]> = {
   deltos_posterieurs: BACK_POLYS.back_deltoids,
   triceps: BACK_POLYS.triceps,
   lombaires: BACK_POLYS.lower_back,
-  // Fessiers couvrent gluteal + abductor postérieur.
-  fessiers: [...BACK_POLYS.gluteal, ...BACK_POLYS.abductor],
+  fessiers: BACK_POLYS.gluteal,
+  adducteurs: BACK_POLYS.adductor,
   ischios: BACK_POLYS.hamstring,
   mollets: BACK_POLYS.calves,
 };
@@ -456,11 +472,103 @@ function roundedPath(points: string): string {
 // Composant
 // =============================================================================
 
-// Conv #65 — `neck` retiré : il est mappé sur `trapezes_hauts` (CO_TO_FACE) et
-// les muscles sont rendus après les neutres, donc la version colorée gagnait
-// toujours. L'entrée était morte et contredisait le commentaire d'en-tête.
 const FACE_NEUTRALS = [FACE_POLYS.head, FACE_POLYS.knees, FACE_POLYS.forearm];
 const BACK_NEUTRALS = [BACK_POLYS.head, BACK_POLYS.knees, BACK_POLYS.forearm];
+
+// =============================================================================
+// Toucher au plus proche
+// =============================================================================
+
+/**
+ * Dump 2.4, étape 6 — marge de toucher, en unités du viewBox (≈ 1,1 px par
+ * unité à la taille `h-56`). Les zones de la silhouette font 5 à 12 px de
+ * large, loin des 44 px conseillés pour un doigt : un toucher qui tombe à côté
+ * d'un muscle le choisit quand même s'il est à moins de cette distance. Entre
+ * deux muscles, le plus proche gagne, donc deux zones ne se disputent jamais
+ * un toucher.
+ */
+export const TAP_MARGIN = 5;
+
+type Point = readonly [number, number];
+
+const pointsCache = new Map<string, Point[]>();
+
+function parsePoints(points: string): Point[] {
+  const cached = pointsCache.get(points);
+  if (cached !== undefined) return cached;
+  const nums = points.trim().split(/\s+/).map(Number);
+  const pts: Point[] = [];
+  for (let i = 0; i < nums.length; i += 2) pts.push([nums[i], nums[i + 1]]);
+  pointsCache.set(points, pts);
+  return pts;
+}
+
+function isInside(x: number, y: number, pts: readonly Point[]): boolean {
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const [xi, yi] = pts[i];
+    const [xj, yj] = pts[j];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+function distanceToEdges(x: number, y: number, pts: readonly Point[]): number {
+  let min = Infinity;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const [ax, ay] = pts[j];
+    const [bx, by] = pts[i];
+    const dx = bx - ax;
+    const dy = by - ay;
+    const len2 = dx * dx + dy * dy || 1;
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / len2));
+    min = Math.min(min, Math.hypot(x - ax - t * dx, y - ay - t * dy));
+  }
+  return min;
+}
+
+/**
+ * Muscle choisi par un toucher au point (x, y), dans le repère d'une vue
+ * (0-100 × 0-196). Sur un muscle : ce muscle. Sur une zone neutre (tête,
+ * genoux, avant-bras) : rien. À côté : le muscle le plus proche, s'il est à
+ * moins de `margin`. Sinon : rien.
+ */
+export function muscleAtPoint(
+  x: number,
+  y: number,
+  polys: Readonly<Record<string, readonly string[]>>,
+  neutrals: readonly (readonly string[])[],
+  margin: number = TAP_MARGIN,
+): string | null {
+  let best: string | null = null;
+  let bestDistance = Infinity;
+  for (const [muscle, group] of Object.entries(polys)) {
+    for (const p of group) {
+      const pts = parsePoints(p);
+      if (isInside(x, y, pts)) return muscle;
+      const d = distanceToEdges(x, y, pts);
+      if (d < bestDistance) {
+        bestDistance = d;
+        best = muscle;
+      }
+    }
+  }
+  for (const group of neutrals) {
+    for (const p of group) if (isInside(x, y, parsePoints(p))) return null;
+  }
+  return bestDistance <= margin ? best : null;
+}
+
+/** Muscle visé par un toucher sur une vue donnée (exporté pour les tests). */
+export function muscleAtPointOnSide(
+  side: 'face' | 'back',
+  x: number,
+  y: number,
+): string | null {
+  return side === 'face'
+    ? muscleAtPoint(x, y, CO_TO_FACE, FACE_NEUTRALS)
+    : muscleAtPoint(x, y, CO_TO_BACK, BACK_NEUTRALS);
+}
 
 /**
  * Choisit la vue la plus représentative selon les muscles highlightés.
@@ -497,6 +605,23 @@ export function AnatomicalSilhouette({
   const interactive = onMuscleClick !== undefined;
   const toneFill = PALETTES[palette];
 
+  // Toucher tombé hors de tout muscle (un toucher sur un muscle est pris par
+  // son `<g>` et ne remonte pas jusqu'ici) : on choisit le plus proche.
+  function handleMissedTap(e: MouseEvent<SVGSVGElement>) {
+    if (onMuscleClick === undefined) return;
+    const ctm = e.currentTarget.getScreenCTM();
+    if (ctm === null) return;
+    const local = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm.inverse());
+    let side: 'face' | 'back' = resolvedView === 'back' ? 'back' : 'face';
+    let x = local.x;
+    if (resolvedView === 'both' && x >= 105) {
+      side = 'back';
+      x -= 110;
+    }
+    const muscle = muscleAtPointOnSide(side, x, local.y);
+    if (muscle !== null) onMuscleClick(muscle);
+  }
+
   return (
     <svg
       viewBox={viewBox}
@@ -508,6 +633,7 @@ export function AnatomicalSilhouette({
       data-side={resolvedView}
       className={cn('block', STROKE, className)}
       strokeWidth="0.3"
+      onClick={interactive ? handleMissedTap : undefined}
     >
       {resolvedView !== 'back' && (
         <SilhouetteSide

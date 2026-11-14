@@ -27,10 +27,11 @@ import { MuscleIntention } from './models';
 // Catégorisation des muscles
 // =============================================================================
 
-// R1 — "Push" : pectoraux + deltos latéraux + triceps (push-dominants pour la balance,
-// cf. 09 §4.2 R1, Cools 2014).
+// R1 — "Push" : pectoraux + deltos antérieurs et latéraux + triceps
+// (push-dominants pour la balance, cf. 09 §4.2 R1, Cools 2014).
 export const PUSH_MUSCLES = [
   'pectoraux',
+  'deltos_anterieurs',
   'deltos_lateraux',
   'triceps',
 ] as const;
@@ -49,6 +50,7 @@ export const UPPER_BODY = [
   'dos_largeur',
   'dos_epaisseur',
   'trapezes_hauts',
+  'deltos_anterieurs',
   'deltos_lateraux',
   'deltos_posterieurs',
   'biceps',
@@ -59,6 +61,7 @@ export const LOWER_BODY = [
   'quadriceps',
   'ischios',
   'fessiers',
+  'adducteurs',
   'mollets',
 ] as const;
 
@@ -66,7 +69,12 @@ export const LOWER_BODY = [
 export const CORE_MUSCLES = ['abdos', 'lombaires'] as const;
 
 // R4 — Si l'un de ces muscles est à développer, deltos_posterieurs en entretien.
-export const R4_TRIGGERS = ['pectoraux', 'deltos_lateraux', 'triceps'] as const;
+export const R4_TRIGGERS = [
+  'pectoraux',
+  'deltos_anterieurs',
+  'deltos_lateraux',
+  'triceps',
+] as const;
 
 // =============================================================================
 // Helpers internes

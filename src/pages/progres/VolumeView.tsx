@@ -42,11 +42,6 @@ import {
 import { parseDateKey } from '@/lib/dashboard';
 import { MUSCLES, MuscleIntention, type MuscleGoal } from '@/engine/models';
 
-/** Conv #17b — certains muscles partagent une zone de la silhouette. */
-const CLICK_ALIAS: Readonly<Record<string, string>> = {
-  deltos_anterieurs: 'deltos_lateraux',
-};
-
 /** Position affichée : une semaine d'un cycle, ou la moyenne du cycle. */
 interface Position {
   /** Index dans `cycles`. */
@@ -158,8 +153,7 @@ export function VolumeView({ cycles, currentWeek, muscleGoals, lastWorked }: Vol
     return { develop, maintain, othersWorked, othersIdle };
   }, [byMuscle, muscleGoals, lastWorked]);
 
-  function handleSilhouetteClick(rawMuscle: string) {
-    const muscle = CLICK_ALIAS[rawMuscle] ?? rawMuscle;
+  function handleSilhouetteClick(muscle: string) {
     setSelected(muscle);
     cardRefs.current[muscle]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }

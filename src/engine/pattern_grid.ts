@@ -85,14 +85,29 @@ const MUSCLE_PATTERNS: Record<string, MusclePatternMap> = {
     compoundPatterns: [Pattern.HINGE, Pattern.LUNGE, Pattern.SQUAT],
     isolationPatterns: [Pattern.ISOLATION],
   },
+  // Adducteurs : primaires seulement sur la machine (squats et fentes les
+  // comptent à 0,5). Tout en ISOLATION.
+  adducteurs: {
+    compoundPatterns: [Pattern.ISOLATION],
+    isolationPatterns: [Pattern.ISOLATION],
+  },
   // Mollets : aucun compound dédié, tout en ISOLATION.
   mollets: {
     compoundPatterns: [Pattern.ISOLATION],
     isolationPatterns: [Pattern.ISOLATION],
   },
-  // Deltos latéraux : push_v primaire (OHP), iso (élévations latérales).
-  deltos_lateraux: {
+  // Deltos antérieurs : push_v primaire (développés épaules), iso (élévations
+  // frontales).
+  deltos_anterieurs: {
     compoundPatterns: [Pattern.PUSH_V],
+    isolationPatterns: [Pattern.ISOLATION],
+  },
+  // Deltos latéraux : depuis l'étape 6 du dump 2.4, les développés épaules ne
+  // les comptent plus qu'à 0,5 (primaires : antérieurs). Seules les élévations
+  // latérales les ont en primaire → tout en ISOLATION, sinon la case
+  // polyarticulaire reste vide et le muscle perd son volume.
+  deltos_lateraux: {
+    compoundPatterns: [Pattern.ISOLATION],
     isolationPatterns: [Pattern.ISOLATION],
   },
   // Deltos postérieurs : aucun PULL_H avec deltos_post primaire au

@@ -230,8 +230,10 @@ export function pickIsolationsForMuscle(
 const SMALL_MUSCLES: ReadonlySet<string> = new Set([
   'biceps',
   'triceps',
+  'deltos_anterieurs',
   'deltos_lateraux',
   'deltos_posterieurs',
+  'adducteurs',
   'mollets',
   'abdos',
   'obliques',

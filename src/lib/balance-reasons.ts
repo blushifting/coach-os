@@ -48,7 +48,8 @@ function priorityMuscles(priorities: readonly RankedPriority[]): Set<string> {
  *  - R2 (quadri↔ischios) : `ischios` ou `quadriceps`, avec l'antagoniste en
  *                          PRIORITAIRE → R2.
  *  - R4 (rear delts) : `deltos_posterieurs` avec au moins un trigger R4
- *                      (pectoraux/deltos_lateraux/triceps) en PRIORITAIRE → R4.
+ *                      (pectoraux, deltos antérieurs ou latéraux, triceps) en
+ *                      PRIORITAIRE → R4.
  *  - Fallback : R1 (par défaut, ne devrait pas arriver pour les muscles
  *               effectivement produits par `applyBalanceRules`).
  */
@@ -83,7 +84,7 @@ export function explainSuggestion(
     if (hasR4Trigger) {
       return {
         rule: 'R4',
-        text: 'Deltoïdes postérieurs pour équilibrer la posture si tu travailles les pectoraux ou les deltos latéraux.',
+        text: "Deltoïdes postérieurs pour équilibrer la posture si tu travailles les pectoraux ou l'avant et le côté des épaules.",
       };
     }
   }

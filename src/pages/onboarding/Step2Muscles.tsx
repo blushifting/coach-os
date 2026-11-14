@@ -10,7 +10,7 @@
  * de sélection, visible (numéro) et réordonnable (poignée de drag) dans la
  * liste sous la silhouette.
  *
- * La liste des 15 muscles est l'autre vue du même état : muscles à développer
+ * La liste des 17 muscles est l'autre vue du même état : muscles à développer
  * en tête (ordre de rang), à entretenir ensuite, sans intention en ordre
  * anatomique. Chaque ligne porte un contrôle 3 positions (– / D / E).
  */

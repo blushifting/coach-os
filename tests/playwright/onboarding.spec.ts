@@ -7,8 +7,8 @@ import { expect, test } from '@playwright/test';
  *   Profil → Muscles (pinceau + popin équilibre) → Programme → Récap.
  *
  * L'ancienne étape Équilibre est remplacée par une popin au « Suivant »
- * de l'étape 2 (uniquement si R1-R4 détecte des trous). Le préset
- * full-body couvre tous les muscles → pas de popin sur ce chemin.
+ * de l'étape 2 (uniquement si R1-R4 détecte des trous). La popin est
+ * pré-déclinée quand on applique le préset full-body → pas de popin sur ce chemin.
  */
 
 test.beforeEach(async ({ context }) => {
@@ -31,7 +31,7 @@ test('parcours custom : préset → récap auto-fillé → /programme', async ({
   await page.getByTestId('btn-next').click();
   await expect(page.getByTestId('onboarding-page')).toHaveAttribute('data-step', '2');
 
-  // Step 2 — Préset par défaut : couverture intégrale → pas de popin.
+  // Step 2 — Préset par défaut : popin d'équilibre pré-déclinée.
   await page.getByTestId('preset-default').click();
   await page.getByTestId('btn-next').click();
   await expect(page.getByTestId('balance-dialog')).toHaveCount(0);

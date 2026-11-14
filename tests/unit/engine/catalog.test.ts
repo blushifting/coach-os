@@ -8,6 +8,9 @@ import { describe, expect, it } from 'vitest';
 
 import { Catalog, loadExercises } from '@/engine/catalog';
 import { ExType, MUSCLES } from '@/engine/models';
+import { photosFor } from '@/data/exercise-photos';
+import { EXERCISE_SYNONYMES } from '@/data/exercise-synonymes';
+import { getMusclePatterns } from '@/engine/pattern_grid';
 
 // =============================================================================
 // 1. Chargement
@@ -173,5 +176,80 @@ describe('Catalog.search_fuzzy', () => {
   it('match RDL → romanian deadlift', () => {
     const res = cat.search_fuzzy('RDL', 5);
     expect(res.map((x) => x.id)).toContain('rdl_bb');
+  });
+});
+
+// =============================================================================
+// Carte des muscles (dump 2.4, étape 6)
+// =============================================================================
+
+describe('carte des muscles — coefficients du catalogue', () => {
+  const tous = loadExercises();
+  const cat = new Catalog();
+  const exo = (id: string) => {
+    const ex = tous.find((x) => x.id === id);
+    if (ex === undefined) throw new Error(`exo absent : ${id}`);
+    return ex;
+  };
+
+  it('chaque muscle compté par un exercice est un muscle suivi', () => {
+    const suivis = new Set<string>(MUSCLES);
+    for (const ex of tous) {
+      for (const m of Object.keys(ex.muscles)) {
+        expect(suivis.has(m), `${ex.id} compte ${m}`).toBe(true);
+      }
+    }
+  });
+
+  it('les développés épaules comptent les antérieurs à 1 et les latéraux à 0,5', () => {
+    for (const id of ['ohp_bb_standing', 'ohp_db_seated', 'arnold_press', 'machine_shoulder_press']) {
+      expect(exo(id).muscles.deltos_anterieurs, id).toBe(1);
+      expect(exo(id).muscles.deltos_lateraux, id).toBe(0.5);
+    }
+  });
+
+  it('tout exercice des pectoraux compte au moins 0,5 sur les antérieurs (jamais sous-estimés)', () => {
+    for (const ex of tous) {
+      if ((ex.muscles.pectoraux ?? 0) >= 1) {
+        expect(ex.muscles.deltos_anterieurs ?? 0, ex.id).toBeGreaterThanOrEqual(0.5);
+      }
+    }
+  });
+
+  it('squats, presse et fentes comptent les adducteurs à 0,5 et plus les ischios', () => {
+    for (const ex of tous) {
+      if (ex.pattern !== 'squat' && ex.pattern !== 'lunge') continue;
+      expect(ex.muscles.adducteurs, ex.id).toBe(0.5);
+      expect(ex.muscles.ischios, ex.id).toBeUndefined();
+    }
+  });
+
+  it('la machine à adducteurs ne compte que les adducteurs', () => {
+    expect(exo('hip_adductor_machine').muscles).toEqual({ adducteurs: 1 });
+  });
+
+  it('les élévations frontales isolent les antérieurs, avec photo et synonymes', () => {
+    for (const id of ['db_front_raise', 'cable_front_raise']) {
+      expect(exo(id).muscles).toEqual({ deltos_anterieurs: 1 });
+      expect(photosFor(id), id).not.toBeNull();
+      expect(EXERCISE_SYNONYMES[id]?.length ?? 0, id).toBeGreaterThan(0);
+    }
+    expect(cat.search_fuzzy('élévation frontale', 5).map((x) => x.id)).toContain('db_front_raise');
+  });
+});
+
+describe('carte des muscles — grille de patterns du générateur', () => {
+  it('chaque muscle a au moins une case polyarticulaire remplissable', () => {
+    // Garde-fou : à l'étape 6, les développés épaules sont passés à 0,5 sur les
+    // latéraux ; leur seule case polyarticulaire (push_v) est restée vide et le
+    // générateur leur retirait tout volume. Une case vide parmi d'autres est
+    // tolérée (les fessiers n'ont de primaire qu'en hinge, pas en squat).
+    const tous = loadExercises();
+    for (const m of MUSCLES) {
+      const remplissable = getMusclePatterns(m).compoundPatterns.some((p) =>
+        tous.some((ex) => ex.pattern === p && (ex.muscles[m] ?? 0) >= 1),
+      );
+      expect(remplissable, `${m} : aucune case polyarticulaire remplissable`).toBe(true);
+    }
   });
 });

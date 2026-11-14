@@ -550,9 +550,8 @@ const MUSCLE_LABEL_FR: Readonly<Record<string, string>> = {
   quadriceps: 'Quadriceps',
   ischios: 'Ischio-jambiers',
   fessiers: 'Fessiers',
+  adducteurs: 'Adducteurs',
   mollets: 'Mollets',
-  // deltos_anterieurs n'est pas choisissable mais peut apparaître en
-  // synergie : on prévoit le libellé pour cohérence visuelle.
   deltos_anterieurs: 'Deltoïdes antérieurs',
   deltos_lateraux: 'Deltoïdes latéraux',
   deltos_posterieurs: 'Deltoïdes postérieurs',
