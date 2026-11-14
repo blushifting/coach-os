@@ -7,7 +7,7 @@
  *  - Cette semaine        → ProgressRing avec done/total au centre.
  *  - Cycle (séances)      → ProgressRing avec % au centre.
  *  - Prochain bilan       → barre horizontale temporelle (jours), qui devient
- *    l'entrée vers le bilan une fois le cycle terminé (Conv #76).
+ *    l'entrée vers le bilan une fois le cycle terminé.
  *
  * Les `data-testid` historiques sont conservés à l'identique.
  */
@@ -30,7 +30,7 @@ interface WidgetsProps {
   readonly weekSessions: WeekSessions;
   readonly nextBilanDate: string | null;
   readonly cycleTime: CycleTimeProgress | null;
-  /** Conv #76 — cycle terminé : la tuile "Prochain bilan" devient l'entrée. */
+  /** Cycle terminé : la tuile "Prochain bilan" devient l'entrée. */
   readonly cycleFinished: boolean;
 }
 
@@ -62,7 +62,7 @@ export function Widgets({
 
 function StreakWidget({ streak }: { readonly streak: number }) {
   const active = streak > 0;
-  // Conv #18 — "Série" renommé "Régularité" pour éviter la confusion avec
+  // "Série" renommé "Régularité" pour éviter la confusion avec
   // une série d'exercice (set). Le sublabel "semaine(s) d'affilée" rend
   // explicite l'unité du compteur.
   return (
@@ -146,7 +146,7 @@ function Flame({ active }: { readonly active: boolean }) {
 
 function WeekSessionsWidget({ sessions }: { readonly sessions: WeekSessions }) {
   const hasPlan = sessions.planned > 0;
-  // #10 (E-3) — une séance libre/bonus peut faire dépasser le planifié
+  // Une séance libre/bonus peut faire dépasser le planifié
   // ("4/3", anneau sur-rempli). Dépasser = accompli, pas un bug : dès que
   // l'objectif est atteint on masque la fraction et on clampe l'anneau à 100 %.
   const reached = hasPlan && sessions.done >= sessions.planned;
@@ -170,7 +170,7 @@ function WeekSessionsWidget({ sessions }: { readonly sessions: WeekSessions }) {
               </span>
             )}
             {reached && (
-              // #63 — quand l'objectif est atteint on masque le « /planifié »,
+              // Quand l'objectif est atteint on masque le « /planifié »,
               // mais on garde le nom « séances » ici pour ne pas laisser un
               // chiffre nu au-dessus d'« objectif atteint ».
               <span className="text-sm text-anthracite-300">séances</span>
@@ -204,7 +204,7 @@ function CyclePctWidget({ cycle }: { readonly cycle: CycleProgress }) {
             size={56}
             strokeWidth={5}
           />
-          {/* Conv #17 — à 100 %, on masque le label "%" : l'anneau vert
+          {/* À 100 %, on masque le label "%" : l'anneau vert
               d'accomplissement parle de lui-même et serait sinon écrasé. */}
           {pctSafe < 100 && (
             <span className="absolute font-display text-[11px] font-semibold leading-none tabular-nums text-white">
@@ -214,7 +214,7 @@ function CyclePctWidget({ cycle }: { readonly cycle: CycleProgress }) {
         </div>
         <div className="flex flex-col leading-none">
           <span className="font-display text-lg font-semibold text-white tabular-nums">
-            {/* #10 (E-3) — même logique que la tuile "Cette semaine" : au-delà
+            {/* Même logique que la tuile "Cette semaine" : au-delà
                 du planifié on montre le total sans fraction (accompli). */}
             {cycle.planned <= 0
               ? '—'
@@ -279,11 +279,11 @@ function NextBilanWidget({
 }
 
 // =============================================================================
-// Bilan prêt — la 4e tuile mute quand le cycle est terminé (Conv #76)
+// Bilan prêt — la 4e tuile mute quand le cycle est terminé
 // =============================================================================
 
 /**
- * Conv #76 — fin de cycle. L'entrée vers le bilan vivait dans un bandeau
+ * Fin de cycle. L'entrée vers le bilan vivait dans un bandeau
  * inséré entre les widgets et le calendrier : il se collait à la grille et
  * poussait le calendrier vers le bas au moment précis où l'écran change
  * d'état. Elle prend maintenant la place de la tuile « Prochain bilan »,

@@ -41,7 +41,7 @@ import {
  * Page Bilan de cycle — Conv #5a.
  *
  * Lecture seule d'un `CycleReview`, dans un ordre qui raconte le cycle
- * (Conv #76) : ce que tu as fait (volume par muscle) → ce que ça a donné,
+ * : ce que tu as fait (volume par muscle) → ce que ça a donné,
  * exercice par exercice (Plafonds) → le même résultat agrégé par muscle
  * (silhouette). Puis les deux actions de sortie.
  *
@@ -55,7 +55,7 @@ export default function CycleBilanPage() {
   const userState = useCoachOsStore((s) => s.userState);
   const today = useToday();
   const [search] = useSearchParams();
-  // Conv #15-5 — Si on arrive avec `?cycle=N`, on cible explicitement le
+  // 5 — Si on arrive avec `?cycle=N`, on cible explicitement le
   // bilan de ce cycle (ouvert depuis Progrès > Cycles). Sinon comportement
   // historique : dernier bilan disponible.
   const targetCycleParam = search.get('cycle');
@@ -64,7 +64,7 @@ export default function CycleBilanPage() {
       ? Number(targetCycleParam)
       : null;
 
-  // Conv #76 — bilan du cycle en cours, calculé à la volée tant qu'il n'a pas
+  // Bilan du cycle en cours, calculé à la volée tant qu'il n'a pas
   // été validé (cf. `pickPendingCycleReview`). Prioritaire sur le fallback
   // `pickReviewToDisplay`, qui remonterait sinon le bilan du cycle PRÉCÉDENT.
   const pendingReview = useMemo(
@@ -83,7 +83,7 @@ export default function CycleBilanPage() {
   // archivé, pas une fin de cycle en cours).
   const isArchived = targetCycleIndex !== null;
 
-  // #15 (E-3), dump 2.4 étape 3 — volume du cycle, calculé à la volée (pas de
+  // Volume du cycle, calculé à la volée (pas de
   // champ persisté). Le nombre de séances alimente la tuile « Séances ».
   const cycleVolume = useMemo<CycleVolume | null>(() => {
     if (review === null || userState === null || catalog === null) return null;
@@ -140,7 +140,7 @@ export default function CycleBilanPage() {
           <ReviewMuscleForce review={review} catalog={catalog} />
           {review.warnings.length > 0 && <ReviewWarnings review={review} />}
           {isArchived ? (
-            // Conv #76 — `?tab=cycles` : sans lui, ce bouton ramenait sur
+            // `?tab=cycles` : sans lui, ce bouton ramenait sur
             // l'onglet Volume, pas sur la liste d'où l'on venait.
             <Link to="/progres?tab=cycles">
               <Button variant="secondary" fullWidth data-testid="back-to-progres">
@@ -163,8 +163,8 @@ function ReviewKeyMetrics({
   review: CycleReview;
   sessionCount: number;
 }) {
-  // Conv #11i — animation reveal-up staggered (cascade 0 / 80 ms).
-  // #15 (E-3) — la tuile "Volume (kg)" est retirée (tonnage non fiable) : le
+  // Animation reveal-up staggered (cascade 0 / 80 ms).
+  // La tuile "Volume (kg)" est retirée (tonnage non fiable) : le
   // volume utile est montré par muscle vs cible (section dédiée ci-dessous).
   return (
     <Card data-testid="bilan-key-metrics" className="grid grid-cols-2 gap-3">
@@ -180,7 +180,7 @@ function ReviewKeyMetrics({
 }
 
 /**
- * #15 (E-3), dump 2.4 étape 3 (n° 19, D10) — volume moyen par semaine sur le
+ * Volume moyen par semaine sur le
  * cycle, sur la barre commune. La moyenne compte la semaine de récupération
  * avec un repère divisé par deux (`computeCycleVolume`) : qui a fait toutes ses
  * séances tombe pile sur le repère.
@@ -255,7 +255,7 @@ function ReviewVolume({ volume }: { volume: CycleVolume | null }) {
 }
 
 /**
- * Conv #66 — une ligne de volume du bilan de cycle. La barre se remplit depuis 0
+ * Une ligne de volume du bilan de cycle. La barre se remplit depuis 0
  * (et non depuis une valeur précédente comme au bilan de SÉANCE : ici on montre
  * une moyenne sur le cycle, pas un incrément qu'on vient d'ajouter).
  */
@@ -313,7 +313,7 @@ function Metric({
   helpTopic?: import('@/lib/help-glossary').HelpTopic;
 }) {
   return (
-    // Conv #17 — items-center pour centrer label + valeur dans la cellule
+    // Items-center pour centrer label + valeur dans la cellule
     // grid. Avant : alignement gauche par défaut, le Volume (grosse valeur kg)
     // semblait flotter à gauche de sa colonne au lieu d'être centré entre
     // Adhérence et Records.
@@ -321,7 +321,7 @@ function Metric({
       className="flex flex-col items-center gap-0.5 text-center motion-safe:animate-reveal-up"
       style={{ animationDelay: `${delay}ms` }}
     >
-      {/* Conv #18 — min-h-5 réserve la hauteur du HelpButton (h-5) sur tous
+      {/* Min-h-5 réserve la hauteur du HelpButton (h-5) sur tous
           les labels, pour aligner les baselines même sans HelpButton. */}
       <span className="flex min-h-5 items-center gap-1 text-xs uppercase tracking-wide text-anthracite-300">
         {helpTopic ? <Concept topic={helpTopic}>{label}</Concept> : label}
@@ -342,7 +342,7 @@ function ReviewPlafonds({
   review: CycleReview;
   catalog: import('@/engine/catalog').Catalog | null;
 }) {
-  // Conv #76 — tous les exercices dont le Plafond a bougé, hausses d'abord puis
+  // Tous les exercices dont le Plafond a bougé, hausses d'abord puis
   // baisses. Avant : `slice(0, 6)`, qui coupait silencieusement — et coupait
   // en priorité les baisses, puisque le tri est décroissant. Les variations
   // sous le seuil de significativité (bruit d'EMA) sont écartées.
@@ -361,7 +361,7 @@ function ReviewPlafonds({
   }
   return (
     <Card data-testid="bilan-plafonds" className="flex flex-col gap-2">
-      {/* Chantier C (plan 11) — "Records" retiré du bilan : cette section de
+      {/* "Records" retiré du bilan : cette section de
           deltas par exo (ex-"Évolution sur le cycle") devient LE bilan des
           progressions. */}
       <h2 className="text-sm font-semibold text-white">
@@ -369,7 +369,7 @@ function ReviewPlafonds({
       </h2>
       <ul className="flex flex-col gap-1">
         {entries.map(([exId, delta], i) => {
-          // Conv #24 (D11) — feu tricolore aligné sur le bilan de séance :
+          // Feu tricolore aligné sur le bilan de séance :
           // vert = hausse, orange = stable, rouge = baisse, + flèche de tendance.
           const trend: 'up' | 'down' | 'flat' =
             delta > 0.05 ? 'up' : delta < -0.05 ? 'down' : 'flat';
@@ -387,7 +387,7 @@ function ReviewPlafonds({
               data-testid={`plafond-${exId}`}
               data-direction={trend}
             >
-              {/* Conv #15-5 — exId brut → nom français via catalog. */}
+              {/* 5 — exId brut → nom français via catalog. */}
               <span className="min-w-0 truncate pr-2 text-anthracite-300">
                 {exerciseLabel(exId, catalog)}
               </span>
@@ -405,7 +405,7 @@ function ReviewPlafonds({
 }
 
 /**
- * Conv #76 — remplace l'ancienne carte « Muscles » (4 listes de puces :
+ * Remplace l'ancienne carte « Muscles » (4 listes de puces :
  * Progrès / Plateau / Sous-stimulé / Surchargé), jugée illisible.
  *
  * Deux de ces listes doublonnaient les barres de volume ci-dessus
@@ -539,7 +539,7 @@ function ReviewActions({ review }: { review: CycleReview }) {
   }
 
   function startPartialRestart() {
-    // Conv #18 — "Ajuster les objectifs" passe par le même onboarding partiel
+    // "Ajuster les objectifs" passe par le même onboarding partiel
     // (Step2→5) que celui lancé depuis Profil. À la finalisation, l'onboarding
     // appelle endOfCycle avec l'action AJUSTER_OBJECTIFS (+ le nouveau build_mode
     // si l'user a basculé sur-mesure ↔ programme libre).

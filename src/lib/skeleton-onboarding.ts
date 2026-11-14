@@ -1,5 +1,5 @@
 /**
- * Helpers d'orchestration du squelette dans le wizard d'onboarding (Conv #22).
+ * Helpers d'orchestration du squelette dans le wizard d'onboarding.
  *
  * Sert à :
  *   - Construire le squelette à partir du draft (étape D).
@@ -21,13 +21,9 @@ import {
   type SkeletonDay,
   type SkeletonTemplate,
   type UserState,
-  type WeeklyTemplate,
 } from '@/engine/models';
 import { startUser as engineStartUser } from '@/engine/engine';
 import { buildSkeleton } from '@/engine/skeleton_builder';
-import {
-  generateCyclePlanV3,
-} from '@/engine/cycle_planner';
 import { candidatesForCell } from '@/engine/pattern_grid';
 
 /** Clé canonique d'une case dans `chosenVariantsPerCell`. */
@@ -75,7 +71,7 @@ export function applyChosenVariantsToSkeleton(
 /**
  * Pour chaque case non remplie, propose la 1re variante du tri
  * `candidatesForCell` — qui tient compte de la **préférence d'équipement**
- * (Conv #22) et des favoris user. Sert à l'auto-fill du squelette dans le
+ * et des favoris user. Sert à l'auto-fill du squelette dans le
  * flow d'onboarding co-construit : l'user voit directement une liste d'exos
  * cohérente avec sa préférence, et peut modifier au récap.
  *
@@ -136,19 +132,6 @@ export function filledCells(skeleton: SkeletonTemplate): number {
 /** True si toutes les cases sont remplies. */
 export function isSkeletonFullyFilled(skeleton: SkeletonTemplate): boolean {
   return filledCells(skeleton) === totalCells(skeleton);
-}
-
-/**
- * Pose le squelette rempli en `WeeklyTemplate` via le solveur F.
- * Échoue (renvoie null) si au moins une case n'est pas remplie.
- */
-export function buildFinalPlanFromSkeleton(
-  skeleton: SkeletonTemplate,
-  tmpState: UserState,
-  catalog: Catalog,
-): WeeklyTemplate | null {
-  if (!isSkeletonFullyFilled(skeleton)) return null;
-  return generateCyclePlanV3(skeleton, tmpState, catalog);
 }
 
 /**

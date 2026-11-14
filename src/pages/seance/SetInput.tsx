@@ -18,20 +18,20 @@ interface SetInputProps {
    */
   readonly chargeType?: ChargeType;
   /**
-   * Conv #20 — mode "Poids du corps seulement" sticky pour cet exo. Active
+   * Mode "Poids du corps seulement" sticky pour cet exo. Active
    * le rendu "PdC figé" (badge non éditable, load_kg verrouillé à 0) même
    * sur les exos BW_LOADED / BW_ASSISTED. La prescription arrive en outre
    * avec load_kg=0 et reps adaptées (cf. `buildPrescription` PDC branch).
    */
   readonly pdcOnly?: boolean;
   /**
-   * Conv #24 (D3) — exo unilatéral (`Exercise.uni`). On affiche alors « reps/côté »
+   * Exo unilatéral (`Exercise.uni`). On affiche alors « reps/côté »
    * sur le label des reps pour rappeler que la prescription est par côté (on
    * répète la série de chaque côté). N'affecte pas le calcul de volume.
    */
   readonly unilateral?: boolean;
   /**
-   * Conv #66 — la charge de cette série vient d'être recalculée par la
+   * La charge de cette série vient d'être recalculée par la
    * calibration (`recalibrateUpcomingSets`), pas par l'utilisateur. Déclenche un
    * flash ambre : sans lui, la charge changeait en silence sous les yeux de
    * l'utilisateur, qui n'avait aucune raison de relire une série non entamée.
@@ -44,7 +44,7 @@ const RPE_MAX = 10;
 const RPE_STEP = 0.5;
 
 /**
- * Bloc I (Conv #34) — repères de l'échelle Réserve, positionnés en `%` dans le
+ * Repères de l'échelle Réserve, positionnés en `%` dans le
  * MÊME repère que le thumb (0 % = RPE 6 = « 4+ » … 100 % = RPE 10 = « échec »)
  * pour que chaque cran tombe pile sous son libellé.
  */
@@ -57,7 +57,7 @@ const RESERVE_TICKS = [
 ] as const;
 
 /**
- * 1.17 — l'UI affiche les « reps en réserve » (Réserve), plus un effort. Le
+ * L'UI affiche les « reps en réserve » (Réserve), plus un effort. Le
  * moteur garde le RPE en interne ; conversion : réserve = 10 − RPE.
  *  - RPE 6  → 4 en réserve → « 4+ » (plancher de l'échelle, on ne descend pas
  *    plus bas : tout ce qui est ≥ 4 en réserve = trop facile pour mesurer)
@@ -76,7 +76,7 @@ function isBodyweightOnly(charge: ChargeType | undefined): boolean {
 }
 
 /**
- * Conv #20 — refonte layout :
+ * Refonte layout :
  *  - rangée haute : [Série N] [reps ±] [kg ±] [✓]
  *  - rangée basse : slider RPE avec dégradé sang à gauche du curseur
  *    (vif à RPE 10), valeur courante affichée + cible RPE.
@@ -96,11 +96,11 @@ export function SetInput({
   unilateral = false,
   recalibrated = false,
 }: SetInputProps) {
-  // Conv #20 — pdcOnly traite l'exo comme un BW pur (badge figé, charge=0).
+  // PdcOnly traite l'exo comme un BW pur (badge figé, charge=0).
   const bodyweightOnly = isBodyweightOnly(chargeType) || pdcOnly;
   const effectiveLoad: number | null = bodyweightOnly ? 0 : entry.load_kg;
 
-  // Bloc S (Conv #45) — plus aucun « lock » : ni ordre des séries, ni curseur.
+  // Plus aucun « lock » : ni ordre des séries, ni curseur.
   // Le ✓ ne se grise QUE si une valeur est vide (reps/charge), seul cas =
   // 1re séance d'un exo (calibration, reps à saisir). La Réserve démarrant
   // toujours à « 4+ », elle ne bloque jamais la validation.
@@ -119,7 +119,7 @@ export function SetInput({
       : 'Renseigne reps et charge avant de valider';
 
   const [justChecked, setJustChecked] = useState(false);
-  // Conv #66 — le décochage avait le retour haptique mais aucun retour visuel :
+  // Le décochage avait le retour haptique mais aucun retour visuel :
   // la coche s'éteignait, sans geste. Elle se rétracte désormais (`tick-unpop`).
   const [justUnchecked, setJustUnchecked] = useState(false);
   const prevDone = useRef(entry.done);
@@ -147,7 +147,7 @@ export function SetInput({
       data-done={entry.done ? 'true' : 'false'}
       className={cn(
         'rounded-lg border px-2 py-2 text-sm transition-colors duration-300',
-        // 1.16 — série validée = VERT (« c'est fait »), plus de rouge (réservé
+        // Série validée = VERT (« c'est fait »), plus de rouge (réservé
         // aux problèmes dans la grille sémantique).
         entry.done
           ? 'border-green-700/70 bg-green-900/25'
@@ -155,7 +155,7 @@ export function SetInput({
         justChecked && 'motion-safe:animate-validate-flash',
       )}
     >
-      {/* Conv #20 — Rangée haute : Série N · reps · kg · ✓, tous alignés
+      {/* Rangée haute : Série N · reps · kg · ✓, tous alignés
           sur la même hauteur. Reps et kg ont des +/-. Le tick ✓ est à
           droite et atteignable du pouce. */}
       <div className="flex items-end gap-1.5">
@@ -230,7 +230,7 @@ export function SetInput({
         </div>
       </div>
 
-      {/* Conv #20 — Rangée basse : slider RPE 6→10, dégradé sang à gauche
+      {/* Rangée basse : slider RPE 6→10, dégradé sang à gauche
           du curseur (atteint le vif à RPE 10), grisé à droite. La valeur
           courante s'affiche à côté du label + la cible si fournie. */}
       <RpeSlider
@@ -349,7 +349,7 @@ interface LoadFieldProps {
   readonly bodyweightOnly: boolean;
   readonly chargeType?: ChargeType;
   readonly disabled: boolean;
-  /** E-1 (#75) — charge réécrite par la calibration : flash ambre sur la case. */
+  /** Charge réécrite par la calibration : flash ambre sur la case. */
   readonly recalibrated?: boolean;
   readonly onChange: (v: number | null) => void;
 }
@@ -379,7 +379,7 @@ function LoadField({
     );
   }
 
-  // Conv #20 — pour les exos DUMBBELL, on affiche "kg/halt" pour rappeler
+  // Pour les exos DUMBBELL, on affiche "kg/halt" pour rappeler
   // que la saisie est par haltère (pas le total bilatéral). Voir
   // `kgUnitLabelShort` + convention dans `bootstrapE1rmIfMissing`.
   const kgLabel = kgUnitLabelShort(chargeType);
@@ -415,7 +415,7 @@ function KgStepper({
   recalibrated = false,
   onChange,
 }: KgStepperProps) {
-  // Conv #21 — +/- sur kg toujours en pas de 1 kg, indépendamment de l'inc_kg
+  // +/- sur kg toujours en pas de 1 kg, indépendamment de l'inc_kg
   // de l'exo. Si l'user appuie sur "+", il s'attend à voir la charge augmenter
   // de 1 — pas de 1,25 ni de 2,5. Un "+" qui ne fait pas +1 est déroutant.
   // L'incrément spécifique à l'équipement reste utilisé par le moteur pour
@@ -430,7 +430,7 @@ function KgStepper({
 
   const displayValue = value === null ? '' : String(value);
   const isAtMin = value !== null && value <= 0;
-  // E-1 (#75) — le flash de calibration se joue ici, sur la case charge (les
+  // Le flash de calibration se joue ici, sur la case charge (les
   // trois éléments sont opaques, ils portent donc l'animation chacun) et non
   // plus sur toute la ligne de série.
   const flash = recalibrated ? 'motion-safe:animate-recalibrate-field' : undefined;
@@ -489,7 +489,7 @@ function KgStepper({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Conv #20 — RpeSlider : slider de RPE avec dégradé sang à gauche du curseur
+// RpeSlider : slider de RPE avec dégradé sang à gauche du curseur
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface RpeSliderProps {
@@ -500,7 +500,7 @@ interface RpeSliderProps {
 }
 
 function RpeSlider({ index, value, disabled, onChange }: RpeSliderProps) {
-  // Bloc S (Conv #45) — curseur sur-mesure, refondu : le POUCE (thumb) est
+  // Curseur sur-mesure, refondu : le POUCE (thumb) est
   // l'unique poignée de drag. La piste est totalement inerte au pointeur — un
   // tap ne pose plus aucune valeur, et le scroll vertical de la page passe
   // librement par-dessus la barre. Pour régler sa Réserve, l'utilisateur
@@ -563,7 +563,7 @@ function RpeSlider({ index, value, disabled, onChange }: RpeSliderProps) {
           data-testid={`rpe-value-${index}`}
           className={cn(
             'font-display leading-none tabular-nums tracking-wide text-white',
-            // Bloc B1 — « ECHEC » (5 lettres) paraissait énorme à côté des
+            // « ECHEC » (5 lettres) paraissait énorme à côté des
             // valeurs courtes (4+, 3, 2, 1) : on le réduit d'un cran, sans
             // toucher la taille des autres valeurs.
             reserveLabel(rpe) === 'ECHEC' ? 'text-sm' : 'text-base',
@@ -592,7 +592,7 @@ function RpeSlider({ index, value, disabled, onChange }: RpeSliderProps) {
             className="absolute inset-y-0 right-0 rounded-r-full bg-anthracite-800"
             style={{ left: `${pct}%` }}
           />
-          {/* Thumb = unique poignée de drag (Bloc S). Zone de prise élargie
+          {/* Thumb = unique poignée de drag. Zone de prise élargie
               ~44 px via le pseudo `before` transparent (sans grossir le rendu) ;
               `touch-none` pour un drag fluide. Tout le reste de la barre reste
               scrollable. */}

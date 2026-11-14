@@ -6,7 +6,6 @@ import { describe, expect, it } from 'vitest';
 import type { E1rmSnapshotRow } from '@/db/schema';
 import {
   e1rmConfidenceFor,
-  isNotCalibrated,
   isStale,
   lastSnapshotDateFor,
   STALE_WEEKS,
@@ -78,14 +77,6 @@ describe('e1rmConfidenceFor', () => {
 });
 
 describe('helpers', () => {
-  it('isNotCalibrated true si pas de snapshot', () => {
-    expect(isNotCalibrated('squat', [])).toBe(true);
-    expect(isNotCalibrated('squat', [snap('bench', '2026-05-01')])).toBe(true);
-  });
-
-  it('isNotCalibrated false dès qu\'un snapshot existe', () => {
-    expect(isNotCalibrated('squat', [snap('squat', '2020-01-01')])).toBe(false);
-  });
 
   it('isStale false si pas de snapshot (on est "non calibré", pas "stale")', () => {
     expect(isStale('squat', [], new Date(2026, 4, 19))).toBe(false);

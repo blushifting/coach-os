@@ -29,20 +29,20 @@ const profileSchema = z
     sex: z.nativeEnum(Sex),
     age: z.number().int().min(14).max(100),
     level: z.nativeEnum(Level),
-    // Objectif global, supprimé en 2.4 (D3) : toléré sur les anciens exports.
+    // Objectif global, supprimé en 2.4 : toléré sur les anciens exports.
     objective: z.string().optional(),
     sessions_per_week: z.number().int().min(2).max(6),
     bodyweight_kg: z.number().positive(),
     available_equip: z.array(z.string()),
-    // Conv #22 — optionnels pour rétrocompat exports antérieurs.
+    // Optionnels pour rétrocompat exports antérieurs.
     duration_category: z.string().optional(),
     equipment_preference: z.string().optional(),
-    // Conv #23 — marque salle (libellés affichés des exos machine).
+    // Marque salle (libellés affichés des exos machine).
     gym_brand: z.string().optional(),
   })
   .strict();
 
-// Dump 2.4 — nouveau format (`intention`) ou ancien (`objective` + `status`) :
+// Nouveau format (`intention`) ou ancien (`objective` + `status`) :
 // les deux s'importent, l'ancien est migré à la lecture (`migrateMuscleGoals`).
 const muscleGoalSchema = z
   .object({
@@ -65,7 +65,7 @@ const userStateSchema = z
     profile: profileSchema,
     e1rm: recordOfNumber,
     k_user: recordOfNumber,
-    // reps_pr — vestige (Bloc R) : accepté en import pour rétrocompat des
+    // reps_pr — vestige : accepté en import pour rétrocompat des
     // anciens exports, mais non conservé dans le modèle.
     reps_pr: recordOfNumber.optional(),
     volume_min: recordOfNumber,
@@ -74,19 +74,19 @@ const userStateSchema = z
     volume_max: recordOfNumber.optional(),
     current_week_in_cycle: z.number().int().min(1).max(5),
     cycle_index: z.number().int().min(1),
-    // Chantier B — plateau désormais purement indicatif : champ toléré
+    // Plateau désormais purement indicatif : champ toléré
     // (optionnel) pour accepter les anciens exports, mais ignoré à l'import.
     plateau_counter: recordOfNumber.optional(),
     history: z.array(z.object({}).passthrough()),
     last_used_for_muscle: recordOfString,
     muscle_goals: z.record(z.string(), muscleGoalSchema),
     current_cycle_plan: z.union([z.null(), z.object({}).passthrough()]),
-    // Conv #44 — programmes guidés supprimés. Champ toléré (optionnel) pour
+    // Programmes guidés supprimés. Champ toléré (optionnel) pour
     // accepter les exports antérieurs, mais ignoré à la désérialisation.
     active_guided_program_id: z.union([z.null(), z.string()]).optional(),
-    // Bloc O — optionnel pour rétrocompat exports antérieurs.
+    // Optionnel pour rétrocompat exports antérieurs.
     build_mode: z.enum(['auto', 'manual']).optional(),
-    // Chantier B — recovery mode supprimé : champs tolérés (optionnels) pour
+    // Recovery mode supprimé : champs tolérés (optionnels) pour
     // accepter les anciens exports, mais ignorés à l'import.
     recovery_mode: z.boolean().optional(),
     recovery_weeks_remaining: z.number().int().min(0).optional(),
@@ -97,31 +97,33 @@ const userStateSchema = z
           inc_kg: z.number().nullable(),
           min_load_kg: z.number().nullable(),
           max_load_kg: z.number().nullable(),
-          // Conv #20 — optionnel pour rétrocompat exports antérieurs.
+          // Optionnel pour rétrocompat exports antérieurs.
           pdc_only: z.boolean().nullable().optional(),
         })
         .strict(),
     ),
-    // Report de volume retiré (1.41) — champ toléré (optionnel) pour accepter les
+    // Report de volume retiré — champ toléré (optionnel) pour accepter les
     // exports antérieurs, mais ignoré à la désérialisation.
     weekly_volume_debt: recordOfNumber.optional(),
     // Anciens planchers de charge et de reps (cliquets retirés au dump 2.4,
     // étape 4) : tolérés pour accepter les exports antérieurs, ignorés ensuite.
     prescribed_load_floor: recordOfNumber.optional(),
     prescribed_reps_floor: recordOfNumber.optional(),
-    // Dump 2.4, étape 4 — fourchette de reps par exercice (tolérant : une clé
+    // Fourchette de reps par exercice (tolérant : une clé
     // inconnue est ignorée à la lecture).
     rep_ranges: recordOfString.optional(),
-    // Conv #22 — optionnels pour rétrocompat exports antérieurs.
+    // Note libre par exercice ; absente des exports antérieurs.
+    exercise_notes: recordOfString.optional(),
+    // Optionnels pour rétrocompat exports antérieurs.
     current_skeleton: z.union([z.null(), z.object({}).passthrough()]).optional(),
     favorite_exercise_per_pattern: recordOfString.optional(),
     favorite_exercise_ids: z.array(z.string()).optional(),
     exercise_pick_counts: recordOfNumber.optional(),
-    // Chantier B — deload_strategy remplacé par deload_decision. L'ancien champ
+    // Deload_strategy remplacé par deload_decision. L'ancien champ
     // reste toléré (optionnel, ignoré) pour accepter les exports antérieurs.
     deload_strategy: z.union([z.null(), z.string()]).optional(),
     deload_decision: z.enum(['accepted', 'declined']).nullable().optional(),
-    // Dump 2.4, étape 5 — absent sur les exports antérieurs (Plafonds recalculés à l'import).
+    // Absent sur les exports antérieurs (Plafonds recalculés à l'import).
     plafond_model: z.number().int().optional(),
   })
   .strict();
@@ -161,7 +163,7 @@ const cycleRowSchema = z.object({
   cycle_index: z.number().int(),
   start_date: z.string(),
   end_date: z.string().nullable(),
-  // Conv #44 — programmes guidés supprimés. Champ toléré (optionnel) pour
+  // Programmes guidés supprimés. Champ toléré (optionnel) pour
   // accepter les exports antérieurs, mais ignoré à l'import.
   programme_id: z.string().nullable().optional(),
   review: z.union([z.null(), z.object({}).passthrough()]),

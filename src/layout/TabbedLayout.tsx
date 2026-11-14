@@ -7,10 +7,9 @@ export function TabbedLayout() {
   const { pathname } = useLocation();
   const mainRef = useRef<HTMLElement | null>(null);
 
-  // Conv #66 — la page entre du côté d'où elle vient : aller vers un onglet
+  // La page entre du côté d'où elle vient : aller vers un onglet
   // situé à droite la fait entrer par la droite. Le fondu neutre d'avant ne
   // disait rien du déplacement.
-  //
   // Hors barre d'onglets (séance, bilan… → index −1), aucun ordre à invoquer :
   // on retombe sur le fondu vertical d'origine.
   const tabIdx = tabIndexOf(pathname);

@@ -21,7 +21,7 @@ import { z } from 'zod';
 // Sous-schémas : modèles métier
 // =============================================================================
 
-// Dump 2.4 — nouveau format (`intention`) ; l'ancien reste lisible (migré à la lecture).
+// Nouveau format (`intention`) ; l'ancien reste lisible (migré à la lecture).
 const muscleGoalSchema = z.object({
   muscle: z.string(),
   intention: z.enum(['developper', 'entretenir']).optional(),
@@ -111,9 +111,9 @@ const cycleReviewSchema = z.object({
   PRs: z.array(z.tuple([z.string(), z.number()])),
   suggested_action: z.enum(['continuer', 'ajuster', 'tourner', 'changer']),
   warnings: z.array(z.string()),
-  // Conv #14c-7 — snapshot des objectifs au moment du bilan (optionnel).
+  // 7 — snapshot des objectifs au moment du bilan (optionnel).
   muscle_goals_snapshot: z.array(muscleGoalSchema).optional(),
-  // Dump 2.4, étape 3 — récupération prise sur ce cycle (optionnel).
+  // Récupération prise sur ce cycle (optionnel).
   recovery_taken: z.boolean().optional(),
 });
 
@@ -121,7 +121,7 @@ const equipmentOverrideSchema = z.object({
   inc_kg: z.number().nullable(),
   min_load_kg: z.number().nullable(),
   max_load_kg: z.number().nullable(),
-  // Conv #20 — optionnel pour rétrocompat snapshots Alex pré-Conv-#20.
+  // Optionnel pour rétrocompat snapshots Alex pré-Conv-#20.
   pdc_only: z.boolean().nullable().optional(),
 });
 
@@ -144,8 +144,6 @@ const serializedUserStateSchema = z.object({
   e1rm: z.record(z.string(), z.number()),
   k_user: z.record(z.string(), z.number()),
   volume_min: z.record(z.string(), z.number()),
-  // Vestige (dump 2.4, étape 3) : toléré dans les anciennes démos, ignoré.
-  volume_max: z.record(z.string(), z.number()).optional(),
   current_week_in_cycle: z.number().int(),
   cycle_index: z.number().int(),
   history: z.array(sessionFeedbackSchema),
@@ -153,14 +151,15 @@ const serializedUserStateSchema = z.object({
   muscle_goals: z.record(z.string(), muscleGoalSchema),
   current_cycle_plan: weeklyTemplateSchema.nullable(),
   equipment_overrides: z.record(z.string(), equipmentOverrideSchema),
-  // Report de volume retiré (1.41) — toléré (optionnel) pour les anciens snapshots.
-  weekly_volume_debt: z.record(z.string(), z.number()).optional(),
-  // Anciens planchers (cliquets retirés au dump 2.4, étape 4) : tolérés, ignorés.
-  prescribed_load_floor: z.record(z.string(), z.number()).optional(),
-  prescribed_reps_floor: z.record(z.string(), z.number()).optional(),
+  // La démo est générée par `scripts/generate-alex-demo.mts` : pas d'ancien
+  // format à tolérer ici. Un champ absent du schéma est retiré au chargement.
+  build_mode: z.enum(['auto', 'manual']).optional(),
+  favorite_exercise_ids: z.array(z.string()).optional(),
+  exercise_pick_counts: z.record(z.string(), z.number()).optional(),
   rep_ranges: z.record(z.string(), z.string()).optional(),
+  exercise_notes: z.record(z.string(), z.string()).optional(),
   plafond_model: z.number().int().optional(),
-  // Chantier B — déload opt-in (absent des anciens snapshots, default null).
+  // Déload opt-in (absent des anciens snapshots, default null).
   deload_decision: z.enum(['accepted', 'declined']).nullable().optional(),
 });
 

@@ -8,13 +8,12 @@ import {
   computeLiveE1rmFromEntries,
   computeSessionSummary,
   plafondTrend,
-  computeSessionVolume,
   countDoneSets,
   countPlannedSets,
   initEntries,
   lastCheckedSetTooEasy,
-  listDayCandidates,
   applyProgressionToUpcomingSets,
+  appendSetToItem,
   recalibrateUpcomingSets,
   suggestNextLoadAfterTooEasy,
   updateSetEntry,
@@ -219,42 +218,6 @@ describe('buildSessionFeedback', () => {
 // computeSessionVolume / computeSessionSummary
 // =============================================================================
 
-// 'a'/'b'/'bench_press'/'shoulder_press'/'squat'/'curl' n'existent pas dans le
-// catalog réel (`catalog`, déclaré plus bas dans ce fichier, cf. Calibration
-// intra-séance) → fallback load_kg brut (identité), résultats inchangés par
-// la charge totale (Chantier C) sauf mention contraire.
-describe('computeSessionVolume', () => {
-  it('Σ reps × load', () => {
-    const fb: SessionFeedback = {
-      seance_date: '2026-05-13',
-      week_in_cycle: 1,
-      cycle_index: 1,
-      rpe_target: 8,
-      label: 'Push',
-      sets: [
-        { exercise_id: 'a', reps_done: 5, load_kg: 80, rpe_perceived: 8 },
-        { exercise_id: 'a', reps_done: 5, load_kg: 80, rpe_perceived: 8 },
-        { exercise_id: 'b', reps_done: 8, load_kg: 40, rpe_perceived: 8 },
-      ],
-    };
-    expect(computeSessionVolume(fb, catalog, 80)).toBe(5 * 80 + 5 * 80 + 8 * 40); // 1120
-  });
-
-  // Chantier C (plan 11) — exo bodyweight_loaded réel du catalog : le volume
-  // doit inclure le poids du corps, pas seulement le lest.
-  it('bodyweight_loaded : volume en charge totale (lest + poids du corps)', () => {
-    const fb: SessionFeedback = {
-      seance_date: '2026-05-13',
-      week_in_cycle: 1,
-      cycle_index: 1,
-      rpe_target: 8,
-      label: 'Pull',
-      sets: [{ exercise_id: 'pullup', reps_done: 5, load_kg: 10, rpe_perceived: 8 }],
-    };
-    expect(computeSessionVolume(fb, catalog, 80)).toBe(5 * (10 + 80));
-  });
-});
-
 describe('computeSessionSummary', () => {
   const fb: SessionFeedback = {
     seance_date: '2026-05-13',
@@ -421,24 +384,6 @@ describe('computeSessionSummary', () => {
 // =============================================================================
 // listDayCandidates
 // =============================================================================
-
-describe('listDayCandidates', () => {
-  it('compte par label sur la semaine en cours du cycle en cours', () => {
-    const plan = { days: [{ label: 'Push' }, { label: 'Pull' }, { label: 'Legs' }] };
-    const fbs = [
-      makeFeedbackRow('Push', 1, 2, []),
-      makeFeedbackRow('Pull', 1, 2, []),
-      makeFeedbackRow('Push', 1, 1, []), // autre sem, exclu
-      makeFeedbackRow('Push', 2, 2, []), // autre cycle, exclu
-    ];
-    const out = listDayCandidates(plan, fbs, 1, 2);
-    expect(out).toEqual([
-      { dayIndex: 0, label: 'Push', doneCountThisWeek: 1 },
-      { dayIndex: 1, label: 'Pull', doneCountThisWeek: 1 },
-      { dayIndex: 2, label: 'Legs', doneCountThisWeek: 0 },
-    ]);
-  });
-});
 
 // =============================================================================
 // Calibration intra-séance (Conv #16)
@@ -815,5 +760,72 @@ describe('applyProgressionToUpcomingSets', () => {
       entries, plan, itemIdx: 0, fromSetIdx: 0, state: stateWithPecDeck(), exercise: pushup,
     });
     expect(next).toBe(entries);
+  });
+
+  // Dump 2.4, n° 12 — « + série » en séance.
+  describe('appendSetToItem', () => {
+    it('dernière série pas faite : la série ajoutée en est la copie, plan et saisie s’allongent ensemble', () => {
+      const plan = planOf('pec_deck', 59, 13, 2);
+      const entries: SessionEntries = [
+        [
+          { reps: 12, load_kg: 59, rpe: 9, done: true },
+          { reps: 13, load_kg: 62, rpe: 6, done: false, loadAuto: false },
+        ],
+      ];
+      const r = appendSetToItem({
+        plan, entries, itemIdx: 0, measured: true, state: stateWithPecDeck(), exercise: pecDeck,
+      })!;
+      expect(r.plan.items[0]!.sets).toHaveLength(3);
+      expect(r.entries[0]).toHaveLength(3);
+      expect(r.entries[0]![2]).toMatchObject({ reps: 13, load_kg: 62, done: false });
+      // Rien n'est muté.
+      expect(plan.items[0]!.sets).toHaveLength(2);
+      expect(entries[0]).toHaveLength(2);
+    });
+
+    it('dernière série faite, dans la fourchette : charge de cette série et reps prévues par le plan', () => {
+      const plan = planOf('pec_deck', 59, 13, 2);
+      const entries: SessionEntries = [
+        [
+          { reps: 12, load_kg: 59, rpe: 9, done: true },
+          { reps: 11, load_kg: 59, rpe: 9.5, done: true },
+        ],
+      ];
+      const r = appendSetToItem({
+        plan, entries, itemIdx: 0, measured: true, state: stateWithPecDeck(), exercise: pecDeck,
+      })!;
+      expect(r.entries[0]![2]).toMatchObject({ reps: 13, load_kg: 59, done: false });
+    });
+
+    it('dernière série faite au haut de la fourchette : la série ajoutée passe au cran suivant', () => {
+      const plan = planOf('pec_deck', 59, 14, 2);
+      const entries: SessionEntries = [
+        [
+          { reps: 15, load_kg: 59, rpe: 9, done: true },
+          { reps: 16, load_kg: 59, rpe: 9, done: true },
+        ],
+      ];
+      const r = appendSetToItem({
+        plan, entries, itemIdx: 0, measured: true, state: stateWithPecDeck(), exercise: pecDeck,
+      })!;
+      expect(r.entries[0]![2]!.load_kg).toBe(66);
+      expect(r.entries[0]![2]!.done).toBe(false);
+    });
+
+    it('exercice en calibration : reprend les reps et la charge de la dernière série faite', () => {
+      const plan = planOf('pec_deck', 40, 12, 1);
+      const entries: SessionEntries = [[{ reps: 9, load_kg: 45, rpe: 9, done: true }]];
+      const r = appendSetToItem({
+        plan, entries, itemIdx: 0, measured: false, state: null, exercise: null,
+      })!;
+      expect(r.entries[0]![1]).toMatchObject({ reps: 9, load_kg: 45, done: false });
+    });
+
+    it('exercice inconnu : null', () => {
+      const plan = planOf('pec_deck', 59, 13, 2);
+      expect(
+        appendSetToItem({ plan, entries: [], itemIdx: 3, measured: true, state: null, exercise: null }),
+      ).toBeNull();
+    });
   });
 });

@@ -17,26 +17,26 @@ interface SheetProps {
 /**
  * Sheet bottom-attached avec backdrop semi-transparent.
  *
- * Conv #11c — refonte glassmorphism :
+ * Refonte glassmorphism :
  *   - backdrop : noir 70 % + blur renforcé (12 px) → le contenu derrière reste
  *     deviné mais flouté
  *   - sheet : fond semi-transparent (anthracite-900/85) + blur 16 px,
  *     bordure haute sang-700/30 pour matérialiser la séparation,
  *     ombre extérieure haute pour décoller du fond
  *
- * Conv #24 (D12) — hauteur plafonnée à 90 dvh : le panneau est un `flex-col`
+ * Hauteur plafonnée à 90 dvh : le panneau est un `flex-col`
  * dont le header (titre + croix) reste figé en haut (`shrink-0`) tandis que le
  * corps défile en interne (`overflow-y-auto`). Sans ça, une fiche longue (exo
  * détaillé, a fortiori photo dépliée) poussait le titre et sa croix au-dessus
  * de l'écran → impossible à fermer.
  */
 export function Sheet({ open, onClose, title, children }: SheetProps) {
-  // 1.17 — état « closing » : quand `open` repasse à false, on garde le volet
+  // État « closing » : quand `open` repasse à false, on garde le volet
   // monté le temps de l'animation de sortie (slide-down + fade), puis on
   // démonte. `rendered` reste vrai pendant cette fenêtre.
   const [rendered, setRendered] = useState(open);
   const [closing, setClosing] = useState(false);
-  // Bloc I — remonte le volet au-dessus du clavier virtuel (iOS surtout).
+  // Remonte le volet au-dessus du clavier virtuel (iOS surtout).
   const keyboardInset = useKeyboardInset();
 
   useEffect(() => {
@@ -76,21 +76,21 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
           ? 'motion-safe:animate-backdrop-fade-out'
           : 'motion-safe:animate-backdrop-fade',
       )}
-      // Bloc I — pousse le volet au-dessus du clavier (items-end + padding bas).
+      // Pousse le volet au-dessus du clavier (items-end + padding bas).
       style={{ paddingBottom: keyboardInset || undefined }}
       onClick={onClose}
     >
       <div
         className={cn(
-          // Conv #11c — surface translucide + blur fort = effet "glass"
-          // Conv #24 — flex-col + max-h pour header figé / corps scrollable.
+          // Surface translucide + blur fort = effet "glass"
+          // Flex-col + max-h pour header figé / corps scrollable.
           'flex max-h-[90dvh] w-full flex-col rounded-t-3xl border-t border-sang-700/30 bg-anthracite-900/85 backdrop-blur-xl',
           'shadow-[0_-12px_32px_-8px_rgba(0,0,0,0.6)]',
           // Bloc C 1.16 — le volet glisse depuis le bas ; 1.17 — et redescend
           // à la fermeture (motion-safe).
           closing ? 'motion-safe:animate-sheet-down' : 'motion-safe:animate-sheet-up',
         )}
-        // Bloc I — quand le clavier est ouvert, on borne le volet à l'espace
+        // Quand le clavier est ouvert, on borne le volet à l'espace
         // visible restant pour garder le header (croix) accessible.
         style={
           keyboardInset

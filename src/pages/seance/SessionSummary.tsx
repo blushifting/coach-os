@@ -24,23 +24,23 @@ import type {
 
 interface SessionSummaryProps {
   readonly label: string;
-  /** Bloc G (Conv #32) — nom custom de la séance, s'il y en a un. */
+  /** Nom custom de la séance, s'il y en a un. */
   readonly customName?: string | null;
   readonly data: SessionSummaryData;
   readonly catalog: Catalog | null;
   /**
-   * Chantier B — la séance a été enregistrée en semaine de récupération EFFECTIVE
+   * La séance a été enregistrée en semaine de récupération EFFECTIVE
    * (semaine 5 + déload accepté). Aucune mesure de plafond n'est faite : on
    * l'explique au lieu du message « aucune série assez intense ».
    */
   readonly deloadActive?: boolean;
-  /** Dump 2.4, étape 4 — exercices dont la fourchette est trop étroite pour ses crans. */
+  /** Exercices dont la fourchette est trop étroite pour ses crans. */
   readonly rangeSuggestions?: readonly RepRangeSuggestion[];
   readonly onClose: () => void;
 }
 
 /**
- * Conv #66 — chorégraphie du bilan.
+ * Chorégraphie du bilan.
  *
  * Le bilan est un écran de LECTURE : on s'autorise ~1,3 s de mouvement total, là
  * où la séance reste sous `MOTION.action` (on y consulte l'app entre deux séries).
@@ -177,7 +177,7 @@ export function SessionSummary({
 }
 
 /**
- * A-3 (#73) — en récupération, le bilan affiche les Plafonds même quand ils ne
+ * En récupération, le bilan affiche les Plafonds même quand ils ne
  * bougent pas (Δ 0). Sans un mot d'explication, une liste de Δ 0 se lit comme une
  * stagnation ; c'est au contraire le comportement voulu.
  */
@@ -200,7 +200,7 @@ function formatSetsLike(v: number, target: number): string {
 }
 
 /**
- * #13 (E-3), dump 2.4 étape 3 (n° 8) — ligne « volume d'un muscle » : apport de
+ * Ligne « volume d'un muscle » : apport de
  * la séance (+X), total de la semaine avec son repère, et la barre commune. Tous
  * les muscles travaillés ont leur barre, avec ou sans objectif.
  */
@@ -265,12 +265,12 @@ function chargeLabelOf(catalog: Catalog | null, exerciseId: string): string {
 }
 
 /**
- * Conv #21 — Ligne d'évolution plafond pour un exo. Quatre rendus :
+ * Ligne d'évolution plafond pour un exo. Quatre rendus :
  *   - première calibration : "X kg · 1re mesure" (vert — on a un repère)
  *   - hausse d'au moins une rep : "X → Y kg (+Δ) ↑" (vert)
  *   - moins d'une rep d'écart : "X → Y kg →" (gris : stable)
  *   - baisse d'au moins une rep : "X → Y kg (−Δ) ↓" (ambre : avertissement)
- * Dump 2.4, étape 5 (n° 17) — le seuil est une rep à la charge de la séance (avant :
+ * Le seuil est une rep à la charge de la séance (avant :
  * 0,05 kg), plus de rouge pour une seule séance. La flèche double la couleur
  * (accessibilité). Une étoile signale un record (n° 9).
  */

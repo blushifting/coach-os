@@ -1,69 +1,10 @@
 /**
- * Bloc G (Conv #32) — Séance custom assistée (hors-programme).
- *
- * Une séance custom est une séance **hors-rotation** A/B/C que l'utilisateur
- * compose à la volée. On part d'un *preset* = un simple paquet de muscles nommé
- * (Pecs, Dos, …) qu'on donne au **même moteur de sélection que le programme**
- * (`candidatesForMuscle`), **favoris d'abord**. Le preset « Vide » part d'une
- * feuille blanche.
- *
- * Science : le rendement par muscle décroît au-delà de ~8 séries dans une même
- * séance. On plafonne donc le volume par muscle/séance et on **répartit sur
- * plusieurs exos/angles** plutôt que d'empiler les séries sur un seul mouvement.
+ * Séance libre (hors programme) et édition des programmes : outils partagés.
+ * Les presets de groupes musculaires ont été retirés au dump 2.4 (n° 23) : la
+ * séance libre se compose à partir des exercices favoris.
  */
 
-import type { Catalog } from '@/engine/catalog';
-import type {
-  DayTemplate,
-  Exercise,
-  SessionFeedback,
-  SessionPlan,
-  UserState,
-} from '@/engine/models';
-import { EquipmentPreference, chargesForPreference } from '@/engine/models';
-import { candidatesForMuscle, orderSession } from '@/engine/selection';
-
-export interface SessionPreset {
-  readonly id: string;
-  readonly label: string;
-  /** Muscles primaires visés (clés catalogue). Vide pour le preset « Vide ». */
-  readonly muscles: readonly string[];
-}
-
-/**
- * Presets = paquets de muscles, pas des listes d'exos figées. Le builder les
- * passe au moteur de sélection. L'ordre des muscles compte (le 1er sert de
- * muscle prioritaire pour `orderSession`).
- */
-export const SESSION_PRESETS: readonly SessionPreset[] = [
-  { id: 'pecs', label: 'Pecs', muscles: ['pectoraux'] },
-  { id: 'dos', label: 'Dos', muscles: ['dos_largeur', 'dos_epaisseur'] },
-  {
-    id: 'jambes',
-    label: 'Jambes',
-    muscles: ['quadriceps', 'ischios', 'fessiers', 'mollets'],
-  },
-  {
-    id: 'epaules',
-    label: 'Épaules',
-    muscles: ['deltos_lateraux', 'deltos_anterieurs', 'deltos_posterieurs'],
-  },
-  { id: 'bras', label: 'Bras', muscles: ['biceps', 'triceps'] },
-  {
-    id: 'full',
-    label: 'Full body',
-    muscles: ['quadriceps', 'pectoraux', 'dos_largeur', 'ischios'],
-  },
-  { id: 'vide', label: 'Libre', muscles: [] },
-];
-
-export function presetById(id: string): SessionPreset | null {
-  return SESSION_PRESETS.find((p) => p.id === id) ?? null;
-}
-
-/** Plafond de séries pour un même muscle dans UNE séance (cf. en-tête). */
-export const PER_MUSCLE_SESSION_CAP = 8;
-const DEFAULT_SETS_PER_EXO = 3;
+import type { DayTemplate, SessionFeedback, SessionPlan } from '@/engine/models';
 
 /**
  * Tri stable « favoris d'abord » (G4) : les exos favoris remontent en tête,
@@ -90,69 +31,7 @@ export interface CustomSlot {
 }
 
 /**
- * Compose la base d'une séance custom à partir d'un preset.
- *
- * Pour chaque muscle visé : candidats (favoris d'abord), on prend 1 à 2 exos
- * (2 quand le preset cible ≤ 2 muscles, pour répartir le volume), avec un
- * nombre de séries plafonné par `PER_MUSCLE_SESSION_CAP`. Anti-doublon
- * inter-muscles. Renvoie les slots ordonnés « séance » (`orderSession`, muscle
- * prioritaire = 1er muscle du preset). Preset vide → aucun slot.
- *
- * D-1 (#75) — la préférence machines / poids libres / poids du corps est
- * respectée, comme dans le programme. `candidatesForMuscle` ne filtrait que sur
- * `available_equip` (legacy) : un utilisateur en « machines uniquement » se
- * voyait proposer des poids libres dès qu'il composait une séance libre.
- * Fallback identique à `autoGenerateCyclePlanV3` : si la préférence ne laisse
- * aucun candidat pour ce muscle, on reprend la liste complète plutôt que de
- * priver le muscle — sauf en poids du corps, qui est strict.
- */
-export function buildCustomSessionSlots(
-  preset: SessionPreset,
-  state: UserState,
-  catalog: Catalog,
-): CustomSlot[] {
-  if (preset.muscles.length === 0) return [];
-  const favoriteIds = new Set(state.favorite_exercise_ids ?? []);
-  const allowedCharges = chargesForPreference(state.profile.equipment_preference);
-  const strictPreference =
-    state.profile.equipment_preference === EquipmentPreference.BODYWEIGHT;
-  const used = new Set<string>();
-  const chosen: { ex: Exercise; nSets: number }[] = [];
-  // Moins de muscles ⟹ on étale sur plus d'exos par muscle.
-  const exosPerMuscle = preset.muscles.length <= 2 ? 2 : 1;
-
-  for (const muscle of preset.muscles) {
-    const cands = favoritesFirst(
-      candidatesForMuscle(catalog, muscle, state.profile, { excludeIds: used }),
-      favoriteIds,
-    );
-    const preferred =
-      allowedCharges === null
-        ? cands
-        : cands.filter((ex) => allowedCharges.has(ex.charge));
-    const pool = preferred.length === 0 && !strictPreference ? cands : preferred;
-    const picked = pool.slice(0, exosPerMuscle);
-    if (picked.length === 0) continue;
-    // Répartit le plafond muscle/séance sur les exos retenus (min 2 séries).
-    const budget = Math.min(PER_MUSCLE_SESSION_CAP, DEFAULT_SETS_PER_EXO * picked.length);
-    const per = Math.max(2, Math.floor(budget / picked.length));
-    for (const ex of picked) {
-      chosen.push({ ex, nSets: per });
-      used.add(ex.id);
-    }
-  }
-  if (chosen.length === 0) return [];
-
-  const ordered = orderSession(
-    chosen.map((c) => c.ex),
-    preset.muscles[0] ?? null,
-  );
-  const setsById = new Map(chosen.map((c) => [c.ex.id, c.nSets]));
-  return ordered.map((ex) => ({ exerciseId: ex.id, nSets: setsById.get(ex.id)! }));
-}
-
-/**
- * Bloc G (Conv #32) — progression par défaut d'un exo ajouté manuellement à un
+ * Progression par défaut d'un exo ajouté manuellement à un
  * jour de cycle (G3). On calque la longueur de la progression d'un exo voisin
  * du jour (sinon 5 semaines), base = `nSets`, dernière semaine = déload léger
  * (~60 %). `generateSession` lit `progression[weekIdx]` pour le nb de séries.
@@ -164,7 +43,7 @@ export function defaultProgressionForDay(
   const sibling = day?.exercises[0]?.progression;
   const len = sibling !== undefined && sibling.length > 0 ? sibling.length : 5;
   const out = Array.from({ length: len }, () => nSets);
-  // A-2 (#73) — plancher de 2 séries en récupération, comme `cycleSetProgression`
+  // Plancher de 2 séries en récupération, comme `cycleSetProgression`
   // (un exo à 2 ou 3 séries tombait à 1). Borné par `nSets` : un exo à 1 série
   // reste à 1.
   out[len - 1] = Math.min(nSets, Math.max(2, Math.round(nSets * 0.6)));

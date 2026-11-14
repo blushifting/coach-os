@@ -1,5 +1,5 @@
 /**
- * Sélecteurs purs pour l'écran Bilan de cycle (Conv #5a).
+ * Sélecteurs purs pour l'écran Bilan de cycle.
  *
  * Le moteur expose `lastCycleReview` après `useEngine.endOfCycle()`. Si l'user
  * arrive sur la page après un reload (donc `lastCycleReview` est null), on
@@ -25,7 +25,7 @@ export function pickReviewToDisplay(
 }
 
 /**
- * Conv #76 — bilan du cycle **en cours**, calculé à la volée.
+ * Bilan du cycle **en cours**, calculé à la volée.
  *
  * Un `CycleReview` n'existait en mémoire (`lastCycleReview`) ou en base
  * (`CycleRow.review`) qu'**après** `endOfCycle()`, c'est-à-dire après que
@@ -61,7 +61,7 @@ export function pickPendingCycleReview(args: {
 
 /**
  * Muscles à la fois **surchargés** et **en recul** sur le cycle — le signal qui
- * déclenche l'alerte de dosage du bilan (Conv #76).
+ * déclenche l'alerte de dosage du bilan.
  *
  * La conjonction est le fond du sujet. Reculer sans excès de volume peut tenir
  * au sommeil ou à une mauvaise période : on n'accuse pas le programme.
@@ -80,7 +80,7 @@ export function overloadedMuscles(review: CycleReview): string[] {
 }
 
 /*
- * Conv #76 — `suggestedActionLabel` supprimée avec la ligne « Kotsh te
+ * `suggestedActionLabel` supprimée avec la ligne « Kotsh te
  * suggère… » qu'elle alimentait. `suggestNextAction` ne reposait que sur deux
  * seuils (assiduité < 60 %, ou ≥ 3 muscles en recul), ignorait les muscles en
  * progrès, ne distinguait pas un cycle qui progresse d'un cycle qui stagne, et

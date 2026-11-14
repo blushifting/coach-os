@@ -32,7 +32,7 @@ export function Concept({ topic, children, label, className }: ConceptProps) {
       onClick={() => open(topic)}
       aria-label={a11y}
       className={cn(
-        // 1.16 — soulignement pointillé en violet : grille sémantique, l'aide
+        // Soulignement pointillé en violet : grille sémantique, l'aide
         // contextuelle (ici « mot défini » tappable) = violet. Pleine opacité
         // pour rester lisible sur anthracite sous du texte atténué.
         'inline border-b border-dotted border-violet-400 text-inherit underline-offset-2 transition-colors hover:border-violet-300 hover:text-white',

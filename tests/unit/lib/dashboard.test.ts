@@ -19,7 +19,6 @@ import {
   parseDateKey,
   plannedSessionsForCycle,
   startOfWeekMonday,
-  weekKey,
 } from '@/lib/dashboard';
 import type {
   DayTemplate,
@@ -66,6 +65,7 @@ function makeState(overrides: Partial<UserState> = {}): UserState {
     current_cycle_plan: null,
     equipment_overrides: {},
     rep_ranges: {},
+    exercise_notes: {},
     plafond_model: 2,
     ...overrides,
   };
@@ -140,13 +140,6 @@ describe('helpers date', () => {
     // 2026-05-17 dimanche
     const sun = parseDateKey('2026-05-17');
     expect(dateKey(startOfWeekMonday(sun))).toBe('2026-05-11');
-  });
-
-  it('weekKey : tous les jours d\'une même semaine ISO ont la même clé', () => {
-    const k = weekKey(parseDateKey('2026-05-13'));
-    expect(weekKey(parseDateKey('2026-05-11'))).toBe(k);
-    expect(weekKey(parseDateKey('2026-05-17'))).toBe(k);
-    expect(weekKey(parseDateKey('2026-05-18'))).not.toBe(k);
   });
 
   it('addDays : addition/soustraction de jours', () => {

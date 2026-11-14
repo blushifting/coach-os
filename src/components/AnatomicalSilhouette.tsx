@@ -60,7 +60,7 @@ export type SilhouetteStatus =
   | 'synergist';
 
 /**
- * Conv #20 — palette de coloration selon le contexte d'usage :
+ * Palette de coloration selon le contexte d'usage :
  *  - `legacy` (défaut) — coloration "anatomique" multi-teinte historique,
  *     utilisée par le Catalogue (mini silhouette + détail exo). Distingue
  *     primaire / synergiste avec deux teintes de sang. Inchangée.
@@ -70,7 +70,7 @@ export type SilhouetteStatus =
  *  - `priority` — palette amber/or pour la sélection des muscles
  *     prioritaires en onboarding. Top 3 "brille" en amber-400, autres en
  *     amber-700.
- *  - `objective` (Conv #28) — onboarding Step2 « pinceau » : une teinte par
+ *  - `objective` — onboarding Step2 « pinceau » : une teinte par
  *     objectif. Mapping statut→objectif : `highlight`=Hypertrophie (or),
  *     `high`=Force (sang), `low`=Endurance (cyan), `ok`=Maintien (orange
  *     sombre). Rampe chaude = intensité de charge décroissante (sang > or >
@@ -95,18 +95,18 @@ export interface AnatomicalSilhouetteProps {
   /** id pour data-testid (debug + tests). */
   readonly testId?: string;
   /**
-   * Conv #17 — silhouette cliquable. Callback appelé avec le `muscle_id`
+   * Silhouette cliquable. Callback appelé avec le `muscle_id`
    * Coach OS quand l'utilisateur tape sur une zone musculaire mappée.
    * Si absent, la silhouette reste purement présentationnelle (aria-hidden).
    */
   readonly onMuscleClick?: (muscle: string) => void;
   /** Muscle actuellement sélectionné (souligné d'un liseré). */
   readonly selectedMuscle?: string | null;
-  /** Conv #20 — palette de coloration (défaut `legacy`). */
+  /** Palette de coloration (défaut `legacy`). */
   readonly palette?: SilhouettePalette;
 }
 
-// Conv #18 — bumpé d'un cran pour mieux ressortir du fond Card
+// Bumpé d'un cran pour mieux ressortir du fond Card
 // (anthracite-900 = #14161a). Les muscles non coloriés étaient à -700
 // (#262a30) → quasi-invisibles. Passés à -500 (#454a52) : la silhouette
 // reste lisible même quand aucun statut n'est posé. Le neutral (zones
@@ -120,7 +120,7 @@ const TONE_FILL_LEGACY: Record<SilhouetteStatus, string> = {
   synergist: 'fill-sang-900',
 };
 
-// Conv #20, dump 2.4 étape 3 — Vue Volume (Progrès) : mono-teinte sang. Le
+// Vue Volume (Progrès) : mono-teinte sang. Le
 // contraste fait tout le travail (pas de stroke effect ni d'animation).
 //   travaillé hors de la bonne zone → sang-900 (sombre, peu présent)
 //   dans la cible (repère → 20)     → sang-600 (couleur marque pleine)
@@ -135,7 +135,7 @@ const TONE_FILL_VOLUME: Record<SilhouetteStatus, string> = {
   synergist: 'fill-sang-900',
 };
 
-// Conv #20 — Onboarding Step2 (sélection muscles prioritaires) : famille amber.
+// Onboarding Step2 (sélection muscles prioritaires) : famille amber.
 // Top 3 = highlight (amber-400, brille), rank 4+ = ok (amber-700, plus discret).
 const TONE_FILL_PRIORITY: Record<SilhouetteStatus, string> = {
   off: 'fill-anthracite-500',
@@ -146,7 +146,7 @@ const TONE_FILL_PRIORITY: Record<SilhouetteStatus, string> = {
   synergist: 'fill-amber-700',
 };
 
-// Conv #28 — Onboarding Step2 pinceau : une teinte par objectif (cf. doc du
+// Onboarding Step2 pinceau : une teinte par objectif (cf. doc du
 // type SilhouettePalette). `synergist` inutilisé dans ce contexte.
 const TONE_FILL_OBJECTIVE: Record<SilhouetteStatus, string> = {
   off: 'fill-anthracite-500',
@@ -170,7 +170,6 @@ const STROKE = 'stroke-anthracite-400';
 // =============================================================================
 // Polygones FACE (dérivés de react-body-highlighter — anteriorData, coordonnées
 // re-bakées Conv #67, cf. en-tête). viewBox local 0 0 100 196.
-//
 // Dump 2.4, étape 6 (maquette `Kotsh/maquettes/etape6_jambes.html`) :
 //  - Épaule : la pointe basse de l'ancien `neck` (descendue jusqu'à la
 //    clavicule, là où est l'avant de l'épaule) passe aux antérieurs ; l'ancien
@@ -264,8 +263,7 @@ const BACK_POLYS = {
     '50 0 45.96 0.83 40.85 5.41 40.43 12.48 45.11 19.51 54.89 19.51 59.57 12.48 59.15 5.41 54.04 0.83',
   ],
   // ---------------------------------------------------------------------------
-  // Conv #65 — redécoupage du dos.
-  //
+  // Redécoupage du dos.
   // Constat : les polygones RBH ne tombaient sur AUCUN des 3 muscles dorsaux
   // suivis.
   //  - `trapezius` descend du cou à y=65 (milieu du dos) = le trapèze ENTIER,
@@ -276,7 +274,6 @@ const BACK_POLYS = {
   //    PROFONDS (sous le trapèze), donc sous l'ancienne zone `trapezius`.
   //  - `dos_largeur` était rendu par 2 petits polygones custom coincés sur le
   //    flanc : le plus gros muscle du dos avait la plus petite tache.
-  //
   // Correction : on recoupe les formes RBH d'origine, sans inventer de sommet
   // (les deux coupes relient des sommets existants de l'asset).
   //  - Coupe 1 — `trapezius` scindé le long de C7 (47,23 ; 38,30) → sommet
@@ -295,7 +292,6 @@ const BACK_POLYS = {
   //    crête iliaque (origine réelle via le fascia thoraco-lombaire) a été
   //    écartée : elle écrase le V lombaire, et à ce niveau le dorsal est
   //    aponévrotique, pas charnu.
-  //
   // Coutures des nouvelles coupes calées sur les coutures de l'asset
   // (≈ 1,75 ; toutes égalisées à 1,7 en Conv #67). Formes définies sur la
   // moitié gauche puis mises en miroir (x → 100−x).
@@ -395,7 +391,7 @@ const CO_TO_FACE: Record<string, readonly string[]> = {
 
 /** Muscles Coach OS visibles côté dos. */
 const CO_TO_BACK: Record<string, readonly string[]> = {
-  // Conv #65 — fibres descendantes seules, cohérent avec CO_TO_FACE qui mappe
+  // Fibres descendantes seules, cohérent avec CO_TO_FACE qui mappe
   // déjà `trapezes_hauts` sur la pente cou-épaule (les fibres descendantes
   // s'insèrent sur le tiers latéral de la clavicule, donc visibles de face).
   // Avant le redécoupage les deux vues se contredisaient : trapèze entier de
@@ -416,7 +412,7 @@ const CO_TO_BACK: Record<string, readonly string[]> = {
 // Arrondi des angles
 // =============================================================================
 
-// Conv #67 — rayon d'arrondi des sommets (unités du viewBox), validé
+// Rayon d'arrondi des sommets (unités du viewBox), validé
 // visuellement parmi 0-4.
 const CORNER_RADIUS = 3;
 
@@ -480,7 +476,7 @@ const BACK_NEUTRALS = [BACK_POLYS.head, BACK_POLYS.knees, BACK_POLYS.forearm];
 // =============================================================================
 
 /**
- * Dump 2.4, étape 6 — marge de toucher, en unités du viewBox (≈ 1,1 px par
+ * Marge de toucher, en unités du viewBox (≈ 1,1 px par
  * unité à la taille `h-56`). Les zones de la silhouette font 5 à 12 px de
  * large, loin des 44 px conseillés pour un doigt : un toucher qui tombe à côté
  * d'un muscle le choisit quand même s'il est à moins de cette distance. Entre
@@ -748,7 +744,7 @@ function SilhouetteSide({
 // =============================================================================
 
 /**
- * Dump 2.4, étape 3 — tout ce qui est fait est montré (D1) :
+ * Tout ce qui est fait est montré :
  *   - pas travaillé → éteint ;
  *   - travaillé mais pas dans la bonne zone (sous le repère, ou sans objectif)
  *     → rouge sombre ;

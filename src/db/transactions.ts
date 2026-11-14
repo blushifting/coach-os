@@ -107,7 +107,7 @@ export async function txUpdateSessionPlan(
 }
 
 // =============================================================================
-// Annulation d'une séance planifiée (Conv #10d).
+// Annulation d'une séance planifiée.
 // Supprime la ligne `sessions` correspondante. Pas d'effet sur le blob
 // `userState` (les e1RM bootstrap éventuellement créés restent — bénins).
 // =============================================================================
@@ -120,7 +120,7 @@ export async function txCancelSession(sessionId: number): Promise<void> {
 }
 
 // =============================================================================
-// Conv #14b-3 — Marquer une séance en cours comme sautée.
+// 3 — Marquer une séance en cours comme sautée.
 // Met `status='skipped'` au lieu de supprimer : la séance reste visible dans
 // le calendrier (case "sautée", barrée), distincte d'une annulation muette.
 // =============================================================================
@@ -143,14 +143,14 @@ export interface CommitSessionFeedbackArgs {
   state: UserState;
   sessionId: number | null;
   /**
-   * Conv #30 — si `true`, (ré)ancre `cycle.start_date` sur la date de ce
+   * Si `true`, (ré)ancre `cycle.start_date` sur la date de ce
    * feedback : la grille du cycle démarre à la **1re séance réellement faite**,
    * pas à la date d'onboarding/bilan (calendrier glissant). Passé uniquement
    * pour le tout 1er feedback du cycle (cf. `recordFeedbackAndCommit`).
    */
   anchorStartDate?: boolean;
   /**
-   * Bloc R — exos dont la MAJ e1RM de cette séance est DÉFINITIVE (≥ 1 série
+   * Exos dont la MAJ e1RM de cette séance est DÉFINITIVE (≥ 1 série
    * informative, RPE > 4+). Seuls ceux-là reçoivent un snapshot daté (→ passent
    * en confidence 'measured'). Les MAJ provisoires (séance tout-4+) remontent
    * `state.e1rm` mais ne snapshotent pas → l'exo reste en calibration. Absent →
@@ -238,7 +238,7 @@ export async function txCommitManualE1rm(args: CommitManualE1rmArgs): Promise<vo
 }
 
 // =============================================================================
-// Bloc R — Reset d'un plafond e1RM (fiche catalogue). Le caller a déjà fait
+// Reset d'un plafond e1RM (fiche catalogue). Le caller a déjà fait
 // `delete state.e1rm[exerciseId]` : on persiste l'état nettoyé + on efface tous
 // les snapshots de l'exo → il repart en calibration (bootstrap reseed), comme
 // jamais fait.
@@ -319,7 +319,7 @@ export async function txEndOfCycle(args: EndOfCycleArgs): Promise<void> {
         });
       }
     }
-    // Conv #18 — nettoie les séances `planned` du cycle qui se ferme : leur
+    // Nettoie les séances `planned` du cycle qui se ferme : leur
     // plan est figé sur l'ancien WeeklyTemplate et ne correspond plus à
     // rien après régénération. On les supprime (vs `cancelled` : la séance
     // n'a jamais été jouée, pas de bilan à garder, et le calendrier reste
@@ -334,7 +334,7 @@ export async function txEndOfCycle(args: EndOfCycleArgs): Promise<void> {
 }
 
 // =============================================================================
-// Dump 2.4, étape 5 — remplacement des Plafonds après recalcul de l'historique.
+// Remplacement des Plafonds après recalcul de l'historique.
 // Les séances et leurs séries ne sont pas touchées : seuls les Plafonds, leurs
 // instantanés et les écarts de Plafond des bilans de cycle archivés changent.
 // =============================================================================

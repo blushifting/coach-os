@@ -104,11 +104,6 @@ export function computeMuscleDemands(state: UserState): MuscleDemand[] {
   return demands;
 }
 
-/** Somme des fréquences cibles (indicateur grossier de charge du programme). */
-export function totalCellDemand(demands: readonly MuscleDemand[]): number {
-  return demands.reduce((acc, d) => acc + d.target_frequency, 0);
-}
-
 // =============================================================================
 // 2. Score & sélection de split (sans capacité)
 // =============================================================================

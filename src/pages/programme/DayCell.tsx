@@ -6,7 +6,7 @@ interface DayCellProps {
   readonly onClick: (day: CalendarDay) => void;
 }
 
-// Conv #15 / #29 / #30 — couleurs calendrier : vert = fait, bleu = prévue,
+// Couleurs calendrier : vert = fait, bleu = prévue,
 // anthracite dashed = libre, anthracite plein = passé. Concepts « sautée »,
 // « repos recommandé » et rythme imposé retirés (le calendrier n'impose plus
 // de rythme : la suggestion repos/séance vit dans la feuille de planification).

@@ -1,5 +1,5 @@
 /**
- * Sélecteurs purs pour l'onglet Progrès (Conv #6a).
+ * Sélecteurs purs pour l'onglet Progrès.
  *
  * Volume (dump 2.4, étape 3 — `recherche/13_ligne_directrice_2_4.md`) : un
  * seul repère par muscle selon son intention, une zone haute commune (20
@@ -19,7 +19,7 @@ import type {
   SessionFeedback,
   UserState,
 } from '@/engine/models';
-import { exercisePrimaires, MuscleIntention } from '@/engine/models';
+import { MuscleIntention } from '@/engine/models';
 import { migrateMuscleGoalList } from '@/engine/intentions';
 import { VOLUME_HIGH_MARK, volumeMark } from '@/engine/volume';
 import { CYCLE_WEEKS, weekOfCycle } from '@/engine/cycle-week';
@@ -71,11 +71,11 @@ export function sumMuscleSets(
 }
 
 // =============================================================================
-// 1. Volume hebdo d'un muscle : repère, zone haute, statut (dump 2.4, étape 3)
+// 1. Volume hebdo d'un muscle : repère, zone haute, statut
 // =============================================================================
 
 /**
- * Statut d'un volume hebdo (séries pondérées), dump 2.4 (D2, D7) :
+ * Statut d'un volume hebdo (séries pondérées), dump 2.4 :
  * - `non_travaille` : aucune série ;
  * - `sous_repere` : sous le repère de l'intention (seuil de croissance pour un
  *   muscle à développer, plancher d'entretien pour un muscle à entretenir) ;
@@ -122,7 +122,7 @@ export function classifyVolume(sets: number, mark: number | null): CoverageStatu
 }
 
 /**
- * Échelle commune des barres d'un écran (D7) : la zone haute (20 séries), qui
+ * Échelle commune des barres d'un écran : la zone haute (20 séries), qui
  * fait le bout de la barre, allongée seulement si un muscle la dépasse. Deux
  * barres d'un même écran se comparent donc à l'œil.
  */
@@ -184,7 +184,7 @@ export interface AddedVolumeOvershoot {
 }
 
 /**
- * Conv #30, dump 2.4 étape 3 — muscles qu'un exercice ajouté (`addedSets`
+ * Muscles qu'un exercice ajouté (`addedSets`
  * séries) ferait passer **au-delà de la zone haute** (20 séries pondérées), pour
  * tous les muscles, avec ou sans objectif.
  *
@@ -265,7 +265,7 @@ export interface CycleVolumeInput {
 const round1 = (x: number): number => Math.round(x * 10) / 10;
 
 /**
- * Dump 2.4, étape 3 (n° 13, 19) — volume d'un cycle semaine par semaine, et sa
+ * Volume d'un cycle semaine par semaine, et sa
  * moyenne comparée à un repère moyen.
  *
  * La moyenne compte les semaines écoulées du cycle (pour le cycle en cours :
@@ -275,7 +275,7 @@ const round1 = (x: number): number => Math.round(x * 10) / 10;
  * donc pile sur le repère moyen : seuil 10, quatre semaines à 10 et une
  * récupération à 5 → 45 séries sur 5 semaines, repère moyen 9.
  *
- * La semaine d'une séance se lit sur sa date (D6). Une séance faite après la
+ * La semaine d'une séance se lit sur sa date. Une séance faite après la
  * fin prévue du cycle tombe en semaine 6 et compte comme une semaine normale.
  */
 export function computeCycleVolume(
@@ -369,7 +369,7 @@ export interface CycleHistoryItem {
    * Assiduité du cycle, en fraction 0–1 (peut dépasser 1 : les séances libres
    * gonflent le numérateur, l'affichage plafonne).
    *
-   * Conv #76 — remplace `volumeTotalKg` sur la carte de l'onglet Cycles. Le
+   * Remplace `volumeTotalKg` sur la carte de l'onglet Cycles. Le
    * tonnage avait été retiré du bilan de séance puis du bilan de cycle en E-3
    * (charge × reps × poids du corps : une séance plus légère mais plus dure
    * ressortait « en baisse ») ; il survivait ici seul. `volume_total_kg` reste
@@ -383,7 +383,7 @@ export interface CycleHistoryItem {
   /** Δ progression moyenne des plafonds vs cycle précédent (kg), null si N/A. */
   readonly deltaTopPlafondKg: number | null;
   /**
-   * Conv #14c-7 — comparaison "visé vs fait" par muscle prioritaire, dérivée
+   * 7 — comparaison "visé vs fait" par muscle prioritaire, dérivée
    * du snapshot des `muscle_goals` au moment du bilan et de la classification
    * `progresses/plateau/undertrained/overshoot`. `null` si le cycle n'a pas
    * été clôturé avec la nouvelle feature (rétrocompat).
@@ -473,7 +473,7 @@ export function buildCycleHistory(
 function buildObjectivesByMuscle(
   review: CycleReview,
 ): ReadonlyArray<MuscleIntentionOutcome> | null {
-  // Dump 2.4 — les cycles clos avant la 2.4 portent l'ancien format.
+  // Les cycles clos avant la 2.4 portent l'ancien format.
   const snapshot = migrateMuscleGoalList(review.muscle_goals_snapshot ?? []);
   if (snapshot.length === 0) return null;
   const progressed = new Set(review.muscles_progresses);
@@ -542,7 +542,7 @@ export function formatCycleDates(start: string, end: string | null): string {
  */
 const MUSCLE_LABEL_FR: Readonly<Record<string, string>> = {
   pectoraux: 'Pectoraux',
-  // Conv #22.3 — terminologie anatomique : "Grand dorsal" plutôt que
+  // Terminologie anatomique : "Grand dorsal" plutôt que
   // "Dos en largeur", "Trapèzes / rhomboïdes" plutôt que "Dos en épaisseur".
   dos_largeur: 'Grand dorsal',
   dos_epaisseur: 'Trapèzes / rhomboïdes',
@@ -578,17 +578,6 @@ export function exerciseLabel(exerciseId: string, catalog: Catalog | null): stri
   return catalog.get(exerciseId).nom_fr;
 }
 
-/** Liste des muscles primaires d'un exercice — pour info-bulles cycles. */
-export function exerciseMusclesLabel(
-  exerciseId: string,
-  catalog: Catalog | null,
-): string {
-  if (catalog === null || !catalog.has(exerciseId)) return '';
-  return exercisePrimaires(catalog.get(exerciseId))
-    .map(muscleLabel)
-    .join(', ');
-}
-
 // =============================================================================
 // Courbe Force (onglet Progrès) — dump 2.4, étape 5
 // =============================================================================
@@ -601,7 +590,7 @@ export interface E1rmPoint {
   /** Cycle de la mesure (porté par l'instantané). */
   readonly cycleIndex: number;
   /**
-   * Dump 2.4, étape 5 (n° 9) — la séance de cette date bat la meilleure mesure
+   * La séance de cette date bat la meilleure mesure
    * passée de l'exercice d'au moins deux reps (`recordDates`).
    */
   readonly record: boolean;
@@ -618,14 +607,14 @@ export interface ExerciseE1rmSeries {
   /** Pourcentage d'évolution (current/initial − 1) × 100. */
   readonly deltaPct: number;
   /**
-   * Conv #20 — ChargeType de l'exo. Permet à `ForceView` d'afficher le suffixe
+   * ChargeType de l'exo. Permet à `ForceView` d'afficher le suffixe
    * "kg / haltère" pour les exos DUMBBELL au lieu du "kg" générique.
    */
   readonly charge: ChargeType;
 }
 
 /**
- * #63 — Historique du Plafond (onglet Force) construit à partir des instantanés
+ * Historique du Plafond (onglet Force) construit à partir des instantanés
  * persistés (`e1rmSnapshots`) : la valeur EXACTE du Plafond après chaque mesure
  * définitive, la même que le bilan de séance. Les records se lisent, eux, sur
  * les séries, avant lissage (`recordDates`).
@@ -707,7 +696,7 @@ function seriesOf(
 }
 
 /**
- * Dump 2.4, étape 5 (n° 21) — périodes de l'onglet Force : en nombre de séances
+ * Périodes de l'onglet Force : en nombre de séances
  * (propre à chaque exercice), en mois, sur le cycle en cours (communes à toutes
  * les cartes), ou tout l'historique.
  */
@@ -745,7 +734,7 @@ export function windowForceSeries(
 }
 
 /**
- * Dump 2.4, étape 5 (n° 21) — à partir de cet écart entre deux mesures, le
+ * À partir de cet écart entre deux mesures, le
  * segment de courbe est dessiné en pointillé avec sa durée. Sur l'export d'Azur
  * du 11/11, 90 % des écarts entre deux mesures d'un exercice font moins de
  * 26 jours (médiane : 4) ; au-delà, c'est un exercice sorti du programme.
@@ -767,7 +756,7 @@ const DAY_MS = 86_400_000;
 const dayNumber = (key: string): number => Math.round(parseDateKey(key).getTime() / DAY_MS);
 
 /**
- * Dump 2.4, étape 5 (n° 21) — géométrie de l'axe du temps d'une courbe Force.
+ * Géométrie de l'axe du temps d'une courbe Force.
  * L'axe va de `from` à `to` à l'échelle réelle : une pause garde sa vraie
  * longueur (décision d'Azur : rester fidèle à la chronologie).
  */
@@ -815,7 +804,7 @@ export function forceChartLayout(
 // =============================================================================
 
 /**
- * B-1 — date de la dernière séance ayant réellement sollicité chaque muscle
+ * Date de la dernière séance ayant réellement sollicité chaque muscle
  * (`YYYY-MM-DD`), pour trier les cartes de l'onglet Volume du plus récemment
  * travaillé au plus ancien. Un muscle jamais travaillé est absent de la map.
  *

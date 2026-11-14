@@ -6,9 +6,9 @@ interface TabDef {
   readonly label: string;
 }
 
-// Conv #49 — onglets renommés : « Séances »→« Accueil », « Catalogue »→« Exercices »
+// Onglets renommés : « Séances »→« Accueil », « Catalogue »→« Exercices »
 // (titres d'en-tête synchronisés dans `Header.tsx`).
-// Conv #66 — exporté : `TabbedLayout` s'en sert pour connaître le SENS d'une
+// Exporté : `TabbedLayout` s'en sert pour connaître le SENS d'une
 // navigation (aller vers un onglet à droite → la page entre par la droite).
 export const TABS: readonly TabDef[] = [
   { to: '/programme', label: 'Accueil' },
@@ -33,7 +33,7 @@ export function tabIndexOf(pathname: string): number {
  * sang (3 px) + fond légèrement rouge + label en font-medium. Effet "ligne de
  * vie rouge" en bas d'écran pour identifier l'onglet courant au coup d'œil.
  *
- * Bloc I (Conv #34) — PLUS de `padding-bottom: env(safe-area-inset-bottom)`.
+ * PLUS de `padding-bottom: env(safe-area-inset-bottom)`.
  * Ce padding (ajouté Conv #29/#30) « remontait » la barre et laissait une bande
  * de graphite vide de ~34 px sous les libellés sur iOS (la zone home-indicator),
  * perçue comme une 2ᵉ barre. On colle désormais la barre (48 px) au bas physique
@@ -53,7 +53,7 @@ export function TabBar() {
       aria-label="Navigation principale"
     >
       <ul className="relative flex h-12">
-        {/* Conv #66 — la barre active est un élément UNIQUE porté par la liste,
+        {/* La barre active est un élément UNIQUE porté par la liste,
             plus un span rendu dans chaque onglet actif : c'est ce qui lui permet
             de glisser d'un onglet à l'autre au lieu de disparaître ici et
             réapparaître là. Les marges reproduisent l'ancien `inset-x-3`. */}

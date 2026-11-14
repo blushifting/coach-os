@@ -1,6 +1,6 @@
 /**
- * Chantier F-1 — sauvegarde automatique vers le cloud.
- * Chantier F-2 — relecture des sauvegardes (liste + payload).
+ * Sauvegarde automatique vers le cloud.
+ * Relecture des sauvegardes (liste + payload).
  *
  * Principe (doc 12 §0.3) : **pas de sync incrémentale**. Le multi-appareil
  * ayant été abandonné, on pousse le `ExportPayload` entier — celui du bouton
@@ -84,7 +84,7 @@ export function clearLocalBackupFlags(): void {
 }
 
 /**
- * Chantier F-2 — après une restauration réussie, l'appareil porte **exactement**
+ * Après une restauration réussie, l'appareil porte **exactement**
  * le contenu de la sauvegarde `at`. Il n'y a donc rien à envoyer, et la
  * « dernière sauvegarde » affichée dans le Profil est celle qu'on vient de
  * remettre en place. Sans ça, l'app repousserait aussitôt une copie conforme.

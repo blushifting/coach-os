@@ -1,13 +1,13 @@
 /**
  * Étape 1 de l'onboarding : profil utilisateur.
  *
- * Conv #22 — Simplifié : sexe, âge, poids uniquement.
+ * Simplifié : sexe, âge, poids uniquement.
  *  - Niveau retiré (auto-calibration cycle après cycle via `adjustVolumeBoundsAtCycleEnd`).
  *  - Équipement retiré (le mode custom co-construit révèle l'équipement
  *    implicitement par les choix d'exos ; le mode guidé tombe sur le
  *    preset salle complète par défaut, suffisant pour 95 % des cas).
  *
- * `sessions_per_week` est en Step4 (Conv #18).
+ * `sessions_per_week` est en Step4.
  */
 
 import { GymBrand, Sex } from '@/engine/models';
@@ -20,7 +20,7 @@ import type { OnboardingDraft } from '@/lib/onboarding-state';
 interface Step1Props {
   readonly draft: OnboardingDraft;
   readonly onChange: (patch: Partial<OnboardingDraft>) => void;
-  /** Conv #22 — gardé pour compat ascendante ; non affiché. */
+  /** Gardé pour compat ascendante ; non affiché. */
   readonly stepLabel?: string;
 }
 

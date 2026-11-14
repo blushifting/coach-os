@@ -5,7 +5,7 @@
  *   - recherche/03_modele_mathematique.md, §3, §4, §8 (formules e1RM legacy)
  *   - recherche/09_programmation.md, §3, §9.2 (refacto par MuscleGoal)
  *
- * Dump 2.4, étape 4 — la charge et les reps prescrites viennent de la règle de
+ * La charge et les reps prescrites viennent de la règle de
  * progression (`progression.ts`) ; ce module ne garde que les calculs (Plafond,
  * charge cible, arrondi, poids du corps).
  */
@@ -17,7 +17,7 @@ import { ChargeType, ExType } from './models';
 export const EPLEY_K = 0.0333;
 
 /**
- * Dump 2.4, étape 5 (n° 4, n° 11) — pente des exercices d'isolation.
+ * Pente des exercices d'isolation.
  *
  * À pourcentage égal du max, on fait moins de reps sur un exercice qui mobilise
  * peu de muscle (Shimano et Kraemer 2006 ; Nuzzo et al. 2024 : la relation
@@ -64,11 +64,6 @@ export function nEquiv(reps: number, rpe: number): number {
   return reps + (10 - rpe);
 }
 
-/** Une mesure n_équiv > 15 est trop bruitée pour recalibrer (cf. §3.3). */
-export function measurementIsReliable(reps: number, rpe: number): boolean {
-  return nEquiv(reps, rpe) <= 15;
-}
-
 // =============================================================================
 // 2. Charge cible pour `n` reps à RPE `r`
 // =============================================================================
@@ -89,11 +84,6 @@ export function targetLoad(
   return e1rm / (1 + k * (reps + 10 - rpe));
 }
 
-/** Pourcentage du 1RM correspondant à `reps × RPE` (cf. table Helms). */
-export function percent1rm(reps: number, rpe: number, k: number = EPLEY_K): number {
-  return 100.0 / (1 + k * (reps + 10 - rpe));
-}
-
 // =============================================================================
 // 3. Arrondi pratique
 // =============================================================================
@@ -103,9 +93,9 @@ export function percent1rm(reps: number, rpe: number, k: number = EPLEY_K): numb
  * Pour les charges très lourdes (≥150 kg sur barre olympique), bascule sur
  * un incrément de 5 kg si l'incrément demandé est plus petit.
  *
- * Note : Python `round()` utilise le banker's rounding (half-to-even).
- * Math.round() en JS arrondit half-up. On reproduit le comportement Python
- * avec une fonction utilitaire.
+ * Arrondi « moitié au pair » (et non `Math.round`) : c'est l'arrondi avec
+ * lequel toutes les charges ont été prescrites jusqu'ici ; en changer
+ * décalerait d'un cran certaines prescriptions.
  */
 export function roundToIncrement(loadKg: number, incrementKg: number): number {
   if (incrementKg <= 0) {
@@ -115,11 +105,11 @@ export function roundToIncrement(loadKg: number, incrementKg: number): number {
   if (loadKg >= 150 && incrementKg < 5) {
     effIncrement = 5.0;
   }
-  return Math.max(0.0, pythonRound(loadKg / effIncrement) * effIncrement);
+  return Math.max(0.0, roundHalfEven(loadKg / effIncrement) * effIncrement);
 }
 
-/** Reproduit `round()` Python (banker's rounding, half-to-even). */
-export function pythonRound(x: number): number {
+/** Arrondi à l'entier le plus proche, une moitié exacte allant au pair. */
+export function roundHalfEven(x: number): number {
   const floor = Math.floor(x);
   const diff = x - floor;
   if (diff < 0.5) return floor;
@@ -147,7 +137,7 @@ export function effectiveIncrement(state: UserState, exercise: Exercise): number
  * (loaded / assisted) sont concernés ; pour les autres (DUMBBELL, BARBELL,
  * MACHINE…), la notion de PDC n'a pas de sens → `false`.
  *
- * Défaut (#63) : un exo LESTABLE (`bodyweight_loaded` — relevés de jambes
+ * Défaut : un exo LESTABLE (`bodyweight_loaded` — relevés de jambes
  * suspendus, hyperextensions, dips, tractions, pompes lestées…) se fait au
  * poids du corps tant que l'user n'a pas décidé d'ajouter du lest. L'assisté
  * garde son défaut historique (la "charge" est une assistance, pas un lest).

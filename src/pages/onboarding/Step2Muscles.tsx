@@ -4,7 +4,7 @@
  * Modèle « pinceau » : un sélecteur d'intention (Développer / Entretenir)
  * au-dessus de la silhouette ; taper un muscle lui applique l'intention
  * courante, retaper avec le même pinceau la retire. Un muscle sans intention
- * reste suivi (D1), sans cible.
+ * reste suivi, sans cible.
  *
  * `priority_rank` reste alimenté pour les muscles à développer : rang = ordre
  * de sélection, visible (numéro) et réordonnable (poignée de drag) dans la
@@ -54,7 +54,7 @@ interface Step2Props {
   readonly onChange: (patch: Partial<OnboardingDraft>) => void;
   readonly stepLabel?: string;
   /**
-   * Bloc O — appelé quand l'utilisateur applique le préset full-body. Le préset
+   * Appelé quand l'utilisateur applique le préset full-body. Le préset
    * laisse volontairement 4 muscles absents (couverts par proxy) ; OnboardingPage
    * pré-décline alors la popin d'équilibre pour ne pas nager sur ce choix.
    */

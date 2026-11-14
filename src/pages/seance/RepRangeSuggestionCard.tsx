@@ -14,7 +14,7 @@ function fmtLoad(v: number): string {
 }
 
 /**
- * Dump 2.4, étape 4 — fin de séance : la fourchette de cet exercice est trop
+ * Fin de séance : la fourchette de cet exercice est trop
  * étroite pour ses crans (deux séances de suite, une montée a fait tomber sous
  * le bas). On l'explique avec les charges réelles et on propose la fourchette
  * plus large. Jamais sur la fiche : la proposition arrive quand le problème est

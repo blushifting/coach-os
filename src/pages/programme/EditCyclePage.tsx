@@ -1,5 +1,5 @@
 /**
- * Bloc G (Conv #32) — « Modifier le programme » : édition du cycle EN COURS.
+ * « Modifier le programme » : édition du cycle EN COURS.
  *
  * Reprend l'esprit du récap d'onboarding (jours + exos), mais persiste
  * **chirurgicalement** sur `current_cycle_plan` (ajout / retrait / renommage),
@@ -178,7 +178,7 @@ export default function EditCyclePage() {
                       }}
                       className="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-white"
                     >
-                      {/* Bloc K (Conv #36) — « Séance » fixe devant le nom (déroulé des
+                      {/* « Séance » fixe devant le nom (déroulé des
                           séances) ; seul le token suivant se modifie. */}
                       <span className="shrink-0 font-normal text-anthracite-400">Séance</span>
                       <span className="truncate">{sessionDisplayName(day)}</span>

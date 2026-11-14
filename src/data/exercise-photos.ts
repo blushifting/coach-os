@@ -16,7 +16,7 @@
  *
  * Couverture : **123/123 exos Coach OS mappés** (tous ont une photo). Bloc Q-3
  * (import free-exercise-db) a ajouté 9 exos et retiré `side_plank_loaded`. Conv
- * #23 avait retiré 10 exos sans photo ; Bloc Q (Conv #46) a fusionné 25 variantes
+ * #23 avait retiré 10 exos sans photo ; Bloc Q a fusionné 25 variantes
  * redondantes (prise / angle / stance), dont les entrées photo avaient été
  * supprimées ici.
  */

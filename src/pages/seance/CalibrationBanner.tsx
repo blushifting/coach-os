@@ -66,7 +66,7 @@ export function CalibrationBanner({
   if (confidence === 'measured') return null;
 
   const isStale = confidence === 'stale';
-  // Conv #20 — pour DB, l'e1rm appris et la suggestion sont per-haltère.
+  // Pour DB, l'e1rm appris et la suggestion sont per-haltère.
   const unit = kgUnitLabel(exercise.charge);
 
   return (

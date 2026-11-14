@@ -1,6 +1,6 @@
 /**
- * Chantier F-1 — compte cloud : connexion Google, réconciliation, sortie.
- * Chantier F-2 — restauration : le cloud sait enfin se relire.
+ * Compte cloud : connexion Google, réconciliation, sortie.
+ * Restauration : le cloud sait enfin se relire.
  *
  * Le magic link par email est mort-né (Supabase refuse de délivrer aux
  * adresses hors équipe du projet sans SMTP tiers) → **Google OAuth

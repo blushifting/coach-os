@@ -1,5 +1,5 @@
 /**
- * Conv #21b — Formulaire de création d'un exo custom par l'utilisateur.
+ * Formulaire de création d'un exo custom par l'utilisateur.
  *
  * Sheet plein écran (sur mobile). L'user remplit un brouillon partiel
  * (`CustomExerciseDraft`), on valide, on détecte d'éventuels doublons, et
@@ -53,7 +53,7 @@ const COEF_LABELS: Record<string, string> = {
 const PICKER_MUSCLES: readonly string[] = MUSCLES;
 
 /**
- * Conv #21b-fix — Liste des équipements connus, groupés par famille. Source :
+ * Liste des équipements connus, groupés par famille. Source :
  * audit du catalogue par défaut (33 équipements). L'user coche les siens ; un
  * champ "Autre" en bas permet d'ajouter des équipements non listés.
  *
@@ -104,7 +104,7 @@ export function CustomExerciseSheet({
   const engine = useEngine();
   const catalog = useCoachOsStore((s) => s.catalog);
   const [draft, setDraft] = useState<CustomExerciseDraft>(EMPTY_DRAFT);
-  // Conv #21b-fix — équipement géré en 2 entrées : checkboxes pour les
+  // Équipement géré en 2 entrées : checkboxes pour les
   // équipements connus, input texte pour les "Autres" (séparés par virgule).
   // Le `draft.equip` final fusionne les deux.
   const [equipChecked, setEquipChecked] = useState<Set<string>>(new Set());
@@ -178,7 +178,7 @@ export function CustomExerciseSheet({
       const existingIds = new Set(catalog.all().map((e) => e.id));
       const dict = buildExerciseDict(draft, existingIds);
       await engine.addCustomExercise(dict);
-      // Bloc Q (Conv #46) — un exo créé par l'user devient d'office favori : il
+      // Un exo créé par l'user devient d'office favori : il
       // réapparaît étoilé dans le bandeau Favoris. L'id est neuf → `toggleFavorite`
       // ne peut qu'ajouter (jamais retirer).
       await engine.toggleFavorite(dict.id);
@@ -192,7 +192,7 @@ export function CustomExerciseSheet({
   }
 
   /**
-   * Conv #21b-fix — Tap sur un muscle :
+   * Tap sur un muscle :
    *  - non sélectionné : ajoute en **principal** s'il n'y a pas encore de
    *    principal dans la liste, sinon en **secondaire**. L'idée : le 1er
    *    muscle tapé est le muscle cible principal, les suivants viennent
@@ -220,7 +220,7 @@ export function CustomExerciseSheet({
   }
 
   /**
-   * Conv #21b-fix — Long-press / bouton "promouvoir" pour passer un
+   * Long-press / bouton "promouvoir" pour passer un
    * secondaire en principal explicitement (et démouvoir l'ancien principal
    * en secondaire pour rester cohérent : un seul principal "intentionnel").
    *
@@ -235,7 +235,7 @@ export function CustomExerciseSheet({
     });
   }
 
-  // 1.17 — laisser `<Sheet>` gérer son démontage (animation de fermeture).
+  // Laisser `<Sheet>` gérer son démontage (animation de fermeture).
   return (
     <Sheet open={open} onClose={close} title="Créer un exercice">
       <div className="max-h-[80dvh] overflow-y-auto pr-1">

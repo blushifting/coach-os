@@ -1,6 +1,6 @@
 /**
  * Export complet de l'état Coach OS en un seul fichier JSON.
- * Utilisé par le bouton "Exporter mes données" de la page Profil (Conv #6c).
+ * Utilisé par le bouton "Exporter mes données" de la page Profil.
  */
 
 import { getDb } from '@/db';

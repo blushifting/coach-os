@@ -45,7 +45,7 @@ import { SetInput } from './SetInput';
 const NO_KEYS: ReadonlySet<string> = new Set<string>();
 
 /**
- * Conv #66 — clés `${itemIdx}-${setIdx}` des séries dont la charge a été changée
+ * Clés `${itemIdx}-${setIdx}` des séries dont la charge a été changée
  * par l'ALGO. Se calcule en comparant les entries avant / après le recalibrage :
  * `before` contient déjà la saisie de l'utilisateur, donc tout écart restant est
  * l'œuvre du moteur. C'est ce qui permet de ne PAS flasher sa propre saisie.
@@ -117,14 +117,14 @@ export function SessionRunner({
   const [confirmFinish, setConfirmFinish] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-  // Conv #21b — ajout/retrait d'exo en cours de séance.
+  // Ajout/retrait d'exo en cours de séance.
   const [addOpen, setAddOpen] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState<number | null>(null);
-  // Bloc F (Conv #31) — proposition d'ajout aux favoris à la 3ᵉ utilisation
+  // Proposition d'ajout aux favoris à la 3ᵉ utilisation
   // (ajout ad-hoc ou variante). Contient l'exercise_id à proposer, ou null.
   const [suggestFav, setSuggestFav] = useState<string | null>(null);
-  // 1.16 — repli (collapse) des cartes d'exo. Par défaut un exo se replie tout
-  // seul quand toutes ses séries sont faites. Bloc I (Conv #34) — l'override
+  // Repli (collapse) des cartes d'exo. Par défaut un exo se replie tout
+  // seul quand toutes ses séries sont faites. Bloc I — l'override
   // manuel (chevron) est clé par `exercise_id` et vit dans le store
   // (`currentSessionCollapsed`) pour survivre à la navigation : `true` = replié
   // manuellement (même avant la fin), `false` = gardé ouvert (même terminé),
@@ -140,7 +140,7 @@ export function SessionRunner({
   const reducedMotion = useReducedMotion();
   const today = useToday();
 
-  // Conv #66 — signal ponctuel « l'algo vient de changer cette charge ».
+  // Signal ponctuel « l'algo vient de changer cette charge ».
   const [recalibratedKeys, setRecalibratedKeys] = useState<ReadonlySet<string>>(NO_KEYS);
   useEffect(() => {
     if (recalibratedKeys.size === 0) return;
@@ -148,7 +148,7 @@ export function SessionRunner({
     return () => window.clearTimeout(t);
   }, [recalibratedKeys]);
 
-  // Conv #66 — la dernière série vient d'être cochée : le bouton de fin se
+  // La dernière série vient d'être cochée : le bouton de fin se
   // signale une fois. Le ref part de l'état courant → pas de pulsation si on
   // arrive sur une séance déjà complète.
   const [justCompletedAll, setJustCompletedAll] = useState(false);
@@ -163,7 +163,7 @@ export function SessionRunner({
     wasIncomplete.current = incomplete;
   }, [incomplete, total]);
 
-  // Conv #66 — après le repli auto d'un exo bouclé, on amène l'exo suivant sous
+  // Après le repli auto d'un exo bouclé, on amène l'exo suivant sous
   // les yeux. `block: 'nearest'` = ne bouge que si la carte est hors champ : un
   // scroll qui se déclenche alors qu'on voit déjà la cible est une nuisance.
   const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
@@ -199,18 +199,17 @@ export function SessionRunner({
     }
   }
 
-  // Conv #12b — confidence dérivée pour chaque exo, calculée 1× par cycle de
+  // Confidence dérivée pour chaque exo, calculée 1× par cycle de
   // render à partir des snapshots datés. Le banner s'affiche au-dessus du
   // bloc des séries pour les exos `not_calibrated` ou `stale`.
-  //
-  // Conv #66 — `today` est ancré sur la démo quand elle est active : les
+  // `today` est ancré sur la démo quand elle est active : les
   // snapshots d'Alex sont figés, lus à la date réelle ils passent tous `stale`
   // et la séance de démo se couvre de bandeaux « à recalibrer » injustifiés.
   const confidenceByExo = useMemo(() => {
     const e1rm = userState?.e1rm ?? {};
     const out: Record<string, ReturnType<typeof e1rmConfidenceFor>> = {};
     for (const item of plan.items) {
-      // Bloc R — modèle unifié : confidence pilotée par les snapshots datés pour
+      // Modèle unifié : confidence pilotée par les snapshots datés pour
       // TOUS les exos (plus de cas spécial `e1RM_app`).
       out[item.exercise_id] = e1rmConfidenceFor(
         item.exercise_id,
@@ -229,8 +228,7 @@ export function SessionRunner({
   // 'measured'`, Conv #16). Pour les exos déjà calibrés, on laisse les charges
   // prescrites intactes en cours de séance — l'algo fin de séance s'occupera
   // de la mise à jour stable du plafond.
-  //
-  // Conv #19 — Le trigger ne dépend plus de la seule transition `done`. Le
+  // Le trigger ne dépend plus de la seule transition `done`. Le
   // workflow réel est : reps+kg → cocher (done=true) → RPE après coche. Si
   // on déclenchait sur done false→true uniquement, on rateait la mesure car
   // `liveE1rm` est null sans rpe. Désormais on déclenche dès qu'une série
@@ -257,7 +255,7 @@ export function SessionRunner({
             ne.done && !oe.done && ne.reps !== null && ne.reps > 0;
           // Cas 2 : la série vient de devenir fiable pour le live e1rm
           // (typiquement : l'user a coché puis renseigné le rpe). Déclenche
-          // le recalibrage des charges. Sans ce 2e cas (Conv #19), le rpe
+          // le recalibrage des charges. Sans ce 2e cas, le rpe
           // saisi après la coche ne propageait jamais aux sets suivants.
           const newReliable =
             isCountableForLiveE1rm(ne) && !isCountableForLiveE1rm(oe);
@@ -273,7 +271,7 @@ export function SessionRunner({
         const isCalibrating =
           exId !== undefined &&
           (confidenceByExo[exId] ?? 'measured') !== 'measured';
-        // Conv #66 — état AVANT les réécritures automatiques de charge : sert de
+        // État AVANT les réécritures automatiques de charge : sert de
         // référence pour savoir ce que l'algo a touché (cf. `diffChangedLoads`).
         const beforeAutoLoads = next;
         if (isCalibrating) {
@@ -285,7 +283,7 @@ export function SessionRunner({
             itemIdx: triggeredIdx,
           });
         } else if (userState !== null && exId !== undefined && catalog.has(exId)) {
-          // Dump 2.4, étape 4 — exo déjà mesuré : la règle de progression,
+          // Exo déjà mesuré : la règle de progression,
           // série après série (cran suivant au haut de la fourchette, cran
           // inférieur sous le bas, sinon la charge faite est reportée).
           next = applyProgressionToUpcomingSets({
@@ -300,15 +298,15 @@ export function SessionRunner({
         const touched = diffChangedLoads(beforeAutoLoads, next);
         if (touched.size > 0) setRecalibratedKeys(touched);
       }
-      // 1.17 — compléter toutes les séries d'un exo force le repli, MÊME si
+      // Compléter toutes les séries d'un exo force le repli, MÊME si
       // l'user l'avait déplié manuellement avant la fin (override `false`).
       // On efface l'override sur la transition « pas-tout-fait → tout-fait » :
       // `collapsed` retombe alors sur le comportement auto (= replié). Un clic
       // ultérieur sur le chevron repose un override et permet de rouvrir.
-      // Bloc I — override clé par `exercise_id`, lu/écrit dans le store.
+      // Override clé par `exercise_id`, lu/écrit dans le store.
       const prevCollapsed = useCoachOsStore.getState().currentSessionCollapsed;
       let nextCollapsed: Record<string, boolean> | null = null;
-      // Conv #66 — la même transition « pas-tout-fait → tout-fait » sert au repli
+      // La même transition « pas-tout-fait → tout-fait » sert au repli
       // (déjà en place) ET au scroll vers l'exo suivant. L'override n'est purgé
       // que s'il existe, mais la transition, elle, se détecte pour tous les exos.
       let justCompletedIdx = -1;
@@ -353,7 +351,7 @@ export function SessionRunner({
           <span className="text-[10px] uppercase tracking-[0.18em] text-sang-400/90">
             Séance
           </span>
-          {/* Bloc K (Conv #36) — le nom de séance ne se modifie plus ici (crayon
+          {/* Le nom de séance ne se modifie plus ici (crayon
               retiré) : programme → éditeur de cycle, custom → champ de création. */}
           <span className="font-display text-2xl leading-none tracking-wide text-white">
             {sessionDisplayName(plan)}
@@ -363,7 +361,7 @@ export function SessionRunner({
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-3">
-          {/* Conv #18 — `whitespace-nowrap` + shrink-0 sur le wrapper pour que
+          {/* `whitespace-nowrap` + shrink-0 sur le wrapper pour que
               "Séries 12/12" reste sur une ligne quand X a 2 chiffres. */}
           <div className="flex flex-col items-end gap-0.5">
             <span className="text-[10px] uppercase tracking-[0.18em] text-anthracite-300">
@@ -390,11 +388,11 @@ export function SessionRunner({
           const entrySets = entries[i] ?? [];
           const doneCount = entrySets.filter((s) => s.done).length;
           const chargeType = ex?.charge;
-          // 1.16 — exo entièrement validé → repli auto ; un choix manuel
+          // Exo entièrement validé → repli auto ; un choix manuel
           // (chevron) prime sur l'auto. 1.16.2 : repli possible avant la fin.
           const allDone = entrySets.length > 0 && doneCount === entrySets.length;
           const collapsed = collapsedOverrides[item.exercise_id] ?? allDone;
-          // Conv #20 — l'exo est en mode "Poids du corps seulement" si l'user
+          // L'exo est en mode "Poids du corps seulement" si l'user
           // a posé `pdc_only: true` dans son EquipmentOverride. SetInput
           // adapte alors le rendu de la charge (badge "Poids du corps"
           // figé) et la prescription elle-même arrive avec load_kg=0.
@@ -411,6 +409,7 @@ export function SessionRunner({
             userState !== null &&
             progressesByReps(userState, ex) &&
             (item.sets[0]?.reps ?? 0) >= BODYWEIGHT_REPS_CAP;
+          const note = userState?.exercise_notes[item.exercise_id];
           return (
             <li
               key={`${item.exercise_id}-${i}`}
@@ -430,7 +429,7 @@ export function SessionRunner({
                       {ex ? displayExerciseName(ex, brand ?? undefined) : item.exercise_id}
                     </span>
                     <span className="flex items-center gap-1 text-xs text-anthracite-300">
-                      {/* 1.16 — exo terminé : coche verte + « fait » (la couleur
+                      {/* Exo terminé : coche verte + « fait » (la couleur
                           ne porte jamais l'info seule : icône + libellé). */}
                       {allDone && (
                         <svg
@@ -465,7 +464,7 @@ export function SessionRunner({
                         : `séries — repos ${formatRest(item.sets[0]?.rest_s ?? 0)}`}
                     </span>
                   </div>
-                  {/* Conv #24 (D10) — picto info en vrai SVG centré. Avant : la
+                  {/* Picto info en vrai SVG centré. Avant : la
                       lettre « i » nue, non centrée dans le cercle (pas de flex),
                       se collait en haut-gauche → rendu « bugué ». */}
                   <button
@@ -481,10 +480,10 @@ export function SessionRunner({
                       <path d="M12 7.5h.01" />
                     </svg>
                   </button>
-                  {/* Conv #21b — bouton "retirer cet exo de la séance".
-                      Confirmation systématique (Conv #21b-fix) : tap rapide
+                  {/* Bouton "retirer cet exo de la séance".
+                      Confirmation systématique : tap rapide
                       facile, on protège l'user d'un retrait accidentel.
-                      Conv #24 (D10) — croix SVG centrée (même correctif). */}
+                      Conv #24 — croix SVG centrée (même correctif). */}
                   <button
                     type="button"
                     aria-label={`Retirer ${ex ? displayExerciseName(ex, brand ?? undefined) : item.exercise_id} de la séance`}
@@ -498,7 +497,7 @@ export function SessionRunner({
                       <line x1="18" y1="6" x2="6" y2="18" />
                     </svg>
                   </button>
-                  {/* 1.16.2 — chevron replier/déplier TOUJOURS présent (on peut
+                  {/* Chevron replier/déplier TOUJOURS présent (on peut
                       replier un exo avant la fin). Bouton distinct = pas de clic
                       imbriqué. Toggle le choix manuel sur l'état courant. */}
                   <button
@@ -531,7 +530,7 @@ export function SessionRunner({
                   </button>
                 </header>
 
-                {/* 1.16.2 — corps repliable avec micro-animation : grid-rows
+                {/* Corps repliable avec micro-animation : grid-rows
                     0fr↔1fr + overflow-hidden donne un slide de hauteur fluide.
                     Toujours monté (les séries faites restent en état) ; la
                     transition passe par motion-safe (reduced-motion = instantané). */}
@@ -543,6 +542,16 @@ export function SessionRunner({
                   aria-hidden={collapsed}
                 >
                   <div className="flex min-h-0 flex-col gap-1.5 overflow-hidden">
+                    {/* Note de l'utilisateur, en lecture seule
+                        (elle se modifie par le bouton « i »). */}
+                    {note !== undefined && (
+                      <p
+                        data-testid={`exercise-note-line-${i}`}
+                        className="mx-0.5 mb-1 line-clamp-2 whitespace-pre-line border-l-2 border-anthracite-500 pl-2.5 text-xs leading-snug text-anthracite-200"
+                      >
+                        {note}
+                      </p>
+                    )}
                     {ex !== null ? (
                       <CalibrationBanner
                         exercise={ex}
@@ -552,7 +561,7 @@ export function SessionRunner({
                       />
                     ) : null}
 
-                    {/* Bloc F (Conv #31) — clarifie les charges contre-intuitives
+                    {/* Clarifie les charges contre-intuitives
                         (assisté = poids retiré, lesté = poids ajouté) là où on
                         règle la charge. Rien pour les charges normales. */}
                     {ex !== null && <ChargeMechanicNote charge={ex.charge} />}
@@ -586,6 +595,22 @@ export function SessionRunner({
                           }
                         />
                       ))}
+                      {/* Une série de plus, pour cette séance.
+                          Pas de retrait : non cochée, elle ne compte pas. */}
+                      <button
+                        type="button"
+                        data-testid={`btn-add-set-${i}`}
+                        disabled={demoActive || finishing}
+                        onClick={() =>
+                          void engine.addSetToCurrentSessionItem(
+                            i,
+                            (confidenceByExo[item.exercise_id] ?? 'measured') === 'measured',
+                          )
+                        }
+                        className="flex h-11 items-center justify-center rounded-lg border border-dashed border-anthracite-600 text-sm text-anthracite-300 transition hover:border-anthracite-400 hover:text-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        + série
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -595,7 +620,7 @@ export function SessionRunner({
         })}
       </ul>
 
-      {/* Conv #21b — ajout d'un exo bonus / substitut en cours de séance.
+      {/* Ajout d'un exo bonus / substitut en cours de séance.
           Placé entre la liste et le bouton "Terminer" pour rester visible
           mais ne pas concurrencer le tap principal. Désactivé en démo et
           pendant qu'une finalisation est en vol. */}
@@ -697,7 +722,7 @@ export function SessionRunner({
         }
       />
 
-      {/* Conv #21b — Sheet de sélection d'un exo à ajouter à la séance. */}
+      {/* Sheet de sélection d'un exo à ajouter à la séance. */}
       <AddExerciseSheet
         open={addOpen}
         catalog={catalog}
@@ -710,7 +735,7 @@ export function SessionRunner({
         }}
       />
 
-      {/* Bloc F (Conv #31) — proposer l'ajout aux favoris à la 3ᵉ utilisation. */}
+      {/* Proposer l'ajout aux favoris à la 3ᵉ utilisation. */}
       <Dialog
         open={suggestFav !== null}
         title="Ajouter aux favoris ?"
@@ -735,7 +760,7 @@ export function SessionRunner({
         onCancel={() => setSuggestFav(null)}
       />
 
-      {/* Conv #21b — Confirmation systématique avant retrait d'un exo. Texte
+      {/* Confirmation systématique avant retrait d'un exo. Texte
           adapté selon qu'il y a des sets cochés ou non. */}
       <Dialog
         open={confirmRemove !== null}

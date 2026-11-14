@@ -1,5 +1,5 @@
 /**
- * Primitives de mouvement partagées (Conv #66).
+ * Primitives de mouvement partagées.
  *
  * ⚠️ Garde-fou central : une animation pilotée en JS (compteur, barre dont la
  * largeur est calculée) ne passe PAS par le variant `motion-safe:` de Tailwind,

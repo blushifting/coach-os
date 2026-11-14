@@ -25,7 +25,6 @@ import {
   exercisePrimaires,
   makeUserState,
 } from './models';
-import { e1rmObserved, effectiveLoadForE1rm, slopeFor } from './prescription';
 import { buildPrescription } from './progression';
 import { updateE1rmForExercise, type E1rmUpdate } from './feedback';
 import {
@@ -44,7 +43,7 @@ import { generateCycleReview } from './lifecycle';
 
 export interface StartUserOptions {
   /**
-   * Intentions choisies par l'utilisateur, telles quelles. Dump 2.4 (D2) : les
+   * Intentions choisies par l'utilisateur, telles quelles. Dump 2.4 : les
    * muscles proposés par la fenêtre « Équilibre » n'y figurent que s'il les a
    * acceptés ; rien n'est ajouté ici.
    */
@@ -68,25 +67,6 @@ export function startUser(
   return state;
 }
 
-export function calibrateInitialE1rm(
-  state: UserState,
-  catalog: Catalog,
-  testResults: readonly SetFeedback[],
-): Record<string, number> {
-  const setE1rms: Record<string, number[]> = {};
-  const bw = state.profile.bodyweight_kg;
-  for (const fb of testResults) {
-    const ex = catalog.get(fb.exercise_id);
-    const totalLoad = effectiveLoadForE1rm(fb.load_kg, ex, bw);
-    const e1rmO = e1rmObserved(totalLoad, fb.reps_done, fb.rpe_perceived, slopeFor(ex));
-    (setE1rms[fb.exercise_id] ??= []).push(e1rmO);
-  }
-  for (const [exId, vals] of Object.entries(setE1rms)) {
-    state.e1rm[exId] = vals.reduce((a, b) => a + b, 0) / vals.length;
-  }
-  return { ...state.e1rm };
-}
-
 // =============================================================================
 // 2. Bootstrap heuristique d'e1RM
 // =============================================================================
@@ -100,7 +80,7 @@ const BOOTSTRAP_PCT: Record<string, number> = {
 };
 
 /**
- * Conv #20 — Facteur d'ajustement bootstrap pour DUMBBELL.
+ * Facteur d'ajustement bootstrap pour DUMBBELL.
  *
  * Convention catalogue Coach OS : pour les exos haltères, le `load_kg` saisi
  * (et donc l'e1RM stocké) est exprimé **par haltère**. Pour un bilateral
@@ -116,7 +96,7 @@ const BOOTSTRAP_PCT: Record<string, number> = {
 const BOOTSTRAP_DUMBBELL_FACTOR = 0.5;
 
 /**
- * Bloc R — Facteur d'ajustement bootstrap pour les ISOLATIONS.
+ * Facteur d'ajustement bootstrap pour les ISOLATIONS.
  *
  * `BOOTSTRAP_PCT` est calé sur la force d'un muscle dans son mouvement
  * principal (polyarticulaire), pas sur une isolation : `deltos_lateraux 0,4`
@@ -136,7 +116,7 @@ export function bootstrapE1rmIfMissing(state: UserState, exercise: Exercise): nu
   } else {
     pct = 0.5;
   }
-  // Bloc R — plus de plancher : `Math.max(20, …)` forçait ≥ 20 kg d'e1RM sur
+  // Plus de plancher : `Math.max(20, …)` forçait ≥ 20 kg d'e1RM sur
   // tout (pour passer dessous il faudrait peser comme un enfant) → absurde sur
   // les petites isolations. On garde juste `bw × pct`, modulé par les facteurs.
   let load = bw * pct;
@@ -144,7 +124,6 @@ export function bootstrapE1rmIfMissing(state: UserState, exercise: Exercise): nu
   if (exercise.type === ExType.ISOLATION) load *= BOOTSTRAP_ISOLATION_FACTOR;
   return load;
 }
-
 
 // =============================================================================
 // 4. Génération d'une séance — voie nouvelle (lit current_cycle_plan)
@@ -156,7 +135,7 @@ export function generateSession(
   dayIndex: number,
   seanceDate: string,
   /**
-   * Dump 2.4, étape 1 — semaine du cycle **de la date de la séance**
+   * Semaine du cycle **de la date de la séance**
    * (`weekOfCycle`), pas celle du jour où on la programme. Par défaut, la
    * semaine courante (appelants qui génèrent pour aujourd'hui).
    */
@@ -177,7 +156,7 @@ export function generateSession(
   const items: SessionItem[] = [];
 
   // Nb de séries par exo selon la phase du cycle (lit progression[]).
-  // Chantier B — semaine 5 REFUSÉE (déload non actif) = semaine NORMALE : on
+  // Semaine 5 REFUSÉE (déload non actif) = semaine NORMALE : on
   // retombe sur le compte de séries de la semaine 4 (progression[3]) au lieu du
   // compte déload (progression[4], ÷2). Semaine 5 acceptée → compte déload.
   // Une semaine 6 (séance faite après la fin prévue du cycle) se prescrit comme
@@ -194,7 +173,7 @@ export function generateSession(
         ? planned.progression[effWeekIdx]!
         : planned.base_sets;
     nSets = Math.max(1, nSets);
-    // A-2 (#73) — plancher de 2 séries en récupération appliqué aussi à la
+    // Plancher de 2 séries en récupération appliqué aussi à la
     // LECTURE du plan : les cycles générés avant le correctif portent encore un
     // `progression[4]` à 1 série et ne se régénèrent qu'au cycle suivant. On ne
     // remonte jamais au-dessus du compte de semaine normale (un exo
@@ -204,7 +183,7 @@ export function generateSession(
       nSets = Math.max(nSets, Math.min(2, Math.max(1, normalSets)));
     }
 
-    // Conv #20 — bootstrap purement transitoire. Avant : on persistait le
+    // Bootstrap purement transitoire. Avant : on persistait le
     // résultat dans state.e1rm[ex.id], ce qui faisait apparaître un "plafond
     // enregistré" dans le Catalogue pour des exos jamais réellement faits.
     // Décision : state.e1rm ne contient QUE des valeurs mesurées
@@ -238,7 +217,7 @@ export function generateSession(
     rpe_target: rpeAvg,
     items,
     label: day.label,
-    // Bloc G — la séance générée hérite du nom custom du jour de cycle (la
+    // La séance générée hérite du nom custom du jour de cycle (la
     // rotation reste portée par `label`).
     custom_name: day.custom_name ?? null,
   };
@@ -248,7 +227,7 @@ export function generateSession(
 
 export interface BuildCustomSessionArgs {
   readonly seanceDate: string;
-  /** Slots (exo + nb de séries) déjà choisis par l'UI (base preset + édits). */
+  /** Slots (exo + nb de séries) déjà choisis par l'UI (feuille de création). */
   readonly slots: readonly { readonly exerciseId: string; readonly nSets: number }[];
   /** Nom affiché choisi par l'user (sinon `null`). */
   readonly displayName?: string | null;
@@ -257,7 +236,7 @@ export interface BuildCustomSessionArgs {
 }
 
 /**
- * Bloc G (Conv #32) — Construit le `SessionPlan` d'une séance custom
+ * Construit le `SessionPlan` d'une séance custom
  * (hors-rotation) à partir de slots déjà choisis. Pose une prescription par
  * série via `buildPrescription` (+ bootstrap e1RM transitoire NON persisté,
  * comme `generateSession`/`replaceSessionItem`).
@@ -325,7 +304,7 @@ export function replaceSessionItem(
   const oldItem = plan.items[itemIndex]!;
   const nSets = Math.max(1, oldItem.sets.length);
 
-  // Conv #20 — bootstrap transitoire, pas de persistance (cf. generateSession).
+  // Bootstrap transitoire, pas de persistance (cf. generateSession).
   const e1rmTotal = bootstrapE1rmIfMissing(state, newEx);
   const prescription: SetPrescription = buildPrescription(newEx, e1rmTotal, state.profile, {
     deloadActive: isDeloadActive(state),
@@ -392,9 +371,9 @@ export function recordFeedback(
   // cette valeur dans l'EMA tire `state.e1rm` vers le bas → la prescription
   // post-déload partirait d'un plafond artificiellement réduit, et le
   // Catalogue afficherait une "régression" qui n'en est pas une.
-  // Chantier B — déload opt-in : ce régime ne s'applique QUE si la récup a été
+  // Déload opt-in : ce régime ne s'applique QUE si la récup a été
   // ACCEPTÉE. Une semaine 5 refusée est une semaine normale.
-  // A-3 (#73) — on ne saute plus tout : la récup passe en cliquet MONTANT.
+  // On ne saute plus tout : la récup passe en cliquet MONTANT.
   // Le plafond ne peut pas baisser à cause d'une charge allégée, mais s'il monte
   // (l'user a chargé de son propre chef), le gain est mesuré, enregistré
   // (snapshot → courbe Force) et affiché au bilan. S'il ne bouge pas, il reste
@@ -458,7 +437,7 @@ export function endOfWeek(state: UserState): EndOfWeekResult {
 // =============================================================================
 
 /**
- * Conv #76 — ne mute plus rien. `adjustVolumeBoundsAtCycleEnd` a été supprimé
+ * Ne mute plus rien. `adjustVolumeBoundsAtCycleEnd` a été supprimé
  * (cf. `lifecycle.ts` §4) : une fin de cycle produit un bilan, elle ne touche
  * plus aux bornes de volume. La fonction reste le point d'entrée du bilan pour
  * ne pas disperser l'API du moteur.

@@ -68,7 +68,7 @@ function CycleCard({ item, catalog }: CycleCardProps) {
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        {/* Conv #76 — « Volume total » (tonnage) remplacé par l'assiduité. Le
+        {/* « Volume total » (tonnage) remplacé par l'assiduité. Le
             tonnage avait été jugé non fiable et retiré des deux bilans en E-3 ;
             il ne survivait plus qu'ici. */}
         <Metric
@@ -119,7 +119,7 @@ function CycleCard({ item, catalog }: CycleCardProps) {
         <ObjectivesOutcomeSection items={item.objectivesByMuscle} />
       )}
 
-      {/* Conv #15-5 — lien vers le bilan complet de ce cycle (vu depuis
+      {/* 5 — lien vers le bilan complet de ce cycle (vu depuis
           Progrès > Cycles, ouverture d'un bilan archivé). */}
       <Link
         to={`/cycle-bilan?cycle=${item.cycleIndex}`}

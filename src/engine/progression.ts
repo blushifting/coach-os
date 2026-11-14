@@ -1,5 +1,5 @@
 /**
- * Dump 2.4, étape 4 (D5) — **une seule règle de progression : la double
+ * **une seule règle de progression : la double
  * progression dans la fourchette de l'exercice.**
  *
  * Conception : `Kotsh/recherche/14_progression_charge.md`. Remplace le cliquet
@@ -17,7 +17,7 @@
  * de la plus lourde, on ajoute l'écart entre les deux plus lourdes, à défaut
  * l'incrément du catalogue.
  *
- * Le Plafond ne décide plus de la charge (D4) : il sert seulement à prévoir les
+ * Le Plafond ne décide plus de la charge : il sert seulement à prévoir les
  * reps après un changement de cran, et la charge d'un exercice jamais fait.
  */
 
@@ -265,7 +265,7 @@ function round2(x: number): number {
 }
 
 // =============================================================================
-// 6. Prévisions depuis le Plafond (D4)
+// 6. Prévisions depuis le Plafond
 // =============================================================================
 
 /**

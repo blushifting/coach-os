@@ -1,5 +1,5 @@
 /**
- * Chantier F-1 — état de la session cloud (compte + sauvegarde).
+ * État de la session cloud (compte + sauvegarde).
  *
  * Store séparé du store moteur à dessein : rien ici n'est de l'état
  * d'entraînement, rien ici ne se persiste en Dexie, et `useCoachOsStore`
@@ -71,12 +71,3 @@ const initialAuthState: AuthState = {
 
 export const useAuthStore = create<AuthState>(() => ({ ...initialAuthState }));
 
-/** Remet le store à zéro (tests, et déconnexion complète). */
-export function resetAuthStore(): void {
-  useAuthStore.setState({ ...initialAuthState, ready: true });
-}
-
-// === Sélecteurs / hooks de commodité ===
-export const useCloudSignedIn = () =>
-  useAuthStore((s) => s.userId !== null);
-export const useCloudConflict = () => useAuthStore((s) => s.conflict);

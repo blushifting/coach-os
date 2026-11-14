@@ -1,5 +1,5 @@
 /**
- * Sheet d'aide (Conv #6c).
+ * Sheet d'aide.
  *
  * Sections :
  *  1. Prise en main : relance de la démo Alex + mini-guides (première séance,
@@ -64,7 +64,7 @@ interface FaqItem {
 }
 
 /**
- * Conv #21 — FAQ qui explique les comportements contre-intuitifs du modèle.
+ * FAQ qui explique les comportements contre-intuitifs du modèle.
  * Chaque entrée référence implicitement une source listée dans `SOURCES`.
  * Volontairement court : ne pas re-rédiger un cours, juste lever les
  * "pourquoi l'app fait-elle ça ?" qui reviennent à l'usage.
@@ -143,7 +143,7 @@ interface SourceItem {
 }
 
 /**
- * Conv #21 — Sources scientifiques principales. Pas un index exhaustif : on
+ * Sources scientifiques principales. Pas un index exhaustif : on
  * liste les références centrales du modèle (RPE, volume, fréquence, e1RM,
  * récupération). Toutes citées en commentaires dans `engine/` pour qui veut
  * tracer une décision algorithmique à sa source.

@@ -88,6 +88,7 @@ export function serializeUserState(state: UserState): SerializedUserState {
     exercise_pick_counts: { ...(state.exercise_pick_counts ?? {}) },
     deload_decision: state.deload_decision ?? null,
     rep_ranges: { ...state.rep_ranges },
+    exercise_notes: { ...state.exercise_notes },
     plafond_model: state.plafond_model,
   };
 }
@@ -102,7 +103,7 @@ export function deserializeUserState(s: SerializedUserState): UserState {
     cycle_index: s.cycle_index,
     history: s.history.map((h) => structuredClone(h)),
     last_used_for_muscle: { ...s.last_used_for_muscle },
-    // Dump 2.4 — ancien format (objectif + statut) migré à la lecture.
+    // Ancien format (objectif + statut) migré à la lecture.
     muscle_goals: migrateMuscleGoals(s.muscle_goals),
     current_cycle_plan:
       s.current_cycle_plan === null ? null : structuredClone(s.current_cycle_plan),
@@ -114,15 +115,15 @@ export function deserializeUserState(s: SerializedUserState): UserState {
           inc_kg: v.inc_kg,
           min_load_kg: v.min_load_kg,
           max_load_kg: v.max_load_kg,
-          // Conv #20 — rétrocompat exports antérieurs.
+          // Rétrocompat exports antérieurs.
           pdc_only: ((v as { pdc_only?: boolean | null }).pdc_only) ?? null,
         },
       ]),
     ),
-    // Conv #22 — Rétrocompat : blobs antérieurs n'ont pas ces champs.
+    // Rétrocompat : blobs antérieurs n'ont pas ces champs.
     current_skeleton: s.current_skeleton ?? null,
     favorite_exercise_per_pattern: { ...(s.favorite_exercise_per_pattern ?? {}) },
-    // Bloc F (Conv #31) — migration : si le set unifié est absent (blob
+    // Migration : si le set unifié est absent (blob
     // antérieur), on le reconstruit depuis les favoris par-pattern existants
     // (valeurs dédupliquées). Les nouveaux blobs portent directement le set.
     favorite_exercise_ids:
@@ -130,13 +131,17 @@ export function deserializeUserState(s: SerializedUserState): UserState {
         ? [...s.favorite_exercise_ids]
         : Array.from(new Set(Object.values(s.favorite_exercise_per_pattern ?? {}))),
     exercise_pick_counts: { ...(s.exercise_pick_counts ?? {}) },
-    // Chantier B — rétrocompat : blobs antérieurs n'ont pas ce champ (default null).
+    // Rétrocompat : blobs antérieurs n'ont pas ce champ (default null).
     deload_decision: s.deload_decision ?? null,
-    // Dump 2.4, étape 4 — absent sur anciens blobs ; clé inconnue ignorée.
+    // Absent sur anciens blobs ; clé inconnue ignorée.
     rep_ranges: Object.fromEntries(
       Object.entries(s.rep_ranges ?? {}).filter(([, v]) => isRepRangeKey(v)),
     ) as UserState['rep_ranges'],
-    // Dump 2.4, étape 5 — absent = ancien calcul : l'historique sera recalculé.
+    // Absent sur anciens blobs ; note vide ignorée.
+    exercise_notes: Object.fromEntries(
+      Object.entries(s.exercise_notes ?? {}).filter(([, v]) => v.trim().length > 0),
+    ),
+    // Absent = ancien calcul : l'historique sera recalculé.
     plafond_model: s.plafond_model ?? 1,
   };
 }

@@ -29,7 +29,7 @@ export interface BalanceReason {
   readonly text: string;
 }
 
-// Conv #14c-8 — la fonction `muscleLabel` est désormais unifiée dans
+// 8 — la fonction `muscleLabel` est désormais unifiée dans
 // `lib/progress.ts` (label propre, sans article, "Pectoraux" pas "les
 // pectoraux"). Réexport ici pour ne pas casser les imports historiques.
 export { muscleLabel } from './progress';

@@ -6,7 +6,7 @@ import { cn } from '@/lib/cn';
 import { ExercisePhotoPopin } from './ExercisePhotoPopin';
 
 /**
- * Bouton « œil » réutilisable — Bloc F (Conv #31).
+ * Bouton « œil » réutilisable — Bloc F.
  *
  * Ouvre l'aperçu animé du mouvement (`ExercisePhotoPopin`). Pensé comme une
  * zone SŒUR à côté d'une carte/ligne cliquable (jamais imbriqué dans un autre

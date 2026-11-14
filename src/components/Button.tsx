@@ -11,7 +11,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   readonly children: ReactNode;
 }
 
-// Conv #11c — variantes refondues : primary gagne un halo rouge diffus au
+// Variantes refondues : primary gagne un halo rouge diffus au
 // hover/focus (shadow-glow-sang), un gradient top→bottom subtil pour le relief
 // "métal", et un underglow permanent discret. Secondary récupère un léger
 // gradient + ring pour le détacher du fond.
@@ -45,9 +45,9 @@ export function Button({
     <button
       type={type}
       className={cn(
-        // Conv #11c — transition étendue (200ms) pour rendre le halo sang
+        // Transition étendue (200ms) pour rendre le halo sang
         // souple au hover/focus. Outline customisé sang au focus-visible.
-        // Conv #11f — `min-w-0 max-w-full` pour que le bouton puisse se
+        // `min-w-0 max-w-full` pour que le bouton puisse se
         // rétrécir dans un flex parent contraint au lieu de déborder. Texte
         // peut wrapper si nécessaire (mieux que sortir du cadre).
         'inline-flex min-w-0 max-w-full items-center justify-center gap-1.5 text-center font-medium leading-tight transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sang-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-graphite-950',

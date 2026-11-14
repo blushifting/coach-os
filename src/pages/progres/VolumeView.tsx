@@ -56,7 +56,7 @@ interface VolumeViewProps {
   /** Semaine en cours du dernier cycle (position d'arrivée). */
   readonly currentWeek: number;
   readonly muscleGoals: Readonly<Record<string, MuscleGoal>>;
-  /** B-1 — `muscle → YYYY-MM-DD` de la dernière séance qui l'a sollicité (ordre des cartes). */
+  /** `muscle → YYYY-MM-DD` de la dernière séance qui l'a sollicité (ordre des cartes). */
   readonly lastWorked: Readonly<Record<string, string>>;
 }
 
@@ -125,7 +125,7 @@ export function VolumeView({ cycles, currentWeek, muscleGoals, lastWorked }: Vol
   }, [cycle, position.week]);
 
   // Groupes : à développer (par rang), à entretenir, autres. À l'intérieur des
-  // deux derniers, du muscle travaillé le plus récemment au plus ancien (B-1).
+  // deux derniers, du muscle travaillé le plus récemment au plus ancien.
   // Un muscle sans objectif jamais travaillé sur le cycle tient sur une ligne.
   const groups = useMemo(() => {
     const byRecency = (a: string, b: string): number => {

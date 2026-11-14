@@ -6,7 +6,7 @@
  * lazy-load par le navigateur, mise en cache automatique par le Service
  * Worker pour offline-first à la salle après 1re vue.
  *
- * UX (E-4) : affichée directement à l'ouverture de la fiche (plus de bouton
+ * UX : affichée directement à l'ouverture de la fiche (plus de bouton
  * « Voir le mouvement » à cliquer). Les 2 frames (start/end) alternent toutes
  * les 1.4 s pour donner un aperçu du mouvement. Un clic sur la photo la masque
  * (état conservé le temps de la session de la sheet).

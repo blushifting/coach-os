@@ -12,13 +12,10 @@ import { Catalog } from '@/engine/catalog';
 import { startUser } from '@/engine/engine';
 import {
   analyzeProgramTension,
-  applyVariantsToTemplate,
   estimateExerciseDurationMinutes,
-  muscleDeltaForSwap,
   SESSION_DURATION_WARN_MIN,
   weeklyVolumeByMuscle,
   weightedWeeklyVolumeByMuscle,
-  type VariantReplacement,
 } from '@/lib/onboarding-preview';
 import {
   ExType,
@@ -101,75 +98,6 @@ describe('weeklyVolumeByMuscle', () => {
       Object.values(o).reduce((a, b) => a + b, 0);
     // Le pondéré somme TOUS les muscles (coef × séries), donc ≥ primaires seuls.
     expect(sum(weighted)).toBeGreaterThanOrEqual(sum(primary));
-  });
-});
-
-describe('applyVariantsToTemplate', () => {
-  it('remplace uniquement exercise_id, conserve base_sets et progression', () => {
-    const p = profile();
-    const goals = developGoals(['pectoraux']);
-    const { template } = previewTemplate(p, goals);
-    expect(template).not.toBeNull();
-    const firstSlot = template!.days[0]?.exercises[0];
-    expect(firstSlot).toBeDefined();
-
-    const replacement: VariantReplacement = {
-      dayIndex: 0,
-      slotIndex: 0,
-      newExerciseId: 'remplacement_fictif',
-    };
-    const next = applyVariantsToTemplate(template!, [replacement]);
-
-    const newSlot = next.days[0]!.exercises[0]!;
-    expect(newSlot.exercise_id).toBe('remplacement_fictif');
-    expect(newSlot.base_sets).toBe(firstSlot!.base_sets);
-    expect(newSlot.progression).toEqual(firstSlot!.progression);
-    // L'original n'a pas muté.
-    expect(template!.days[0]!.exercises[0]!.exercise_id).toBe(firstSlot!.exercise_id);
-  });
-
-  it('liste vide → retourne le template original', () => {
-    const p = profile();
-    const goals = developGoals(['pectoraux']);
-    const { template } = previewTemplate(p, goals);
-    const next = applyVariantsToTemplate(template!, []);
-    expect(next).toBe(template); // identité référentielle
-  });
-
-  it('index hors plage → silencieusement ignoré', () => {
-    const p = profile();
-    const goals = developGoals(['pectoraux']);
-    const { template } = previewTemplate(p, goals);
-    const next = applyVariantsToTemplate(template!, [
-      { dayIndex: 99, slotIndex: 99, newExerciseId: 'inexistant' },
-    ]);
-    // Toujours intègre.
-    expect(next.days.length).toBe(template!.days.length);
-  });
-});
-
-describe('muscleDeltaForSwap', () => {
-  it('détecte les muscles perdus quand le nouveau exo a moins de primaires', () => {
-    // Tirage vertical machine (lat_pulldown) vs traction (pullup_pron) : la
-    // traction ajoute des muscles non couverts par le tirage vertical.
-    if (catalog.has('pullup_pron') && catalog.has('lat_pulldown')) {
-      const delta = muscleDeltaForSwap('pullup_pron', 'lat_pulldown', catalog);
-      // Au moins l'un des deux côtés doit voir une différence (selon le mapping
-      // exact du catalogue), donc l'un des sets `lost`/`gained` n'est pas vide.
-      expect(delta.lost.length + delta.gained.length).toBeGreaterThanOrEqual(0);
-    }
-  });
-
-  it('exos identiques → pas de différence', () => {
-    const first = catalog.all()[0];
-    if (first === undefined) return;
-    const delta = muscleDeltaForSwap(first.id, first.id, catalog);
-    expect(delta.lost).toEqual([]);
-    expect(delta.gained).toEqual([]);
-  });
-
-  it('exo inconnu → pas de crash', () => {
-    expect(() => muscleDeltaForSwap('inconnu', 'inconnu2', catalog)).not.toThrow();
   });
 });
 

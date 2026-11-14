@@ -8,7 +8,7 @@
  * Refonte #14a-1 : axe Y avec 3 ticks (min/mid/max) en kg, ligne pointillée
  * au plafond courant, polyline plus épaisse, étoiles sur les points record.
  *
- * Dump 2.4, étape 5 — l'axe horizontal suit les dates (n° 21) : une pause garde
+ * L'axe horizontal suit les dates (n° 21) : une pause garde
  * sa vraie longueur, son segment passe en pointillé avec sa durée. Une étoile
  * marque une séance record (n° 9 : deux reps de mieux que la meilleure mesure
  * passée).
@@ -26,7 +26,7 @@ import { forceChartLayout } from '@/lib/progress';
 import type { E1rmPoint, ExerciseE1rmSeries } from '@/lib/progress';
 
 /**
- * B-2 — nombre de courbes affichées d'emblée, et pas d'un cran sur « Voir les
+ * Nombre de courbes affichées d'emblée, et pas d'un cran sur « Voir les
  * suivants ». L'ancien `topN = 8` du sélecteur coupait sans rien dire : sur un
  * catalogue réel (~20 exos travaillés), la moitié disparaissait et l'onglet
  * paraissait incomplet. On garde une liste courte à l'ouverture — mais le
@@ -107,7 +107,7 @@ export function ForceView({ series, axis, cycleStarts }: ForceViewProps) {
               <div className="text-sm font-medium text-white truncate">
                 {resolveName(s)}
               </div>
-              {/* Conv #17 — Affiche le nombre de séances ayant alimenté la
+              {/* Affiche le nombre de séances ayant alimenté la
                   courbe. Évite la question "pourquoi cet exo a moins de
                   points" : exos accessoires (1×/sem) ou substitués en
                   cours de route ont mécaniquement moins de points. */}
@@ -128,7 +128,7 @@ export function ForceView({ series, axis, cycleStarts }: ForceViewProps) {
               <span
                 className={cn(
                   'text-[10px] leading-none tabular-nums',
-                  // Dump 2.4, étape 5 — une baisse est un avertissement (ambre),
+                  // Une baisse est un avertissement (ambre),
                   // pas un problème (rouge).
                   s.deltaPct > 0.5
                     ? 'text-emerald-400'
@@ -266,7 +266,7 @@ function MiniLine({ points, current, axis, cycleStarts, testId }: MiniLineProps)
         );
       })}
 
-      {/* Conv #77 — repères de début de cycle, à leur vraie date, sous la courbe. */}
+      {/* Repères de début de cycle, à leur vraie date, sous la courbe. */}
       {layout.cycleMarks.map(({ x: f, cycleIndex }) => {
         const x = xOf(f);
         const nearRightEdge = x > W - 20;
@@ -294,7 +294,7 @@ function MiniLine({ points, current, axis, cycleStarts, testId }: MiniLineProps)
         );
       })}
 
-      {/* Ligne pointillée au plafond courant (Conv #14a). */}
+      {/* Ligne pointillée au plafond courant. */}
       <line
         x1={ML}
         x2={W}
@@ -338,7 +338,7 @@ function MiniLine({ points, current, axis, cycleStarts, testId }: MiniLineProps)
         );
       })}
 
-      {/* Conv #11i — tracé animé `draw-line` via pathLength=1 + dasharray=1. */}
+      {/* Tracé animé `draw-line` via pathLength=1 + dasharray=1. */}
       {runs
         .filter((run) => run.length > 1)
         .map((run, r) => (
@@ -356,7 +356,7 @@ function MiniLine({ points, current, axis, cycleStarts, testId }: MiniLineProps)
           />
         ))}
 
-      {/* Conv #20.5 — points en fondu, synchronisés sur le tracé. */}
+      {/* Points en fondu, synchronisés sur le tracé. */}
       {xy.map(([x, y], i) => {
         const delayMs = layout.xs[i]! * MOTION.draw;
         const record = points[i]!.record;
@@ -375,7 +375,7 @@ function MiniLine({ points, current, axis, cycleStarts, testId }: MiniLineProps)
         );
       })}
 
-      {/* Conv #66 — onde sur le DERNIER point une fois le tracé arrivé. */}
+      {/* Onde sur le DERNIER point une fois le tracé arrivé. */}
       {lastXy !== undefined && (
         <circle
           cx={lastXy[0]}

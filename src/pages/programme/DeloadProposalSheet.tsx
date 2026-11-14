@@ -10,7 +10,7 @@ interface DeloadProposalSheetProps {
 }
 
 /**
- * Chantier B — proposition de semaine de récupération (déload opt-in).
+ * Proposition de semaine de récupération (déload opt-in).
  *
  * S'affiche à l'entrée en semaine 5 quand l'assiduité des 4 premières semaines
  * est haute (proxy de fatigue accumulée, cf. recherche/09c_deload_optin.md).

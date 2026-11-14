@@ -5,7 +5,7 @@ import { captureOAuthReturn } from '@/lib/oauth-return';
 import { router } from './router';
 import './index.css';
 
-// Chantier F — AVANT le rendu, sans exception. L'URL de retour de Google est
+// AVANT le rendu, sans exception. L'URL de retour de Google est
 // la racine de l'app, qui redirige aussitôt, et une redirection de React
 // Router jette la query string : le code d'autorisation (ou le refus
 // d'allowlist) doit être mis à l'abri avant que quoi que ce soit ne navigue.

@@ -12,7 +12,7 @@ import { useCoachOsStore } from '@/store';
 import { useDemoMode } from '@/store/selectors';
 
 /**
- * Dump 2.4, étape 4 — choix de la fourchette de reps d'un exercice, dans sa
+ * Choix de la fourchette de reps d'un exercice, dans sa
  * fiche (pas en séance : Azur, conv #82). Trois choix ; celle du catalogue est
  * marquée « conseillée ». Rien pour un exercice qui progresse en reps seulement
  * (poids du corps) : il n'a pas de cran de charge.

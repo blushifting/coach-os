@@ -37,16 +37,16 @@ export interface SerializedProfile {
   sex: string;
   age: number;
   level: string;
-  /** Objectif global, supprimé en 2.4 (D3) : présent sur les anciens blobs, ignoré. */
+  /** Objectif global, supprimé en 2.4 : présent sur les anciens blobs, ignoré. */
   objective?: string;
   sessions_per_week: number;
   bodyweight_kg: number;
   available_equip: string[];
-  /** Conv #22 — durée MAX par séance (path co-construit). Absent sur anciens blobs. */
+  /** Durée MAX par séance (path co-construit). Absent sur anciens blobs. */
   duration_category?: string;
-  /** Conv #22 — préférence équipement. Absent sur anciens blobs. */
+  /** Préférence équipement. Absent sur anciens blobs. */
   equipment_preference?: string;
-  /** Conv #23 — marque de la salle (Technogym, Hammer Strength, Matrix…). Absent sur anciens blobs. */
+  /** Marque de la salle (Technogym, Hammer Strength, Matrix…). Absent sur anciens blobs. */
   gym_brand?: string;
 }
 
@@ -62,7 +62,7 @@ export interface SerializedUserState {
   /** Nouveau format (`intention`) ou ancien (`objective` + `status`), migré à la lecture. */
   muscle_goals: Record<string, import('@/engine/intentions').StoredMuscleGoal>;
   current_cycle_plan: import('@/engine/models').WeeklyTemplate | null;
-  /** Bloc O — mode de construction ('auto'|'manual'). Absent sur anciens blobs (default 'auto'). */
+  /** Mode de construction ('auto'|'manual'). Absent sur anciens blobs (default 'auto'). */
   build_mode?: 'auto' | 'manual';
   equipment_overrides: Record<string, EquipmentOverride>;
   /**
@@ -71,19 +71,21 @@ export interface SerializedUserState {
    */
   prescribed_load_floor?: Record<string, number>;
   prescribed_reps_floor?: Record<string, number>;
-  /** Fourchette de reps choisie par exercice (dump 2.4, étape 4). Absent sur anciens blobs. */
+  /** Fourchette de reps choisie par exercice. Absent sur anciens blobs. */
   rep_ranges?: Record<string, string>;
-  /** Conv #22 — squelette du cycle courant (path co-construit). Absent sur anciens blobs. */
+  /** Note libre par exercice. Absent sur anciens blobs. */
+  exercise_notes?: Record<string, string>;
+  /** Squelette du cycle courant (path co-construit). Absent sur anciens blobs. */
   current_skeleton?: import('@/engine/models').SkeletonTemplate | null;
-  /** Conv #22 — exos préférés par pattern. Absent sur anciens blobs. */
+  /** Exos préférés par pattern. Absent sur anciens blobs. */
   favorite_exercise_per_pattern?: Record<string, string>;
-  /** Bloc F (Conv #31) — favoris unifiés (étoile catalogue + onboarding). Absent sur anciens blobs (migré depuis le par-pattern). */
+  /** Favoris unifiés (étoile catalogue + onboarding). Absent sur anciens blobs (migré depuis le par-pattern). */
   favorite_exercise_ids?: string[];
-  /** Bloc F (Conv #31) — compteur d'ajouts ad-hoc/variante par exo (prompt favoris à 3). Absent sur anciens blobs. */
+  /** Compteur d'ajouts ad-hoc/variante par exo (prompt favoris à 3). Absent sur anciens blobs. */
   exercise_pick_counts?: Record<string, number>;
-  /** Chantier B (plan 11) — décision déload opt-in du cycle courant. Absent sur anciens blobs (default null). */
+  /** Décision déload opt-in du cycle courant. Absent sur anciens blobs (default null). */
   deload_decision?: 'accepted' | 'declined' | null;
-  /** Dump 2.4, étape 5 — version du calcul des Plafonds. Absent sur anciens blobs (= 1, à recalculer). */
+  /** Version du calcul des Plafonds. Absent sur anciens blobs (= 1, à recalculer). */
   plafond_model?: number;
 }
 
@@ -141,7 +143,7 @@ export interface EquipmentOverrideRow {
   inc_kg: number | null;
   min_load_kg: number | null;
   max_load_kg: number | null;
-  /** Conv #20 — mode "poids du corps seulement" pour exos BW_LOADED/ASSISTED. */
+  /** Mode "poids du corps seulement" pour exos BW_LOADED/ASSISTED. */
   pdc_only: boolean | null;
 }
 

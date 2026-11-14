@@ -1,5 +1,5 @@
 /**
- * Étoile de favori — Bloc F (Conv #31).
+ * Étoile de favori — Bloc F.
  *
  * Icône seule (pas de bouton). `filled` = favori actif (étoile pleine, à
  * colorer en doré par le parent via `text-amber-400`) ; sinon contour. La

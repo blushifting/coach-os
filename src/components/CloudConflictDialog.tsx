@@ -1,6 +1,6 @@
 /**
- * Chantier F-1 — dialogue de réconciliation à la connexion.
- * Chantier F-2 — la branche « récupérer le cloud » existe enfin.
+ * Dialogue de réconciliation à la connexion.
+ * La branche « récupérer le cloud » existe enfin.
  *
  * Monté au niveau du shell parce que la connexion Google passe par une
  * redirection pleine page : au retour, l'app repart de son écran d'accueil,

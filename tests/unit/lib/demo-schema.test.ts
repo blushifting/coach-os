@@ -23,6 +23,10 @@ function loadAlex(): DemoSnapshot {
 }
 
 describe('demo-schema parse', () => {
+  it('garde les notes sur les exercices d’Alex (dump 2.4, n° 14)', () => {
+    expect(Object.keys(loadAlex().user_state.exercise_notes ?? {})).toHaveLength(2);
+  });
+
   it("rejette un JSON malformé (manque persona)", () => {
     const bad = { generated_at: '2026-05-19', user_state: {}, history: {} };
     expect(() => demoSnapshotSchema.parse(bad)).toThrow();

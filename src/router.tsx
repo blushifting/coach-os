@@ -22,7 +22,7 @@ export const router = createBrowserRouter(
       element: <AppShell />,
       children: [
         { path: 'welcome', element: <WelcomeScreen /> },
-        // Chantier F — tout le reste de l'app est derrière le compte. Seul
+        // Tout le reste de l'app est derrière le compte. Seul
         // `/welcome` reste atteignable sans session, sinon la garde n'aurait
         // nulle part où rediriger.
         {
@@ -40,12 +40,12 @@ export const router = createBrowserRouter(
                 { path: 'profil', element: <ProfilPage /> },
               ],
             },
-            // Conv #14b-1 — Le runner sort de l'onglet "Séance" (supprimé de la
+            // 1 — Le runner sort de l'onglet "Séance" (supprimé de la
             // TabBar) et vit sur sa propre route plein écran. L'ancien `/seance`
             // redirige vers `/programme` pour compat des liens externes.
             { path: 'seance', element: <Navigate to="/programme" replace /> },
             { path: 'seance/runner', element: <SeancePage /> },
-            // Bloc G (Conv #32) — éditeur du cycle en cours (plein écran).
+            // Éditeur du cycle en cours (plein écran).
             { path: 'programme/modifier', element: <EditCyclePage /> },
             ...(isDev
               ? [

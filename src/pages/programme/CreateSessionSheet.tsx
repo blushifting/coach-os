@@ -1,11 +1,12 @@
 /**
- * Bloc G (Conv #32) — Création d'une séance custom (hors-programme).
+ * Création d'une séance libre (hors programme), depuis le calendrier
+ * (`PlanDaySheet`, jour libre).
  *
- * Entrée depuis le calendrier (`PlanDaySheet`, jour libre). On choisit un preset
- * (paquet de muscles) qui pré-remplit une base via le moteur de sélection
- * (favoris d'abord, volume plafonné par muscle), on renomme, on ajuste
- * (ajout/retrait, œil de visu), puis on démarre (aujourd'hui) ou on programme
- * (jour futur). Le preset « Vide » part d'une feuille blanche.
+ * Plus de presets : la feuille s'ouvre sur une séance
+ * « Libre » vide ; les exercices favoris sont des pastilles (un appui ajoute
+ * l'exercice avec 3 séries, un second le retire) ; les autres viennent du
+ * catalogue. On règle les séries, puis on démarre (aujourd'hui) ou on
+ * programme (jour futur).
  *
  * Alertes non bloquantes : muscle déjà travaillé la veille, et dépassement du
  * volume hebdo conseillé par la séance entière.
@@ -29,27 +30,17 @@ import {
   computeCoverageThisWeek,
   muscleLabel,
 } from '@/lib/progress';
-import {
-  SESSION_PRESETS,
-  buildCustomSessionSlots,
-  favoritesFirst,
-  musclesTrainedOn,
-  presetById,
-  type CustomSlot,
-} from '@/lib/custom-session';
+import { favoritesFirst, musclesTrainedOn, type CustomSlot } from '@/lib/custom-session';
 import { ChargeBadge } from '@/pages/catalogue/ChargeBadge';
 import { ExerciseEyeButton } from '@/pages/catalogue/ExerciseEyeButton';
 import { SetsStepper } from '@/components/SetsStepper';
 import { cn } from '@/lib/cn';
 
 const DEFAULT_ADDED_SETS = 3;
+const DEFAULT_NAME = 'Libre';
 
 function normalize(s: string): string {
-  return s
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .trim();
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 }
 
 interface CreateSessionSheetProps {
@@ -84,31 +75,31 @@ export function CreateSessionSheet({
   const cycles = useCoachOsStore((s) => s.history.cycles);
   const today = useToday();
 
-  const [presetId, setPresetId] = useState<string | null>(null);
   const [slots, setSlots] = useState<CustomSlot[]>([]);
-  const [name, setName] = useState('');
+  const [name, setName] = useState(DEFAULT_NAME);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const musclesOf = useMemo(() => (catalog ? buildMusclesOf(catalog) : null), [catalog]);
-  const favoriteIds = useMemo(
-    () => new Set(userState?.favorite_exercise_ids ?? []),
-    [userState],
-  );
+  const favoriteIds = useMemo(() => new Set(userState?.favorite_exercise_ids ?? []), [userState]);
 
-  function selectPreset(id: string) {
-    const preset = presetById(id);
-    setPresetId(id);
-    setError(null);
-    if (preset === null || userState === null || catalog === null) {
-      setSlots([]);
-      setName(preset?.label ?? '');
-      return;
-    }
-    setSlots(buildCustomSessionSlots(preset, userState, catalog));
-    setName(preset.label);
+  // Favoris présents au catalogue, par nom : les pastilles du haut de la feuille.
+  const favorites = useMemo<readonly Exercise[]>(() => {
+    if (catalog === null) return [];
+    return [...favoriteIds]
+      .filter((id) => catalog.has(id))
+      .map((id) => catalog.get(id))
+      .sort((a, b) => displayExerciseName(a, brand).localeCompare(displayExerciseName(b, brand)));
+  }, [catalog, favoriteIds, brand]);
+
+  function toggleFavorite(ex: Exercise) {
+    setSlots((prev) =>
+      prev.some((s) => s.exerciseId === ex.id)
+        ? prev.filter((s) => s.exerciseId !== ex.id)
+        : [...prev, { exerciseId: ex.id, nSets: DEFAULT_ADDED_SETS }],
+    );
   }
 
   // Muscles primaires effectivement visés par la base courante (après édits).
@@ -129,14 +120,8 @@ export function CreateSessionSheet({
     const cycleStart =
       cycles.find((c) => c.cycle_index === userState.cycle_index)?.start_date ?? null;
     const out: Record<string, number> = {};
-    // Conv #66 — `today` ancré sur la démo si active (cf. `useToday`).
-    for (const cov of computeCoverageThisWeek(
-      userState,
-      feedbacks,
-      musclesOf,
-      today,
-      cycleStart,
-    )) {
+    // `today` ancré sur la démo si active (cf. `useToday`).
+    for (const cov of computeCoverageThisWeek(userState, feedbacks, musclesOf, today, cycleStart)) {
       out[cov.muscle] = cov.sets;
     }
     return out;
@@ -197,9 +182,8 @@ export function CreateSessionSheet({
   }
 
   function close() {
-    setPresetId(null);
     setSlots([]);
-    setName('');
+    setName(DEFAULT_NAME);
     setPickerOpen(false);
     setQuery('');
     setSubmitting(false);
@@ -275,169 +259,164 @@ export function CreateSessionSheet({
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <span className="text-xs uppercase tracking-wide text-anthracite-300">
-              Quel groupe musculaire&nbsp;?
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {SESSION_PRESETS.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  data-testid={`preset-${p.id}`}
-                  onClick={() => selectPreset(p.id)}
-                  className={cn(
-                    'rounded-full border px-3 py-1.5 text-sm transition',
-                    presetId === p.id
-                      ? 'border-sang-700 bg-sang-900/30 text-white'
-                      : 'border-anthracite-700 bg-anthracite-900 text-anthracite-200 hover:border-sang-700/50',
-                  )}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
+          {/* « Séance » est le préfixe UI incompressible ;
+              le champ ne contient que le token (« Libre »…), pour se lire comme
+              les autres noms de séance. */}
+          <div className="flex items-center gap-2">
+            <span className="shrink-0 text-sm font-semibold text-anthracite-300">Séance</span>
+            <input
+              data-testid="create-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              aria-label="Nom de la séance"
+              className="min-w-0 flex-1 rounded-lg border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-sm font-semibold text-white outline-none focus:border-sang-700/60"
+            />
+            <i className="shrink-0 text-anthracite-400" aria-hidden>
+              ✎
+            </i>
           </div>
-
-          {presetId === null ? (
-            <p className="text-justify text-sm leading-relaxed text-anthracite-400">
-              Choisis un point de départ&nbsp;: un groupe musculaire, corps entier, ou une
-              séance libre à composer toi-même.
-            </p>
-          ) : (
-            <>
-              {/* Bloc K (Conv #36) — « Séance » est le préfixe UI incompressible ;
-                  le champ ne contient que le token (« Pecs », « Libre »…), pour se
-                  lire comme les autres noms de séance. */}
-              <div className="flex items-center gap-2">
-                <span className="shrink-0 text-sm font-semibold text-anthracite-300">
-                  Séance
-                </span>
-                <input
-                  data-testid="create-name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  aria-label="Nom de la séance"
-                  className="min-w-0 flex-1 rounded-lg border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-sm font-semibold text-white outline-none focus:border-sang-700/60"
-                />
-                <i className="shrink-0 text-anthracite-400" aria-hidden>
-                  ✎
-                </i>
+          {favorites.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <span className="text-[11px] uppercase tracking-wide text-anthracite-300">
+                Tes favoris
+              </span>
+              <div className="flex flex-wrap gap-2" data-testid="create-favorites">
+                {favorites.map((ex) => {
+                  const on = slots.some((s) => s.exerciseId === ex.id);
+                  return (
+                    <button
+                      key={ex.id}
+                      type="button"
+                      aria-pressed={on}
+                      data-testid={`create-fav-${ex.id}`}
+                      onClick={() => toggleFavorite(ex)}
+                      className={cn(
+                        'inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3 py-1.5 text-left text-sm transition active:scale-[0.98]',
+                        on
+                          ? 'border-green-700 bg-green-900/25 text-white'
+                          : 'border-anthracite-700 bg-anthracite-900 text-anthracite-200 hover:border-anthracite-500',
+                      )}
+                    >
+                      {on ? (
+                        <span aria-hidden className="font-bold text-green-500">
+                          ✓
+                        </span>
+                      ) : (
+                        <span aria-hidden style={{ color: '#d4a052' }}>
+                          ★
+                        </span>
+                      )}
+                      {displayExerciseName(ex, brand)}
+                    </button>
+                  );
+                })}
               </div>
-              <p className="-mt-2 text-xs text-anthracite-400">
-                {slots.length === 0
-                  ? "Aucun exercice — pars d'une feuille blanche."
-                  : `${slots.length} exercices · ${totalSets} séries · ~${estMin} min`}
-              </p>
-
-              {veilleMuscles.length > 0 && (
-                <p
-                  data-testid="create-warn-veille"
-                  className="rounded-lg border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-justify text-xs leading-snug text-amber-200"
-                >
-                  Tu as travaillé{' '}
-                  <strong className="text-amber-100">
-                    {veilleMuscles.map(muscleLabel).join(', ')}
-                  </strong>{' '}
-                  hier. Travailler un autre groupe musculaire leur laisserait le temps de
-                  récupérer — tu peux quand même continuer.
-                </p>
-              )}
-
-              {overshoot.length > 0 && (
-                <p
-                  data-testid="create-warn-hebdo"
-                  className="rounded-lg border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-justify text-xs leading-snug text-amber-200"
-                >
-                  <strong className="text-amber-100">Volume élevé.</strong> Ces séries
-                  poussent {overshoot.map((o) => muscleLabel(o.muscle)).join(', ')}{' '}
-                  au-delà de 20&nbsp;séries cette semaine. C'est un beau total&nbsp;: tu peux
-                  t'arrêter là, ou continuer en pensant à bien récupérer.
-                </p>
-              )}
-
-              <ul className="flex flex-col gap-2" data-testid="create-slots">
-                {slots.length === 0 ? (
-                  <li className="rounded-lg border border-dashed border-anthracite-700 px-3 py-4 text-center text-sm text-anthracite-400">
-                    Ajoute les exercices que tu veux faire.
-                  </li>
-                ) : (
-                  slots.map((slot, i) => {
-                    if (catalog === null || !catalog.has(slot.exerciseId)) return null;
-                    const ex = catalog.get(slot.exerciseId);
-                    const primaires = exercisePrimaires(ex).map(muscleLabel).join(', ');
-                    return (
-                      <li
-                        key={`${slot.exerciseId}-${i}`}
-                        data-testid={`create-slot-${slot.exerciseId}`}
-                        className="flex items-center gap-2.5 rounded-lg border border-anthracite-700 bg-anthracite-900 p-2"
-                      >
-                        <ChargeBadge charge={ex.charge} size={24} />
-                        <div className="flex min-w-0 flex-1 flex-col gap-1">
-                          <span className="truncate text-sm font-medium text-white">
-                            {displayExerciseName(ex, brand)}
-                            {favoriteIds.has(ex.id) && (
-                              <span aria-hidden style={{ color: '#d4a052' }} className="ml-1">
-                                ★
-                              </span>
-                            )}
-                          </span>
-                          <div className="flex items-center gap-1.5 text-[11px] text-anthracite-300">
-                            <SetsStepper
-                              value={slot.nSets}
-                              onChange={(n) => setSlotSets(i, n)}
-                              testid={`create-sets-${slot.exerciseId}`}
-                              label={displayExerciseName(ex, brand)}
-                            />
-                            <span className="truncate">séries · {primaires || '—'}</span>
-                          </div>
-                        </div>
-                        <ExerciseEyeButton exercise={ex} brand={brand} />
-                        <button
-                          type="button"
-                          data-testid={`create-remove-${slot.exerciseId}`}
-                          onClick={() => removeSlot(i)}
-                          aria-label="Retirer"
-                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-anthracite-700 text-anthracite-300 transition hover:border-sang-700 hover:text-white"
-                        >
-                          ✕
-                        </button>
-                      </li>
-                    );
-                  })
-                )}
-              </ul>
-
-              <Button
-                variant="ghost"
-                fullWidth
-                data-testid="create-add-exo"
-                onClick={() => setPickerOpen(true)}
-              >
-                + Ajouter un exercice
-              </Button>
-
-              {error !== null && (
-                <p role="alert" className="text-sm text-sang-400">
-                  {error}
-                </p>
-              )}
-
-              <Button
-                variant="primary"
-                fullWidth
-                data-testid="create-confirm"
-                onClick={() => void confirm()}
-                disabled={submitting}
-              >
-                {submitting
-                  ? '…'
-                  : isToday
-                    ? 'Démarrer maintenant'
-                    : 'Programmer pour ce jour'}
-              </Button>
-            </>
+            </div>
           )}
+
+          {slots.length > 0 && (
+            <p className="-mb-2 text-xs text-anthracite-400">
+              {slots.length} exercice{slots.length > 1 ? 's' : ''} · {totalSets} séries · ~{estMin}
+              &nbsp;min
+            </p>
+          )}
+
+          {veilleMuscles.length > 0 && (
+            <p
+              data-testid="create-warn-veille"
+              className="rounded-lg border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-justify text-xs leading-snug text-amber-200"
+            >
+              Tu as travaillé{' '}
+              <strong className="text-amber-100">
+                {veilleMuscles.map(muscleLabel).join(', ')}
+              </strong>{' '}
+              hier. Travailler un autre groupe musculaire leur laisserait le temps de récupérer — tu
+              peux quand même continuer.
+            </p>
+          )}
+
+          {overshoot.length > 0 && (
+            <p
+              data-testid="create-warn-hebdo"
+              className="rounded-lg border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-justify text-xs leading-snug text-amber-200"
+            >
+              <strong className="text-amber-100">Volume élevé.</strong> Ces séries poussent{' '}
+              {overshoot.map((o) => muscleLabel(o.muscle)).join(', ')} au-delà de 20&nbsp;séries
+              cette semaine. C'est un beau total&nbsp;: tu peux t'arrêter là, ou continuer en
+              pensant à bien récupérer.
+            </p>
+          )}
+
+          <ul className="flex flex-col gap-2" data-testid="create-slots">
+            {slots.map((slot, i) => {
+              if (catalog === null || !catalog.has(slot.exerciseId)) return null;
+              const ex = catalog.get(slot.exerciseId);
+              const primaires = exercisePrimaires(ex).map(muscleLabel).join(', ');
+              return (
+                <li
+                  key={`${slot.exerciseId}-${i}`}
+                  data-testid={`create-slot-${slot.exerciseId}`}
+                  className="flex items-center gap-2.5 rounded-lg border border-anthracite-700 bg-anthracite-900 p-2"
+                >
+                  <ChargeBadge charge={ex.charge} size={24} />
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
+                    <span className="truncate text-sm font-medium text-white">
+                      {displayExerciseName(ex, brand)}
+                      {favoriteIds.has(ex.id) && (
+                        <span aria-hidden style={{ color: '#d4a052' }} className="ml-1">
+                          ★
+                        </span>
+                      )}
+                    </span>
+                    <div className="flex items-center gap-1.5 text-[11px] text-anthracite-300">
+                      <SetsStepper
+                        value={slot.nSets}
+                        onChange={(n) => setSlotSets(i, n)}
+                        testid={`create-sets-${slot.exerciseId}`}
+                        label={displayExerciseName(ex, brand)}
+                      />
+                      <span className="truncate">séries · {primaires || '—'}</span>
+                    </div>
+                  </div>
+                  <ExerciseEyeButton exercise={ex} brand={brand} />
+                  <button
+                    type="button"
+                    data-testid={`create-remove-${slot.exerciseId}`}
+                    onClick={() => removeSlot(i)}
+                    aria-label="Retirer"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-anthracite-700 text-anthracite-300 transition hover:border-sang-700 hover:text-white"
+                  >
+                    ✕
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+
+          <Button
+            variant="ghost"
+            fullWidth
+            data-testid="create-add-exo"
+            onClick={() => setPickerOpen(true)}
+          >
+            {favorites.length > 0 ? '+ Autre exercice du catalogue' : '+ Ajouter un exercice'}
+          </Button>
+
+          {error !== null && (
+            <p role="alert" className="text-sm text-sang-400">
+              {error}
+            </p>
+          )}
+
+          <Button
+            variant="primary"
+            fullWidth
+            data-testid="create-confirm"
+            onClick={() => void confirm()}
+            disabled={submitting}
+          >
+            {submitting ? '…' : isToday ? 'Démarrer maintenant' : 'Programmer pour ce jour'}
+          </Button>
         </div>
       )}
     </Sheet>

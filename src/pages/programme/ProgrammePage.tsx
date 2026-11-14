@@ -23,7 +23,7 @@ import { WelcomeBanner } from './WelcomeBanner';
 import { Widgets } from './Widgets';
 
 /**
- * Onglet Programme — Dashboard Coach OS (Conv #5a).
+ * Onglet Programme — Dashboard Coach OS.
  *
  * Composition :
  * 1. 4 widgets (streak / cette semaine / % cycle / prochain bilan — cette
@@ -56,7 +56,7 @@ export default function ProgrammePage() {
       navigate('/seance/runner');
       return;
     }
-    // Chantier B — proposition de récupération (déload opt-in). À la 1re fois
+    // Proposition de récupération (déload opt-in). À la 1re fois
     // qu'on engage un jour en semaine 5 sans décision prise : si l'assiduité
     // S1-4 est haute (fatigue accumulée), on propose ; sinon on décline en
     // silence. La décision est persistée AVANT toute génération de séance.
@@ -84,15 +84,14 @@ export default function ProgrammePage() {
 
   const dashboard = useMemo(() => {
     if (userState === null) return null;
-    // Conv #16 — en mode démo, "now" est ancré sur la date du snapshot Alex
+    // En mode démo, "now" est ancré sur la date du snapshot Alex
     // plutôt que sur la vraie date système : sinon le marqueur "today" du
     // calendrier tombe à la date réelle alors que le tour dit « Alex est mardi ».
-    //
-    // Conv #66 — cet ancrage vivait ici, en local. L'onglet Progrès ne l'avait
+    // Cet ancrage vivait ici, en local. L'onglet Progrès ne l'avait
     // pas et affichait 0 partout dès que le snapshot dépassait 8 semaines d'âge.
     // Il passe donc par `useToday`, partagé par tous les écrans.
     const now = today;
-    // Conv #11h — alignement streak sur les semaines du programme.
+    // Alignement streak sur les semaines du programme.
     const currentCycle = history.cycles.find(
       (c) => c.cycle_index === userState.cycle_index,
     );
@@ -148,7 +147,7 @@ export default function ProgrammePage() {
         <div aria-hidden className="flex-[2]" />
 
         <div className="flex flex-col gap-5">
-          {/* Conv #76 — le bandeau « Cycle terminé » vivait ici, entre les
+          {/* Le bandeau « Cycle terminé » vivait ici, entre les
               widgets et le calendrier : il se collait à la grille et poussait
               le calendrier vers le bas. L'entrée vers le bilan est passée dans
               la tuile « Prochain bilan », qui arrive justement à échéance
@@ -163,7 +162,7 @@ export default function ProgrammePage() {
             <CondensedCalendar
               matrix={dashboard.matrix}
               currentWeekInCycle={userState.current_week_in_cycle}
-              // Conv #16 — calendrier non-interactif en mode démo, sinon
+              // Calendrier non-interactif en mode démo, sinon
               // l'utilisateur peut ouvrir la PlanDaySheet d'Alex et bloquer
               // le tour guidé (la sheet masque le bandeau démo).
               onDayClick={demoActive ? () => undefined : handleDayClick}

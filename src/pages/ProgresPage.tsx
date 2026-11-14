@@ -21,7 +21,7 @@ import { CyclesView } from './progres/CyclesView';
 import { ForceView } from './progres/ForceView';
 import { VolumeView } from './progres/VolumeView';
 
-// Conv #17 — fusion des anciens onglets Couverture + Volume en un seul
+// Fusion des anciens onglets Couverture + Volume en un seul
 // onglet "Volume". Dump 2.4, étape 3 : silhouette + barres de la semaine et
 // colonnes du cycle ; les courbes restent à l'onglet Force.
 type Tab = 'volume' | 'force' | 'cycles';
@@ -33,7 +33,7 @@ const TABS: ReadonlyArray<{ readonly id: Tab; readonly label: string }> = [
 ];
 
 /**
- * Conv #76 — onglet d'arrivée réglable par `?tab=`. L'onglet vit dans un état
+ * Onglet d'arrivée réglable par `?tab=`. L'onglet vit dans un état
  * local : sans ce paramètre, tout lien vers `/progres` retombait sur Volume —
  * y compris le « Retour aux cycles » d'un bilan archivé, qui ramenait donc
  * l'utilisateur ailleurs que d'où il venait.
@@ -47,7 +47,7 @@ function parseTab(raw: string | null): Tab | null {
  *
  * 3 vues navigables par tabs :
  * - Volume : silhouette cliquable + barres de volume par muscle, semaine par
- *   semaine sur le cycle (dump 2.4, étape 3).
+ *   semaine sur le cycle.
  * - Force : courbe d'évolution du Plafond (e1RM) par exercice.
  * - Cycles : historique des cycles + dates, comparaison plafonds / volumes
  *   inter-cycles.
@@ -59,12 +59,12 @@ export default function ProgresPage() {
   const today = useToday();
   const [search] = useSearchParams();
   const [tab, setTab] = useState<Tab>(() => parseTab(search.get('tab')) ?? 'volume');
-  // B-3 — période des courbes Force. Un seul réglage pour tout l'écran plutôt
+  // Période des courbes Force. Un seul réglage pour tout l'écran plutôt
   // qu'un sélecteur par carte. (L'onglet Volume se lit par cycle depuis l'étape 3
   // du dump 2.4.)
   const [forceRange, setForceRange] = useState<ForceRange>('months');
 
-  // Conv #66 — sens du glissement : on entre par la droite quand on va vers un
+  // Sens du glissement : on entre par la droite quand on va vers un
   // onglet situé plus à droite. `prevTabIdx` n'est mis à jour qu'en effet (donc
   // APRÈS le rendu), ce qui laisse le rendu courant lire l'onglet précédent.
   const tabIdx = TABS.findIndex((t) => t.id === tab);
@@ -77,7 +77,7 @@ export default function ProgresPage() {
   const data = useMemo(() => {
     if (userState === null || catalog === null) return null;
     const musclesOf = buildMusclesOf(catalog);
-    // Dump 2.4, étape 3 — volume de chaque cycle, semaine par semaine. Le cycle
+    // Volume de chaque cycle, semaine par semaine. Le cycle
     // en cours n'a pas de date de fin ; la récupération d'un cycle clos se lit
     // dans son bilan (`recovery_taken`, inconnu sur les anciens cycles).
     const todayKey = dateKey(today);
@@ -104,10 +104,10 @@ export default function ProgresPage() {
       volumeCycles,
       currentWeek:
         currentCycle === undefined ? 1 : weekOfCycle(todayKey, currentCycle.start_date),
-      // B-1 — récence de travail par muscle, pour le tri des cartes Volume.
+      // Récence de travail par muscle, pour le tri des cartes Volume.
       lastWorked: computeLastWorkedByMuscle(history.feedbacks, musclesOf),
       cycles: buildCycleHistory(history.cycles),
-      // #63 — la courbe Force lit désormais les SNAPSHOTS e1RM (= plafond du
+      // La courbe Force lit désormais les SNAPSHOTS e1RM (= plafond du
       // bilan de séance), pas un recalcul Epley brut des feedbacks.
       force: computeE1rmSeriesFromSnapshots(
         history.e1rmSnapshots,
@@ -115,7 +115,7 @@ export default function ProgresPage() {
         history.feedbacks,
         userState.profile.bodyweight_kg,
       ),
-      // Dump 2.4, étape 5 (n° 21) — périodes à axe du temps commun.
+      // Périodes à axe du temps commun.
       monthsFrom: dateKey(addDays(parseDateKey(todayKey), -FORCE_WINDOW_DAYS)),
       cycleFrom: currentCycle?.start_date ?? todayKey,
       todayKey,
@@ -200,7 +200,7 @@ export default function ProgresPage() {
   );
 }
 
-/** Dump 2.4, étape 5 (n° 21) — une période en séances, en mois, en cycle, et tout. */
+/** Une période en séances, en mois, en cycle, et tout. */
 type ForceRange = 'sessions' | 'months' | 'cycle' | 'all';
 
 const FORCE_RANGES: ReadonlyArray<{ id: ForceRange; label: ReactNode }> = [

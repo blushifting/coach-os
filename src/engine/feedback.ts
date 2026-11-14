@@ -3,7 +3,7 @@
  *
  * Référence : recherche/03_modele_mathematique.md, §6.
  *
- * Bloc R — modèle de mesure UNIFIÉ : tous les exos sont mesurés via un plafond
+ * Modèle de mesure UNIFIÉ : tous les exos sont mesurés via un plafond
  * e1RM (Epley étendu = ancre cohérente, même « faux » physiologiquement aux
  * hautes reps : les reps fixes par exo×objectif gardent le biais constant → le
  * delta reste juste). Plus de cas spécial `e1RM_app` / double progression.
@@ -35,7 +35,7 @@ export const RPE_RESERVE_FLOOR = 6;
 // =============================================================================
 
 /**
- * Dump 2.4, étape 5 — fraction de l'écart avec la mesure de la séance que le
+ * Fraction de l'écart avec la mesure de la séance que le
  * Plafond parcourt (lissage). Avant : 0,1 à 0,3 selon la proximité de l'échec ;
  * sur des séries longues (≈ 12 reps, le cas d'Azur) c'était toujours 0,1, et le
  * Plafond restait en moyenne 7 % sous les mesures (11 % au tirage vertical) :
@@ -110,12 +110,12 @@ export interface UpdateE1rmOptions {
   readonly skipEma?: boolean;
 
   /**
-   * A-3 (#73) — semaine de RÉCUPÉRATION : la séance ne peut que faire MONTER le
+   * Semaine de RÉCUPÉRATION : la séance ne peut que faire MONTER le
    * plafond, jamais le baisser. On travaille volontairement plus léger, donc une
    * agrégation Epley plus basse ne mesure rien ; mais si l'user charge quand même
    * et bat son plafond, c'est un vrai progrès qu'on doit enregistrer (snapshot →
    * courbe Force) et afficher au bilan. Remplace l'ancien « on saute tout ».
-   * Dump 2.4, étape 5 — la montée passe par le même lissage qu'une séance normale.
+   * La montée passe par le même lissage qu'une séance normale.
    *
    * Exo jamais mesuré → aucune mise à jour (une semaine allégée ne calibre pas).
    */
@@ -123,7 +123,7 @@ export interface UpdateE1rmOptions {
 }
 
 /**
- * Résultat d'une mise à jour d'e1RM pour un exo (Bloc R).
+ * Résultat d'une mise à jour d'e1RM pour un exo.
  *  - `definitive === true` : au moins une série « informative » (RPE > 4+) →
  *    mesure fiable, un snapshot daté sera créé (confidence → 'measured', l'exo
  *    compte au bilan).
@@ -177,7 +177,7 @@ export function updateE1rmForExercise(
   // Bootstrap si vide : on pose old = e1rmAgg.
   const old = state.e1rm[exercise.id] ?? e1rmAgg;
 
-  // A-3 (#73) — récupération : le Plafond ne peut que monter. La mise à jour n'est
+  // Récupération : le Plafond ne peut que monter. La mise à jour n'est
   // « définitive » (⇒ snapshot ⇒ point sur la courbe Force) que si le plafond a
   // réellement monté sur une série informative. Dump 2.4, étape 5 — la montée est
   // lissée comme en semaine normale : adoptée telle quelle, elle faisait sauter la
@@ -201,7 +201,7 @@ export function updateE1rmForExercise(
     // qu'un bootstrap heuristique).
     next = e1rmAgg;
   } else {
-    // Dump 2.4, étape 5 — plus d'adoption sans lissage quand la charge dépasse
+    // Plus d'adoption sans lissage quand la charge dépasse
     // la prescription (ancien « Bloc L ») : elle évitait de rétrograder une charge
     // tirée du Plafond, ce que la progression de l'étape 4 ne fait plus, et elle
     // faisait sauter la courbe à chaque cran franchi.
@@ -218,7 +218,7 @@ function smoothed(measured: number, old: number): number {
 }
 
 // =============================================================================
-// 4. Mesure d'une séance, unité « une rep » et records (dump 2.4, étape 5)
+// 4. Mesure d'une séance, unité « une rep » et records
 // =============================================================================
 
 /**

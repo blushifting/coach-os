@@ -1,5 +1,5 @@
 /**
- * Suggestion prédictive de séance au moment de planifier (Conv #30).
+ * Suggestion prédictive de séance au moment de planifier.
  *
  * Remplace l'ancien « rythme imposé » du calendrier (`weeklyTrainingPattern`,
  * retiré) ET la 1re version « chevauchement musculaire » (Conv #30, abandonnée :
@@ -23,7 +23,7 @@ const MAX_LOOKBACK_DAYS = 14;
 
 /**
  * Max de séances d'affilée avant un repos conseillé, selon la fréquence hebdo.
- * Validé avec Azur (Conv #30) : 3×=A·repos·B·repos·C·repos ; 4×=paires
+ * Validé avec Azur : 3×=A·repos·B·repos·C·repos ; 4×=paires
  * (AB·repos·CD·repos) ; 5×=blocs de 3 ; 6×=rotation complète ABCDEF puis repos.
  */
 const CADENCE: Readonly<Record<number, number>> = { 3: 1, 4: 2, 5: 3, 6: 6 };

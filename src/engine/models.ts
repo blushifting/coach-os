@@ -32,7 +32,7 @@ export enum Level {
 }
 
 /**
- * Conv #22 — Catégorie de durée MAX par séance (input user, étape C de
+ * Catégorie de durée MAX par séance (input user, étape C de
  * l'onboarding). La valeur sert de **plafond** au choix du split et au
  * solveur de séries : on dimensionne sur la demande effective (Σ patterns
  * nécessaires aux prios + R1-R4), et on alerte si le programme tient
@@ -49,15 +49,8 @@ export enum DurationCategory {
   LONG = 'long',     // ≤ 2h
 }
 
-/** Plafond max patterns / séance par catégorie de durée. */
-export const MAX_PATTERNS_PER_SESSION: Record<DurationCategory, number> = {
-  [DurationCategory.SHORT]: 4,
-  [DurationCategory.MEDIUM]: 6,
-  [DurationCategory.LONG]: 8,
-};
-
 /**
- * Conv #22 / #29 — Préférence d'équipement de l'utilisateur. Les trois
+ * Préférence d'équipement de l'utilisateur. Les trois
  * premières valeurs sont des contraintes STRICTES (« uniquement ») : à
  * l'auto-sélection des exos, on ne pioche QUE dans le type de charge demandé
  * (cf. `chargesForPreference`). L'user reste libre de swap manuellement ensuite.
@@ -105,7 +98,7 @@ export enum GymBrand {
 }
 
 /**
- * Dump 2.4, étape 2 (D2, D3) — intention de l'utilisateur pour un muscle.
+ * Intention de l'utilisateur pour un muscle.
  *
  * Elle ne règle que la DOSE (séries par semaine), jamais la manière (reps,
  * effort). Un muscle sans intention n'a pas d'entrée dans `muscle_goals` : il
@@ -123,7 +116,7 @@ export enum MuscleIntention {
 /** Règle de progression hebdo d'un PlannedExercise (cf. 09 §2.1). */
 export enum ProgressionRule {
   DOUBLE_PROGRESSION = 'double_progression',
-  // Bloc O — LINEAR_2_5KG / WAVE_5_3_1 / AMRAP_LP retirés avec les programmes
+  // LINEAR_2_5KG / WAVE_5_3_1 / AMRAP_LP retirés avec les programmes
   // tout faits (schémas non-RPE). Seul ISRAETEL_VOLUME alimente le custom.
   ISRAETEL_VOLUME = 'israetel_volume',
 }
@@ -162,7 +155,7 @@ export enum ChargeType {
 }
 
 /**
- * Conv #29 — Types de charge autorisés pour une préférence STRICTE.
+ * Types de charge autorisés pour une préférence STRICTE.
  * Renvoie `null` pour NO_PREFERENCE/undefined (= aucune restriction).
  * Le poids du corps lesté/assisté (BODYWEIGHT_LOADED/ASSISTED) n'entre dans
  * aucune catégorie stricte : il requiert barre/ceinture/machine d'assistance.
@@ -319,17 +312,17 @@ export interface Profile {
    */
   available_equip: Set<string>;
   /**
-   * Conv #22 — durée MAX par séance, input user étape C onboarding.
+   * Durée MAX par séance, input user étape C onboarding.
    * Optionnel pour rétrocompat (UserStates pre-Conv#22 n'en ont pas).
    */
   duration_category?: DurationCategory;
   /**
-   * Conv #22 — Préférence machines / poids libres / aucune préférence.
+   * Préférence machines / poids libres / aucune préférence.
    * Sert au tri auto des exos à l'onboarding. Optionnel pour rétrocompat.
    */
   equipment_preference?: EquipmentPreference;
   /**
-   * Conv #23 — Marque dominante d'équipement de la salle. Affecte
+   * Marque dominante d'équipement de la salle. Affecte
    * uniquement l'affichage des intitulés (« Matrix Chest Press » au
    * lieu de « Développé machine »). Optionnel pour rétrocompat ;
    * `undefined` ou `NONE` = libellés génériques.
@@ -399,7 +392,7 @@ export interface SessionItem {
 }
 
 export interface SessionPlan {
-  /** Date ISO (YYYY-MM-DD) — port du `datetime.date` Python. */
+  /** Date ISO (YYYY-MM-DD). */
   seance_date: string;
   week_in_cycle: number;
   cycle_index: number;
@@ -407,7 +400,7 @@ export interface SessionPlan {
   items: SessionItem[];
   label: string;
   /**
-   * Bloc G (Conv #32) — nom affiché choisi par l'utilisateur. Découplé du
+   * Nom affiché choisi par l'utilisateur. Découplé du
    * `label` (qui porte l'identité de rotation A/B/C). Si présent, il prime sur
    * `formatSessionLabel(label)` à l'affichage. Absent sur les anciens blobs.
    */
@@ -433,7 +426,7 @@ export interface SessionFeedback {
   sets: SetFeedback[];
   label: string;
   /**
-   * Bloc G (Conv #32) — nom affiché choisi, recopié du `SessionPlan` au commit,
+   * Nom affiché choisi, recopié du `SessionPlan` au commit,
    * pour que le bilan/calendrier gardent le nom custom. Absent sur anciens blobs.
    */
   custom_name?: string | null;
@@ -467,11 +460,6 @@ export function makeMuscleGoal(input: MuscleGoalInput): MuscleGoal {
     priority_rank:
       input.intention === MuscleIntention.DEVELOPPER ? (input.priority_rank ?? 99) : 99,
   };
-}
-
-/** Le muscle est-il à développer ? (`undefined` = sans intention.) */
-export function isDevelop(goal: MuscleGoal | undefined): boolean {
-  return goal?.intention === MuscleIntention.DEVELOPPER;
 }
 
 // =============================================================================
@@ -519,7 +507,7 @@ export interface DayTemplate {
   target_muscles_focus: string[];
   exercises: PlannedExercise[];
   /**
-   * Bloc G (Conv #32) — nom affiché choisi par l'utilisateur pour ce jour de
+   * Nom affiché choisi par l'utilisateur pour ce jour de
    * cycle. `label` garde l'identité de rotation A/B/C ; `custom_name` prime à
    * l'affichage (cf. `sessionDisplayName`). Absent sur anciens blobs.
    */
@@ -551,7 +539,7 @@ export function makeWeeklyTemplate(input: WeeklyTemplateInput): WeeklyTemplate {
 }
 
 // =============================================================================
-// Skeleton (Conv #22) — grille pattern × séance issue de l'étape D, remplie
+// Skeleton — grille pattern × séance issue de l'étape D, remplie
 // par l'user à l'étape E. Persiste à côté du WeeklyTemplate final pour
 // permettre "Modifier la grille" et la régénération des séries (étape F).
 // =============================================================================
@@ -644,7 +632,7 @@ export interface CycleReview {
   suggested_action: SuggestedAction;
   warnings: string[];
   /**
-   * Conv #14c-7 — snapshot de `state.muscle_goals` posé au moment du bilan
+   * 7 — snapshot de `state.muscle_goals` posé au moment du bilan
    * (≈ état des objectifs en fin de cycle). Sert à afficher "visé vs fait"
    * dans l'historique des cycles. Optionnel : les anciens cycles clôturés
    * avant cette feature n'auront pas ce champ. Les cycles clos avant la 2.4 le
@@ -652,7 +640,7 @@ export interface CycleReview {
    */
   muscle_goals_snapshot?: StoredMuscleGoal[];
   /**
-   * Dump 2.4, étape 3 (n° 19) — la semaine de récupération a-t-elle été prise
+   * La semaine de récupération a-t-elle été prise
    * (`deload_decision === 'accepted'` à la clôture) ? La moyenne de volume du
    * bilan compte cette semaine avec un repère divisé par deux. Absent sur les
    * cycles clos avant la 2.3.2 : la semaine 5 est alors laissée hors moyenne.
@@ -702,7 +690,7 @@ export interface EquipmentOverride {
   min_load_kg: number | null;
   max_load_kg: number | null;
   /**
-   * Conv #20 — Mode "Poids du corps seulement" (sticky).
+   * Mode "Poids du corps seulement" (sticky).
    *  - `true`  : la prescription force load_kg = 0 ; seules les reps
    *              progressent (cf. `progression.ts`). N'a de sens que sur les exos
    *              `BODYWEIGHT_LOADED` / `BODYWEIGHT_ASSISTED`.
@@ -740,7 +728,7 @@ export interface UserState {
   muscle_goals: Record<string, MuscleGoal>;
   current_cycle_plan: WeeklyTemplate | null;
   /**
-   * Bloc O — mode de construction du programme courant :
+   * Mode de construction du programme courant :
    *  - `'auto'`   : généré par le moteur (sur-mesure).
    *  - `'manual'` : grille remplie à la main par l'utilisateur. En fin de cycle,
    *    le plan manuel est reconduit (pas régénéré). Absent sur anciens blobs
@@ -750,7 +738,7 @@ export interface UserState {
   // --- override équipement par exo ---
   equipment_overrides: Record<string, EquipmentOverride>;
   /**
-   * Conv #22 — squelette du cycle courant (grille pattern × séance) si on
+   * Squelette du cycle courant (grille pattern × séance) si on
    * est en mode custom co-construit. Persisté à côté de `current_cycle_plan`
    * pour permettre "Modifier la grille" et la re-distribution des séries
    * sans repartir de zéro. null pour les programmes guidés ou avant la
@@ -758,13 +746,13 @@ export interface UserState {
    */
   current_skeleton?: SkeletonTemplate | null;
   /**
-   * Conv #22 — exos préférés de l'user par pattern (mémorisés lors des
+   * Exos préférés de l'user par pattern (mémorisés lors des
    * choix à l'étape E). Sert à proposer ces exos en tête de liste lors des
    * onboardings/restarts suivants. Clé = `Pattern` value (string).
    */
   favorite_exercise_per_pattern?: Record<string, string>;
   /**
-   * Bloc F (Conv #31) — favoris **unifiés** de l'utilisateur (LA notion
+   * Favoris **unifiés** de l'utilisateur (LA notion
    * « favori » visible dans l'UI). Alimenté par l'étoile du Catalogue ET la
    * prédilection choisie à l'onboarding. `favorite_exercise_per_pattern`
    * devient un cache de seeding interne au moteur (1 favori/pattern) ; ce set
@@ -773,14 +761,14 @@ export interface UserState {
    */
   favorite_exercise_ids?: string[];
   /**
-   * Bloc F (Conv #31) — nombre de fois où l'utilisateur a choisi un exo en
+   * Nombre de fois où l'utilisateur a choisi un exo en
    * ajout ad-hoc / variante de remplacement en séance. Sert à proposer de
    * l'ajouter aux favoris à la 3ᵉ utilisation (s'il ne l'est pas déjà).
    * Clé = exercise_id. Absent sur anciens blobs.
    */
   exercise_pick_counts?: Record<string, number>;
   /**
-   * Chantier B (plan 11) — décision de l'utilisateur sur la semaine de
+   * Décision de l'utilisateur sur la semaine de
    * récupération (déload opt-in) du cycle courant :
    *  - `'accepted'` : semaine 5 allégée (volume ÷2, charge ×0,9, aucune
    *    mesure) — cf. `isDeloadActive` (volume.ts).
@@ -791,14 +779,19 @@ export interface UserState {
    */
   deload_decision?: 'accepted' | 'declined' | null;
   /**
-   * Dump 2.4, étape 4 — fourchette de reps choisie par exercice (fiche, ou
+   * Fourchette de reps choisie par exercice (fiche, ou
    * proposition de fin de séance). Absent = celle conseillée par le catalogue.
    * Un choix explicite (même identique à la conseillée) coupe les propositions
    * de changement pour cet exercice.
    */
   rep_ranges: Record<string, RepRangeKey>;
   /**
-   * Dump 2.4, étape 5 — version du calcul des Plafonds avec laquelle l'historique
+   * Note libre par exercice (réglages de machine, consignes),
+   * affichée sous le nom en séance. Absent = pas de note ; jamais de chaîne vide.
+   */
+  exercise_notes: Record<string, string>;
+  /**
+   * Version du calcul des Plafonds avec laquelle l'historique
    * a été mesuré. Inférieure à `PLAFOND_MODEL_VERSION` : l'historique est
    * recalculé une fois depuis les séries enregistrées (`plafond-replay.ts`).
    */
@@ -807,12 +800,12 @@ export interface UserState {
 
 /**
  * Version courante du calcul des Plafonds. 2 = pente par type d'exercice et plus
- * d'adoption sans lissage quand la charge dépasse la prescription (dump 2.4, étape 5).
+ * d'adoption sans lissage quand la charge dépasse la prescription.
  */
 export const PLAFOND_MODEL_VERSION = 2;
 
 /**
- * Dump 2.4, étape 4 — les trois fourchettes de reps (valeurs dans
+ * Les trois fourchettes de reps (valeurs dans
  * `engine/progression.ts`, `REP_RANGES`) : 6–10, 8–13, 10–16.
  */
 export type RepRangeKey = 'heavy' | 'medium' | 'light';
@@ -837,6 +830,7 @@ export function makeUserState(profile: Profile): UserState {
     exercise_pick_counts: {},
     deload_decision: null,
     rep_ranges: {},
+    exercise_notes: {},
     plafond_model: PLAFOND_MODEL_VERSION,
   };
 }

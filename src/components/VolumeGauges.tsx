@@ -1,5 +1,5 @@
 /**
- * Bloc O — jauges de volume « live » du mode « à la main ».
+ * Jauges de volume « live » du mode « à la main ».
  *
  * Une barre par muscle qui a un objectif (à développer, puis à entretenir) :
  * séries pondérées par semaine du plan en cours, sur la barre commune (dump 2.4,

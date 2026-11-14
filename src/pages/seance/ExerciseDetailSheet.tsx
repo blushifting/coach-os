@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Sheet } from '@/components/Sheet';
 import { Button } from '@/components/Button';
 import { ChargeMechanicNote } from '@/components/ChargeMechanicNote';
+import { ExerciseNoteField } from '@/components/ExerciseNoteField';
 import { AnatomicalSilhouette, type SilhouetteStatus } from '@/components/AnatomicalSilhouette';
 import type { Catalog } from '@/engine/catalog';
 import { exercisePrimaires, exerciseSynergistes, Pattern } from '@/engine/models';
@@ -28,7 +29,7 @@ interface ExerciseDetailSheetProps {
   readonly onClose: () => void;
   /**
    * Callback de remplacement. Si fourni, un bouton "Remplacer cet exo" est
-   * affiché en bas de la sheet (cf. Conv #10d). Si absent, mode lecture seule.
+   * affiché en bas de la sheet. Si absent, mode lecture seule.
    */
   readonly onReplace?: (newExerciseId: string) => Promise<void> | void;
 }
@@ -36,7 +37,7 @@ interface ExerciseDetailSheetProps {
 /**
  * Fiche détaillée d'un exo (séance en cours OU plan en preview).
  *
- * Conv #10d : refonte alignée avec `CatalogueDetailSheet` (silhouette grande,
+ * Refonte alignée avec `CatalogueDetailSheet` (silhouette grande,
  * sections riches) + bouton "Remplacer cet exo" si `onReplace` est fourni.
  * Le remplacement utilise `alternativeVariantsFor` en mode élargi par défaut
  * (toggle dans le picker pour restreindre aux variantes proches).
@@ -51,10 +52,10 @@ export function ExerciseDetailSheet({
   const equipment = useCoachOsStore(
     (s) => s.userState?.profile.available_equip ?? null,
   );
-  // Conv #17 — protection démo : le remplacement d'exo écrit en DB
+  // Protection démo : le remplacement d'exo écrit en DB
   // (replaceSessionExercise) donc on désactive le bouton en mode démo.
   const demoActive = useDemoMode();
-  // Conv #24 (D10) — DOIT rester au-dessus du `return null` ci-dessous : avant,
+  // DOIT rester au-dessus du `return null` ci-dessous : avant,
   // ce hook était appelé après l'early-return `if (exercise === null)`, donc
   // le nombre de hooks changeait à l'ouverture de la sheet (exercise null →
   // non-null) → React plantait (« Rendered more hooks… ») au clic sur « i ».
@@ -122,6 +123,8 @@ export function ExerciseDetailSheet({
 
           <ExercisePhoto exerciseId={exercise.id} />
 
+          <ExerciseNoteField exerciseId={exercise.id} />
+
           <div className="flex flex-wrap items-center justify-center gap-2">
             <ChargeBadge charge={exercise.charge} size={32} />
             <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
@@ -135,7 +138,7 @@ export function ExerciseDetailSheet({
             )}
           </div>
 
-          {/* E-4 — description auto retirée (redondante avec le badge type/
+          {/* Description auto retirée (redondante avec le badge type/
               pattern ci-dessus et les sections Muscles ci-dessous). On garde
               seulement une vraie note d'exo si elle existe. */}
           {exercise.note && exercise.note.trim() !== '' && (
@@ -144,7 +147,7 @@ export function ExerciseDetailSheet({
             </p>
           )}
 
-          {/* Bloc F (Conv #31) — mécanique de charge (assisté/lesté/PdC). */}
+          {/* Mécanique de charge (assisté/lesté/PdC). */}
           <ChargeMechanicNote charge={exercise.charge} />
 
           {primaires.length > 0 && (
@@ -177,7 +180,7 @@ export function ExerciseDetailSheet({
             </SectionBlock>
           )}
 
-          {/* E-4 — « Reps hypertrophie/force » retirées (l'app gère les reps ;
+          {/* « Reps hypertrophie/force » retirées (l'app gère les reps ;
               déjà absentes du catalogue depuis Conv #52). La section se réduit
               au repos conseillé, alignée sur la fiche Catalogue. */}
           <SectionBlock label="Repos conseillé">

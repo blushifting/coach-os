@@ -1,5 +1,5 @@
 /**
- * Glyphes SVG inline réutilisables (Conv #10c).
+ * Glyphes SVG inline réutilisables.
  *
  * Tracés `stroke-currentColor`, alignés avec le texte via `align-text-bottom`,
  * en remplacement des caractères Unicode `←` / `→` qui rendent mal selon la
@@ -48,7 +48,7 @@ export function ChevronRight({ className, ...rest }: SVGProps<SVGSVGElement>) {
 }
 
 /**
- * Flèche de tendance (Conv #24) — hausse / baisse / stable. Hérite la couleur
+ * Flèche de tendance — hausse / baisse / stable. Hérite la couleur
  * du parent (`currentColor`) : double visuellement le code couleur feu
  * tricolore des évolutions de Plafond (couleur jamais seule, cf. accessibilité).
  */

@@ -43,7 +43,7 @@ import { pickIsolationsForMuscle } from './selection';
 /**
  * Nombre de séries par semaine pour 1 exo, sur 5 semaines (4 + déload).
  *
- * Bloc L (Conv #37) — **séries FIXES** sur les 4 semaines de travail, puis
+ * **séries FIXES** sur les 4 semaines de travail, puis
  * déload. On a abandonné l'ancien bump hebdo « +1 série/sem/exo » (algo Coach OS
  * custom, infidèle aux sources : Israetel ajoute des séries par MUSCLE et SI
  * l'user progresse — synthèse experte, évidence faible — pas par exo et pas
@@ -64,10 +64,10 @@ export function cycleSetProgression(
   // est garanti en amont, au moment où `baseSets` est déterminé).
   const sets = Math.min(vMaxPerExo, baseSets);
   const progression: number[] = [sets, sets, sets, sets];
-  // #18 (E-3) — plancher de 2 séries : on ne prescrit jamais moins de 2 séries,
+  // Plancher de 2 séries : on ne prescrit jamais moins de 2 séries,
   // même en récupération (un exo à 3 séries tombait à 1). Le déload reste réel
   // via la charge (×0,9) et le RPE 6, pas seulement via le nombre de séries.
-  // A-2 (#73) — …sans jamais dépasser le compte des semaines normales : un exo
+  // …sans jamais dépasser le compte des semaines normales : un exo
   // volontairement à 1 série resterait à 1 en récup, il ne doit pas y gagner
   // une série.
   const deload = Math.min(sets, Math.max(2, Math.trunc(sets * DELOAD_FACTOR)));
@@ -157,7 +157,7 @@ export function enforceLengthenedBias(
 }
 
 // =============================================================================
-// 7. Fusion d'exercices équivalents (Conv #19)
+// 7. Fusion d'exercices équivalents
 // =============================================================================
 
 /**
@@ -167,7 +167,7 @@ export function enforceLengthenedBias(
  *  - les mêmes muscles primaires (coef ≥ 1.0), set comparé par contenu
  *  - le même `charge` type (DUMBBELL vs BARBELL etc. restent distincts)
  *
- * Validé par Azur (Conv #19) — strict pour éviter des fusions douteuses
+ * Validé par Azur — strict pour éviter des fusions douteuses
  * (bench barre vs haltère restent séparés car charge différente).
  */
 function equivalenceKey(ex: Exercise): string {
@@ -187,7 +187,7 @@ function equivalenceKey(ex: Exercise): string {
  *
  * Cap : la somme de `base_sets` et chaque point de `progression` est cappée au
  * plafond DUR par-exo (`MAX_SETS_PER_EXERCISE_PER_SESSION` = 5) — la fusion
- * produit UN exercice, qui doit respecter la règle 3-5 (Bloc L).
+ * produit UN exercice, qui doit respecter la règle 3-5.
  */
 export function mergeEquivalentExercises(
   day: DayTemplate,
@@ -250,7 +250,7 @@ import { allocateSets } from './sets_allocator';
 import { DurationCategory } from './models';
 
 /**
- * Conv #30 — Passe « préférence d'équipement stricte » sur le plan final.
+ * Passe « préférence d'équipement stricte » sur le plan final.
  *
  * Le filtre par charge à l'auto-fill (candidatesForCell / autoGenerateCyclePlanV3)
  * est limité au PATTERN de la case : si aucune machine/poulie n'existe pour ce
@@ -319,7 +319,7 @@ export function enforceEquipmentPreference(
 }
 
 /**
- * Conv #22 — Génère un cycle via le nouveau path en 2 temps :
+ * Génère un cycle via le nouveau path en 2 temps :
  *  1. `buildSkeleton(state, durationCategory)` → grille (pattern × séance)
  *     vide, présentée à l'user à l'étape D.
  *  2. L'user remplit la grille à l'étape E (chosen_exercise_id par cell).
@@ -349,9 +349,9 @@ export function generateCyclePlanV3(
   // CONSTRUCTION (répartition égale du volume dans `buildVolumePlan`).
   enforceLengthenedBias(weekly, state, catalog);
   mergeEquivalentExercisesInPlan(weekly, catalog);
-  // Conv #39 — l'ordre canonique du split est conservé (alternance U/L/U/L…).
+  // L'ordre canonique du split est conservé (alternance U/L/U/L…).
   renumberSessionLabels(weekly);
-  // Conv #30 — en DERNIER : la préférence d'équipement stricte prime sur les
+  // En DERNIER : la préférence d'équipement stricte prime sur les
   // swaps précédents (lengthened bias en poids libre, etc.). Corrige les fuites
   // de charge dans le plan final.
   enforceEquipmentPreference(weekly, state, catalog);
@@ -359,7 +359,7 @@ export function generateCyclePlanV3(
 }
 
 /**
- * Conv #22 — Helper : génère squelette + alloue séries d'une traite,
+ * Helper : génère squelette + alloue séries d'une traite,
  * pour les cas où on veut un cycle "tout fait" sans étape E manuelle
  * (ex. tests, migration, mode démo). L'auto-fill des variantes utilise
  * le 1er candidat de chaque case (= compound canonique).
@@ -380,7 +380,7 @@ export function autoGenerateCyclePlanV3(
           if (c2.chosen_exercise_id) sameSeen.add(c2.chosen_exercise_id);
         }
       }
-      // Conv #29 — respecte la préférence d'équipement stricte (cf.
+      // Respecte la préférence d'équipement stricte (cf.
       // chargesForPreference). Fallback inPattern pour machines/poids libres ;
       // pas de fallback pour BODYWEIGHT (PdC strict).
       const allowed = chargesForPreference(state.profile.equipment_preference);
@@ -408,7 +408,7 @@ export function autoGenerateCyclePlanV3(
   return generateCyclePlanV3(skeleton, state, catalog);
 }
 
-// Conv #39 — `dayNeuralCost` / `orderDaysByNeuralCost` (Conv #21b) supprimés :
+// `dayNeuralCost` / `orderDaysByNeuralCost` supprimés :
 // le tri des jours par coût neuro cassait l'alternance des splits (U/U/L/L).
 // L'ordre canonique du `SplitTemplate` est désormais conservé tel quel.
 

@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { useCoachOsStore } from '@/store';
-import {
-  selectCycleProgress,
-  selectProfile,
-} from '@/store/selectors';
 import { startUser } from '@/engine/engine';
 import { Catalog } from '@/engine/catalog';
 import { makeTestProfile } from '@/test-utils/fixtures';
@@ -17,15 +13,11 @@ describe('useCoachOsStore', () => {
     expect(s.history.sessions).toEqual([]);
   });
 
-  it('setUserState met à jour et impacte les selectors', () => {
+  it('setUserState met à jour l’état', () => {
     const state = startUser(makeTestProfile(), new Catalog());
     useCoachOsStore.getState().setUserState(state);
 
-    expect(selectProfile(useCoachOsStore.getState())?.bodyweight_kg).toBe(80);
-    expect(selectCycleProgress(useCoachOsStore.getState())).toEqual({
-      cycle_index: 1,
-      week_in_cycle: 1,
-    });
+    expect(useCoachOsStore.getState().userState?.profile.bodyweight_kg).toBe(80);
   });
 
   it('resetAll remet tout à zéro', () => {

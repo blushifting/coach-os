@@ -3,12 +3,8 @@
  *
  *   npx tsx scripts/generate-alex-demo.mts
  *
- * Pourquoi un script TS plutôt que le simulator Python du prototype :
- * - L'engine TS est la source de vérité actuelle. Régénérer via Python force
- *   à maintenir un mapping dataclass→SerializedUserState qui drifte à chaque
- *   évolution des types (Conv #11+, #12 ont déjà bougé `MuscleGoal`,
- *   `EquipmentOverride`, `weekly_volume_debt`). Plus simple de scripter sur
- *   l'engine livré.
+ * - Il s'appuie sur le moteur et le sérialiseur de l'app : la démo suit les
+ *   évolutions du modèle sans mapping à maintenir.
  * - Pour un tuto pédagogique, on veut un parcours **déterministe** où chaque
  *   phénomène (PR / déload / swap / ajustement RPE / séance ratée) tombe à un
  *   endroit précis et reconnaissable, pas une distribution stochastique.
@@ -46,9 +42,9 @@ import type {
   CycleRow,
   E1rmSnapshotRow,
   FeedbackRow,
-  SerializedUserState,
   SessionRow,
 } from '../src/db/schema';
+import { serializeUserState } from '../src/db/serialize';
 import { demoSnapshotSchema, type DemoSnapshot } from '../src/lib/demo-schema';
 
 // =============================================================================
@@ -573,37 +569,6 @@ function buildCycle1Review(ctx: PlayerCtx): CycleReview {
 }
 
 // =============================================================================
-// Sérialisation UserState
-// =============================================================================
-
-function serializeUserState(state: UserState): SerializedUserState {
-  return {
-    profile: {
-      sex: state.profile.sex,
-      age: state.profile.age,
-      level: state.profile.level,
-      sessions_per_week: state.profile.sessions_per_week,
-      bodyweight_kg: state.profile.bodyweight_kg,
-      available_equip: [...state.profile.available_equip],
-    },
-    e1rm: { ...state.e1rm },
-    k_user: { ...state.k_user },
-    reps_pr: { ...state.reps_pr },
-    volume_min: { ...state.volume_min },
-    current_week_in_cycle: state.current_week_in_cycle,
-    cycle_index: state.cycle_index,
-    history: state.history,
-    last_used_for_muscle: { ...state.last_used_for_muscle },
-    muscle_goals: { ...state.muscle_goals },
-    current_cycle_plan: state.current_cycle_plan,
-    equipment_overrides: { ...state.equipment_overrides },
-    weekly_volume_debt: { ...state.weekly_volume_debt },
-    deload_decision: state.deload_decision ?? null,
-    plafond_model: state.plafond_model,
-  };
-}
-
-// =============================================================================
 // Main
 // =============================================================================
 
@@ -747,7 +712,14 @@ function main(): void {
         "Alex est un utilisateur fictif. On parcourt son programme ensemble pour voir l'app en vrai : des séances passées, des Plafonds qui montent, un bilan de cycle. Tout ça, tu l'auras toi-même dans quelques semaines.",
     },
     generated_at: DEMO_TODAY,
-    user_state: serializeUserState(state),
+    // Dump 2.4, n° 14 — deux notes pour montrer la fonction pendant la visite.
+    user_state: serializeUserState({
+      ...state,
+      exercise_notes: {
+        leg_press_45: 'Dossier cran 3, pieds au milieu du plateau.',
+        bench_bb: 'Omoplates serrées, pieds à plat.',
+      },
+    }),
     history: {
       sessions: ctx.sessions,
       feedbacks: ctx.feedbacks,

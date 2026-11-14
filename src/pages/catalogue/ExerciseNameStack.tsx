@@ -24,7 +24,7 @@ interface ExerciseNameStackProps {
   readonly size?: 'xs' | 'sm' | 'base' | 'lg';
   readonly className?: string;
   /**
-   * Conv #23 — force une marque autre que celle du store. Utilisé
+   * Force une marque autre que celle du store. Utilisé
    * pendant l'onboarding (le draft contient une marque pas encore
    * persistée dans `state.profile.gym_brand`).
    */

@@ -1,5 +1,5 @@
 /**
- * Helpers d'aperçu du récap d'onboarding (Conv #11b).
+ * Helpers d'aperçu du récap d'onboarding.
  *
  * Calculs **en mémoire**, sans écriture DB/store : volume hebdo par muscle
  * (brut + pondéré, pour les jauges du mode « à la main »), application de
@@ -48,7 +48,7 @@ export function weeklyVolumeByMuscle(
 }
 
 /**
- * Bloc O — séries **pondérées** par muscle sur le plan (Σ coef × base_sets sur
+ * Séries **pondérées** par muscle sur le plan (Σ coef × base_sets sur
  * TOUS les muscles de l'exo, primaires + synergistes), pas seulement les
  * primaires. C'est l'unité des bandes de volume (`volumeMark`),
  * donc la base des jauges « live » du mode « à la main ». Même logique que
@@ -76,85 +76,12 @@ export function weightedWeeklyVolumeByMuscle(
 // Application des variantes choisies (en mémoire, sans muter l'original)
 // =============================================================================
 
-/** Une variante choisie par l'utilisateur sur un slot précis du plan. */
-export interface VariantReplacement {
-  readonly dayIndex: number;
-  readonly slotIndex: number;
-  readonly newExerciseId: string;
-}
-
-/**
- * Retourne une copie du `WeeklyTemplate` avec les variantes appliquées sur les
- * slots concernés. Conserve `base_sets`, `progression`, `progression_rule`,
- * `role`, `intensity_scheme` — seule l'`exercise_id` change. Si un index est
- * hors plage, le replacement est silencieusement ignoré.
- */
-export function applyVariantsToTemplate(
-  template: WeeklyTemplate,
-  replacements: ReadonlyArray<VariantReplacement>,
-): WeeklyTemplate {
-  if (replacements.length === 0) return template;
-  const byDay: Map<number, Map<number, string>> = new Map();
-  for (const r of replacements) {
-    if (!byDay.has(r.dayIndex)) byDay.set(r.dayIndex, new Map());
-    byDay.get(r.dayIndex)!.set(r.slotIndex, r.newExerciseId);
-  }
-  const newDays: DayTemplate[] = template.days.map((day, di) => {
-    const dayReplacements = byDay.get(di);
-    if (dayReplacements === undefined) return day;
-    const newExos: PlannedExercise[] = day.exercises.map((p, pi) => {
-      const newId = dayReplacements.get(pi);
-      return newId === undefined ? p : { ...p, exercise_id: newId };
-    });
-    return { ...day, exercises: newExos };
-  });
-  return { ...template, days: newDays };
-}
-
 // =============================================================================
 // Avertissement réequilibrage : muscles perdus / gagnés sur un swap
 // =============================================================================
 
-export interface MuscleDelta {
-  /** Muscles primaires couverts par l'ancien exo, plus par le nouveau. */
-  readonly lost: readonly string[];
-  /** Muscles primaires couverts par le nouveau, pas par l'ancien. */
-  readonly gained: readonly string[];
-}
-
-/**
- * Calcule la différence de profil musculaire entre 2 exos. Utilisé pour
- * afficher un avertissement non-bloquant dans le Step5 si le swap change
- * significativement la couverture musculaire (ex : traction → tirage vertical
- * ne couvre plus les biceps en primaire).
- */
-export function muscleDeltaForSwap(
-  oldExerciseId: string,
-  newExerciseId: string,
-  catalog: Catalog,
-): MuscleDelta {
-  let oldP: string[] = [];
-  let newP: string[] = [];
-  try {
-    oldP = exercisePrimaires(catalog.get(oldExerciseId));
-  } catch {
-    /* exo inconnu — pas d'avertissement */
-  }
-  try {
-    newP = exercisePrimaires(catalog.get(newExerciseId));
-  } catch {
-    /* idem */
-  }
-  const newSet = new Set(newP);
-  const oldSet = new Set(oldP);
-  return {
-    lost: oldP.filter((m) => !newSet.has(m)),
-    gained: newP.filter((m) => !oldSet.has(m)),
-  };
-}
-
 // =============================================================================
-// Estimation durée séance + détection tensions (Conv #11h)
+// Estimation durée séance + détection tensions
 // =============================================================================
 
 /**

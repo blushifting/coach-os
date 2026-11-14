@@ -1,5 +1,5 @@
 /**
- * Conv #21b — Sheet pour ajouter un exercice ad-hoc à la séance en cours.
+ * Sheet pour ajouter un exercice ad-hoc à la séance en cours.
  *
  * Liste les exos du catalog (défauts + customs), recherche fuzzy par nom_fr
  * et synonymes. L'user tape, choisit le nombre de séries (3 par défaut), et
@@ -82,7 +82,7 @@ export function AddExerciseSheet({
     [catalog],
   );
 
-  // Conv #30 — mise en garde volume : l'exo ajouté (nSets séries) ferait-il
+  // Mise en garde volume : l'exo ajouté (nSets séries) ferait-il
   // porter un de ses muscles au-delà de la zone haute (20 séries) ? Base = séries
   // pondérées déjà engagées cette semaine (séances faites + séance en cours).
   const overshoot = useMemo(() => {
@@ -91,7 +91,7 @@ export function AddExerciseSheet({
       cycles.find((c) => c.cycle_index === userState.cycle_index)?.start_date ??
       null;
     const weekly: Record<string, number> = {};
-    // Conv #66 — `today` ancré sur la démo si active : sinon la couverture hebdo
+    // `today` ancré sur la démo si active : sinon la couverture hebdo
     // lue à la date réelle est vide et la mise en garde ne se déclenche jamais.
     for (const cov of computeCoverageThisWeek(
       userState,
@@ -116,7 +116,7 @@ export function AddExerciseSheet({
 
   const results = useMemo<readonly Exercise[]>(() => {
     if (catalog === null) return [];
-    // Bloc G (Conv #32) — favoris d'abord, par-dessus le tri/recherche habituel.
+    // Favoris d'abord, par-dessus le tri/recherche habituel.
     const favoriteIds = new Set(userState?.favorite_exercise_ids ?? []);
     const q = normalize(query);
     const all = catalog.all();
@@ -159,7 +159,7 @@ export function AddExerciseSheet({
     }
   }
 
-  // 1.17 — pas de `if (!open) return null` ici : on laisse `<Sheet>` gérer son
+  // Pas de `if (!open) return null` ici : on laisse `<Sheet>` gérer son
   // cycle de vie (animation de fermeture comprise). Un early-return démontait
   // le volet instantanément et court-circuitait le slide-down.
   return (
@@ -199,7 +199,7 @@ export function AddExerciseSheet({
                   Aucun exercice trouvé. Tu peux le créer depuis le Catalogue.
                 </li>
               ) : (
-                // 1.17 (D1) — plus de `.slice(0, 50)` : le catalogue compte
+                // Plus de `.slice(0, 50)` : le catalogue compte
                 // ~138 exos, le cap masquait toute la 2e moitié quand on
                 // parcourait sans recherche (« la liste ne va pas au bout »).
                 results.map((ex) => {
@@ -224,7 +224,7 @@ export function AddExerciseSheet({
                           ) : null}
                         </div>
                       </button>
-                      {/* Bloc F (Conv #31) — œil de visu, zone sœur (pas imbriqué). */}
+                      {/* œil de visu, zone sœur (pas imbriqué). */}
                       <ExerciseEyeButton exercise={ex} brand={brand} />
                     </li>
                   );
@@ -246,7 +246,7 @@ export function AddExerciseSheet({
                     {chargeLabel(picked.charge)} · {extypeLabel(picked.type)}
                   </div>
                 </div>
-                {/* Bloc F (Conv #31) — œil de visu sur l'exo choisi. */}
+                {/* œil de visu sur l'exo choisi. */}
                 <ExerciseEyeButton exercise={picked} brand={brand} />
               </div>
             </div>

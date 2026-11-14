@@ -1,5 +1,5 @@
 /**
- * Synonymes / aliases FR + EN par id d'exercice (Conv #10d).
+ * Synonymes / aliases FR + EN par id d'exercice.
  *
  * Origine : Azur cherchait des exos sous un nom usuel (ex. "DC", "bench
  * press", "shrugs", "SDT") sans les trouver. Ce mapping enrichit le champ
@@ -296,7 +296,7 @@ export const EXERCISE_SYNONYMES: Readonly<Record<string, readonly string[]>> = {
   russian_twist: ['russian twist', 'rotation russe'],
   oblique_crunch: ['crunch oblique'],
 
-  // Bloc Q-3 — import free-exercise-db (alias regroupés ici)
+  // Import free-exercise-db (alias regroupés ici)
   dips_assisted: ['dips assistés', 'dips machine', 'dips guidés', 'assisted dips'],
   bodyweight_squat: ['squat poids du corps', 'air squat', 'squat sans charge', 'bodyweight squat'],
   pallof_press: ['pallof', 'pallof press', 'anti-rotation', 'gainage anti-rotation'],

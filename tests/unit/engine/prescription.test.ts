@@ -14,7 +14,6 @@ import {
   EPLEY_K,
   e1rmObserved,
   effectiveIncrement,
-  measurementIsReliable,
   nEquiv,
   roundToIncrement,
   targetLoad,
@@ -83,17 +82,6 @@ describe('targetLoad — inverse de e1rmObserved', () => {
 // =============================================================================
 // 4. Domaine de validité des mesures
 // =============================================================================
-
-describe('measurementIsReliable', () => {
-  it('fiable si n_eq ≤ 15', () => {
-    expect(measurementIsReliable(10, 8)).toBe(true); // n_eq = 12
-    expect(measurementIsReliable(5, 10)).toBe(true); // n_eq = 5
-    expect(measurementIsReliable(12, 7)).toBe(true); // n_eq = 15
-  });
-  it('non fiable si n_eq > 15', () => {
-    expect(measurementIsReliable(15, 7)).toBe(false); // n_eq = 18
-  });
-});
 
 // =============================================================================
 // 5. Arrondi

@@ -1,5 +1,5 @@
 /**
- * Chantier F — capture du retour OAuth, **avant que React ne monte**.
+ * Capture du retour OAuth, **avant que React ne monte**.
  *
  * Google et Supabase déposent le résultat de la connexion dans l'URL de
  * retour : `?code=…` en cas de succès, `?error=…&error_description=…` quand

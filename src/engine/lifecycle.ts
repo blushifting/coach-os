@@ -6,7 +6,7 @@
  *   2. suggestNextAction → SuggestedAction (continuer / ajuster)
  *   3. applyUserActionAfterCycle (après choix utilisateur) → re-génère plan
  *
- * Conv #76 — l'étape d'ajustement automatique de `volume_min`/`volume_max`
+ * L'étape d'ajustement automatique de `volume_min`/`volume_max`
  * a été retirée (cf. §4). Une fin de cycle ne mute plus aucune borne.
  */
 
@@ -93,7 +93,7 @@ export type ForceOutcome = 'up' | 'flat' | 'down';
  * Δ Plafond MOYEN par muscle, à partir des variations par exercice du bilan.
  * Un exercice compte pour ses muscles **primaires** uniquement.
  *
- * Conv #76 — extrait de `classifyMusclesOutcome` pour être réutilisé par l'UI
+ * Extrait de `classifyMusclesOutcome` pour être réutilisé par l'UI
  * (silhouette « Progression par muscle » du bilan). Il travaille sur
  * `plafonds_progression`, qui est **persisté** dans chaque `CycleReview` : les
  * bilans archivés se colorent donc sans champ supplémentaire ni migration.
@@ -139,8 +139,7 @@ function classifyMusclesOutcome(
 
   // Volume réalisé par muscle, en séries pondérées MOYENNES PAR SEMAINE de
   // travail (récupération exclue).
-  //
-  // Conv #76 — c'était la somme brute sur les 5 semaines du cycle, comparée
+  // C'était la somme brute sur les 5 semaines du cycle, comparée
   // juste en dessous à des bornes HEBDOMADAIRES : un muscle normalement
   // travaillé (~8 séries/sem, soit ~40 sur le cycle) dépassait donc toujours
   // `V_max × 1,1`, et tout le monde était classé en surcharge à chaque bilan.
@@ -163,7 +162,7 @@ function classifyMusclesOutcome(
     } else if (outcome === 'down') {
       plateau.push(muscle);
     }
-    // Dump 2.4 (D2, étape 3) — le repère du muscle selon son intention (seuil
+    // Le repère du muscle selon son intention (seuil
     // de croissance ou plancher d'entretien) ; un muscle sans objectif n'en a
     // pas, il n'est donc jamais « sous-entraîné ». La surcharge se lit sur la
     // zone haute commune, pour tous les muscles.
@@ -177,7 +176,7 @@ function classifyMusclesOutcome(
     }
   }
 
-  // Chantier B — plateau purement INDICATIF : `plateau` n'est plus alimenté que
+  // Plateau purement INDICATIF : `plateau` n'est plus alimenté que
   // par le critère Δe1RM moyen < −0,5 (ci-dessus). Plus de `plateau_counter`
   // (compteur RPE supprimé) ni de déclenchement d'action automatique.
   return { progresses, plateau, undertrained, overshoot };
@@ -223,7 +222,7 @@ export function generateCycleReview(state: UserState, catalog: Catalog): CycleRe
 
   const action = suggestNextAction(progresses, plateau, undertrained, adherence);
 
-  // Conv #14c-7 — snapshot des objectifs muscle au moment du bilan pour
+  // 7 — snapshot des objectifs muscle au moment du bilan pour
   // pouvoir afficher "visé vs fait" dans l'historique des cycles.
   const muscleGoalsSnapshot = Object.values(state.muscle_goals).map((g) => ({
     muscle: g.muscle,
@@ -247,7 +246,7 @@ export function generateCycleReview(state: UserState, catalog: Catalog): CycleRe
     recovery_taken: state.deload_decision === 'accepted',
   });
 
-  // Conv #76 — l'avertissement « Plafond en baisse sur <exercice> » a été
+  // L'avertissement « Plafond en baisse sur <exercice> » a été
   // retiré : le bilan porte désormais une alerte par MUSCLE, croisant volume
   // excessif et recul de force (cf. `muscles_overshoot` ∩ `muscles_plateau`),
   // qui dit la même chose en désignant une action.
@@ -266,16 +265,16 @@ export function suggestNextAction(
   adherence: number,
 ): SuggestedAction {
   if (adherence < 0.6) return SuggestedAction.AJUSTER_OBJECTIFS;
-  // Conv #44 — plateau sur ≥3 muscles : on suggère d'ajuster les objectifs/volume
+  // Plateau sur ≥3 muscles : on suggère d'ajuster les objectifs/volume
   // (l'ancienne action « changer de programme » a disparu avec les programmes guidés).
   if (musclesPlateau.length >= 3) return SuggestedAction.AJUSTER_OBJECTIFS;
-  // Chantier C (plan 11) — `TOURNER_EMPHASIS` retiré : un cycle qui progresse
+  // `TOURNER_EMPHASIS` retiré : un cycle qui progresse
   // bien avec une bonne assiduité reste sur `CONTINUER_PAREIL`.
   return SuggestedAction.CONTINUER_PAREIL;
 }
 
 // =============================================================================
-// 4. Ajustement V_min/V_max — SUPPRIMÉ (Conv #76)
+// 4. Ajustement V_min/V_max — SUPPRIMÉ
 // =============================================================================
 
 /*
@@ -312,7 +311,7 @@ export function applyUserActionAfterCycle(
   catalog: Catalog,
   action: SuggestedAction,
 ): void {
-  // Conv #39 — voie unique V3 (cf. endOfCycle de useEngine).
+  // Voie unique V3 (cf. endOfCycle de useEngine).
   const regen = () =>
     autoGenerateCyclePlanV3(
       state,

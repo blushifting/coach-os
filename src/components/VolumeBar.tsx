@@ -1,5 +1,5 @@
 /**
- * Dump 2.4, étape 3 — **la** barre de volume, la même sur tous les écrans
+ * **La** barre de volume, la même sur tous les écrans
  * (bilan de séance, Progrès > Volume, bilan de cycle, aperçu du programme).
  *
  * Anatomie (invariant n° 3 : tous les muscles ont la même) :
@@ -38,7 +38,7 @@ export const VOLUME_TEXT: Record<CoverageStatus, string> = {
   sans_objectif: 'text-anthracite-200',
 };
 
-/** Séries pondérées sans arrondi trompeur (#11) : une décimale si non entier, virgule française. */
+/** Séries pondérées sans arrondi trompeur : une décimale si non entier, virgule française. */
 export function formatSets(v: number): string {
   const r = Math.round(v * 10) / 10;
   return Number.isInteger(r) ? String(r) : r.toFixed(1).replace('.', ',');

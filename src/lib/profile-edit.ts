@@ -1,11 +1,11 @@
 /**
- * Sélecteurs purs pour la page Profil (Conv #6c).
+ * Sélecteurs purs pour la page Profil.
  *
  * Convertit `UserState` ↔ drafts d'édition. Pas de side-effect, testable isolément.
  *
  * - `profileDraftFromState` : `UserState` → état des inputs de l'éditeur profil.
  * - `goalsDraftFromState`   : `UserState` → muscles à développer (dans l'ordre
- *   de leur rang) et muscles à entretenir (dump 2.4, D2).
+ *   de leur rang) et muscles à entretenir.
  * - `buildProfileFromDraft` : reconstruit un `Profile` valide depuis le draft.
  *
  * Les intentions se modifient par le parcours d'onboarding (redémarrage
@@ -29,7 +29,7 @@ export interface ProfileDraft {
   readonly level: Level;
   readonly sessionsPerWeek: number;
   readonly equipment: ReadonlySet<string>;
-  /** Conv #23 — marque salle (libellés exos). Default NONE. */
+  /** Marque salle (libellés exos). Default NONE. */
   readonly gymBrand: GymBrand;
 }
 

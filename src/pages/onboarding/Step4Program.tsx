@@ -1,5 +1,5 @@
 /**
- * Étape Programme de l'onboarding (Bloc O).
+ * Étape Programme de l'onboarding.
  *
  * Réglages (séances/sem, préférence d'équipement) puis choix du
  * MODE de construction :
@@ -7,7 +7,7 @@
  *  - « À la main »  : grille vide ; tu ajoutes les exos toi-même, guidé par les
  *    jauges de volume du récap.
  *
- * Les programmes « tout faits » ont été retirés (Bloc O) : le custom les
+ * Les programmes « tout faits » ont été retirés : le custom les
  * recouvrait déjà, et leurs progressions d'auteur n'étaient pas RPE.
  */
 
@@ -49,7 +49,7 @@ export function Step4Program({ draft, onChange }: Step4Props) {
         </p>
       </Card>
 
-      {/* Conv #22 — Préférence d'équipement : oriente le choix auto des exos. */}
+      {/* Préférence d'équipement : oriente le choix auto des exos. */}
       <Card>
         <div className="mb-1 text-sm font-medium text-white">
           Tes préférences d'équipement
@@ -105,7 +105,7 @@ export function Step4Program({ draft, onChange }: Step4Props) {
           programme sur les priorités (le volume est auto-borné). Le levier de
           l'user devient le nombre de priorités, pas un plafond de durée. */}
 
-      {/* Bloc O — choix du mode de construction (sur-mesure vs à la main). */}
+      {/* Choix du mode de construction (sur-mesure vs à la main). */}
       <div role="radiogroup" aria-label="Mode de construction">
         <div className="mb-2 text-xs uppercase tracking-wider text-anthracite-300">
           Comment veux-tu construire ton programme&nbsp;?

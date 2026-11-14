@@ -1,11 +1,11 @@
 /**
- * Onglet Profil (Conv #6c).
+ * Onglet Profil.
  *
  * Quatre sections empilées :
  *   1. **Identité** — sexe/âge/poids/niveau/objectif/équipement (sheet, cosmétique).
  *   2. **Priorités & programme** — ouvre l'onboarding partiel (Step2→5)
  *      qui refait priorités + équilibre + programme + aperçu, puis termine
- *      prématurément le cycle en cours et démarre un nouveau cycle (Conv #18).
+ *      prématurément le cycle en cours et démarre un nouveau cycle.
  *   3. **Aide** — tutos prise en main + glossaire 15 termes (sheet).
  *   4. **Données** — boutons Exporter / Importer / Réinitialiser.
  *
@@ -27,7 +27,6 @@ import {
 import { ImportValidationError } from '@/io/import';
 import { exportToJsonString } from '@/io/export';
 import { Sex, type Profile } from '@/engine/models';
-import { muscleLabel } from '@/lib/balance-reasons';
 import {
   goalsDraftFromState,
   profileDraftFromState,
@@ -38,6 +37,8 @@ import { useDemoMode } from '@/store/selectors';
 import { AideSheet } from './profil/AideSheet';
 import { CompteSection } from './profil/CompteSection';
 import { EditProfileSheet } from './profil/EditProfileSheet';
+import { MusclesCard } from './profil/MusclesCard';
+import { ProgrammeCard } from './profil/ProgrammeCard';
 
 const SEX_LABEL: Record<Sex, string> = {
   [Sex.HOMME]: 'Homme',
@@ -46,6 +47,7 @@ const SEX_LABEL: Record<Sex, string> = {
 
 export default function ProfilPage() {
   const userState = useCoachOsStore((s) => s.userState);
+  const catalog = useCoachOsStore((s) => s.catalog);
   const demoActive = useDemoMode();
   const navigate = useNavigate();
 
@@ -69,7 +71,7 @@ export default function ProfilPage() {
   const profileDraft = profileDraftFromState(userState);
   const goalsDraft = goalsDraftFromState(userState);
 
-  // Conv #18 — édition Identité = save direct, jamais de reset cycle. Les
+  // Édition Identité = save direct, jamais de reset cycle. Les
   // champs vraiment impactants (sessions/sem, programme guidé, priorités
   // musculaires) ne vivent plus dans cette sheet : ils se modifient via
   // "Modifier priorités & programme" qui lance l'onboarding partiel.
@@ -126,7 +128,7 @@ export default function ProfilPage() {
   }
 
   /**
-   * Chantier F-1 — après une déconnexion ou une suppression de compte réussie,
+   * Après une déconnexion ou une suppression de compte réussie,
    * l'appareil est vidé (l'envoi forcé a déjà été confirmé par le serveur) et
    * on repart de l'écran d'accueil. Même effacement que « Réinitialiser ».
    */
@@ -154,7 +156,7 @@ export default function ProfilPage() {
   return (
     <section className="flex flex-col gap-4 pb-6" data-testid="profil-page">
       {/* Conv #11i bis — h1 "Profil" retiré : doublon du titre Header. */}
-      {/* Conv #17 — Bannière démo : avertit que les éditions sont gelées pour
+      {/* Bannière démo : avertit que les éditions sont gelées pour
           ne pas polluer le snapshot Alex. */}
       {demoActive && (
         <Card
@@ -168,7 +170,7 @@ export default function ProfilPage() {
           </p>
         </Card>
       )}
-      {/* Chantier F — le compte n'est plus une option de sauvegarde parmi
+      {/* Le compte n'est plus une option de sauvegarde parmi
           d'autres réglages : c'est qui tu es dans l'app. Il ouvre donc le
           Profil, en carte compacte. */}
       <CompteSection
@@ -200,109 +202,40 @@ export default function ProfilPage() {
             label="Poids"
             value={`${userState.profile.bodyweight_kg} kg`}
           />
-          {/* Conv #23 — Marque des machines : affichée en clair, modifiable
+          {/* Marque des machines : affichée en clair, modifiable
               via le bouton "Modifier" en haut de la Card. */}
           <SummaryRow
             label="Marque machines"
             value={gymBrandLabel(userState.profile.gym_brand)}
           />
-          {/* Conv #22 — Niveau et équipement retirés de l'identité (auto-
+          {/* Niveau et équipement retirés de l'identité (auto-
               calibration cycle / révélés par les choix d'exos). Conv #20 —
               Séances/sem gérées via "Priorités & programme". */}
         </dl>
       </Card>
 
-      <Card>
-        <div className="mb-3 flex items-center justify-between">
-          <span className="text-sm font-semibold text-white">
-            Tes muscles
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={openPrioritesProgramme}
-            disabled={demoActive}
-            data-testid="profil-edit-priorities-programme"
-          >
-            Modifier
-          </Button>
-        </div>
-        <p className="mb-3 text-justify text-xs leading-relaxed text-anthracite-400">
-          Changer tes priorités ou ton rythme recompose ton programme et démarre
-          un nouveau cycle.
-        </p>
-        {goalsDraft.priorities.length === 0 ? (
-          <p className="text-sm text-anthracite-300">
-            Aucun muscle à développer pour l'instant.
-          </p>
-        ) : (
-          <ul
-            className="flex flex-col gap-1.5"
-            data-testid="profil-goals-summary"
-          >
-            {goalsDraft.priorities.map((m, i) => (
-              <li
-                key={m}
-                data-testid={`profil-goal-summary-${m}`}
-                className="flex items-center justify-between rounded-lg bg-anthracite-900 px-3 py-2 text-sm"
-              >
-                <span className="text-white">
-                  <span className="mr-2 font-semibold text-sang-500 tabular-nums">
-                    #{i + 1}
-                  </span>
-                  {muscleLabel(m)}
-                </span>
-                <span className="text-xs text-anthracite-300">Développer</span>
-              </li>
-            ))}
-          </ul>
-        )}
-        {goalsDraft.maintenance.size > 0 && (
-          <div
-            className="mt-3 text-xs text-anthracite-300"
-            data-testid="profil-suggested-summary"
-          >
-            À entretenir&nbsp;: {[...goalsDraft.maintenance].map(muscleLabel).join(', ')}.
-          </div>
-        )}
-      </Card>
+      {/* « Modifier » relance l'onboarding partiel (priorités, rythme,
+          programme) et démarre un nouveau cycle, annoncé à la fin du parcours. */}
+      <MusclesCard
+        develop={goalsDraft.priorities}
+        maintain={goalsDraft.maintenance}
+        onEdit={openPrioritesProgramme}
+        editDisabled={demoActive}
+      />
 
-      {/* Bloc G (Conv #32) — édition des exos du cycle EN COURS, séparée des
+      {/* Édition des exos du cycle EN COURS, séparée des
           objectifs : ne touche que les exercices, garde la progression. */}
-      <Card>
-        <div className="mb-3 flex items-center justify-between">
-          <span className="text-sm font-semibold text-white">
-            Exercices du programme
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/programme/modifier')}
-            disabled={demoActive}
-            data-testid="profil-edit-programme"
-          >
-            Modifier
-          </Button>
-        </div>
-        <p className="mb-3 text-justify text-xs leading-relaxed text-anthracite-400">
-          Ajoute ou retire des exercices du cycle en cours sans perdre ta
-          progression ni relancer un cycle.
-        </p>
-        <div
-          className="flex items-baseline justify-between rounded-lg bg-anthracite-900 px-3 py-2 text-sm"
-          data-testid="profil-programme-summary"
-        >
-          <span className="text-anthracite-300">Programme</span>
-          <span className="text-right font-medium text-white">
-            Sur mesure ·{' '}
-            <span className="tabular-nums text-anthracite-300">
-              {userState.profile.sessions_per_week} séances/sem
-            </span>
-          </span>
-        </div>
-      </Card>
+      <ProgrammeCard
+        plan={userState.current_cycle_plan}
+        buildMode={userState.build_mode ?? 'auto'}
+        sessionsPerWeek={userState.profile.sessions_per_week}
+        catalog={catalog}
+        brand={userState.profile.gym_brand}
+        onEdit={() => navigate('/programme/modifier')}
+        editDisabled={demoActive}
+      />
 
-      {/* Conv #17 — Card "Aide / Ouvrir" peu ergonomique → gros bouton
+      {/* Card "Aide / Ouvrir" peu ergonomique → gros bouton
           secondary size=lg directement cliquable. La description courte reste
           sous le bouton pour donner du contexte. Les HelpButton "?" répartis
           dans l'app (ForceView, VolumeView, Widgets, Step2…) restent en place

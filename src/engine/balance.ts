@@ -16,7 +16,7 @@
  *     - Ne contient QUE des muscles sans intention.
  *     - Tous en intention=ENTRETENIR, priority_rank=99.
  *     - Pas de doublons.
- *   Dump 2.4 (D2) : ce ne sont que des propositions. Rien ne les ajoute sans
+ *   Ce ne sont que des propositions. Rien ne les ajoute sans
  *   l’accord de l’utilisateur ; un muscle retiré n’est pas ré-imposé.
  */
 

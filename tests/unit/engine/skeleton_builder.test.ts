@@ -21,7 +21,6 @@ import {
   buildSkeleton,
   buildSessionLabel,
   computeMuscleDemands,
-  totalCellDemand,
   selectBestSplit,
 } from '@/engine/skeleton_builder';
 import {
@@ -422,22 +421,4 @@ describe('Conv #22 — Sanity', () => {
     expect(best.split.id).toBe('ul_4x');
   });
 
-  it('totalCellDemand monotone croissant avec prios', () => {
-    const a = computeMuscleDemands(
-      makeStateForGoals({
-        sessions_per_week: 4,
-        prios: ['pectoraux'],
-      }),
-    );
-    const b = computeMuscleDemands(
-      makeStateForGoals({
-        sessions_per_week: 4,
-        prios: [
-          'pectoraux',
-          'dos_largeur',
-        ],
-      }),
-    );
-    expect(totalCellDemand(b)).toBeGreaterThan(totalCellDemand(a));
-  });
 });

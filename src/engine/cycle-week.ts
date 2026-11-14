@@ -1,5 +1,5 @@
 /**
- * Dump 2.4, étape 1 (D6) — **une seule définition de la semaine : les dates.**
+ * **une seule définition de la semaine : les dates.**
  *
  * La semaine *k* d'un cycle est la tranche de 7 jours qui commence à
  * `début du cycle + 7 × (k − 1)`. Le jour de départ dépend donc du cycle (un

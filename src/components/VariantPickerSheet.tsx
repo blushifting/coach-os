@@ -18,7 +18,7 @@ interface VariantPickerSheetProps {
   readonly onClose: () => void;
   readonly title?: string;
   /**
-   * Conv #23 — force une marque autre que celle du store. Utilisé dans
+   * Force une marque autre que celle du store. Utilisé dans
    * l'onboarding (le draft contient une marque pas encore persistée).
    */
   readonly brandOverride?: GymBrand;

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
 /**
- * Bandeau repliable du Catalogue — Bloc F (Conv #31).
+ * Bandeau repliable du Catalogue — Bloc F.
  *
  * En-tête cliquable (picto/étoile + libellé + compteur + chevron) qui ouvre /
  * replie le corps. Utilisé pour le bandeau « Favoris » (en tête, doré) et un

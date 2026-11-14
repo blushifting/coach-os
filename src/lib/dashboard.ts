@@ -1,5 +1,5 @@
 /**
- * Sélecteurs purs pour le Dashboard Programme (Conv #5a).
+ * Sélecteurs purs pour le Dashboard Programme.
  *
  * Source de vérité :
  * - `recherche/08_ux_decisions.md §3 Onglet Programme` — calendrier 4-5 sem,
@@ -46,7 +46,7 @@ export function addDays(d: Date, n: number): Date {
 }
 
 /**
- * Début de la semaine de programme (Conv #11h) : bloc de 7 jours qui démarre
+ * Début de la semaine de programme : bloc de 7 jours qui démarre
  * à `cycleStart + 7×k` et contient `date`. Si `cycleStart` est `null`
  * (pas de cycle posé), fallback sur la semaine ISO lundi-dim.
  *
@@ -59,7 +59,7 @@ export function weekStartFor(date: Date, cycleStart: string | null): Date {
   if (cycleStart === null) return startOfWeekMonday(date);
   const startD = parseDateKey(cycleStart);
   const key = dateKey(date);
-  // Dump 2.4, étape 1 — dans le cycle, la semaine vient du calcul unique
+  // Dans le cycle, la semaine vient du calcul unique
   // `weekOfCycle` (moteur), le même que celui des séances et des bilans.
   if (key >= cycleStart) {
     return addDays(startD, (weekOfCycle(key, cycleStart) - 1) * 7);
@@ -85,11 +85,7 @@ export function startOfWeekMonday(d: Date): Date {
   return r;
 }
 
-/** Clé semaine ISO simplifiée — utilisée uniquement pour comparer des semaines
- *  entre elles (égalité / précédent). Format `YYYY-MM-DD` du lundi. */
-export function weekKey(d: Date): string {
-  return dateKey(startOfWeekMonday(d));
-}
+
 
 // =============================================================================
 // Widgets
@@ -113,7 +109,7 @@ export function computeStreak(
   for (const f of feedbacks) {
     weeks.add(weekKeyFor(parseDateKey(f.seance_date), cycleStart));
   }
-  // Conv #18 — la semaine en cours ne compte pas dans le streak (elle n'est
+  // La semaine en cours ne compte pas dans le streak (elle n'est
   // pas encore terminée). Le compteur démarre quand la 1re semaine pleine
   // est passée avec au moins une séance dedans. Évite d'afficher "1 semaine"
   // dès la 1re séance et que ça redescende à 0 si la semaine suivante n'a
@@ -196,7 +192,7 @@ export interface CycleTimeProgress {
 }
 
 /**
- * Avancement temporel du cycle courant (Conv #14a) — sert au widget
+ * Avancement temporel du cycle courant — sert au widget
  * "Prochain bilan" pour matérialiser visuellement combien de temps s'est
  * écoulé / combien il en reste. Distinct de `computeCycleProgress`, qui
  * compte les séances faites (avancement *en travail*, pas *dans le temps*).
@@ -275,7 +271,7 @@ export function buildCalendarMatrix(
   const cycle = cycles.find((c) => c.cycle_index === state.cycle_index);
   if (cycle === undefined) return null;
 
-  // Conv #11h — anchor sur cycle.start_date (= S1J1) plutôt que sur le lundi
+  // Anchor sur cycle.start_date (= S1J1) plutôt que sur le lundi
   // ISO de la semaine du start. Cela assure que le déload (5e ligne) tombe
   // strictement 4 semaines × 7 jours après le démarrage, même si le cycle
   // ne démarre pas un lundi. Le `dayOfWeek` de chaque case devient le vrai
@@ -311,7 +307,7 @@ export function buildCalendarMatrix(
       const hasFeedback = feedbackDates.has(key);
       const isPast = key < todayKey;
 
-      // Conv #29 — concept de « séance sautée » retiré : une séance `skipped`
+      // Concept de « séance sautée » retiré : une séance `skipped`
       // (statut hérité) ou une séance `planned` dont la date est révolue sans
       // feedback ne sont plus distinguées d'un simple jour passé (`rest-past`).
       let status: DayStatus;
@@ -335,7 +331,7 @@ export function buildCalendarMatrix(
         date: key,
         weekInCycle: w + 1,
         // Jour calendaire réel (0 = lundi, 6 = dimanche), pas l'index de
-        // colonne, depuis qu'on aligne sur cycle.start_date (Conv #11h).
+        // colonne, depuis qu'on aligne sur cycle.start_date.
         dayOfWeek: (date.getDay() + 6) % 7,
         status,
         isToday: key === todayKey,

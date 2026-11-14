@@ -51,30 +51,30 @@ export interface OnboardingDraft {
 
   // Étape 3 : mode de construction
   /**
-   * Bloc O — mode de construction du programme :
+   * Mode de construction du programme :
    *  - `'auto'`   : le moteur remplit (sur-mesure).
    *  - `'manual'` : grille vide, l'utilisateur remplit lui-même (jours nus +
    *    jauges de volume). Default : `'auto'`.
    */
   readonly buildMode: 'auto' | 'manual';
   /**
-   * Conv #22 — durée MAX par séance (plafond patterns/séance).
+   * Durée MAX par séance (plafond patterns/séance).
    * Sert au nouveau path co-construit (mode custom seulement).
    * Default : MEDIUM (≤ 1h30).
    */
   readonly durationCategory: DurationCategory;
   /**
-   * Conv #22 — Préférence d'équipement (machines / poids libres / aucune).
+   * Préférence d'équipement (machines / poids libres / aucune).
    * Sert au tri auto des exos à l'onboarding.
    */
   readonly equipmentPreference: EquipmentPreference;
   /**
-   * Conv #23 — Marque dominante de la salle. Affecte uniquement les
+   * Marque dominante de la salle. Affecte uniquement les
    * intitulés affichés des exos machine. Default : NONE.
    */
   readonly gymBrand: GymBrand;
   /**
-   * Conv #22 — exos choisis par l'user lorsqu'il swap dans le récap final.
+   * Exos choisis par l'user lorsqu'il swap dans le récap final.
    * Clé = `${dayIdx}:${cellIdx}`, valeur = `exercise_id`. Vide tant que
    * l'user n'a pas modifié les exos auto-pickés. En mode guidé : non utilisé.
    */
@@ -130,11 +130,11 @@ export function makeInitialDraft(): OnboardingDraft {
     sex: Sex.HOMME,
     age: 30,
     bodyweightKg: 75,
-    // Conv #22 — niveau retiré de l'UI (auto-calibration cycle après cycle).
+    // Niveau retiré de l'UI (auto-calibration cycle après cycle).
     // Default INTERMEDIAIRE = milieu juste pour les V_min/V_max init.
     level: Level.INTERMEDIAIRE,
     sessionsPerWeek: 3,
-    // Conv #22 — équipement retiré de l'UI. Default = salle complète ; le mode
+    // Équipement retiré de l'UI. Default = salle complète ; le mode
     // custom co-construit n'utilise plus ce filtre (préférence = simple prefill).
     equipment: new Set<string>(EQUIPMENT_PRESET_FULL_GYM),
     priorities: [],
@@ -148,7 +148,7 @@ export function makeInitialDraft(): OnboardingDraft {
 }
 
 /**
- * Conv #18 — initialise un draft depuis `UserState` pour le mode "partial
+ * Initialise un draft depuis `UserState` pour le mode "partial
  * restart" : l'utilisateur revient sur l'onboarding (Step2→5) pour modifier
  * ses priorités / programme. On préserve les choix existants comme point
  * de départ.
@@ -243,7 +243,7 @@ export function buildProfile(draft: OnboardingDraft): Profile {
     level: draft.level,
     sessions_per_week: draft.sessionsPerWeek,
     bodyweight_kg: draft.bodyweightKg,
-    // Conv #29 — PdC strict : aucun matériel disponible, pour que TOUTES les
+    // PdC strict : aucun matériel disponible, pour que TOUTES les
     // voies (génération, swap, ajout d'exo) restent en poids du corps pur.
     available_equip:
       draft.equipmentPreference === EquipmentPreference.BODYWEIGHT
@@ -347,31 +347,3 @@ export const EQUIPMENT_PRESET_FULL_GYM: ReadonlySet<string> = new Set(
   EQUIPMENT_CHIPS.flatMap((c) => c.equip),
 );
 
-export const EQUIPMENT_PRESET_HOME_BASIC: ReadonlySet<string> = new Set([
-  'db', 'bench_flat', 'pull_bar', 'assisted_pullup',
-]);
-
-/** Renvoie les ids des chips entièrement satisfaites par `equipment`. */
-export function activeChipIds(equipment: ReadonlySet<string>): Set<string> {
-  const active = new Set<string>();
-  for (const chip of EQUIPMENT_CHIPS) {
-    if (chip.equip.every((e) => equipment.has(e))) {
-      active.add(chip.id);
-    }
-  }
-  return active;
-}
-
-export function toggleChip(
-  equipment: ReadonlySet<string>,
-  chip: EquipmentChip,
-): Set<string> {
-  const next = new Set(equipment);
-  const allOn = chip.equip.every((e) => next.has(e));
-  if (allOn) {
-    for (const e of chip.equip) next.delete(e);
-  } else {
-    for (const e of chip.equip) next.add(e);
-  }
-  return next;
-}

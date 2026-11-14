@@ -26,7 +26,7 @@ interface PreDemoBackup {
   history: HistorySnapshot;
   currentSessionPlan: CoachOsState['currentSessionPlan'];
   currentSessionId: CoachOsState['currentSessionId'];
-  // Conv #26 — les saisies en cours (coches, reps, charges) doivent être
+  // Les saisies en cours (coches, reps, charges) doivent être
   // sauvegardées/restaurées comme le plan : sans ça, lancer la démo pendant
   // une séance écrasait définitivement la séance de l'utilisateur.
   currentSessionEntries: CoachOsState['currentSessionEntries'];
@@ -47,7 +47,7 @@ export async function loadDemoSnapshot(): Promise<DemoSnapshot> {
   if (_cachedSnapshot !== null) return _cachedSnapshot;
   const base = import.meta.env.BASE_URL ?? '/';
   const url = `${base.replace(/\/$/, '')}/demo/alex.json`;
-  // Conv #49 — `default` (et non `force-cache`) : la revalidation HTTP (ETag/
+  // `default` (et non `force-cache`) : la revalidation HTTP (ETag/
   // Last-Modified) fait remonter une mise à jour de `alex.json` au lieu de
   // resservir indéfiniment l'ancienne copie. L'offline reste couvert par le
   // précache du service worker (PWA), pas par ce mode de fetch.

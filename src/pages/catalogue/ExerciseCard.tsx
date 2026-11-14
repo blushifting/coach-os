@@ -15,12 +15,12 @@ import { MiniSilhouette } from './MiniSilhouette';
 interface ExerciseCardProps {
   readonly exercise: Exercise;
   readonly onClick: () => void;
-  /** Plafond mesuré pour cet exo (kg) — null si jamais mesuré (Conv #11g). */
+  /** Plafond mesuré pour cet exo (kg) — null si jamais mesuré. */
   readonly e1rm?: number | null;
-  /** Bloc F — exo dans les favoris unifiés. */
+  /** Exo dans les favoris unifiés. */
   readonly isFavorite?: boolean;
   /**
-   * Bloc F — bascule favori. Si absent, l'étoile devient un simple indicateur
+   * Bascule favori. Si absent, l'étoile devient un simple indicateur
    * non cliquable (listes en lecture seule, mode démo).
    */
   readonly onToggleFavorite?: () => void;
@@ -37,7 +37,7 @@ export function ExerciseCard({
   const description = buildDescription(exercise);
   const isLengthened = exercise.tags.includes('lengthened_bias');
 
-  // Bloc F (Conv #31) — carte = deux zones SŒURS non imbriquées (cf.
+  // Carte = deux zones SŒURS non imbriquées (cf.
   // `VariantCellSheet.VariantRow`) : la zone principale ouvre la fiche, la
   // colonne étoile à droite bascule le favori. Pas de <button> dans <button>.
   return (
@@ -58,7 +58,7 @@ export function ExerciseCard({
         <div className="flex items-start justify-between gap-2">
           <ExerciseNameStack exercise={exercise} size="sm" className="flex-1" />
           <div className="flex shrink-0 items-center gap-1.5">
-            {/* Conv #11h — plafond mis en évidence : chip distinct à droite
+            {/* Plafond mis en évidence : chip distinct à droite
                 du nom, fond sang plein + font-display tabulaire pour
                 ressortir vs les tags neutres (polyarticulaire, barre…). */}
             {e1rm !== null && e1rm > 0 && (
@@ -70,7 +70,7 @@ export function ExerciseCard({
                 {e1rm.toFixed(0)} {kgUnitLabelShort(exercise.charge)}
               </span>
             )}
-            {/* Conv #23 — picto catégorie en évidence avec couleur de fond
+            {/* Picto catégorie en évidence avec couleur de fond
                 distincte. Remplace l'ancien PatternIcon (peu évocateur). */}
             <ChargeBadge charge={exercise.charge} size={28} />
           </div>

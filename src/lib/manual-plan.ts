@@ -1,5 +1,5 @@
 /**
- * Bloc O — plans « à la main ».
+ * Plans « à la main ».
  *
  * Mode où l'utilisateur construit son programme lui-même : une grille de N
  * séances VIDES (N = séances/sem), non typées (jours nus, aucun focus muscle

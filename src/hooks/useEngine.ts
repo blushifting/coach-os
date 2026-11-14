@@ -32,6 +32,7 @@ import {
   mergeEquivalentExercisesInPlan,
 } from '@/engine/cycle_planner';
 import { carryOverManualPlan } from '@/lib/manual-plan';
+import { appendSetToItem } from '@/lib/session-runner';
 import { dateKey } from '@/lib/dashboard';
 import {
   alignWeeksOnDates,
@@ -121,7 +122,7 @@ async function loadHistorySnapshot(): Promise<HistorySnapshot> {
 }
 
 // =============================================================================
-// Dump 2.4, étape 1 — la semaine se lit sur la date (D6)
+// La semaine se lit sur la date
 // =============================================================================
 
 /**
@@ -178,7 +179,7 @@ function weekForDate(seanceDate: string): number {
 }
 
 /**
- * Conv #21b — Construit un `Catalog` qui fusionne le catalogue par défaut
+ * Construit un `Catalog` qui fusionne le catalogue par défaut
  * (JSON embarqué) et les exos custom ajoutés par l'utilisateur (table
  * `userAddedExercises`). Sans cette fusion, les exos custom n'existeraient
  * que dans la DB et seraient invisibles pour `selection`, `buildPrescription`,
@@ -212,13 +213,13 @@ async function buildFullCatalog(): Promise<{
  * À appeler au mount de l'app : charge le catalog, lit l'état persisté
  * (userState + history) et hydrate le store. Idempotent.
  *
- * Conv #21 — appelle aussi `tickWeekIfNeeded` après l'hydratation pour
+ * Appelle aussi `tickWeekIfNeeded` après l'hydratation pour
  * rattraper les transitions de semaine quand l'app n'a pas été ouverte
  * pendant ≥ 7 jours. Sans ça, `current_week_in_cycle` reste figé sur la
  * semaine de la dernière session active, et tous les compteurs hebdo
  * (séances, volume, dette) ne se réinitialisent jamais.
  *
- * Conv #21b — charge aussi les exos custom (userAddedExercises) et les
+ * Charge aussi les exos custom (userAddedExercises) et les
  * fusionne dans le Catalog en mémoire.
  */
 export async function bootstrap(): Promise<void> {
@@ -241,7 +242,7 @@ export async function bootstrap(): Promise<void> {
 }
 
 /**
- * Dump 2.4, étape 5 — un historique mesuré avec un ancien calcul des Plafonds
+ * Un historique mesuré avec un ancien calcul des Plafonds
  * (base locale d'avant la 2.3.4, ancien export, ancienne sauvegarde en ligne)
  * est recalculé une fois depuis ses séries, puis marqué à la version courante.
  * Les séances ne sont pas touchées.
@@ -272,7 +273,7 @@ async function migratePlafondModel(
 }
 
 /**
- * Conv #21b — Ajoute un exo custom (créé via le formulaire UI) à la table
+ * Ajoute un exo custom (créé via le formulaire UI) à la table
  * `userAddedExercises` et reconstruit le Catalog en store pour qu'il soit
  * immédiatement disponible partout (Catalogue, sélecteur séance, etc.).
  */
@@ -284,12 +285,12 @@ export async function addCustomExercise(dict: ExerciseDict): Promise<void> {
 }
 
 /**
- * Conv #21b — Supprime un exo custom et reconstruit le Catalog. Note : si
+ * Supprime un exo custom et reconstruit le Catalog. Note : si
  * des feedbacks référencent cet exo, les `nom_fr` afficheront l'id brut
  * (catalog.get jette). C'est acceptable : on ne va pas supprimer
  * rétroactivement les feedbacks historiques.
  *
- * Dump 2.4, n° 22 — la suppression part aussi dans la sauvegarde en ligne.
+ * La suppression part aussi dans la sauvegarde en ligne.
  * Sans ça, la sauvegarde gardait l'exercice jusqu'à la séance suivante, et
  * une restauration entre-temps le faisait revenir.
  */
@@ -301,7 +302,7 @@ export async function removeCustomExercise(exerciseId: string): Promise<void> {
 }
 
 /**
- * Conv #21 — Rattrape les transitions hebdo manquées depuis la dernière
+ * Rattrape les transitions hebdo manquées depuis la dernière
  * session active. Si `now` correspond à la semaine N du cycle alors que
  * `current_week_in_cycle` est resté à K < N, on déclenche `endOfWeek()`
  * autant de fois que nécessaire pour arriver à `min(N, 5)`.
@@ -323,7 +324,7 @@ export async function tickWeekIfNeeded(now: Date = new Date()): Promise<void> {
     (c) => c.cycle_index === state.cycle_index,
   );
   if (cycle === undefined) return;
-  // Conv #30 — tant qu'aucune séance n'a été faite dans ce cycle, la grille
+  // Tant qu'aucune séance n'a été faite dans ce cycle, la grille
   // n'a pas vraiment démarré : on n'avance pas les semaines (start_date est
   // encore le placeholder onboarding/bilan, ré-ancré sur la 1re séance via
   // `recordFeedbackAndCommit`). Évite de « perdre » des jours si l'utilisateur
@@ -347,7 +348,7 @@ export async function tickWeekIfNeeded(now: Date = new Date()): Promise<void> {
 }
 
 /**
- * Dump 2.4, étape 1 (n° 15) — une PWA reste ouverte en arrière-plan d'un jour
+ * Une PWA reste ouverte en arrière-plan d'un jour
  * sur l'autre : sans ce rattrapage au retour au premier plan, la semaine
  * courante restait celle de la veille tant que l'app n'était pas relancée.
  */
@@ -376,7 +377,7 @@ export async function refreshHistory(): Promise<void> {
 export interface StartUserArgs {
   profile: Profile;
   muscleGoals?: Record<string, MuscleGoal> | null;
-  /** Bloc O — 'auto' (moteur) ou 'manual' (grille à la main). Default 'auto'. */
+  /** 'auto' (moteur) ou 'manual' (grille à la main). Default 'auto'. */
   buildMode?: 'auto' | 'manual';
 }
 
@@ -399,7 +400,7 @@ export async function startUser(args: StartUserArgs): Promise<UserState> {
 /**
  * Génère et persiste le `WeeklyTemplate` Cycle 1 (custom).
  *
- * Bloc O — plus de programmes tout faits : génération via
+ * Plus de programmes tout faits : génération via
  * `autoGenerateCyclePlanV3` (path co-construit). Le mode « à la main » ne passe
  * pas par ici (plan vide posé directement par OnboardingPage).
  *
@@ -417,10 +418,10 @@ export async function generateInitialCyclePlan(): Promise<void> {
     return;
   }
 
-  // Bloc O — plus de programmes guidés : génération custom uniquement.
+  // Plus de programmes guidés : génération custom uniquement.
   // (Le mode « à la main » ne passe pas par ici : OnboardingPage pose le plan
   // vide directement via setCurrentCyclePlan.)
-  // Conv #39 — voie unique : génération via autoGenerateCyclePlanV3
+  // Voie unique : génération via autoGenerateCyclePlanV3
   // (skeleton_builder + sets_allocator). Fallback MEDIUM pour les états
   // antérieurs à la `duration_category` (pré-Conv #22).
   next.current_cycle_plan = autoGenerateCyclePlanV3(
@@ -434,7 +435,7 @@ export async function generateInitialCyclePlan(): Promise<void> {
 }
 
 /**
- * Conv #22 — Génère le plan à partir d'un `SkeletonTemplate` déjà rempli
+ * Génère le plan à partir d'un `SkeletonTemplate` déjà rempli
  * (étape E du wizard onboarding). Court-circuite l'auto-fill par défaut de
  * `autoGenerateCyclePlanV3` et utilise directement les choix de l'user.
  *
@@ -457,7 +458,7 @@ export async function generateInitialCyclePlanFromSkeleton(
 }
 
 /**
- * Conv #22 — Mémorise l'exo préféré de l'user pour un pattern donné. Sert
+ * Mémorise l'exo préféré de l'user pour un pattern donné. Sert
  * à pré-cocher ses choix dans les onboardings/restarts suivants
  * (cf. `candidatesForCell` favoriteId).
  */
@@ -470,7 +471,7 @@ export async function addFavoriteForPattern(
     ...(next.favorite_exercise_per_pattern ?? {}),
     [pattern]: exerciseId,
   };
-  // Bloc F (Conv #31) — la prédilection onboarding alimente aussi le set
+  // La prédilection onboarding alimente aussi le set
   // unifié, pour qu'elle apparaisse comme favori dans le Catalogue.
   const ids = next.favorite_exercise_ids ?? [];
   if (!ids.includes(exerciseId)) {
@@ -482,7 +483,7 @@ export async function addFavoriteForPattern(
 }
 
 /**
- * Bloc F (Conv #31) — Bascule un exo dans/hors des favoris unifiés
+ * Bascule un exo dans/hors des favoris unifiés
  * (`favorite_exercise_ids`). Source : l'étoile du Catalogue / de la fiche exo.
  * N'altère PAS `favorite_exercise_per_pattern` (cache de seeding moteur) :
  * l'influence des favoris catalogue sur l'auto-génération est un chantier F2
@@ -500,7 +501,7 @@ export async function toggleFavorite(exerciseId: string): Promise<UserState> {
 }
 
 /**
- * Dump 2.4, étape 4 — choisit la fourchette de reps d'un exercice (fiche, ou
+ * Choisit la fourchette de reps d'un exercice (fiche, ou
  * réponse à la proposition de fin de séance). Un choix explicite, même identique
  * à la fourchette conseillée, coupe les propositions de changement.
  */
@@ -513,7 +514,21 @@ export async function setRepRange(exerciseId: string, key: RepRangeKey): Promise
 }
 
 /**
- * Bloc F (Conv #31) — seuil d'ajouts ad-hoc/variante au-delà duquel on propose
+ * Enregistre la note d'un exercice (fiche du catalogue ou
+ * bouton « i » en séance). Une note vide ou blanche est retirée.
+ */
+export async function setExerciseNote(exerciseId: string, note: string): Promise<UserState> {
+  const next = requireUserState();
+  const { [exerciseId]: _old, ...rest } = next.exercise_notes;
+  const trimmed = note.trim();
+  next.exercise_notes = trimmed.length > 0 ? { ...rest, [exerciseId]: trimmed } : rest;
+  await txSaveUserStateOnly(next);
+  useCoachOsStore.setState({ userState: next });
+  return next;
+}
+
+/**
+ * Seuil d'ajouts ad-hoc/variante au-delà duquel on propose
  * d'ajouter l'exo aux favoris.
  */
 export const FAVORITE_SUGGEST_THRESHOLD = 3;
@@ -528,8 +543,8 @@ function bumpExercisePickCount(next: UserState, exerciseId: string): void {
 }
 
 /**
- * D-2 (#75) — même compteur pour une séance composée d'un coup (séance libre :
- * « Créer une séance », base de preset comprise). Il ne s'incrémentait
+ * Même compteur pour une séance composée d'un coup (séance libre :
+ * « Créer une séance »). Il ne s'incrémentait
  * jusqu'ici que par le flux du programme (variante + ajout en cours de séance),
  * si bien qu'un exo fait 6 fois hors programme n'était jamais proposé en
  * favori. Un exo présent deux fois dans la même séance ne compte que pour un
@@ -545,7 +560,7 @@ function bumpPickCountsForSlots(
 }
 
 /**
- * Bloc F (Conv #31) — l'exo vient-il d'atteindre le seuil de propositions
+ * L'exo vient-il d'atteindre le seuil de propositions
  * favoris (et n'est pas déjà favori) ? À appeler côté UI APRÈS l'ajout/variante
  * (le store est déjà à jour). `=== seuil` ⇒ on ne propose qu'une seule fois.
  */
@@ -563,7 +578,7 @@ export interface VariantReplacementInput {
 }
 
 /**
- * Conv #11b — Applique les variantes choisies dans le Step5 d'onboarding sur
+ * Applique les variantes choisies dans le Step5 d'onboarding sur
  * le `current_cycle_plan` posé. Préserve `base_sets`, `progression`,
  * `progression_rule`, `role`, `intensity_scheme` — seul `exercise_id` du slot
  * ciblé est remplacé.
@@ -584,7 +599,7 @@ export async function applyVariantReplacements(
     if (slot === undefined) continue;
     slot.exercise_id = r.newExerciseId;
   }
-  // Conv #19 — Après remplacement de variantes, deux slots peuvent maintenant
+  // Après remplacement de variantes, deux slots peuvent maintenant
   // pointer vers des exos équivalents (même pattern + primaires + charge).
   // On fusionne en additionnant les séries.
   const catalog = requireCatalog();
@@ -633,7 +648,7 @@ export async function planSessionForDay(
 /**
  * Charge une séance déjà planifiée (`status='planned'`) dans le runner. Refuse
  * si `seance_date` ≠ date du jour : on ne peut **pas** avancer dans une séance
- * un autre jour que celui pour lequel elle est prévue (cf. Conv #10d).
+ * un autre jour que celui pour lequel elle est prévue.
  *
  * Retourne `{plan, sessionId}` ; si la date diffère, lève une `Error` avec un
  * message FR clair pour qu'on puisse l'afficher dans l'UI si besoin.
@@ -658,7 +673,7 @@ export async function loadPlannedSessionForRunner(
       `Tu pourras la démarrer le jour prévu.`,
     );
   }
-  // Dump 2.4, étape 1 — une séance programmée avant ce correctif porte la
+  // Une séance programmée avant ce correctif porte la
   // semaine du jour où elle a été programmée ; le feedback en hérite. On la
   // recale sur sa date avant de la jouer.
   const week = weekForDate(row.seance_date);
@@ -693,7 +708,7 @@ export async function generateAndStoreSession(
 }
 
 // =============================================================================
-// Conv #10d — Remplacement d'un exo pendant la séance en cours.
+// Remplacement d'un exo pendant la séance en cours.
 // =============================================================================
 
 export interface ReplaceSessionExerciseArgs {
@@ -719,7 +734,7 @@ export async function replaceSessionExercise(
     next,
     catalog,
   );
-  // Bloc F (Conv #31) — la variante choisie compte pour le prompt favoris (3×).
+  // La variante choisie compte pour le prompt favoris (3×).
   bumpExercisePickCount(next, args.newExerciseId);
   if (sessionId !== null) {
     await txUpdateSessionPlan(sessionId, newPlan, next);
@@ -735,7 +750,7 @@ export async function replaceSessionExercise(
 }
 
 // =============================================================================
-// Conv #10d — Annulation d'une séance planifiée (pas encore commencée).
+// Annulation d'une séance planifiée (pas encore commencée).
 // =============================================================================
 
 export async function cancelPlannedSession(sessionId: number): Promise<void> {
@@ -753,7 +768,7 @@ export async function cancelPlannedSession(sessionId: number): Promise<void> {
 }
 
 /**
- * Conv #14b-3 — Marque la séance actuellement en cours comme sautée. La ligne
+ * 3 — Marque la séance actuellement en cours comme sautée. La ligne
  * session passe en `status='skipped'` (vs delete pour `cancel`), et le store
  * libère `currentSessionPlan` / `currentSessionId`. La case calendrier
  * correspondante apparaîtra alors comme "sautée".
@@ -774,7 +789,7 @@ export async function skipCurrentSession(): Promise<void> {
 }
 
 // =============================================================================
-// Conv #21b — Ajout/retrait d'un exo en cours de séance + séance libre
+// Ajout/retrait d'un exo en cours de séance + séance libre
 // =============================================================================
 
 /**
@@ -823,7 +838,7 @@ export async function addExerciseToCurrentSession(
   }));
   const newEntries =
     entries === null ? null : [...entries, newRow];
-  // Bloc F (Conv #31) — compteur d'utilisations (prompt favoris à la 3ᵉ fois).
+  // Compteur d'utilisations (prompt favoris à la 3ᵉ fois).
   bumpExercisePickCount(next, exerciseId);
   await txUpdateSessionPlan(sessionId, newPlan, next);
   useCoachOsStore.setState({
@@ -865,44 +880,46 @@ export async function removeExerciseFromCurrentSession(
 }
 
 /**
- * Démarre une "séance libre" hors programme à la date donnée. Crée un
- * `SessionPlan` vide avec `label='Séance libre'`, persiste en DB, et la
- * monte directement dans le runner. L'user peuple ensuite la séance via
- * `addExerciseToCurrentSession`.
- *
- * Distinct de `planSessionForDay` (qui génère un plan à partir du cycle).
- * Pas de `dayIndex` (la séance n'appartient à aucun jour-type du cycle).
+ * Ajoute une série à un exercice de la séance en cours, pour
+ * cette séance seulement (le programme ne change pas). Prescription : voir
+ * `appendSetToItem`. `measured` = l'exercice n'est pas en calibration.
  */
-export async function startFreeSession(
-  seanceDate: string,
-): Promise<{ plan: SessionPlan; sessionId: number }> {
+export async function addSetToCurrentSessionItem(
+  itemIndex: number,
+  measured: boolean,
+): Promise<void> {
+  const catalog = requireCatalog();
+  const store = useCoachOsStore.getState();
+  const plan = store.currentSessionPlan;
+  const sessionId = store.currentSessionId;
+  if (plan === null || sessionId === null) {
+    throw new Error('Pas de séance en cours.');
+  }
   const next = requireUserState();
-  const plan: SessionPlan = {
-    seance_date: seanceDate,
-    week_in_cycle: weekForDate(seanceDate),
-    cycle_index: next.cycle_index,
-    rpe_target: 8,
-    items: [],
-    label: 'Séance libre',
-  };
-  const sessionId = await txSaveSessionPlan(plan, next);
-  useCoachOsStore.setState({
-    userState: next,
-    currentSessionPlan: plan,
-    currentSessionId: sessionId,
-    currentSessionEntries: [],
+  const exId = plan.items[itemIndex]?.exercise_id;
+  const result = appendSetToItem({
+    plan,
+    entries: store.currentSessionEntries ?? entriesFromPlan(plan),
+    itemIdx: itemIndex,
+    measured,
+    state: next,
+    exercise: exId !== undefined && catalog.has(exId) ? catalog.get(exId) : null,
   });
-  await refreshHistory();
-  return { plan, sessionId };
+  if (result === null) return;
+  await txUpdateSessionPlan(sessionId, result.plan, next);
+  useCoachOsStore.setState({
+    currentSessionPlan: result.plan,
+    currentSessionEntries: result.entries,
+  });
 }
 
 // =============================================================================
-// Bloc G (Conv #32) — Séance custom (hors-programme, assistée par presets)
+// Séance libre (hors programme)
 // =============================================================================
 
 export interface CustomSessionArgs {
   readonly seanceDate: string;
-  /** Slots finaux (base preset + ajouts/retraits faits dans l'UI). */
+  /** Exercices retenus dans la feuille de création, avec leurs séries. */
   readonly slots: readonly { readonly exerciseId: string; readonly nSets: number }[];
   readonly displayName?: string | null;
 }
@@ -962,7 +979,7 @@ export async function planCustomSessionForDay(
 }
 
 // =============================================================================
-// Bloc G (Conv #32) — Édition chirurgicale du cycle EN COURS (juste les exos /
+// Édition chirurgicale du cycle EN COURS (juste les exos /
 // le nom, JAMAIS la progression). On patche `current_cycle_plan` en place et on
 // persiste, sans rappeler `generateCyclePlan` : e1RM / historique intacts.
 // =============================================================================
@@ -984,7 +1001,7 @@ export async function renameCycleDay(dayIndex: number, name: string): Promise<Us
 /**
  * Ajoute un exo à un jour du cycle en cours. Pose une `progression` par défaut
  * (calquée sur les voisins), puis fusionne d'éventuels doublons équivalents
- * (Conv #19). Avertit-mais-ne-contraint-pas : aucune validation d'équilibre ici.
+ *. Avertit-mais-ne-contraint-pas : aucune validation d'équilibre ici.
  */
 export async function addExerciseToCycleDay(
   dayIndex: number,
@@ -1031,7 +1048,7 @@ export async function removeExerciseFromCycleDay(
 }
 
 /**
- * Bloc I (Conv #34) — change le nombre de séries d'un exo d'un jour du cycle en
+ * Change le nombre de séries d'un exo d'un jour du cycle en
  * cours (édition chirurgicale ; progression hebdo recalculée, historique
  * conservé). Bornes 1–10, identiques à l'ajout.
  */
@@ -1058,7 +1075,7 @@ export async function setCycleDayExerciseSets(
 }
 
 /**
- * Chantier B — persiste la décision de récupération (déload opt-in) du cycle
+ * Persiste la décision de récupération (déload opt-in) du cycle
  * courant. À appeler AVANT de générer la séance de semaine 5 : la prescription
  * (RPE, charge, nombre de séries) dépend de cette décision.
  */
@@ -1070,15 +1087,14 @@ export async function setDeloadDecision(
   next.deload_decision = decision;
   await txSaveUserStateOnly(next);
 
-  // Chantier B — les séances de la semaine de récupération déjà PLANIFIÉES (non
+  // Les séances de la semaine de récupération déjà PLANIFIÉES (non
   // démarrées) ont pu être générées AVANT cette décision (numéros de séries/
   // charges/RPE figés « semaine normale »). On régénère leur prescription pour
   // qu'elle reflète le choix : déload accepté → allégé (÷2 séries, ×0,9, RPE 6),
   // refusé → normal. Les séances non issues d'un jour du cycle (custom) sont
   // laissées intactes. Une séance planifiée n'est jamais éditée avant démarrage,
   // donc rien à préserver.
-  //
-  // Dump 2.4, étape 1 — la semaine de récupération se reconnaît à la DATE de la
+  // La semaine de récupération se reconnaît à la DATE de la
   // séance (historique réaligné sur les dates), pas au numéro enregistré : une
   // séance programmée en semaine 4 pour un jour de la semaine 5 portait « 4 ».
   const plan = next.current_cycle_plan;
@@ -1112,7 +1128,7 @@ export async function setDeloadDecision(
 }
 
 /**
- * Bloc G (Conv #32) — Remplace `current_cycle_plan` par un template déjà édité
+ * Remplace `current_cycle_plan` par un template déjà édité
  * (récap d'onboarding : swaps + ajouts/retraits + renommages appliqués sur un
  * snapshot). Fusionne les doublons équivalents avant de persister, pour qu'on
  * enregistre exactement ce que l'utilisateur a vu et validé.
@@ -1129,7 +1145,7 @@ export async function setCurrentCyclePlan(template: WeeklyTemplate): Promise<Use
 }
 
 // =============================================================================
-// Saisie manuelle d'un plafond (Conv #12b)
+// Saisie manuelle d'un plafond
 // =============================================================================
 
 export interface SetManualE1rmArgs {
@@ -1176,7 +1192,7 @@ export async function setManualE1rm(args: SetManualE1rmArgs): Promise<UserState>
     weekInCycle: next.current_week_in_cycle,
   });
 
-  // Conv #19 — Si une séance est en cours et contient cet exo, recale les
+  // Si une séance est en cours et contient cet exo, recale les
   // charges des sets non-cochés à partir du nouveau plafond. Sinon l'exo
   // reste "coincé" sur les charges issues du bootstrap heuristique alors
   // que la confidence est passée à 'measured' (banner disparu mais charges
@@ -1227,7 +1243,7 @@ export async function setManualE1rm(args: SetManualE1rmArgs): Promise<UserState>
 }
 
 /**
- * Bloc R — Réinitialise le plafond d'un exo : efface `state.e1rm[exo]` + tous
+ * Réinitialise le plafond d'un exo : efface `state.e1rm[exo]` + tous
  * ses snapshots → l'exo repart en calibration (bootstrap reseed à la prochaine
  * séance), comme jamais fait. Déclenché depuis la fiche catalogue, et réutilisé
  * au changement d'objectif inter-cycle (cf. `endOfCycle`).
@@ -1250,18 +1266,18 @@ export async function recordFeedbackAndCommit(
 ): Promise<engine.RecordFeedbackResult> {
   const catalog = requireCatalog();
   const next = requireUserState();
-  // Conv #16 : on identifie les exos déjà calibrés (= au moins un snapshot
+  // On identifie les exos déjà calibrés (= au moins un snapshot
   // e1RM en BDD avant cette séance) pour distinguer "1re séance" (skipEma)
   // de "séances suivantes" (EMA standard).
   const snapshots = useCoachOsStore.getState().history.e1rmSnapshots;
   const calibratedExoIds = new Set(snapshots.map((s) => s.exercise_id));
-  // Conv #30 — 1re séance réelle du cycle ? (avant commit, l'historique reflète
+  // 1re séance réelle du cycle ? (avant commit, l'historique reflète
   // encore l'état pré-feedback). Si oui, on (ré)ancre cycle.start_date dessus.
   const isFirstFeedbackOfCycle = !useCoachOsStore
     .getState()
     .history.feedbacks.some((f) => f.cycle_index === feedback.cycle_index);
   const summary = engine.recordFeedback(next, catalog, feedback, { calibratedExoIds });
-  // Bloc R — ne snapshote (→ confidence 'measured') que les MAJ DÉFINITIVES :
+  // Ne snapshote (→ confidence 'measured') que les MAJ DÉFINITIVES :
   // une séance tout-4+ remonte l'e1RM (provisoire) mais ne marque pas l'exo
   // comme calibré (sinon le bandeau de calibration disparaîtrait à tort).
   const definitiveExoIds = new Set(
@@ -1284,7 +1300,7 @@ export async function recordFeedbackAndCommit(
     currentSessionEntries: null,
   });
   await refreshHistory();
-  // Chantier F-1 — sauvegarde cloud aux moments qui comptent. Jamais attendue,
+  // Sauvegarde cloud aux moments qui comptent. Jamais attendue,
   // jamais bloquante : `requestBackup` pose un drapeau et lance l'envoi en
   // arrière-plan (inerte sans compte, en démo ou hors ligne).
   requestBackup();
@@ -1313,7 +1329,7 @@ export interface EndOfCycleArgs {
    */
   action?: SuggestedAction;
   /**
-   * Bloc O — mode de construction du nouveau cycle ('auto'|'manual'). Utilisé
+   * Mode de construction du nouveau cycle ('auto'|'manual'). Utilisé
    * par le restart d'onboarding. Si omis, on garde le mode courant.
    */
   nextBuildMode?: 'auto' | 'manual';
@@ -1325,7 +1341,7 @@ export interface EndOfCycleArgs {
 }
 
 // =============================================================================
-// Édition du profil (Conv #6c)
+// Édition du profil
 // =============================================================================
 
 /**
@@ -1350,7 +1366,7 @@ export async function updateProfile(profile: Profile): Promise<UserState> {
 }
 
 // =============================================================================
-// Override d'équipement par exo (Conv #18)
+// Override d'équipement par exo
 // =============================================================================
 
 /**
@@ -1395,7 +1411,7 @@ export async function clearEquipmentOverride(exerciseId: string): Promise<UserSt
  * `bootstrapped === true` (DB en état propre et vide) — l'app peut router
  * vers `/welcome` sans repasser par le splash.
  *
- * Note (Conv #10a) : on garde volontairement `bootstrapped: true`. Mettre
+ * Note : on garde volontairement `bootstrapped: true`. Mettre
  * `bootstrapped: false` ici déclenchait le `SplashScreen` d'`AppShell`,
  * mais `bootstrap()` n'y est appelé qu'au mount initial (deps `[]`) — donc
  * le splash restait figé jusqu'à un rafraîchissement complet de la page.
@@ -1403,7 +1419,7 @@ export async function clearEquipmentOverride(exerciseId: string): Promise<UserSt
 export async function resetApp(): Promise<void> {
   await getDb().delete();
   resetDbInstance();
-  // C-1 (#75) — le catalogue en mémoire est ramené aux exos par défaut. Il
+  // Le catalogue en mémoire est ramené aux exos par défaut. Il
   // portait jusqu'ici les exos custom du compte effacé : sur un téléphone
   // passé à quelqu'un d'autre (le cas même de la déconnexion), le suivant les
   // voyait dans son Catalogue alors qu'ils n'existent plus en base.
@@ -1420,7 +1436,7 @@ export async function resetApp(): Promise<void> {
     lastCycleReview: null,
     catalog,
   });
-  // Conv #16 — reset des dismissals LS de la démo. Sans ça, un user
+  // Reset des dismissals LS de la démo. Sans ça, un user
   // qui reset l'app après avoir déjà vu la welcome overlay (via Profil >
   // Aide) skiperait l'intro lors du prochain onboarding auto-launch.
   try {
@@ -1429,7 +1445,7 @@ export async function resetApp(): Promise<void> {
   } catch {
     /* ignore */
   }
-  // Chantier F-1 — l'app repart vierge : on ne veut surtout pas qu'un drapeau
+  // L'app repart vierge : on ne veut surtout pas qu'un drapeau
   // « à envoyer » survivant pousse cet état vide par-dessus le cloud.
   clearLocalBackupFlags();
 }
@@ -1448,7 +1464,7 @@ export async function importDataFromJson(json: string): Promise<void> {
 }
 
 /**
- * Chantier F-2 — même chemin, mais depuis un objet déjà désérialisé : le
+ * Même chemin, mais depuis un objet déjà désérialisé : le
  * `payload` `jsonb` d'un snapshot cloud arrive de PostgREST en JavaScript, il
  * serait absurde de le re-sérialiser pour le re-parser.
  *
@@ -1464,7 +1480,7 @@ export async function importDataFromPayload(raw: unknown): Promise<void> {
 /**
  * Recharge le store depuis la DB après un remplacement complet.
  *
- * C-1 (#75) — le **catalogue est rebâti**, pas seulement l'état : un import
+ * Le **catalogue est rebâti**, pas seulement l'état : un import
  * remplace la table `userAddedExercises`, donc les exos custom du payload
  * n'existaient que dans Dexie et restaient absents du `Catalog` en mémoire
  * jusqu'au prochain démarrage de l'app. Symptôme après une restauration
@@ -1523,17 +1539,17 @@ export async function endOfCycle(args: EndOfCycleArgs = {}) {
   const review = engine.endOfCycle(next, catalog);
 
   // 2. Applique les changements demandés AVANT régénération du plan.
-  // Conv #18 — `newMuscleGoals` est appliqué dès qu'il est fourni, quelle
+  // `newMuscleGoals` est appliqué dès qu'il est fourni, quelle
   // que soit l'action. Cas typique : l'onboarding partiel peut changer
   // les priorités musculaires ET le mode de construction en un seul flux ;
   // les deux modifs doivent tomber dans l'état.
-  // Dump 2.4 (D2) — les intentions sont prises telles quelles : la fenêtre
+  // Les intentions sont prises telles quelles : la fenêtre
   // « Équilibre » a déjà proposé les muscles à entretenir, rien n'est ajouté.
   if (args.newMuscleGoals) {
     next.muscle_goals = { ...args.newMuscleGoals };
   }
 
-  // Dump 2.4 (D4, n° 24) — plus aucune remise à zéro de Plafond ni de courbe
+  // Plus aucune remise à zéro de Plafond ni de courbe
   // quand une intention change : le Plafond mesure, il ne dépend d'aucune cible.
   if (args.nextBuildMode !== undefined) {
     next.build_mode = args.nextBuildMode;
@@ -1544,12 +1560,12 @@ export async function endOfCycle(args: EndOfCycleArgs = {}) {
   //    `cycle_index` (Conv A, plan 11 : branche w=5 retirée).
   next.cycle_index = closedCycleIndex + 1;
   next.current_week_in_cycle = 1;
-  // Chantier B — nouveau cycle : la décision de récupération (déload opt-in)
+  // Nouveau cycle : la décision de récupération (déload opt-in)
   // repart à zéro (re-proposée en semaine 5 du nouveau cycle si l'assiduité est haute).
   next.deload_decision = null;
 
   // 4. Régénère le plan du nouveau cycle.
-  // Bloc O — plus de programmes tout faits. En mode « à la main », on reconduit
+  // Plus de programmes tout faits. En mode « à la main », on reconduit
   // le plan manuel du cycle précédent (mêmes exos/séries, progression
   // recalculée) au lieu de régénérer ; les charges montent via la
   // recalibration appliquée à l'étape 1.
@@ -1559,7 +1575,7 @@ export async function endOfCycle(args: EndOfCycleArgs = {}) {
       next.cycle_index,
     );
   } else {
-    // Conv #39 — fin de cycle régénérée par la MÊME voie que l'onboarding
+    // Fin de cycle régénérée par la MÊME voie que l'onboarding
     // (V3). `duration_category` est persisté sur le profil ; fallback MEDIUM.
     next.current_cycle_plan = autoGenerateCyclePlanV3(
       next,
@@ -1578,7 +1594,7 @@ export async function endOfCycle(args: EndOfCycleArgs = {}) {
   useCoachOsStore.setState({
     userState: next,
     lastCycleReview: review,
-    // 1.17 (D7) — un nouveau cycle invalide toute séance en cours : sa ligne
+    // Un nouveau cycle invalide toute séance en cours : sa ligne
     // DB `planned` vient d'être supprimée par `txEndOfCycle`, mais le store
     // gardait le `currentSessionPlan` → une séance « commencée » résiduelle
     // s'affichait sur aujourd'hui au lieu de laisser l'user planifier sa 1re
@@ -1600,14 +1616,16 @@ export interface EngineApi {
   refreshHistory: typeof refreshHistory;
   startUser: typeof startUser;
   generateInitialCyclePlan: typeof generateInitialCyclePlan;
-  /** Conv #22 — alt de generateInitialCyclePlan avec squelette pré-rempli. */
+  /** Alt de generateInitialCyclePlan avec squelette pré-rempli. */
   generateInitialCyclePlanFromSkeleton: typeof generateInitialCyclePlanFromSkeleton;
-  /** Conv #22 — mémorise l'exo préféré user pour un pattern. */
+  /** Mémorise l'exo préféré user pour un pattern. */
   addFavoriteForPattern: typeof addFavoriteForPattern;
-  /** Bloc F (Conv #31) — bascule un favori unifié (étoile catalogue/fiche). */
+  /** Bascule un favori unifié (étoile catalogue/fiche). */
   toggleFavorite: typeof toggleFavorite;
   setRepRange: typeof setRepRange;
-  /** Bloc F (Conv #31) — l'exo atteint-il le seuil de proposition favoris ? */
+  /** Note libre par exercice. */
+  setExerciseNote: typeof setExerciseNote;
+  /** L'exo atteint-il le seuil de proposition favoris ? */
   shouldSuggestFavorite: typeof shouldSuggestFavorite;
   applyVariantReplacements: typeof applyVariantReplacements;
   setManualE1rm: typeof setManualE1rm;
@@ -1626,27 +1644,28 @@ export interface EngineApi {
   clearEquipmentOverride: typeof clearEquipmentOverride;
   resetApp: typeof resetApp;
   importDataFromJson: typeof importDataFromJson;
-  /** Chantier F-2 — restauration depuis un snapshot cloud déjà désérialisé. */
+  /** Restauration depuis un snapshot cloud déjà désérialisé. */
   importDataFromPayload: typeof importDataFromPayload;
-  /** Conv #21b — gestion des exos custom (table userAddedExercises). */
+  /** Gestion des exos custom (table userAddedExercises). */
   addCustomExercise: typeof addCustomExercise;
   removeCustomExercise: typeof removeCustomExercise;
-  /** Conv #21b — flexibilité runtime (ajout/retrait exos en séance, séance libre). */
+  /** Flexibilité runtime (ajout/retrait exos en séance, séance libre). */
   addExerciseToCurrentSession: typeof addExerciseToCurrentSession;
   removeExerciseFromCurrentSession: typeof removeExerciseFromCurrentSession;
-  startFreeSession: typeof startFreeSession;
-  /** Bloc G (Conv #32) — séance custom assistée (presets → moteur). */
+  /** Une série de plus sur un exercice de la séance. */
+  addSetToCurrentSessionItem: typeof addSetToCurrentSessionItem;
+  /** Séance libre composée dans la feuille de création. */
   startCustomSession: typeof startCustomSession;
   planCustomSessionForDay: typeof planCustomSessionForDay;
-  /** Bloc G (Conv #32) — édition chirurgicale du cycle en cours (exos / nom). */
+  /** Édition chirurgicale du cycle en cours (exos / nom). */
   renameCycleDay: typeof renameCycleDay;
   addExerciseToCycleDay: typeof addExerciseToCycleDay;
   removeExerciseFromCycleDay: typeof removeExerciseFromCycleDay;
-  /** Bloc I (Conv #34) — change le nombre de séries d'un exo du cycle en cours. */
+  /** Change le nombre de séries d'un exo du cycle en cours. */
   setCycleDayExerciseSets: typeof setCycleDayExerciseSets;
-  /** Chantier B — persiste la décision de récupération (déload opt-in) du cycle. */
+  /** Persiste la décision de récupération (déload opt-in) du cycle. */
   setDeloadDecision: typeof setDeloadDecision;
-  /** Bloc G (Conv #32) — persiste le template édité du récap d'onboarding. */
+  /** Persiste le template édité du récap d'onboarding. */
   setCurrentCyclePlan: typeof setCurrentCyclePlan;
 }
 
@@ -1661,6 +1680,7 @@ export function useEngine(): EngineApi {
       addFavoriteForPattern,
       toggleFavorite,
       setRepRange,
+      setExerciseNote,
       shouldSuggestFavorite,
       applyVariantReplacements,
       setManualE1rm,
@@ -1684,7 +1704,7 @@ export function useEngine(): EngineApi {
       removeCustomExercise,
       addExerciseToCurrentSession,
       removeExerciseFromCurrentSession,
-      startFreeSession,
+      addSetToCurrentSessionItem,
       startCustomSession,
       planCustomSessionForDay,
       renameCycleDay,

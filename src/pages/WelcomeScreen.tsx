@@ -11,10 +11,10 @@
  *
  * Le bouton "Commencer" n'est pas accessible tant que l'app n'est pas
  * installée — choix produit pour pousser l'usage en standalone (cf. retours
- * Conv #10a : "on dirait juste que l'app est un navigateur ouvert sur un
+ * "on dirait juste que l'app est un navigateur ouvert sur un
  * site").
  *
- * Chantier F — le compte n'est plus une proposition mais un passage obligé :
+ * Le compte n'est plus une proposition mais un passage obligé :
  * l'app est réservée aux adresses de l'allowlist, et `RequireAccount` renvoie
  * ici tant qu'aucun compte n'est lié. C'est le bon endroit pour ça — la
  * redirection pleine page vers Google n'y coûte aucune saisie en cours, et
@@ -40,7 +40,7 @@ import { useAuthStore } from '@/store/auth';
 
 export default function WelcomeScreen() {
   const navigate = useNavigate();
-  // Chantier F-1 — inerte (et donc invisible) sans couche cloud configurée.
+  // Inerte (et donc invisible) sans couche cloud configurée.
   const cloudEnabled = isSupabaseConfigured();
   const email = useAuthStore((s) => s.email);
   const signedIn = useAuthStore((s) => s.userId !== null);
@@ -111,7 +111,7 @@ export default function WelcomeScreen() {
       </div>
 
       <div className="flex w-full max-w-xs flex-col gap-3 pb-4">
-        {/* Chantier F-1 — c'est ici qu'atterrit un refus d'allowlist : la
+        {/* C'est ici qu'atterrit un refus d'allowlist : la
             redirection de Google revient sur cet écran, pas sur celui d'où
             l'utilisateur est parti. */}
         {cloudEnabled && authError !== null && (
@@ -131,7 +131,7 @@ export default function WelcomeScreen() {
             Connexion en cours…
           </p>
         ) : installed ? (
-          /* Chantier F — l'app est réservée aux adresses de l'allowlist : sans
+          /* L'app est réservée aux adresses de l'allowlist : sans
              compte, il n'y a pas d'autre porte que celle-ci. Le même bouton
              sert à créer un compte et à retrouver le sien — c'est le même
              appel à Google, et la réconciliation reconnaît toute seule un

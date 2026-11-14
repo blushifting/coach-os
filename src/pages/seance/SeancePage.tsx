@@ -63,7 +63,7 @@ export default function SeancePage() {
   // après démarrage de séance), on init et on persiste immédiatement.
   const entries: SessionEntries = storedEntries ?? [];
 
-  // Conv #16 — Exos en mode calibration pour cette séance : ceux qui n'ont
+  // Exos en mode calibration pour cette séance : ceux qui n'ont
   // pas encore de snapshot e1RM "récent" en BDD (`not_calibrated` ou `stale`).
   // Stable par session : capturé en ref au 1er mount d'une séance donnée pour
   // que le statut ne bascule pas pendant la séance (le snapshot ne se crée
@@ -74,12 +74,12 @@ export default function SeancePage() {
   } | null>(null);
   const computeCalibrationSet = useCallback(
     (plan: SessionPlan): ReadonlySet<string> => {
-      // Conv #66 — date ancrée sur la démo si active (snapshots d'Alex figés,
+      // Date ancrée sur la démo si active (snapshots d'Alex figés,
       // sinon tous `stale` → séance de démo en mode calibration intégral).
       const e1rm = userState?.e1rm ?? {};
       const out = new Set<string>();
       for (const item of plan.items) {
-        // Bloc R — modèle unifié : confidence pilotée par les snapshots datés
+        // Modèle unifié : confidence pilotée par les snapshots datés
         // pour TOUS les exos (plus de cas spécial `e1RM_app`).
         if (
           e1rmConfidenceFor(item.exercise_id, e1rm, snapshots, today) !== 'measured'
@@ -103,7 +103,7 @@ export default function SeancePage() {
   }, [currentSessionPlan, currentSessionId, computeCalibrationSet]);
 
   // (Re)initialise les entrées quand le plan en cours change.
-  // Cas particuliers (Conv #10d / #15) :
+  // Cas particuliers :
   //  - Plan ↦ null : rien à faire (store déjà clean).
   //  - Nouvelle session (sessionId change) : init complet, peu importe la forme.
   //  - Plan muté à sessionId constant (remplacement d'un exo en cours) :
@@ -141,7 +141,7 @@ export default function SeancePage() {
     }
     const sessionChanged = currentSessionId !== prevId;
     if (sessionChanged) {
-      // Conv #26 — on préserve les entries si elles correspondent déjà au plan
+      // On préserve les entries si elles correspondent déjà au plan
       // entrant. Tous les vrais flux de changement de séance passent par
       // `setCurrentSession`, qui remet `currentSessionEntries` à null : ils
       // retombent donc toujours en ré-init. Seul le save/restore du mode démo
@@ -186,7 +186,7 @@ export default function SeancePage() {
         return item.sets.map((s) => ({
           reps: isCalibration ? null : s.reps,
           load_kg: s.load_kg,
-          // Bloc S (Conv #45) — Réserve toujours à « 4+ » par défaut, même sur
+          // Réserve toujours à « 4+ » par défaut, même sur
           // un exo fraîchement remplacé (cohérent avec `initEntries`). Plus de
           // position initiale neutre `null` qui aurait verrouillé la validation.
           rpe: DEFAULT_RPE,
@@ -214,7 +214,7 @@ export default function SeancePage() {
   }
 
   // État C : bilan post-séance.
-  // Conv #24 (D5) — wrappé dans un conteneur plein écran scrollable et paddé.
+  // Wrappé dans un conteneur plein écran scrollable et paddé.
   // Avant, le bilan était rendu nu : pas de scroll (AppShell est en
   // overflow-hidden), pas de marge horizontale, et surtout son titre « Bilan »
   // démarrait dans le coin haut-gauche → chevauché par le filigrane K (z-50).
@@ -243,7 +243,7 @@ export default function SeancePage() {
     );
   }
 
-  // Conv #14b-1 — Plus de "État A" (start list) : si pas de plan en cours,
+  // 1 — Plus de "État A" (start list) : si pas de plan en cours,
   // le démarrage se fait depuis le Programme. On rebondit là-bas.
   // Garde anti-flicker : pendant que `onFinish` est in-flight, le commit
   // peut clear `currentSessionPlan` AVANT que `setSummary` soit appelé.
@@ -296,15 +296,15 @@ export default function SeancePage() {
             setFinishing(true);
             try {
               const previousFeedbacks = feedbacks;
-              // Conv #21 — snapshot des exos déjà calibrés AVANT le commit
+              // Snapshot des exos déjà calibrés AVANT le commit
               // (= au moins un snapshot e1RM en BDD). Permet à
               // `computeSessionSummary` de distinguer première calibration
               // (pas d'ancien plafond à comparer) vs évolution (delta).
               const previouslyCalibrated = new Set(
                 snapshots.map((s) => s.exercise_id),
               );
-              // Chantier B — la séance vient d'être jouée en récupération
-              // effective (semaine 5 + déload accepté). A-3 (#73) : le bilan
+              // La séance vient d'être jouée en récupération
+              // effective (semaine 5 + déload accepté). A-3 : le bilan
               // affiche quand même les Plafonds (Δ 0 s'ils n'ont pas bougé).
               const deloadActive =
                 fb.week_in_cycle === DELOAD_WEEK_IN_CYCLE &&
@@ -319,7 +319,7 @@ export default function SeancePage() {
                 previouslyCalibrated,
                 deloadActive,
               );
-              // Dump 2.4, étape 4 — fourchettes trop étroites pour les crans,
+              // Fourchettes trop étroites pour les crans,
               // lues sur l'état APRÈS l'enregistrement (la séance du jour compte).
               const after = useCoachOsStore.getState().userState;
               const rangeSuggestions: RepRangeSuggestion[] = [];

@@ -1,5 +1,5 @@
 /**
- * Hooks de mouvement réutilisables (Conv #66).
+ * Hooks de mouvement réutilisables.
  *
  * Tous respectent `prefers-reduced-motion` : ils rendent l'état FINAL dès le
  * premier rendu au lieu de l'animer. Les composants n'ont donc pas à tester la

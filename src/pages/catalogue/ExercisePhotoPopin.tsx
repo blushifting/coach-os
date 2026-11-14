@@ -56,7 +56,7 @@ export function ExercisePhotoPopin({
 
   if (!open) return null;
   if (photos === null) {
-    // Bloc I (Conv #34) — portail vers `document.body` : ouvert depuis un Sheet
+    // Portail vers `document.body` : ouvert depuis un Sheet
     // dont le panneau porte `backdrop-blur`, le `position: fixed` serait sinon
     // contenu par le Sheet (décalé en bas) au lieu d'être centré sur le viewport.
     return createPortal(

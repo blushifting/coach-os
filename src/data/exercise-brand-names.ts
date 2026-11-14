@@ -17,7 +17,7 @@
  *  - **Nautilus** a un nom commercial spécifique (« Glute Drive ») pour
  *    le hip thrust qu'on garde.
  *
- * Couverture (Conv #23) : Technogym Selection (dominant en FR), Hammer
+ * Couverture : Technogym Selection (dominant en FR), Hammer
  * Strength Iso-Lateral (zones strength chaînes premium), Matrix Aura /
  * Versa (Magic Form), Life Fitness Signature, Cybex Eagle, Nautilus.
  *

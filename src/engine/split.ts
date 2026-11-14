@@ -86,7 +86,7 @@ export const SPLIT_PPL_3X: SplitTemplate = {
   ],
 };
 
-// Conv #28 — lettre GLOBALE par séance dans toute la semaine (la lettre
+// Lettre GLOBALE par séance dans toute la semaine (la lettre
 // identifie la séance, le préfixe décrit le contenu). Les seeds ci-dessous
 // suivent la convention ; `renumberSessionLabels` réassigne de toute façon
 // les lettres dans l'ordre final après le tri neuro.
@@ -132,7 +132,7 @@ export const SPLIT_PPL_6X: SplitTemplate = {
 };
 
 // =============================================================================
-// Conv #39 — structures additionnelles (catalogue élargi)
+// Structures additionnelles (catalogue élargi)
 // =============================================================================
 // Couvrent les distributions musculaires atypiques que les 6 canoniques
 // laissaient mal servies (haut du corps seul → séances jambes vides, etc.).
@@ -242,7 +242,7 @@ export const ALL_SPLITS: readonly SplitTemplate[] = [
   // esseulée) RETIRÉ du catalogue : le 5 séances bascule sur `ppl_ul_5x`.
   // Le const reste défini/exporté (rétro-compat import) mais hors sélection.
   SPLIT_PPL_6X,
-  // Conv #39 — additionnelles.
+  // Additionnelles.
   SPLIT_PUSH_PULL_2X,
   SPLIT_PUSH_PULL_4X,
   SPLIT_PUSH_PULL_6X,
@@ -262,7 +262,7 @@ export const ALL_SPLITS: readonly SplitTemplate[] = [
 /**
  * Muscles canoniques (MUSCLES) qui ne sont dans aucune liste push/pull/
  * upper/lower mais qu'on veut quand même rattacher à certains slots non-FULL.
- * Conv #17c — sans ce patch, `parameterizeSplit` ignorait silencieusement
+ * Sans ce patch, `parameterizeSplit` ignorait silencieusement
  * `obliques` (sur UL/PPL/LEGS) et `trapezes_hauts` (sur PPL), ce qui faisait
  * qu'un user marquant ces muscles PRIORITAIRES + split UL/PPL se retrouvait
  * sans aucun exo dédié. Les constantes PUSH/PULL/CORE de `balance.ts`

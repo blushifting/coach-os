@@ -9,13 +9,10 @@ import { describe, expect, it } from 'vitest';
 import { Catalog } from '@/engine/catalog';
 import {
   candidatesForMuscle,
-  pickForMuscle,
-  splitVolumeIntoSessions,
-  substitute,
 } from '@/engine/selection';
 import { ExType, Level,  Sex, makeProfile } from '@/engine/models';
 
-import { profileIntermediaireH, startUserStub } from './_helpers';
+import { profileIntermediaireH } from './_helpers';
 
 const catalog = new Catalog();
 
@@ -48,36 +45,3 @@ describe('candidatesForMuscle', () => {
   });
 });
 
-describe('pickForMuscle', () => {
-  it('évite l’exo précédent (rotation simple)', () => {
-    const state = startUserStub(profileIntermediaireH());
-    state.last_used_for_muscle['pectoraux'] = 'bench_bb';
-    const ex = pickForMuscle(catalog, 'pectoraux', state);
-    expect(ex).not.toBeNull();
-    expect(ex!.id).not.toBe('bench_bb');
-  });
-});
-
-describe('substitute', () => {
-  it('reste dans le même groupe de substitution', () => {
-    const bench = catalog.get('bench_bb');
-    const sub = substitute(catalog, bench, profileIntermediaireH());
-    if (sub !== null) {
-      expect(sub.subst).toBe('bench_h_bb');
-      expect(sub.id).not.toBe('bench_bb');
-    }
-  });
-});
-
-describe('splitVolumeIntoSessions', () => {
-  it('équilibre les séries entières', () => {
-    expect(splitVolumeIntoSessions(10, 2)).toEqual([5, 5]);
-    expect(splitVolumeIntoSessions(9, 2)).toEqual([5, 4]);
-    expect(splitVolumeIntoSessions(12, 3)).toEqual([4, 4, 4]);
-    expect(splitVolumeIntoSessions(13, 3)).toEqual([5, 4, 4]);
-  });
-
-  it('0 séances → []', () => {
-    expect(splitVolumeIntoSessions(10, 0)).toEqual([]);
-  });
-});

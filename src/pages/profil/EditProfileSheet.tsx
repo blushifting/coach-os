@@ -1,7 +1,7 @@
 /**
  * Sheet d'édition du profil (sexe / âge / poids).
  *
- * Conv #22 — Simplifié : niveau et équipement retirés (cf. Step1Profile
+ * Simplifié : niveau et équipement retirés (cf. Step1Profile
  * onboarding). Le niveau était sujet à auto-déclaration imprécise et est
  * désormais auto-calibré cycle après cycle ; l'équipement est révélé
  * implicitement par les choix de variantes côté programme co-construit.

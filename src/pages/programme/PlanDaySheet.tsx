@@ -59,13 +59,13 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
   const [plannedSession, setPlannedSession] = useState<SessionRow | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Conv #14b-2 — feedback du jour pour status='completed' (mini-bilan inline).
+  // 2 — feedback du jour pour status='completed' (mini-bilan inline).
   const completedFeedback = useMemo(() => {
     if (day === null || day.status !== 'completed') return null;
     return feedbacks.find((f) => f.feedback.seance_date === day.date) ?? null;
   }, [day, feedbacks]);
 
-  // Conv #30 — suggestion prédictive de séance / repos au planning. Rotation
+  // Suggestion prédictive de séance / repos au planning. Rotation
   // stricte (A→B→C…) + cadence de repos selon la fréquence hebdo (cf.
   // `lib/session-suggestion`). Remplace l'ancien rythme imposé du calendrier,
   // la rotation par muscles et le nudge de périodicité. On n'alimente que les
@@ -77,7 +77,7 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
     if (cyclePlan === null) return null;
     if (day.status !== 'free-future') return null;
     const dayLabels = cyclePlan.days.map((d) => d.label);
-    // Conv #66 — date ancrée sur la démo si active (cf. `useToday`).
+    // Date ancrée sur la démo si active (cf. `useToday`).
     const todayKey = dateKey(today);
     const recent: { date: string; label: string }[] = [];
     for (const fb of feedbacks) {
@@ -85,7 +85,7 @@ export function PlanDaySheet({ open, day, cyclePlan, onClose }: PlanDaySheetProp
     }
     for (const s of sessions) {
       if (s.status !== 'planned') continue;
-      // #63 — une séance planifiée mais déjà passée sans avoir été faite
+      // Une séance planifiée mais déjà passée sans avoir été faite
       // (annulée, ou simplement non honorée) ne doit PAS compter comme une
       // séance effectuée : sinon la reco du lendemain enchaîne la rotation et
       // la cadence de repos comme si elle avait eu lieu. Seules comptent les
@@ -286,7 +286,7 @@ function PlannedSessionBlock({
           data-testid="planned-session-items"
         >
           {plan.items.map((item, i) => {
-            // Conv #18 — nom FR depuis le catalog (fallback exercise_id si
+            // Nom FR depuis le catalog (fallback exercise_id si
             // absent). Cohérent avec l'affichage "séance faite" en dessous.
             const name =
               catalog !== null && catalog.has(item.exercise_id)
@@ -532,7 +532,7 @@ function CompletedSessionBlock({
                 : null;
               const name = ex !== null ? displayExerciseName(ex, brand ?? undefined) : r.exerciseId;
               const repsPerSet = Math.round(r.repsTotal / r.setsDone);
-              // Conv #20 — kg/halt pour les exos DUMBBELL (load_kg stocké
+              // Kg/halt pour les exos DUMBBELL (load_kg stocké
               // est en per-haltère par convention catalogue).
               const unit = kgUnitLabelShort(ex?.charge);
               return (
@@ -566,7 +566,7 @@ function CompletedSessionBlock({
 }
 
 /**
- * Conv #30 — suggestion de repos quand les dernières séances consécutives ont
+ * Suggestion de repos quand les dernières séances consécutives ont
  * déjà couvert les muscles à venir. Ton calme (conseil, pas alerte) ; l'user
  * reste libre de lancer une séance via les boutons en dessous.
  */
@@ -605,7 +605,7 @@ function formatHumanDate(iso: string): string {
     day: 'numeric',
     month: 'long',
   });
-  // Conv #18 — majuscule sur le jour de la semaine ("lundi 23 mai" →
+  // Majuscule sur le jour de la semaine ("lundi 23 mai" →
   // "Lundi 23 mai") en titre de sheet. fr-FR renvoie en minuscules par
   // défaut, ce qui paraît bâclé en titre.
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);

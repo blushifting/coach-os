@@ -2,7 +2,7 @@
  * Tests du planificateur de cycle (voie unique V3, Conv #39).
  * Couvre : volumeMark (repère par intention), targetFrequencyV2,
  * cycleSetProgression, autoGenerateCyclePlanV3 (invariants globaux),
- * enforceLengthenedBias, orderSession.
+ * enforceLengthenedBias.
  *
  * NB : les tests des internes legacy (parameterizeSplit, composeSession,
  * exosCountForVolume, compoundCountForObjective, generateCyclePlan) ont été
@@ -23,7 +23,7 @@ import {
   type MuscleGoal,
   type UserState,
   exercisePrimaires } from '@/engine/models';
-import { orderSession, totalSets } from '@/engine/selection';
+import { totalSets } from '@/engine/selection';
 import {
   targetFrequencyV2,
   volumeMark,
@@ -287,14 +287,3 @@ describe('enforceLengthenedBias', () => {
 // 6. orderSession (cf. selection.ts) — sanity
 // =============================================================================
 
-describe('orderSession — compounds avant iso', () => {
-  it('bench_bb avant iso pec', () => {
-    const bench = catalog.get('bench_bb');
-    const isoPec = catalog
-      .for_muscle_primary('pectoraux')
-      .filter((x) => x.type === 'isolation');
-    if (isoPec.length === 0) return;
-    const ordered = orderSession([isoPec[0]!, bench]);
-    expect(ordered[0]!.id).toBe(bench.id);
-  });
-});

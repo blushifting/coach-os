@@ -1,5 +1,5 @@
 /**
- * Chantier F — carte « Mon compte », en tête du Profil.
+ * Carte « Mon compte », en tête du Profil.
  *
  * Entièrement absente quand la couche cloud n'est pas configurée : en dev, en
  * test et en e2e, ce composant ne rend rien du tout.

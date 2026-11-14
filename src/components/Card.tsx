@@ -5,7 +5,7 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
   readonly children: ReactNode;
   readonly padded?: boolean;
   /**
-   * Conv #11c — si `true`, dessine une fine barre verticale rouge sang à
+   * Si `true`, dessine une fine barre verticale rouge sang à
    * gauche de la card (effet "marqueur de chapitre"). Utilisé pour
    * accentuer la card de séance principale, le bilan, etc.
    */
@@ -22,7 +22,7 @@ export function Card({
   return (
     <div
       className={cn(
-        // Conv #11c — surface des cards :
+        // Surface des cards :
         //   - dégradé top→bottom très subtil (anthracite-800 → 900) pour
         //     simuler un éclairage par dessus (effet "plaque").
         //   - bordure légèrement plus claire et translucide (anthracite-600/55).

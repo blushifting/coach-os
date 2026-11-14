@@ -1,5 +1,5 @@
 /**
- * Chantier F-1 — client Supabase (singleton paresseux).
+ * Client Supabase (singleton paresseux).
  *
  * Règle structurante : **sans variables d'environnement, toute la couche cloud
  * est inerte**. `getSupabase()` renvoie `null`, aucun appelant ne tente quoi

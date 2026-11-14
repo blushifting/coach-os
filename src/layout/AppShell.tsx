@@ -13,7 +13,7 @@ export function AppShell() {
   const bootstrapped = useCoachOsStore((s) => s.bootstrapped);
 
   useEffect(() => {
-    // Chantier F-1 — `initAuth` APRÈS `bootstrap` : la réconciliation a besoin
+    // `initAuth` APRÈS `bootstrap` : la réconciliation a besoin
     // de savoir si cet appareil porte déjà des données, ce que seul le store
     // moteur hydraté peut dire. Inerte si la couche cloud n'est pas configurée.
     void bootstrap().then(() => initAuth());
@@ -29,7 +29,7 @@ export function AppShell() {
           partout). `fixed inset-0` remplit l'écran physique bord à bord ; seul
           <main> scrolle à l'intérieur. Identique sur desktop/Android. Sert aussi
           de bloc conteneur pour le BrandWatermark passé en `absolute`. */}
-      {/* Conv #29 — fond du shell aligné sur le body (graphite-950, chaud) au
+      {/* Fond du shell aligné sur le body (graphite-950, chaud) au
           lieu d'anthracite-950 (froid, plus sombre). Évite qu'une bande du
           shell apparaisse « plus sombre » sous la TabBar en PWA iOS, et donne
           le contraste fond chaud / cards froides voulu par le design. */}
@@ -66,7 +66,7 @@ function BrandWatermark() {
   return (
     <div
       aria-hidden="true"
-      // Conv #15-1 — hauteur réduite (h-10 = 40px au lieu de h-12 = 48px) et
+      // 1 — hauteur réduite (h-10 = 40px au lieu de h-12 = 48px) et
       // top remonté à 0.4rem pour aligner verticalement le K avec la barre du
       // StepIndicator de l'onboarding (qui est nettement plus haute que le
       // précédent centre du Header). `flex items-center` centre le K dans

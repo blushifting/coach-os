@@ -89,7 +89,7 @@ const TOUR_STEPS: readonly TourStep[] = [
       durationMs: 700,
     },
   },
-  // Conv #15-9 — étape dédiée à la Réserve (notion clé, mal comprise au 1er
+  // 9 — étape dédiée à la Réserve (notion clé, mal comprise au 1er
   // contact). Pointe directement sur la cellule "réserve" de la 1re série.
   {
     id: 'effort',
@@ -122,7 +122,7 @@ const TOUR_STEPS: readonly TourStep[] = [
       "À la fin d'un cycle, Kotsh résume tes progrès muscle par muscle. Il te propose la suite : repartir sur le même programme, ou ajuster tes objectifs.",
     pointTo: '[data-testid="cycle-bilan-page"]',
   },
-  // Conv #15-3 — étape 'profil' retirée : le profil est déjà fixé par
+  // 3 — étape 'profil' retirée : le profil est déjà fixé par
   // l'utilisateur avant de lancer la démo, donc le panneau "Alex : 30 ans,
   // 75 kg…" sème la confusion. On enchaîne direct du bilan vers la sortie.
   {
@@ -283,7 +283,7 @@ function useTargetMeasure(targetSelector: string | undefined): TargetMeasure | n
 }
 
 function PointerArrow({ measure, side }: { measure: TargetMeasure; side: BannerSide }) {
-  // Conv #15-8 / #15 vague 3 — flèche orientée selon le côté EFFECTIF du
+  // 8 / #15 vague 3 — flèche orientée selon le côté EFFECTIF du
   // bandeau (passé par le parent, plus calculé depuis measure.side car
   // on a maintenant une position fixe par step).
   const isBottomBanner = side === 'bottom';
@@ -500,7 +500,7 @@ export function DemoModeProvider() {
     setStepIndex((i) => Math.min(i + 1, TOUR_STEPS.length - 1));
   }, []);
   const prev = useCallback(() => {
-    // Conv #15-3 — depuis l'étape 1, "Précédent" rouvre la welcome overlay
+    // 3 — depuis l'étape 1, "Précédent" rouvre la welcome overlay
     // (alors qu'auparavant le bouton était simplement disabled). Permet de
     // revoir l'intro persona à tout moment.
     setStepIndex((i) => {
@@ -511,7 +511,7 @@ export function DemoModeProvider() {
       return i - 1;
     });
   }, []);
-  // Bloc S (Conv #45) — sortie de démo UNIQUE : on restaure l'état réel ET on
+  // Sortie de démo UNIQUE : on restaure l'état réel ET on
   // ramène au planning. Sans la nav, quitter depuis une route comme
   // `/cycle-bilan` laissait l'utilisateur bloqué sur cette page après la sortie.
   // Utilisée par le bouton « Quitter » (top-right) ET le dernier step du tour.
@@ -555,8 +555,3 @@ export function resetDemoDismissals(): void {
   }
 }
 
-// Export utile aux tests : nombre d'étapes du tour.
-export const TOUR_TOTAL_STEPS = TOUR_STEPS.length;
-
-// Réexport implicite — utile pour tests si on veut le step ids.
-export const TOUR_STEP_IDS = TOUR_STEPS.map((s) => s.id);

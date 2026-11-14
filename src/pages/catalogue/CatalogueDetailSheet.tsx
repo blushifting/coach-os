@@ -4,6 +4,7 @@ import { Button } from '@/components/Button';
 import { ChargeMechanicNote } from '@/components/ChargeMechanicNote';
 import { Concept } from '@/components/Concept';
 import { Dialog } from '@/components/Dialog';
+import { ExerciseNoteField } from '@/components/ExerciseNoteField';
 import { AnatomicalSilhouette, type SilhouetteStatus } from '@/components/AnatomicalSilhouette';
 import { exercisePrimaires, exerciseSynergistes, Pattern } from '@/engine/models';
 import type { Exercise } from '@/engine/models';
@@ -30,7 +31,7 @@ import { RepRangePicker } from './RepRangePicker';
 interface CatalogueDetailSheetProps {
   readonly open: boolean;
   readonly exercise: Exercise | null;
-  /** Plafond mesuré pour cet exo (kg) — null si jamais mesuré (Conv #11g). */
+  /** Plafond mesuré pour cet exo (kg) — null si jamais mesuré. */
   readonly e1rm?: number | null;
   readonly onClose: () => void;
 }
@@ -48,18 +49,18 @@ export function CatalogueDetailSheet({
   e1rm = null,
   onClose,
 }: CatalogueDetailSheetProps) {
-  // Conv #17 — édition plafond hors séance : bouton qui ouvre `ManualE1rmSheet`
+  // Édition plafond hors séance : bouton qui ouvre `ManualE1rmSheet`
   // par-dessus le détail. Verrouillé en démo (mutations DB interdites). On lit
   // bodyweight + demoActive systématiquement (hooks ne peuvent pas être
   // conditionnels) ; le `exercise === null` early-return est traité ensuite.
   const [manualOpen, setManualOpen] = useState(false);
   const [overrideOpen, setOverrideOpen] = useState(false);
-  // Conv #21b-fix — Suppression d'un exo custom. Le bouton n'apparaît que
+  // Suppression d'un exo custom. Le bouton n'apparaît que
   // si l'exo est dans `customExerciseIds` (= ajouté par l'user, pas
   // catalogue par défaut). Dialog de confirmation parce que c'est destructif.
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  // Bloc R — réinitialisation du plafond (efface mesure + historique e1RM).
+  // Réinitialisation du plafond (efface mesure + historique e1RM).
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetting, setResetting] = useState(false);
   const bodyweightKg = useCoachOsStore(
@@ -74,7 +75,7 @@ export function CatalogueDetailSheet({
   const engine = useEngine();
   const demoActive = useDemoMode();
   const brand = useGymBrand();
-  // Bloc F (Conv #31) — état favori unifié (étoile catalogue/fiche).
+  // État favori unifié (étoile catalogue/fiche).
   const isFavorite = useCoachOsStore(
     (s) =>
       exercise !== null &&
@@ -110,6 +111,8 @@ export function CatalogueDetailSheet({
 
         <ExercisePhoto exerciseId={exercise.id} />
 
+        <ExerciseNoteField exerciseId={exercise.id} />
+
         <div className="flex flex-wrap items-center justify-center gap-2">
           <ChargeBadge charge={exercise.charge} size={32} />
           <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
@@ -123,7 +126,7 @@ export function CatalogueDetailSheet({
           )}
         </div>
 
-        {/* Bloc F (Conv #31) — bascule favori. Désactivée en démo (pas
+        {/* Bascule favori. Désactivée en démo (pas
             d'écriture DB). */}
         <button
           type="button"
@@ -142,7 +145,7 @@ export function CatalogueDetailSheet({
           {isFavorite ? 'Dans tes favoris' : 'Ajouter aux favoris'}
         </button>
 
-        {/* E-4 — description auto retirée (redondante : « polyarticulaire/
+        {/* Description auto retirée (redondante : « polyarticulaire/
             isolation » = badge ci-dessus, « Muscles ciblés » = sections
             Muscles ci-dessous). On garde seulement une vraie note d'exo
             (exos custom + rares notes catalogue). */}
@@ -155,7 +158,7 @@ export function CatalogueDetailSheet({
           </p>
         )}
 
-        {/* Bloc F (Conv #31) — mécanique de charge (assisté = poids retiré…). */}
+        {/* Mécanique de charge (assisté = poids retiré…). */}
         <ChargeMechanicNote charge={exercise.charge} />
 
         {e1rm !== null && e1rm > 0 ? (
@@ -172,10 +175,10 @@ export function CatalogueDetailSheet({
           </div>
         ) : null}
 
-        {/* Dump 2.4, étape 4 — fourchette de reps de l'exercice. */}
+        {/* Fourchette de reps de l'exercice. */}
         <RepRangePicker exercise={exercise} />
 
-        {/* Conv #17 — édition manuelle hors séance. Disponible que l'exo soit
+        {/* Édition manuelle hors séance. Disponible que l'exo soit
             déjà calibré ou non (label adapte le verbe). Désactivé en démo. */}
         <Button
           variant="secondary"
@@ -197,7 +200,7 @@ export function CatalogueDetailSheet({
           onClose={() => setManualOpen(false)}
         />
 
-        {/* Bloc R — réinitialiser le plafond : efface la mesure + l'historique
+        {/* Réinitialiser le plafond : efface la mesure + l'historique
             e1RM → l'exo repart en calibration. Affiché seulement s'il est calibré. */}
         {e1rm !== null && e1rm > 0 && (
           <Button
@@ -212,7 +215,7 @@ export function CatalogueDetailSheet({
           </Button>
         )}
 
-        {/* Conv #18 — Personnalisation des bornes d'équipement (inc/min/max
+        {/* Personnalisation des bornes d'équipement (inc/min/max
             par exo). Bouton secondaire car secondaire vis-à-vis du plafond. */}
         <Button
           variant="ghost"
@@ -288,7 +291,7 @@ export function CatalogueDetailSheet({
           </Section>
         )}
 
-        {/* Conv #21b-fix — Bouton "Supprimer cet exo" pour les customs
+        {/* Bouton "Supprimer cet exo" pour les customs
             uniquement. Les exos du catalogue par défaut ne sont jamais
             supprimables (ils font partie du socle, on n'a pas envie de les
             perdre). Désactivé en mode démo. */}

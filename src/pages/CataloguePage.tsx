@@ -19,7 +19,7 @@ import { FavoriteStar } from './catalogue/FavoriteStar';
 import { FiltersSheet } from './catalogue/FiltersSheet';
 
 /**
- * Bloc Q (Conv #46) — bandeaux regroupés par famille d'équipement. Un bandeau
+ * Bandeaux regroupés par famille d'équipement. Un bandeau
  * peut couvrir plusieurs `ChargeType` : « Assisté » est fondu dans **Machine**
  * (catégorie déjà large) et « Lesté » dans **Poids du corps / Lesté**, pour
  * alléger le menu du catalogue. Chaque carte garde son badge réel (Assisté /
@@ -50,7 +50,7 @@ const CHARGE_BANDS: readonly {
 ] as const;
 
 /**
- * Onglet Catalogue (Conv #6b).
+ * Onglet Catalogue.
  *
  * Liste filtrable des ~113 exos. Recherche fuzzy (id / nom_fr / synonymes) +
  * filtres (muscle / pattern / équipement / type / tag étirement). Card → sheet
@@ -59,7 +59,7 @@ const CHARGE_BANDS: readonly {
 export default function CataloguePage() {
   const catalog = useCoachOsStore((s) => s.catalog);
   const userState = useCoachOsStore((s) => s.userState);
-  // Bloc F (Conv #31) — filtres persistés dans le store (survivent à la
+  // Filtres persistés dans le store (survivent à la
   // navigation, reset au relancement de l'app).
   const filters = useCoachOsStore((s) => s.catalogFilters);
   const setFilters = useCoachOsStore((s) => s.setCatalogFilters);
@@ -76,7 +76,7 @@ export default function CataloguePage() {
   // visible entre les deux vues.
   const e1rmMap: Readonly<Record<string, number>> = userState?.e1rm ?? {};
 
-  // Conv #11h — contexte pour les filtres "habituels" / "avec plafond mesuré".
+  // Contexte pour les filtres "habituels" / "avec plafond mesuré".
   // habitualIds = exos présents dans le programme courant.
   const habitualIds = useMemo<ReadonlySet<string>>(() => {
     const set = new Set<string>();
@@ -93,7 +93,7 @@ export default function CataloguePage() {
     return applyFilters(catalog, filters, { habitualIds, e1rmMap });
   }, [catalog, filters, habitualIds, e1rmMap]);
 
-  // Bloc F (Conv #31) — favoris unifiés + état d'ouverture des bandeaux.
+  // Favoris unifiés + état d'ouverture des bandeaux.
   const engine = useEngine();
   const demoActive = useDemoMode();
   const favoriteIds = useMemo<ReadonlySet<string>>(
@@ -122,7 +122,7 @@ export default function CataloguePage() {
       ? 'Aucun exercice'
       : `${results.length} exercice${results.length > 1 ? 's' : ''}`;
 
-  // Bloc F — bandeau Favoris + un bandeau par type d'équipement. Dans chaque
+  // Bandeau Favoris + un bandeau par type d'équipement. Dans chaque
   // type, les favoris remontent en tête (tri stable). Recherche/filtre actif :
   // les bandeaux non vides sont forcés ouverts (cf. `active` ci-dessous), les
   // vides masqués.
@@ -182,7 +182,7 @@ export default function CataloguePage() {
                 </span>
               )}
             </button>
-            {/* Conv #21b — Création d'un exo custom. Bouton secondaire à côté
+            {/* Création d'un exo custom. Bouton secondaire à côté
                 des filtres pour rester discret (action peu fréquente, mais
                 accessible). */}
             <button

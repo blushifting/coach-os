@@ -1,5 +1,5 @@
 /**
- * Helpers pour la création d'un exercice "custom" par l'utilisateur (Conv #21b).
+ * Helpers pour la création d'un exercice "custom" par l'utilisateur.
  *
  * Pourquoi ce fichier sépare ces utilitaires :
  *  - La logique de défauts (inc_kg, reps_hyp, repos) selon la

@@ -1,5 +1,5 @@
 /**
- * Bloc I (Conv #34) — petit pas-à-pas −/+ pour choisir le nombre de séries d'un
+ * Petit pas-à-pas −/+ pour choisir le nombre de séries d'un
  * exercice. Mutualisé partout où l'on ajoute/édite un exo dans une séance ou un
  * programme : éditeur de cycle (`EditCyclePage`), création de séance custom
  * (`CreateSessionSheet`). Bornes 1–10 (la règle fine 3–5 viendra au Bloc L).

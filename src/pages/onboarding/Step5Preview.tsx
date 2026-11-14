@@ -46,16 +46,17 @@ import { ChargeBadge } from '@/pages/catalogue/ChargeBadge';
 import { ExerciseEyeButton } from '@/pages/catalogue/ExerciseEyeButton';
 import { VariantPickerSheet } from '@/components/VariantPickerSheet';
 import { VolumeGauges } from '@/components/VolumeGauges';
+import { SetsStepper } from '@/components/SetsStepper';
 
 interface Step5Props {
   readonly template: WeeklyTemplate | null;
   readonly blocking: readonly string[];
   readonly catalog: Catalog | null;
   readonly equipment: ReadonlySet<string>;
-  /** Conv #23 — marque déclarée dans le draft (avant persistance du profil). */
+  /** Marque déclarée dans le draft (avant persistance du profil). */
   readonly gymBrand?: import('@/engine/models').GymBrand;
   /**
-   * Bloc O — état temporaire (bornes de volume) du mode « à la main ». Non null
+   * État temporaire (bornes de volume) du mode « à la main ». Non null
    * uniquement en mode manuel → affiche les jauges de volume au lieu du simple
    * récap chiffré.
    */
@@ -64,6 +65,8 @@ interface Step5Props {
   readonly onAdd: (dayIndex: number, exerciseId: string) => void;
   readonly onRemove: (dayIndex: number, slotIndex: number) => void;
   readonly onRename: (dayIndex: number, name: string) => void;
+  /** Nombre de séries d'un exercice, réglable dès le récap. */
+  readonly onSetSets: (dayIndex: number, slotIndex: number, nSets: number) => void;
 }
 
 interface SlotPickerState {
@@ -91,6 +94,7 @@ export function Step5Preview({
   onAdd,
   onRemove,
   onRename,
+  onSetSets,
 }: Step5Props) {
   const isManual = gaugeState != null;
   const [picker, setPicker] = useState<SlotPickerState | null>(null);
@@ -251,7 +255,7 @@ export function Step5Preview({
                     }}
                     className="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-white"
                   >
-                    {/* Bloc K (Conv #36) — « Séance » fixe (non éditable) devant le nom :
+                    {/* « Séance » fixe (non éditable) devant le nom :
                         signale le déroulé des séances. Seul le token suivant se modifie. */}
                     <span className="shrink-0 font-normal text-anthracite-400">Séance</span>
                     <span className="truncate">{sessionDisplayName(day)}</span>
@@ -298,14 +302,22 @@ export function Step5Preview({
                     <li key={`${di}-${pi}-${planned.exercise_id}`} data-testid={`slot-${di}-${pi}`}>
                       <div className="flex items-center gap-2.5 rounded-lg border border-anthracite-700 bg-anthracite-900 p-2">
                         {charge !== null && <ChargeBadge charge={charge} size={24} />}
-                        <div className="flex flex-1 flex-col">
+                        <div className="flex min-w-0 flex-1 flex-col gap-1">
                           <span className="text-sm font-medium text-white">{exNomFr}</span>
-                          <span className="text-[11px] text-anthracite-300">
-                            {planned.base_sets} séries ·{' '}
-                            {primaires.length > 0
-                              ? primaires.map(muscleLabel).join(', ')
-                              : '—'}
-                          </span>
+                          <div className="flex items-center gap-1.5 text-[11px] text-anthracite-300">
+                            <SetsStepper
+                              value={planned.base_sets}
+                              onChange={(n) => onSetSets(di, pi, n)}
+                              testid={`step5-sets-${di}-${pi}`}
+                              label={exNomFr}
+                            />
+                            <span className="truncate">
+                              séries ·{' '}
+                              {primaires.length > 0
+                                ? primaires.map(muscleLabel).join(', ')
+                                : '—'}
+                            </span>
+                          </div>
                         </div>
                         {photosFor(planned.exercise_id) !== null && (
                           <button

@@ -39,9 +39,9 @@ reste consultable par `git show b44fcd1:CLAUDE.md`.
 - ESLint (config plate) et Prettier.
 
 ## Commandes
-| Commande | Effet | Durée mesurée (2026-11-11) |
+| Commande | Effet | Durée mesurée (2026-11-14) |
 |---|---|---|
-| `npx vitest run --reporter=dot` | tous les tests unitaires et d'intégration (723) | ~4 s |
+| `npx vitest run --reporter=dot` | tous les tests unitaires et d'intégration (692) | ~2 s |
 | `npm run build` | vérification des types (`tsc -b`) puis bundle | ~8 s |
 | `npx playwright test --workers 1` | parcours de bout en bout (26) | lent |
 | `npm run dev` | serveur de développement (port 5173, chemin `/coach-os/`) | |
@@ -62,8 +62,12 @@ reste consultable par `git show b44fcd1:CLAUDE.md`.
   synchronisés (voir la mémoire `project_import_exos.md`).
 - Ce dépôt ne doit jamais être déplacé dans OneDrive (corruption de
   `node_modules` et de `.git`).
-- Des en-têtes de modules disent encore « Port 1:1 de … .py » : le prototype
-  Python n'est plus une référence, ces commentaires sont périmés.
+- Le schéma d'import (`io/schema.ts`) et la lecture des sauvegardes
+  (`db/serialize.ts`) tolèrent volontairement des champs disparus : les anciens
+  exports doivent toujours s'importer. Le schéma de la démo, lui, ne lit que le
+  fichier généré : un champ absent de ce schéma est retiré au chargement.
+- Les commentaires ne citent plus les conversations (nettoyage de la 2.4) : le
+  récit d'un changement va dans le message de commit.
 
 ## Git
 Commits atomiques, messages en français, jamais de push forcé sur `main`.

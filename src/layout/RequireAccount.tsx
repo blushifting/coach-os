@@ -1,5 +1,5 @@
 /**
- * Chantier F — l'app est réservée aux adresses de l'allowlist.
+ * L'app est réservée aux adresses de l'allowlist.
  *
  * Garde posée devant TOUTES les routes sauf `/welcome` : sans compte lié, on
  * n'atteint ni l'accueil, ni l'onboarding, ni quoi que ce soit d'autre.

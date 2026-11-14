@@ -32,7 +32,3 @@ export async function listAllSessions(): Promise<SessionRow[]> {
   return getDb().sessions.orderBy('seance_date').toArray();
 }
 
-export async function findLatestPlannedByDate(date: string): Promise<SessionRow | undefined> {
-  const matches = await getDb().sessions.where('seance_date').equals(date).toArray();
-  return matches.find((s) => s.status === 'planned');
-}

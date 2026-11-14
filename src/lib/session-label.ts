@@ -1,7 +1,7 @@
 /**
  * Nom affiché d'une séance.
  *
- * Convention (Bloc K, Conv #36) : le mot « Séance » appartient à l'**UI**
+ * Convention : le mot « Séance » appartient à l'**UI**
  * (étiquette de section, en-tête, mot de liaison dans une phrase), PAS au nom.
  * Le nom affiché est donc « A — Full », « B — Lower », « Push »… — jamais
  * « Séance A — Full ».
@@ -9,7 +9,7 @@
  * Transformation **à l'affichage uniquement** : les labels stockés (cycle_plan,
  * feedbacks, démo Alex) gardent leur format moteur (« Full A », « Push »,
  * « Workout A2 »…). Avantages : s'applique immédiatement aux plans existants,
- * aucune migration de données, pas de parité Python à maintenir.
+ * aucune migration de données.
  *
  * Règles :
  *  - « Full A » (préfixe + lettre A-F finale) → « A — Full ».
@@ -46,7 +46,7 @@ export function sessionDisplayName(s: {
 }
 
 /**
- * Dump 2.4, n° 26 — nom affiché d'une séance repérée par son label de rotation
+ * Nom affiché d'une séance repérée par son label de rotation
  * (« C »), lu sur le **jour du programme** qui porte ce label : un renommage du
  * jour s'applique donc aussi aux séances déjà faites. Hors programme (séance
  * libre, ancien cycle), on retombe sur le label.

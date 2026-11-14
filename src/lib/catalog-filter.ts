@@ -1,10 +1,10 @@
 /**
- * Sélecteurs purs pour l'onglet Catalogue (Conv #6b).
+ * Sélecteurs purs pour l'onglet Catalogue.
  *
  * Source de vérité :
  * - `recherche/10_plan_claude_code.md §3 Conv #6b` — liste filtrable, fuzzy
  *   search, descriptif 1-2 phrases par exo généré depuis `pattern`, `muscles`,
- *   `note` (champ `notes_techniques` côté Python).
+ *   `note`.
  * - `recherche/08_ux_decisions.md §2` — vocabulaire UI : Polyarticulaire pour
  *   `compound`, jamais le mot anglais dans l'UI.
  *
@@ -86,7 +86,7 @@ export function chargeLabel(c: ChargeType): string {
 }
 
 /**
- * Conv #20 — Unité de charge à afficher pour les inputs et plafonds.
+ * Unité de charge à afficher pour les inputs et plafonds.
  * Pour DUMBBELL, on précise "par haltère" : la valeur affichée/saisie
  * correspond au poids d'UN haltère, pas au total bilatéral. Cohérent avec
  * la convention catalogue (cf. `effectiveLoadForE1rm` qui ne transforme
@@ -104,7 +104,7 @@ export function kgUnitLabelShort(c: ChargeType | undefined): string {
 }
 
 /**
- * Conv #23 — libellés FR des marques de salle (UI sélecteur).
+ * Libellés FR des marques de salle (UI sélecteur).
  */
 export const GYM_BRAND_LABEL_FR: Record<string, string> = {
   none: 'Aucune / Je ne sais pas',
@@ -122,7 +122,7 @@ export function gymBrandLabel(b: string | undefined): string {
 }
 
 /**
- * Conv #23 — nom affiché d'un exo, modulé par la marque salle de l'user.
+ * Nom affiché d'un exo, modulé par la marque salle de l'user.
  *
  * Si une marque est définie et qu'un nom marketing existe pour
  * `(brand, exercise.id)`, on le retourne ; sinon on tombe sur le nom
@@ -202,7 +202,7 @@ export function buildDescription(ex: Exercise): string {
   // on ne l'ajoute pas (sinon « Isolation — isolation. »).
   const patPart =
     ex.pattern === Pattern.ISOLATION ? '' : ` — ${patternLabel(ex.pattern).toLowerCase()}`;
-  // Conv #52 — formulation « Muscles ciblés : … » (liste après deux-points) :
+  // Formulation « Muscles ciblés : … » (liste après deux-points) :
   // aucun article devant les muscles, donc robuste aux libellés singuliers
   // comme « Grand dorsal » (un « Cible les grand dorsal » serait fautif). On
   // toLowercase les labels pour les fondre dans la phrase.
@@ -280,7 +280,7 @@ export function hasActiveFilters(f: CatalogFilters): boolean {
  * Tous les critères sont AND entre catégories, OR à l'intérieur d'une catégorie.
  */
 /**
- * Contexte user pour les filtres dépendant du state (Conv #11h) :
+ * Contexte user pour les filtres dépendant du state :
  * - `habitualIds` : ids des exos présents dans `current_cycle_plan`.
  * - `e1rmMap` : `userState.e1rm`.
  * Fournir un objet vide / un Set vide si pas de user ou pas de cycle.

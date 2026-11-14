@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 /**
- * Bloc I (Conv #34) — hauteur (px) masquée en bas de l'écran par le clavier
+ * Hauteur (px) masquée en bas de l'écran par le clavier
  * virtuel, mesurée via l'API `visualViewport`.
  *
  * Sur iOS, le clavier ne réduit PAS le viewport de mise en page (`innerHeight`

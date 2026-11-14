@@ -2,7 +2,7 @@ import { ChargeType } from '@/engine/models';
 import { cn } from '@/lib/cn';
 
 /**
- * Note pédagogique sur la mécanique de charge — Bloc F (Conv #31).
+ * Note pédagogique sur la mécanique de charge — Bloc F.
  *
  * Explique les charges contre-intuitives (le point clé : en machine assistée,
  * le poids affiché est **retiré**, pas soulevé). Renvoie `null` pour les

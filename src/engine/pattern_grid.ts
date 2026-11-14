@@ -1,5 +1,5 @@
 /**
- * Taxonomie patterns × muscles pour la grille de programme (Conv #22).
+ * Taxonomie patterns × muscles pour la grille de programme.
  *
  * À l'étape D, l'algo construit une grille (pattern × séance) où chaque case
  * = un mouvement à réaliser, ciblant un muscle prio en primaire. À l'étape E,
@@ -242,56 +242,6 @@ export function exosCountForCycleTargetVolume(vTarget: number): number {
   return 4;
 }
 
-/**
- * Liste les patterns à programmer pour un muscle prio donné, avec leur role
- * hint. Sortie : (Pattern, RoleHint)[] — l'ordre reflète la priorité de
- * placement (compound d'abord, puis iso).
- *
- * Cas particulier : si le muscle n'a qu'un seul pattern naturel (ex. ischios
- * → HINGE), on programme N occurrences du même pattern avec hints distincts
- * (compound + iso) ; le sélecteur d'exos étape E proposera des variantes
- * différentes (RDL barbell vs nordic curl par exemple).
- */
-export function patternsForMusclePrio(
-  muscle: string,
-  vTarget: number,
-): Array<{ pattern: Pattern; role_hint: RoleHint }> {
-  const map = getMusclePatterns(muscle);
-  const nExos = exosCountForCycleTargetVolume(vTarget);
-  const result: Array<{ pattern: Pattern; role_hint: RoleHint }> = [];
-
-  // 1er exo = compound principal du muscle.
-  result.push({
-    pattern: map.compoundPatterns[0] ?? Pattern.ISOLATION,
-    role_hint: 'compound',
-  });
-
-  // 2e exo = pattern compound alternatif si dispo, sinon isolation.
-  if (nExos >= 2) {
-    if (map.compoundPatterns.length >= 2) {
-      result.push({
-        pattern: map.compoundPatterns[1]!,
-        role_hint: 'compound',
-      });
-    } else {
-      result.push({
-        pattern: map.isolationPatterns[0] ?? Pattern.ISOLATION,
-        role_hint: 'isolation',
-      });
-    }
-  }
-
-  // 3e+ exos = isolation pour diversifier.
-  for (let i = 2; i < nExos; i += 1) {
-    result.push({
-      pattern: map.isolationPatterns[0] ?? Pattern.ISOLATION,
-      role_hint: 'isolation',
-    });
-  }
-
-  return result;
-}
-
 // =============================================================================
 // Listing exos candidats pour une case (étape E)
 // =============================================================================
@@ -318,7 +268,7 @@ export interface CandidatesForCellOptions {
   /** Tags d'angle à éviter (diversification, cf. case sœur d'un même muscle). */
   avoidAngles?: ReadonlySet<string>;
   /**
-   * Conv #22 — Préférence d'équipement utilisateur. Sert au tri auto :
+   * Préférence d'équipement utilisateur. Sert au tri auto :
    *  - MACHINES → trie en privilégiant machines guidées et câbles.
    *  - FREE_WEIGHTS → trie en privilégiant haltères / barre / poids du corps.
    *  - NO_PREFERENCE ou undefined → convention salle classique :
@@ -351,7 +301,7 @@ export function candidatesForCell(
     filtered = all.filter(matchPatternMuscle);
   }
 
-  // Conv #29 — Préférence d'équipement STRICTE (« uniquement ») : filtre dur
+  // Préférence d'équipement STRICTE (« uniquement ») : filtre dur
   // par type de charge. Pour MACHINES / FREE_WEIGHTS (user en salle), on
   // retombe sur l'ensemble non filtré si la case devient vide — mieux qu'une
   // case impossible. Pour BODYWEIGHT (PdC strict, aucun matériel), pas de
@@ -404,7 +354,7 @@ export function candidatesForCell(
 }
 
 /**
- * Conv #22 — Score de "guidage" d'un exo : plus la valeur est basse, plus
+ * Score de "guidage" d'un exo : plus la valeur est basse, plus
  * l'exo est guidé/accessible (idéal pour débutants).
  *  0 = machine guidée (trajectoire fixe, pas de stabilisation requise)
  *  1 = câbles / bw assisté
@@ -432,7 +382,7 @@ function guidanceLevel(ex: Exercise): number {
 }
 
 /**
- * Conv #22 — Score d'adéquation d'un exo à la préférence utilisateur. Plus
+ * Score d'adéquation d'un exo à la préférence utilisateur. Plus
  * la valeur est basse, plus l'exo colle à la préférence (donc passe en tête
  * dans le tri).
  *
@@ -470,15 +420,4 @@ function matchesRoleHint(ex: Exercise, hint: RoleHint): boolean {
   return ex.type === ExType.ISOLATION;
 }
 
-/**
- * Variantes "canoniques" à proposer en 1er à l'user pour cette case
- * (top N = 3 par défaut). Le reste est accessible via "Voir plus".
- */
-export function canonicalVariantsForCell(
-  cell: PatternCell,
-  catalog: Catalog,
-  options: CandidatesForCellOptions = {},
-  n = 3,
-): Exercise[] {
-  return candidatesForCell(cell, catalog, options).slice(0, n);
-}
+

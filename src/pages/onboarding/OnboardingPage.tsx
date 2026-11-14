@@ -13,7 +13,7 @@
  *
  * En mode `restart`, on saute Step1 (3 étapes affichées dans le stepper).
  *
- * Stepper numéroté à étapes nommées (Conv #28).
+ * Stepper numéroté à étapes nommées.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -64,7 +64,7 @@ import { Step5Preview } from './Step5Preview';
 
 const LAST_STEP = 4;
 
-/** Étapes nommées du stepper (Conv #28). Index = step - 1. */
+/** Étapes nommées du stepper. Index = step - 1. */
 const STEP_LABELS = ['Profil', 'Muscles', 'Programme', 'Séances'] as const;
 
 export default function OnboardingPage() {
@@ -81,7 +81,7 @@ export default function OnboardingPage() {
   );
 
   const initialStep = isRestart ? 2 : 1;
-  // Bloc O — plus de programmes tout faits : le mode est soit « sur-mesure »
+  // Plus de programmes tout faits : le mode est soit « sur-mesure »
   // (auto, le moteur remplit) soit « à la main » (manual, grille vide).
   const isManual = draft.buildMode === 'manual';
 
@@ -89,13 +89,13 @@ export default function OnboardingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
-  // Bloc G (Conv #32) — snapshot éditable du récap (swaps + ajouts/retraits +
+  // Snapshot éditable du récap (swaps + ajouts/retraits +
   // renommages). Réinitialisé dès que le template régénère (changement d'inputs
   // / retour en arrière). Source unique de vérité : ce qu'on affiche = ce qu'on
   // persiste au finalize.
   const [edited, setEdited] = useState<WeeklyTemplate | null>(null);
   const baseTemplateRef = useRef<WeeklyTemplate | null>(null);
-  // Conv #28 — popin d'équilibre R1-R4 au « Suivant » de l'étape 2.
+  // Popin d'équilibre R1-R4 au « Suivant » de l'étape 2.
   // `balancePopin` = suggestions affichées ; `declinedBalanceKey` mémorise la
   // sélection pour laquelle l'user a refusé (pas de re-popin tant qu'elle ne
   // change pas).
@@ -115,7 +115,7 @@ export default function OnboardingPage() {
     if (mainRef.current !== null) mainRef.current.scrollTop = 0;
   }, [step]);
 
-  // Conv #22.2 — Squelette + chosenVariants auto-fillés au passage en
+  // Squelette + chosenVariants auto-fillés au passage en
   // Step5 (récap) en mode custom. Le récap montre directement le résultat ;
   // l'user modifie via VariantPickerSheet du Step5Preview.
   const skeletonResult = useMemo(() => {
@@ -138,7 +138,7 @@ export default function OnboardingPage() {
   const skeleton = skeletonResult?.skeleton ?? null;
   const tmpState = skeletonResult?.tmpState ?? null;
 
-  // Bloc O — état temporaire (bornes de volume) pour les jauges du mode « à la
+  // État temporaire (bornes de volume) pour les jauges du mode « à la
   // main ». Calculé seulement à l'étape récap, en mode manuel.
   const gaugeState = useMemo<UserState | null>(() => {
     if (catalog === null || step < LAST_STEP || !isManual) return null;
@@ -176,7 +176,7 @@ export default function OnboardingPage() {
     if (step < LAST_STEP) {
       return { template: null, blocking: [] as readonly string[] };
     }
-    // Bloc O — mode « à la main » : grille vide, l'user remplit au récap.
+    // Mode « à la main » : grille vide, l'user remplit au récap.
     if (isManual) {
       return {
         template: buildEmptyManualPlan(draft.sessionsPerWeek),
@@ -217,7 +217,7 @@ export default function OnboardingPage() {
     }
   }, [step, isManual, skeleton, tmpState, draft, catalog, userState]);
 
-  // Bloc G (Conv #32) — synchronise le snapshot éditable avec le template
+  // Synchronise le snapshot éditable avec le template
   // régénéré : à chaque nouvelle identité de `preview.template` (régénération
   // ou passage step<4 → null), on repart d'une copie fraîche (édits abandonnés).
   useEffect(() => {
@@ -238,7 +238,7 @@ export default function OnboardingPage() {
     });
   }
 
-  // Conv #22 — Invalide chosenVariantsPerCell dès que la grille du
+  // Invalide chosenVariantsPerCell dès que la grille du
   // squelette change (prios, accepted suggestions, sessions, durée,
   // préférence équipement).
   const inputsKey = useMemo(
@@ -296,7 +296,7 @@ export default function OnboardingPage() {
       );
       return;
     }
-    // Conv #28 — popin d'équilibre : si R1-R4 détecte des trous et que
+    // Popin d'équilibre : si R1-R4 détecte des trous et que
     // l'user n'a pas déjà refusé pour cette sélection exacte, on propose
     // d'ajouter les muscles manquants en maintien avant d'avancer.
     if (step === 2 && declinedBalanceKey !== balanceKey) {
@@ -313,7 +313,7 @@ export default function OnboardingPage() {
   }
 
   function advance() {
-    // Bloc G — le snapshot éditable est (ré)initialisé par l'effet de sync dès
+    // Le snapshot éditable est (ré)initialisé par l'effet de sync dès
     // que `preview.template` change (passage en step 4), pas besoin de le vider ici.
     if (step >= LAST_STEP) return;
     setStep((s) => s + 1);
@@ -442,7 +442,7 @@ export default function OnboardingPage() {
   }
 
   /**
-   * Chantier F-1 — le programme vient d'être créé et persisté : c'est un des
+   * Le programme vient d'être créé et persisté : c'est un des
    * « moments qui comptent », on demande une sauvegarde cloud (inerte s'il n'y
    * a pas de compte lié — le drapeau restera posé jusqu'à la connexion).
    *
@@ -474,7 +474,7 @@ export default function OnboardingPage() {
     }
   }
 
-  // Conv #66 — sens du glissement d'étape. `prevStep` n'est mis à jour qu'en
+  // Sens du glissement d'étape. `prevStep` n'est mis à jour qu'en
   // effet (après le rendu) : le rendu courant lit donc l'étape précédente.
   const prevStep = useRef(step);
   const stepAnim =
@@ -548,6 +548,14 @@ export default function OnboardingPage() {
                 d.custom_name = t.length > 0 ? t : null;
               })
             }
+            onSetSets={(di, si, n) =>
+              editDay(di, (d) => {
+                const slot = d.exercises[si];
+                if (slot === undefined) return;
+                slot.base_sets = n;
+                slot.progression = defaultProgressionForDay(d, n);
+              })
+            }
           />
         );
       default:
@@ -581,7 +589,7 @@ export default function OnboardingPage() {
       </header>
 
       <main ref={mainRef} className="flex-1 overflow-y-auto pb-32">
-        {/* Conv #66 — l'étape entre du côté d'où elle vient : « Suivant » la fait
+        {/* L'étape entre du côté d'où elle vient : « Suivant » la fait
             entrer par la droite, « Précédent » par la gauche. Même amplitude que
             les onglets principaux (16 px) : c'est bien un changement d'écran.
             La clé relance l'animation à chaque étape. */}
@@ -665,7 +673,7 @@ export default function OnboardingPage() {
 }
 
 /**
- * Conv #28 — stepper numéroté à étapes nommées (remplace la barre continue).
+ * Stepper numéroté à étapes nommées (remplace la barre continue).
  */
 function StepperBar({
   labels,
@@ -731,7 +739,7 @@ function cnStep(...classes: ReadonlyArray<string | false>): string {
 }
 
 /**
- * Conv #28 — popin d'équilibre R1-R4 (remplace l'ancienne étape 3).
+ * Popin d'équilibre R1-R4 (remplace l'ancienne étape 3).
  * Le choix par défaut suggéré = ajouter les muscles en maintien ;
  * « Continuer sans » reste possible (refusable).
  */
@@ -848,5 +856,5 @@ function CancelRestartDialog({
   );
 }
 
-// Conv #22.2 — Import direct (au lieu de require()) pour le preview.
+// Import direct (au lieu de require()) pour le preview.
 import { generateCyclePlanV3 } from '@/engine/cycle_planner';

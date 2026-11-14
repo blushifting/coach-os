@@ -79,13 +79,7 @@ export function e1rmConfidenceFor(
   return 'measured';
 }
 
-/** Helper : `true` si l'exo n'a jamais été mesuré (banner d'apprentissage). */
-export function isNotCalibrated(
-  exoId: string,
-  snapshots: ReadonlyArray<Pick<E1rmSnapshotRow, 'exercise_id' | 'date'>>,
-): boolean {
-  return lastSnapshotDateFor(exoId, snapshots) === null;
-}
+
 
 /** Helper : `true` si la dernière mesure date de ≥ `STALE_WEEKS` semaines. */
 export function isStale(
@@ -98,6 +92,6 @@ export function isStale(
   return daysSince(lastDate, today) >= STALE_DAYS;
 }
 
-// Bloc R — `calibrationConfidenceFor`/`exercisesEverDone` (cas spécial des exos
+// `calibrationConfidenceFor`/`exercisesEverDone` (cas spécial des exos
 // `e1RM_app:'non'`) supprimés : le modèle de mesure est unifié, tous les exos
 // passent désormais par les snapshots datés (`e1rmConfidenceFor`).

@@ -51,7 +51,7 @@ export interface CoachOsState {
   currentSessionPlan: SessionPlan | null;
   currentSessionId: number | null;
   /**
-   * Conv #15 — coches/saisies en cours pour la session active. Sorti du
+   * Coches/saisies en cours pour la session active. Sorti du
    * `useState` local de `SeancePage` pour survivre à la navigation (l'utilisateur
    * peut consulter le Catalogue ou les Progrès au milieu de la séance sans
    * perdre ses séries déjà cochées). Reset à chaque changement de
@@ -59,7 +59,7 @@ export interface CoachOsState {
    */
   currentSessionEntries: SessionEntries | null;
   /**
-   * Bloc I (Conv #34) — état replié/déplié des cartes d'exo de la séance en
+   * État replié/déplié des cartes d'exo de la séance en
    * cours, clé = `exercise_id`. Sorti du `useState` local de `SessionRunner`
    * pour survivre à la navigation : quitter puis revenir en séance ne réinitialise
    * plus tous les exos. Absence de clé = comportement auto (replié quand l'exo
@@ -71,7 +71,7 @@ export interface CoachOsState {
   history: HistorySnapshot;
 
   /**
-   * Bloc F (Conv #31) — filtres du Catalogue. Slice store (non persisté en DB)
+   * Filtres du Catalogue. Slice store (non persisté en DB)
    * pour survivre à la navigation entre onglets pendant une même session d'app,
    * et se réinitialiser au relancement (le store repart de `initialState`).
    */
@@ -80,7 +80,7 @@ export interface CoachOsState {
   // --- catalog : référence statique chargée une fois ---
   catalog: Catalog | null;
   /**
-   * Conv #21b-fix — Ids des exos custom ajoutés par l'utilisateur (table
+   * Ids des exos custom ajoutés par l'utilisateur (table
    * `userAddedExercises`). Sert à l'UI pour distinguer ces exos des exos
    * par défaut (ex. proposer un bouton "Supprimer cet exo" sur un custom,
    * pas sur un exo de la base). Synchronisé avec `catalog` à chaque
@@ -151,9 +151,9 @@ export const useCoachOsStore = create<CoachOsState & CoachOsActions>((set) => ({
   setUserState: (userState) => set({ userState }),
   setBootstrapped: (bootstrapped) => set({ bootstrapped }),
   setCurrentSession: (currentSessionPlan, currentSessionId) =>
-    // Conv #15 — changement de plan ⟹ reset des entries pour éviter d'hériter
+    // Changement de plan ⟹ reset des entries pour éviter d'hériter
     // de coches d'une session précédente (callers : start/skip/finish session).
-    // Bloc I — reset aussi l'état de repli (propre à la séance).
+    // Reset aussi l'état de repli (propre à la séance).
     set({
       currentSessionPlan,
       currentSessionId,
@@ -170,9 +170,6 @@ export const useCoachOsStore = create<CoachOsState & CoachOsActions>((set) => ({
   setLastCycleReview: (lastCycleReview) => set({ lastCycleReview }),
   resetAll: () => set({ ...initialState }),
 }));
-
-// Pour les tests : version "vanilla" du store (sans React).
-export type CoachOsStore = typeof useCoachOsStore;
 
 // Réexport des feedbacks publics (utile pour useEngine)
 export type { CycleReview, SessionFeedback, SessionPlan, UserState };

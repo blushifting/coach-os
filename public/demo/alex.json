@@ -14,15 +14,15 @@
       "bodyweight_kg": 75,
       "available_equip": [
         "barbell",
-        "dumbbells",
-        "rack",
         "bench",
-        "pullup_bar",
-        "pull_assist",
-        "machine_pulldown",
-        "machine_pec",
+        "bench_decline",
         "cable",
-        "bench_decline"
+        "dumbbells",
+        "machine_pec",
+        "machine_pulldown",
+        "pull_assist",
+        "pullup_bar",
+        "rack"
       ]
     },
     "e1rm": {
@@ -50,7 +50,6 @@
       "triceps_pushdown_rope": 0.0333,
       "leg_press_45": 0.0333
     },
-    "reps_pr": {},
     "volume_min": {
       "pectoraux": 10,
       "dos_largeur": 12,
@@ -2468,9 +2467,18 @@
       ],
       "warnings": []
     },
+    "build_mode": "auto",
     "equipment_overrides": {},
-    "weekly_volume_debt": {},
+    "current_skeleton": null,
+    "favorite_exercise_per_pattern": {},
+    "favorite_exercise_ids": [],
+    "exercise_pick_counts": {},
     "deload_decision": null,
+    "rep_ranges": {},
+    "exercise_notes": {
+      "leg_press_45": "Dossier cran 3, pieds au milieu du plateau.",
+      "bench_bb": "Omoplates serrées, pieds à plat."
+    },
     "plafond_model": 2
   },
   "history": {

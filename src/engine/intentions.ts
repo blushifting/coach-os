@@ -1,5 +1,5 @@
 /**
- * Dump 2.4, étape 2 — migration à la lecture des anciens réglages par muscle.
+ * Migration à la lecture des anciens réglages par muscle.
  *
  * Avant : un objectif (force, hypertrophie, endurance, maintien) et un statut
  * (prioritaire, suggéré, non couvert). Après : une intention (développer avec

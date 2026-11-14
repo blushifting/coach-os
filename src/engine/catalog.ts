@@ -10,13 +10,12 @@ import { EXERCISE_SYNONYMES } from '../data/exercise-synonymes';
 /**
  * Charge tous les exercices depuis le JSON embarqué.
  *
- * Le résultat est mémoïsé pour ne pas re-parser à chaque appel — équivalent du
- * `@lru_cache` Python.
+ * Le résultat est mémoïsé pour ne pas re-parser à chaque appel.
  *
  * Les synonymes du JSON (vides pour la quasi-totalité des entrées) sont
  * complétés par `EXERCISE_SYNONYMES` (cf. `data/exercise-synonymes.ts`).
  * Origine : Azur cherchait "DC", "bench press", "SDT", … sans les trouver
- * (Conv #10d). On enrichit ici plutôt que dans le JSON pour garder la table
+ *. On enrichit ici plutôt que dans le JSON pour garder la table
  * source légère ; la recherche fuzzy est purement UI.
  */
 let _cached: readonly Exercise[] | null = null;
@@ -44,11 +43,6 @@ export function loadExercises(): readonly Exercise[] {
       });
   }
   return _cached;
-}
-
-/** Reset du cache — utile uniquement en test. */
-export function _resetExerciseCache(): void {
-  _cached = null;
 }
 
 export interface CatalogFilterOptions {
@@ -101,7 +95,7 @@ export class Catalog {
     return this._all[Symbol.iterator]();
   }
 
-  /** Retourne l'exercice par ID. Lève si inconnu (équivalent KeyError Python). */
+  /** Retourne l'exercice par ID. Lève si inconnu. */
   get(exercise_id: string): Exercise {
     const x = this._by_id.get(exercise_id);
     if (!x) throw new Error(`Exercise inconnu : ${exercise_id}`);

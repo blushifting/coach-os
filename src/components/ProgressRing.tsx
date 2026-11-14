@@ -1,5 +1,5 @@
 /**
- * Anneau de progression circulaire (Conv #11i).
+ * Anneau de progression circulaire.
  *
  * Trois usages, tous globaux — il n'y a PAS d'anneau par exo (le commentaire
  * d'origine le disait, c'était vrai en #11i seulement) : l'anneau de séance de
@@ -8,7 +8,7 @@
  * Pure SVG : le remplissage passe par une transition CSS sur `stroke-dasharray`,
  * rejouée à chaque re-render.
  *
- * Conv #66 — pas de remplissage depuis 0 au montage, décision assumée : ces trois
+ * Pas de remplissage depuis 0 au montage, décision assumée : ces trois
  * anneaux sont lus sur des écrans qu'on OUVRE (accueil, séance). Les faire monter
  * de 0 à leur valeur raconterait une progression qui n'a pas eu lieu à cette
  * ouverture — on n'avance pas ses séries en arrivant sur l'accueil.

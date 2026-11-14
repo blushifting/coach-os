@@ -1,5 +1,5 @@
 /**
- * Dump 2.4, étape 5 — recalcul de l'historique des Plafonds depuis les séries.
+ * Recalcul de l'historique des Plafonds depuis les séries.
  *
  * Quand le calcul du Plafond change (ici : pente par type d'exercice, fin de
  * l'adoption sans lissage), les Plafonds et instantanés enregistrés ne sont plus

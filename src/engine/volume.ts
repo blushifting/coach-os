@@ -26,7 +26,7 @@ export const V_MIN_BASE: Readonly<Record<string, Record<Level, number>>> = {
   quadriceps: { [Level.DEBUTANT]: 8, [Level.INTERMEDIAIRE]: 10, [Level.AVANCE]: 12 },
   ischios: { [Level.DEBUTANT]: 6, [Level.INTERMEDIAIRE]: 8, [Level.AVANCE]: 10 },
   fessiers: { [Level.DEBUTANT]: 6, [Level.INTERMEDIAIRE]: 10, [Level.AVANCE]: 12 },
-  // Dump 2.4, étape 6 — antérieurs et adducteurs : aucune source propre
+  // Antérieurs et adducteurs : aucune source propre
   // trouvée (conv #84) ; valeurs des petits muscles, comme les ischios et les
   // deltos postérieurs. Les développés comptent déjà 0,5 sur les antérieurs.
   adducteurs: { [Level.DEBUTANT]: 6, [Level.INTERMEDIAIRE]: 8, [Level.AVANCE]: 10 },
@@ -56,7 +56,7 @@ export const SENIOR_AGE_THRESHOLD = 50;
 export const SENIOR_FACTOR = 0.8;
 
 /**
- * Dump 2.4 (D7, étape 3) — **zone haute** : un repère unique, commun à tous les
+ * **zone haute** : un repère unique, commun à tous les
  * muscles, en séries pondérées par semaine. Au-delà, le volume est dit « élevé »
  * (ambre) : un constat, jamais un blocage.
  *
@@ -83,14 +83,7 @@ export const DELOAD_WEEK_IN_CYCLE = 5;
 
 // Cf. 09 §5.1 — rendement décroissant >5-6 séries/exo (Schoenfeld 2017).
 export const SETS_PER_SESSION_OPTIMAL = 5;
-export const MAX_SETS_PER_SESSION_PER_MUSCLE = 10;
 
-// Bloc L — bornes DURES de séries par exo et par séance (règle 3-5). Au-delà de
-// 5-6 séries/exo, le rendement décroît (Schoenfeld 2017) : on ne propose jamais
-// plus de 5 ni moins de 3 séries sur un même exercice (y compris en maintien :
-// c'est le volume hebdo total qui fait foi). La progression intra-cycle passe
-// par l'intensité (charge/RPE) et les reps, pas par l'empilement de séries.
-export const MIN_SETS_PER_EXERCISE_PER_SESSION = 3;
 export const MAX_SETS_PER_EXERCISE_PER_SESSION = 5;
 
 // Volume "maintenance" : 2 séries minimum, sinon 40 % de V_min (Bickel 2011).
@@ -122,7 +115,7 @@ export function initialGrowthThresholds(profile: Profile): Record<string, number
 // =============================================================================
 
 /**
- * Dump 2.4 (D2, étape 3) — **le repère** de volume hebdo de ce muscle (séries
+ * **le repère** de volume hebdo de ce muscle (séries
  * pondérées), un seul par muscle, selon son intention. `state.volume_min[muscle]`
  * est le seuil de croissance (MEV).
  *   - Développer → le seuil de croissance ;
@@ -152,7 +145,7 @@ export function maintenanceFloor(growthThreshold: number): number {
 /**
  * Refonte remplissage (recherche/09b, 2026-07) — le générateur vise un peu
  * au-dessus du seuil de croissance pour un muscle à développer : viser le seuil
- * sec est trop conservateur depuis que le volume est fixe sur le cycle (Bloc L).
+ * sec est trop conservateur depuis que le volume est fixe sur le cycle.
  *
  * Étape 3 du dump 2.4 : la cible s'exprimait comme « seuil + 20 % de la bande
  * jusqu'au repère haut (seuil × 1,8) », soit seuil × 1,16. Le repère haut par
@@ -164,7 +157,7 @@ export const DEVELOP_TARGET_FACTOR = 1.16;
 /**
  * Volume cible du cycle pour ce muscle (séries pondérées).
  *
- * Bloc L (Conv #37) : nb de séries par exo FIXE sur les 4 semaines de travail.
+ * Nb de séries par exo FIXE sur les 4 semaines de travail.
  * La progression intra-cycle passe par l'intensité (charge/RPE) et les reps ;
  * le volume monte d'un cycle à l'autre via la recalibration de fin de cycle.
  *
@@ -186,7 +179,7 @@ export function effectiveCycleTargetVolume(
 }
 
 /**
- * Conv #22 — Fréquence hebdo cible v2, basée sur V cible effectif (cycle).
+ * Fréquence hebdo cible v2, basée sur V cible effectif (cycle).
  * Règle E.1 corrigée : un muscle prio bas-volume reste à freq 1-2× ;
  * un muscle prio haut-volume monte naturellement à 3-4× selon capacité.
  */
@@ -219,7 +212,7 @@ export function isDeloadActive(state: UserState): boolean {
 }
 
 /**
- * Dump 2.4, étape 1 — même question pour une semaine donnée (celle de la date
+ * Même question pour une semaine donnée (celle de la date
  * d'une séance programmée d'avance, qui n'est pas forcément la semaine en cours).
  */
 export function isDeloadWeek(state: UserState, weekInCycle: number): boolean {
@@ -229,7 +222,7 @@ export function isDeloadWeek(state: UserState, weekInCycle: number): boolean {
 }
 
 // =============================================================================
-// Conv #22 — Plafond unique séries/séance (remplace table par niveau)
+// Plafond unique séries/séance (remplace table par niveau)
 // =============================================================================
 
 /**
@@ -293,7 +286,7 @@ export function countWeeklyVolume(
 /**
  * Décide la semaine suivante. Renvoie un libellé d'événement.
  *
- * Chantier B — forme finale (plus de plateau ni de stratégie de déload) :
+ * Forme finale (plus de plateau ni de stratégie de déload) :
  *   w ∈ [1..3] → w+1
  *   w === 4    → 5 (entrée en semaine de récupération potentielle, opt-in)
  *   w === 5    → no-op : la bascule de cycle est faite exclusivement par

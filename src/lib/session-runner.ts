@@ -1,5 +1,5 @@
 /**
- * Sélecteurs et helpers purs pour l'exécution d'une séance (Conv #5b).
+ * Sélecteurs et helpers purs pour l'exécution d'une séance.
  *
  * Source de vérité :
  * - `recherche/08_ux_decisions.md §3 Onglet Séance` — pas de timer actif,
@@ -63,7 +63,7 @@ export function formatRest(seconds: number): string {
   const m = Math.floor(total / 60);
   const s = total - m * 60;
   if (s === 0) return `${m} min`;
-  // Bloc B1 — pas de « s » après les secondes en format composite : « 1 min 30 »
+  // Pas de « s » après les secondes en format composite : « 1 min 30 »
   // est déjà clair et le « s » orphelin passait à la ligne. Le « s » reste sur
   // le format secondes seules (« 45 s ») où il lève l'ambiguïté.
   return `${m} min ${s}`;
@@ -74,7 +74,7 @@ export function formatRest(seconds: number): string {
 // =============================================================================
 
 /**
- * Bloc I (Conv #34) — réserve présélectionnée par défaut à **« 4+ »** (RPE 6, le
+ * Réserve présélectionnée par défaut à **« 4+ »** (RPE 6, le
  * plancher de l'échelle). Chaque série démarre « facile » et l'utilisateur ne
  * fait que glisser vers plus d'effort — plus motivant et plus rapide que de
  * partir d'un état vide qu'il fallait toucher pour valider. Remplace l'ancien
@@ -87,7 +87,7 @@ export interface SetEntry {
   /**
    * `null` = champ vidé par l'utilisateur (input vide affiché tel quel).
    * Permet d'éviter le default à 0 qui force des "07"/"08" quand on reprend
-   * la saisie (Conv #11e). La coche est bloquée tant que c'est `null`.
+   * la saisie. La coche est bloquée tant que c'est `null`.
    *
    * En mode calibration (1re séance d'un exo), `reps` est `null` dès l'init
    * pour ne pas biaiser le user — il doit aller chercher un vrai effort.
@@ -96,7 +96,7 @@ export interface SetEntry {
   /** Idem `reps` : `null` = champ vidé. 0 reste une valeur valide (poids du corps). */
   readonly load_kg: number | null;
   /**
-   * Réserve perçue (RPE interne). Bloc I (Conv #34) — présélectionnée à
+   * Réserve perçue (RPE interne). Bloc I — présélectionnée à
    * `DEFAULT_RPE` (« 4+ ») à l'init, plus `null`. Reste `number | null` pour
    * tolérer d'anciennes séances persistées et le vidage explicite.
    */
@@ -104,7 +104,7 @@ export interface SetEntry {
   /** L'user a marqué cette série comme "faite" (= elle ira au feedback). */
   readonly done: boolean;
   /**
-   * 1.17 (D9) — `true` quand la `load_kg` courante a été posée par le
+   * `true` quand la `load_kg` courante a été posée par le
    * recalibrage intra-séance (algo), pas par l'user. Permet à un recalibrage
    * ultérieur (ex. après décoche/recoche corrigée d'une série) de re-piloter
    * cette charge, alors que l'heuristique « load == prescription » la voyait
@@ -154,7 +154,7 @@ export function updateSetEntry(
   setIdx: number,
   patch: Partial<SetEntry>,
 ): SessionEntries {
-  // 1.17 (D9) — une édition explicite de la charge (sans flag explicite) est
+  // Une édition explicite de la charge (sans flag explicite) est
   // forcément le fait de l'user → on coupe le pilotage algo de cette série.
   const effectivePatch =
     'load_kg' in patch && !('loadAuto' in patch)
@@ -171,7 +171,7 @@ export function updateSetEntry(
  * des séries cochées (Epley étendu, cohérent avec `updateE1rmForExercise` — pas
  * de filtre EMA ici car la baseline bootstrap n'est pas une vraie mesure).
  *
- * Bloc R — par défaut on prend TOUTES les séries valides (sert au recalibrage
+ * Par défaut on prend TOUTES les séries valides (sert au recalibrage
  * intra-séance, qui doit aussi propager depuis une série lourde faite en 4+).
  * `informativeOnly` ne garde que les séries à effort réel (RPE > 4+) → sert au
  * bandeau « Plafond appris » pour ne pas l'afficher depuis une séance trop facile.
@@ -382,7 +382,7 @@ export function recalibrateUpcomingSets(args: {
 }
 
 /**
- * Dump 2.4, étape 4 — la règle de progression appliquée **série après série**
+ * La règle de progression appliquée **série après série**
  * (exercices déjà mesurés ; la calibration garde `recalibrateUpcomingSets`).
  *
  * Après la série `fromSetIdx` :
@@ -448,6 +448,76 @@ export function applyProgressionToUpcomingSets(args: {
     });
   });
   return changed ? next : entries;
+}
+
+/**
+ * Ajoute une série à l'exercice `itemIdx` de la séance en
+ * cours (plan et saisie s'allongent ensemble, sinon les indices se décalent).
+ *
+ * La série ajoutée suit la même prescription que les autres :
+ *  - dernière série pas encore faite → copie conforme (elle porte déjà la
+ *    prescription à jour) ;
+ *  - dernière série faite → charge de cette série, reps prévues par le plan,
+ *    puis, pour un exercice déjà mesuré, la règle de progression série après
+ *    série (cran suivant si le haut de la fourchette a été atteint, etc.).
+ * Exercice en calibration : les reps faites sont reprises (le plan n'a pas
+ * encore de reps fiables), la calibration reprendra la main à la coche.
+ *
+ * Pas de retrait : une série non cochée ne compte pas. Aucune mutation.
+ * `null` si l'exercice n'existe pas ou n'a aucune série.
+ */
+export function appendSetToItem(args: {
+  plan: SessionPlan;
+  entries: SessionEntries;
+  itemIdx: number;
+  measured: boolean;
+  state: UserState | null;
+  exercise: Exercise | null;
+}): { plan: SessionPlan; entries: SessionEntries } | null {
+  const { plan, entries, itemIdx, measured, state, exercise } = args;
+  const item = plan.items[itemIdx];
+  const lastPlan = item?.sets[item.sets.length - 1];
+  if (item === undefined || lastPlan === undefined) return null;
+  const row = entries[itemIdx] ?? [];
+  const last = row[row.length - 1];
+
+  const added: SetEntry =
+    last !== undefined && !last.done
+      ? { ...last, rpe: DEFAULT_RPE }
+      : {
+          reps: measured || last === undefined ? lastPlan.reps : last.reps,
+          load_kg: last?.load_kg ?? lastPlan.load_kg,
+          rpe: DEFAULT_RPE,
+          done: false,
+          loadAuto: true,
+        };
+
+  const nextPlan: SessionPlan = {
+    ...plan,
+    items: plan.items.map((it, i) =>
+      i === itemIdx ? { ...it, sets: [...it.sets, { ...lastPlan }] } : it,
+    ),
+  };
+  let nextEntries: SessionEntries = plan.items.map((_, i) => {
+    const r = entries[i] ?? [];
+    return i === itemIdx ? [...r, added] : r;
+  });
+
+  let lastDone = -1;
+  row.forEach((e, j) => {
+    if (e.done) lastDone = j;
+  });
+  if (measured && state !== null && exercise !== null && lastDone >= 0) {
+    nextEntries = applyProgressionToUpcomingSets({
+      entries: nextEntries,
+      plan: nextPlan,
+      itemIdx,
+      fromSetIdx: lastDone,
+      state,
+      exercise,
+    });
+  }
+  return { plan: nextPlan, entries: nextEntries };
 }
 
 /** Nombre de séries marquées "done", tous exos confondus. */
@@ -528,12 +598,12 @@ export interface SessionSummaryData {
   /** Nombre d'exercices distincts de la séance. */
   readonly exerciseCount: number;
   /**
-   * #13 (E-3) — volume par muscle travaillé ce jour, rapporté à la cible hebdo.
+   * Volume par muscle travaillé ce jour, rapporté à la cible hebdo.
    * Remplace le tonnage kg (non fiable). Trié par contribution décroissante.
    */
   readonly muscleVolume: ReadonlyArray<SessionMuscleVolume>;
   /**
-   * Conv #21 — Évolution complète des plafonds touchés par la séance (tous
+   * Évolution complète des plafonds touchés par la séance (tous
    * les exos avec une mesure fiable, pas seulement les PR). Pour chaque exo
    * on a l'ancien plafond (`null` = première calibration), le nouveau, et
    * le delta. Affiché en bilan séance pour rendre visible le résultat brut
@@ -550,11 +620,11 @@ export interface PlafondChange {
   /** `null` si première calibration ; sinon `newE - oldE` (peut être négatif). */
   readonly deltaKg: number | null;
   /**
-   * Dump 2.4, étape 5 (n° 17) — ce que vaut une rep en Plafond à la charge de la
+   * Ce que vaut une rep en Plafond à la charge de la
    * séance : en deçà, la variation est jugée stable. `null` sans série informative.
    */
   readonly repKg: number | null;
-  /** Dump 2.4, étape 5 (n° 9) — la séance bat la meilleure mesure passée de 2 reps. */
+  /** La séance bat la meilleure mesure passée de 2 reps. */
   readonly record: boolean;
 }
 
@@ -568,38 +638,7 @@ export function plafondTrend(change: PlafondChange): 'up' | 'down' | 'flat' {
 }
 
 /**
- * Volume = Σ reps × charge TOTALE sur tous les sets d'une séance. Chantier C
- * (plan 11) — la charge totale inclut le poids du corps pour les exos
- * bodyweight (`effectiveLoadForE1rm`), cohérente avec le Plafond affiché
- * ailleurs. Fallback `load_kg` brut si l'exo n'est plus dans le catalog
- * (exo custom supprimé).
- */
-export function computeSessionVolume(
-  feedback: SessionFeedback,
-  catalog: Catalog,
-  bodyweightKg: number,
-): number {
-  let v = 0;
-  for (const s of feedback.sets) {
-    const totalLoad = catalog.has(s.exercise_id)
-      ? effectiveLoadForE1rm(s.load_kg, catalog.get(s.exercise_id), bodyweightKg)
-      : s.load_kg;
-    v += s.reps_done * totalLoad;
-  }
-  return v;
-}
-
-/** Volume cumulé sur une `FeedbackRow`. */
-export function feedbackRowVolume(
-  row: FeedbackRow,
-  catalog: Catalog,
-  bodyweightKg: number,
-): number {
-  return computeSessionVolume(row.feedback, catalog, bodyweightKg);
-}
-
-/**
- * Calcule le bilan post-feedback (#13, E-3) :
+ * Calcule le bilan post-feedback :
  *  - nombre de séries effectuées + exos distincts ;
  *  - volume par muscle travaillé, rapporté à la cible hebdo (contribution de la
  *    séance + total de la semaine de programme vs son repère) ;
@@ -616,7 +655,7 @@ export function computeSessionSummary(
   state: UserState,
   previouslyCalibratedExoIds: ReadonlySet<string> = new Set(),
   /**
-   * A-3 (#73) — séance jouée en récupération effective. Le bilan montre alors
+   * Séance jouée en récupération effective. Le bilan montre alors
    * les Plafonds des exos déjà calibrés MÊME s'ils n'ont pas bougé (Δ 0) : c'est
    * l'information utile de la semaine — la récup ne fait pas reculer le Plafond,
    * et si l'user a chargé de son propre chef, le gain apparaît normalement.
@@ -638,7 +677,7 @@ export function computeSessionSummary(
   const weekByMuscle = sumMuscleSets([...weekPrior, feedback], musclesOf);
   const muscleVolume: SessionMuscleVolume[] = Object.keys(sessionByMuscle)
     .map((muscle) => {
-      // Dump 2.4, étape 3 — un seul repère (arrondi au supérieur, conv #77) ;
+      // Un seul repère (arrondi au supérieur, conv #77) ;
       // en semaine de récupération, il est divisé par deux comme les séries.
       const weekly = weeklyMark(state, muscle);
       const mark = weekly !== null && recoveryWeek ? weekly / 2 : weekly;
@@ -658,9 +697,9 @@ export function computeSessionSummary(
   const bw = state.profile.bodyweight_kg;
   for (const [exId, update] of Object.entries(summary)) {
     if (update === null) continue;
-    // Bloc R — on ignore les MAJ provisoires (séance tout-4+) : pas de plafond
+    // On ignore les MAJ provisoires (séance tout-4+) : pas de plafond
     // « mesuré » à afficher (l'état vide « aucune série assez intense » suffit).
-    // A-3 (#73) — exception en récup : on affiche quand même le Plafond des exos
+    // Exception en récup : on affiche quand même le Plafond des exos
     // déjà calibrés, à Δ 0 si la séance allégée ne l'a pas fait monter.
     if (!update.definitive && !(recoveryWeek && previouslyCalibratedExoIds.has(exId))) {
       continue;
@@ -701,31 +740,3 @@ export function computeSessionSummary(
 // Sélection du prochain DayTemplate suggéré (État A)
 // =============================================================================
 
-export interface DayCandidate {
-  readonly dayIndex: number;
-  readonly label: string;
-  /** `null` si jamais fait dans la semaine en cours. */
-  readonly doneCountThisWeek: number;
-}
-
-/**
- * Liste les `DayTemplate` avec le nombre de fois où ils ont été faits cette
- * semaine du cycle courant. Permet d'afficher "Push (fait)" si pertinent.
- */
-export function listDayCandidates(
-  plan: { days: ReadonlyArray<{ label: string }> },
-  feedbacks: ReadonlyArray<Pick<FeedbackRow, 'cycle_index' | 'week_in_cycle' | 'feedback'>>,
-  cycleIndex: number,
-  weekInCycle: number,
-): DayCandidate[] {
-  return plan.days.map((d, i) => ({
-    dayIndex: i,
-    label: d.label,
-    doneCountThisWeek: feedbacks.filter(
-      (f) =>
-        f.cycle_index === cycleIndex &&
-        f.week_in_cycle === weekInCycle &&
-        f.feedback.label === d.label,
-    ).length,
-  }));
-}
