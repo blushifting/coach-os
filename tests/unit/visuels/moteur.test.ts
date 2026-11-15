@@ -153,11 +153,29 @@ describe('visuels — corps', () => {
     const epais = (coude: number): number =>
       Math.max(...geomMuscle(biceps, resoudre(pose({ bras: { coude } }))).st.map((s) => s.b));
     expect(epais(120)).toBeGreaterThan(epais(8) * 1.05);
+    const dorsal = corps.muscles.find((m) => m.id === 'dorsalG')!;
+    const brasBaisse = geomMuscle(dorsal, resoudre(REPOS));
+    const brasLeve = geomMuscle(dorsal, resoudre(pose({ bras: { epaule: { flex: 160 } } })));
+    expect(brasLeve.L).toBeGreaterThan(brasBaisse.L);
+    expect(Math.max(...brasLeve.st.map((s) => s.b))).toBeLessThan(Math.max(...brasBaisse.st.map((s) => s.b)));
+  });
+
+  it('la fesse est une seule pièce, qui tient au bassin et ne se déforme pas quand la hanche plie', () => {
+    expect(corps.muscles.filter((m) => m.muscle === 'fessiers').map((m) => m.id)).toEqual(['fessierG', 'fessierD']);
     const fessier = corps.muscles.find((m) => m.id === 'fessierG')!;
     const debout = geomMuscle(fessier, resoudre(REPOS));
-    const assis = geomMuscle(fessier, resoudre(pose({ jambe: { hanche: { flex: 100 }, genou: 100 } })));
-    expect(assis.L).toBeGreaterThan(debout.L);
-    expect(Math.max(...assis.st.map((s) => s.b))).toBeLessThan(Math.max(...debout.st.map((s) => s.b)));
+    const F = resoudre(pose({ jambe: { hanche: { flex: 100 }, genou: 100 } })), assis = geomMuscle(fessier, F);
+    // Même longueur, mêmes sections : rien ne gonfle ni ne glisse.
+    expect(assis.L).toBeCloseTo(debout.L, 9);
+    assis.st.forEach((s, i) => {
+      expect(s.a).toBeCloseTo(debout.st[i]!.a, 9);
+      expect(s.cx).toBeCloseTo(debout.st[i]!.cx, 9);
+    });
+    // Hanche pliée à 100° : elle n'a suivi la cuisse que d'un quart, soit 25°.
+    // Plus, elle part sous le bassin et le laisse à nu ; elle doit rester derrière lui.
+    const angle = Math.acos(V.dot(assis.A, debout.A)) * (180 / Math.PI);
+    expect(angle).toBeGreaterThan(20);
+    expect(angle).toBeLessThan(30);
   });
 });
 

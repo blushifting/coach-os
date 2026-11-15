@@ -109,8 +109,11 @@ export const OSSATURE: readonly SpecOs[] = [
     anneaux: [[0, 7, 6, 0, -0.5], [0.17, 13.2, 9.6, 0, -0.8], [0.39, 16.4, 11, 0, -1], [0.67, 15.9, 10.6, 0, -0.6], [1, 14.6, 9.7, 0, 0]] },
   { id: 'ventre', joint: 'lombaires', base: 'haut', o: [0, 0, 0], L: 22, ton: 'corps', mince: 0.97,
     anneaux: [[0, 14.6, 9.7, 0, 0], [0.3, 13.8, 9.2, 0, 0.2], [0.65, 14, 9.4, 0, 0.5], [1, 15, 9.9, 0, 0.6]] },
-  { id: 'thorax', joint: 'thorax', base: 'haut', o: [0, 0, 0], L: 27, ton: 'corps', mince: 0.97,
-    anneaux: [[0, 15, 9.9, 0, 0.6], [0.3, 17, 11.3, 0, 1], [0.56, 17.6, 11.8, 0, 0.8], [0.78, 16, 10.4, 0, 0.2], [0.9, 14, 8.7, 0, -0.4], [1, 7.6, 6.2, 0, -0.6]] },
+  // Le haut du thorax monte en pente droite jusqu'au cou : c'est le corps qui
+  // porte la pente cou-épaule. Le trapèze n'est qu'un relief posé dessus ; si
+  // la pente ne tenait que par lui, il aurait l'air d'une épaulette.
+  { id: 'thorax', joint: 'thorax', base: 'haut', o: [0, 0, 0], L: 30.5, ton: 'corps', mince: 0.97,
+    anneaux: [[0, 15, 9.9, 0, 0.6], [0.266, 17, 11.3, 0, 1], [0.495, 17.6, 11.8, 0, 0.8], [0.69, 16.2, 10.4, 0, 0.2], [0.8, 14.4, 9.2, 0, -0.6], [0.9, 10.6, 7.8, 0, -1], [1, 6.4, 6.2, 0, -0.5]] },
   { id: 'cou', joint: 'cou', base: 'haut', o: [0, -1, 0], L: 7.5, ton: 'corps', fixe: true,
     anneaux: [[0, 5.6, 5.8, 0, 0], [1, 5, 5.4, 0, 0.4]] },
   { id: 'tete', joint: 'tete', base: 'haut', o: [0, -1.2, 1], L: 22.6, ton: 'corps', fixe: true, anneaux: anneauxTete() },
@@ -187,13 +190,12 @@ export const MUSCLES: readonly SpecMuscle[] = [
     profil: [[0, 3, 1.2], [0.5, 4.2, 1.7], [1, 3.2, 1.2]] },
   { id: 'oblique', m: 'obliques', de: ['thorax', [12.4, 2.5, 6.6]], a: ['bassin', [13, 4, 4.6]], n: ['lombaires', [0.8, 0, 0.6]], arc: -0.6, creux: 1.2, pointes: [0.1, 0.1], autour: ['ventre'],
     profil: [[0, 5, 1.2], [0.5, 6, 1.8], [1, 4.6, 1.2]] },
-  { id: 'sternoCleido', de: ['tete', [5.6, 1.8, -1]], a: ['thorax', [1.8, 26, 5.2]], n: ['cou', [0.6, 0, 0.8]], autour: ['cou'],
-    profil: [[0, 1.3, 1], [0.5, 1.6, 1.2], [1, 1.2, 1]] },
   // --- Tronc, derrière ---
-  // Un coin, épais et large près du cou, qui s'amincit jusqu'à l'épaule et se
-  // rabat devant et derrière : il fait la pente de l'épaule, pas une épaulette.
-  { id: 'trapeze', m: 'trapezes_hauts', de: ['cou', [3.4, 4.6, -2.8]], a: ['thorax', [16.4, 22, -2.2]], n: ['thorax', [0.2, 0.85, -0.5]], arc: -0.4, creux: 2.2, pointes: [0.1, 0.3],
-    profil: [[0, 3.6, 2.4], [0.3, 5.6, 2.4], [0.7, 4.8, 1.5], [1, 2.4, 0.9]] },
+  // Une nappe mince couchée sur la pente cou-épaule (que porte le thorax), de
+  // la nuque à l'épaule, un peu vers l'arrière. Peu d'épaisseur : un relief,
+  // pas un boudin.
+  { id: 'trapeze', m: 'trapezes_hauts', de: ['thorax', [5.8, 28.8, -3.8]], a: ['thorax', [16, 22.4, -2.6]], n: ['thorax', [0.45, 0.8, -0.4]], creux: 1.8, pointes: [0.14, 0.3],
+    profil: [[0, 3.4, 1.2], [0.4, 5.2, 1.4], [1, 3, 1]] },
   { id: 'hautDos', m: 'dos_epaisseur', de: ['thorax', [2.2, 15, -10.3]], a: ['thorax', [13.5, 20.5, -5.6]], n: ['thorax', [0.3, 0, -1]], arc: 1.2, creux: 0.6, pointes: [0.07, 0.2],
     profil: [[0, 9, 1.4], [0.5, 7.2, 2], [1, 3.4, 1.5]] },
   { id: 'sousEpineux', m: 'dos_epaisseur', de: ['thorax', [8.5, 12.5, -9.2]], a: ['epaule', [0.5, -4, -3.6]], n: ['thorax', [0.55, 0, -0.85]], arc: 1, creux: 0.6,
@@ -223,13 +225,17 @@ export const MUSCLES: readonly SpecMuscle[] = [
   { id: 'avantBrasFlex', de: ['coude', [-2, -1.5, 0.8]], a: ['coude', [-0.8, -24.5, 0.3]], n: ['coude', [-1, 0, 0.25]], creux: 0.8,
     profil: [[0, 2.6, 2], [0.3, 4.2, 3.2], [0.75, 2.6, 2.1], [1, 1.6, 1.3]] },
   // --- Hanche et jambe ---
-  // Son bas tient au repère à mi-chemin entre bassin et cuisse, pas à la cuisse :
-  // quand la hanche plie, il ne part pas sous la cuisse, il reste sur la fesse
-  // et l'enveloppe par-dessous.
-  { id: 'fessier', m: 'fessiers', de: ['bassin', [5, 6.5, -8.6]], a: ['fessier', [-2.4, -13, -5.5]], n: ['fessier', [0.1, 0, -1]], arc: 1.8, creux: 1.5, pointes: [0.14, 0.24], autour: ['cuisse'],
-    profil: [[0, 7, 2.6], [0.45, 10, 5], [1, 5.8, 2.8]] },
-  { id: 'moyenFessier', m: 'fessiers', de: ['bassin', [14, 5.5, -1]], a: ['hanche', [5.6, -7, -0.6]], n: ['fessier', [1, 0, -0.15]], creux: 0.8,
-    profil: [[0, 4.4, 1.5], [0.5, 5, 2.3], [1, 2.4, 1.6]] },
+  // La fesse est un seul volume, tout entier dans le repère `fessier`, qui
+  // tient surtout au bassin et ne suit la cuisse que d'un quart : quand la
+  // hanche plie, la fesse reste derrière le bassin, étalée sur toute sa
+  // largeur, et bascule un peu vers le bas. Essayé avant et écarté : la tendre
+  // du bassin à la cuisse (elle glissait sur le côté de la hanche et gonflait
+  // bizarrement au bas du squat) ; la faire suivre la cuisse de moitié (deux
+  // boules pendues sous le bassin, qui restait à nu).
+  // Une seule pièce par fesse : plusieurs pièces se chevauchaient et faisaient des bosses.
+  // Mince en haut, où elle se fond dans le bas du dos, pleine en bas.
+  { id: 'fessier', m: 'fessiers', de: ['fessier', [-0.2, 11, -5.6]], a: ['fessier', [-0.2, -9.5, -4.2]], n: ['fessier', [0, 0, -1]], pointes: [0.36, 0.26],
+    profil: [[0, 6.4, 3.8], [0.35, 9.4, 6.4], [0.7, 9.8, 7.2], [1, 7.6, 5.6]] },
   { id: 'droitFemoral', m: 'quadriceps', de: ['hanche', [-0.4, -2.5, 6.8]], a: ['rotule', [0, 3.6, 4.6]], n: ['hanche', [0, 0, 1]], arc: 1.2, creux: 0.8,
     profil: [[0, 2.6, 1.8], [0.35, 4.6, 3.2], [0.8, 3.4, 2.4], [1, 2, 1.3]] },
   { id: 'vasteExterne', m: 'quadriceps', de: ['hanche', [5.4, -7, 3.4]], a: ['rotule', [2.8, 2.6, 3.4]], n: ['hanche', [0.85, 0, 0.5]], arc: 1, creux: 1,

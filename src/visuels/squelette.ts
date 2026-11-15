@@ -277,8 +277,9 @@ export const REPERES_CENTRAUX = ['monde', 'bassin', 'lombaires', 'thorax', 'cou'
 /**
  * Pose → repères de chaque partie du corps.
  *
- * Trois repères sont à cheval sur une articulation et tournent à mi-chemin
- * entre les deux os : `delto` (épaule), `fessier` (hanche), `rotule` (genou).
+ * Trois repères sont à cheval sur une articulation et tournent entre les deux
+ * os : `delto` (épaule, à mi-chemin), `rotule` (genou, à mi-chemin) et
+ * `fessier` (hanche, un quart du chemin seulement).
  * Les muscles qui coiffent ces articulations s'en servent pour savoir vers où
  * ils regardent.
  */
@@ -342,7 +343,8 @@ export function resoudre(p: Pose): Reperes {
     F['hanche' + c] = { o: H, R: Rc };
     F['genou' + c] = { o: genou, R: Rj };
     F['cheville' + c] = { o: cheville, R: Rp };
-    F['fessier' + c] = { o: H, R: M.entre(Rb, Rc, 0.5) };
+    // La fesse tient au bassin : elle ne suit la cuisse que d'un quart.
+    F['fessier' + c] = { o: H, R: M.entre(Rb, Rc, 0.25) };
     F['rotule' + c] = { o: genou, R: M.entre(Rc, Rj, 0.5) };
   }
   return F;
