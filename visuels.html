@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kotsh — atelier des visuels</title>
+    <!--
+      Page de travail du chantier « Visuels d'exercice » : servie par le serveur
+      de développement seulement (http://localhost:5173/coach-os/visuels.html).
+      Elle n'est pas une entrée du build : elle n'existe pas en production.
+    -->
+    <style>
+      body { margin: 0; background: #16110f; color: #e7e9ed; font: 14px/1.5 system-ui, sans-serif; }
+      main { max-width: 980px; margin: 0 auto; padding: 16px; }
+      h1 { font-size: 18px; margin: 0 0 12px; }
+      .barre { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-bottom: 12px; }
+      .barre label { display: inline-flex; gap: 6px; align-items: center; color: #9aa0aa; }
+      select, button { font: inherit; color: #e7e9ed; background: #1c1f24; border: 1px solid #33383f; border-radius: 8px; padding: 6px 10px; }
+      button[aria-pressed='true'] { background: #33383f; }
+      input[type='range'] { accent-color: #b62a3a; }
+      #vue { display: block; width: 100%; max-width: 420px; aspect-ratio: 1; border-radius: 12px; border: 1px solid #262a30; touch-action: pan-y; cursor: ew-resize; }
+      #planche { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+      #planche figure { margin: 0; }
+      #planche canvas { display: block; width: 100%; border-radius: 8px; }
+      #planche figcaption { color: #6c727c; font-size: 12px; text-align: center; }
+      /* En planche, la toile WebGL sert encore de source : on la sort du champ sans la masquer. */
+      .hors-champ { position: absolute; left: -9999px; }
+      [hidden] { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Atelier des visuels</h1>
+      <div class="barre">
+        <label>Sujet <select id="sujet"></select></label>
+        <label id="l-exemple">Muscles colorés <select id="exemple"></select></label>
+        <button id="b-boucle" aria-pressed="true">En boucle</button>
+        <button id="b-depart" aria-pressed="false">Départ</button>
+        <button id="b-arrivee" aria-pressed="false">Arrivée</button>
+        <button id="b-planche" aria-pressed="false">Planche</button>
+      </div>
+      <div class="barre">
+        <label>Tour <input type="range" id="tour" min="-180" max="180" step="1" /><output id="o-tour"></output></label>
+        <label>Hauteur <input type="range" id="hauteur" min="-15" max="60" step="1" /><output id="o-hauteur"></output></label>
+      </div>
+      <canvas id="vue"></canvas>
+      <div id="planche" hidden></div>
+    </main>
+    <script type="module" src="/src/visuels/dev/atelier.ts"></script>
+  </body>
+</html>

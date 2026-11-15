@@ -17,7 +17,7 @@ import { formatRest } from '@/lib/session-runner';
 import { useCoachOsStore } from '@/store';
 import { useDemoMode } from '@/store/selectors';
 import { ChargeBadge } from '@/pages/catalogue/ChargeBadge';
-import { ExercisePhoto } from '@/pages/catalogue/ExercisePhoto';
+import { ExerciseVisual } from '@/pages/catalogue/ExerciseVisual';
 import { VariantPickerSheet } from '@/components/VariantPickerSheet';
 import { displayExerciseName } from '@/lib/catalog-filter';
 import { useGymBrand } from '@/store/selectors';
@@ -121,7 +121,7 @@ export function ExerciseDetailSheet({
             />
           </div>
 
-          <ExercisePhoto exerciseId={exercise.id} />
+          <ExerciseVisual exercise={exercise} />
 
           <ExerciseNoteField exerciseId={exercise.id} />
 

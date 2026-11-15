@@ -23,7 +23,7 @@ import { useCoachOsStore } from '@/store';
 import { useDemoMode, useGymBrand } from '@/store/selectors';
 import { ManualE1rmSheet } from '@/pages/seance/ManualE1rmSheet';
 import { ChargeBadge } from './ChargeBadge';
-import { ExercisePhoto } from './ExercisePhoto';
+import { ExerciseVisual } from './ExerciseVisual';
 import { EquipmentOverrideSheet } from './EquipmentOverrideSheet';
 import { FavoriteStar } from './FavoriteStar';
 import { RepRangePicker } from './RepRangePicker';
@@ -109,7 +109,7 @@ export function CatalogueDetailSheet({
           />
         </div>
 
-        <ExercisePhoto exerciseId={exercise.id} />
+        <ExerciseVisual exercise={exercise} />
 
         <ExerciseNoteField exerciseId={exercise.id} />
 

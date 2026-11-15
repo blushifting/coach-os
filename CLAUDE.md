@@ -26,6 +26,10 @@ reste consultable par `git show b44fcd1:CLAUDE.md`.
 - `lib/` — calculs pour les écrans (progrès, tableau de bord, séance), sauvegarde,
   démo. `store/` — état global et sélecteurs. `db/`, `io/` — base locale, import/export.
 - `pages/`, `components/`, `layout/` — interface. `data/` — catalogue d'exercices.
+- `visuels/` — moteur 3D des animations d'exercice (squelette, muscles, rendu WebGL sans
+  bibliothèque), pur sauf `rendu.ts` et `animation.ts`. Une pose par exercice dans
+  `visuels/poses/`. Page de travail : `visuels.html` à la racine, servie en développement
+  seulement (`/coach-os/visuels.html`), absente du build.
 - Tests : `tests/unit`, `tests/db`, `tests/io`, `tests/store`, `tests/e2e`
   (Vitest) et `tests/playwright` (Playwright).
 
