@@ -23,7 +23,10 @@ import { ebaucher, piedsAuSol, piedsImmobiles } from '../ebauche';
 import type { PointDetecte } from '../ebauche';
 import { V } from '../maths';
 import { Maillage } from '../maillage';
+import { reperesMateriel } from '../materiel';
 import type { Piece } from '../materiel';
+import type { Reperes } from '../squelette';
+import { SCENES } from './vitrine-scenes';
 import { POSES } from '../poses';
 import { REPOS } from '../poses/repos';
 import { creerRendu } from '../rendu';
@@ -348,18 +351,31 @@ function message(texte: string, genre: 'info' | 'alerte' = 'info'): void {
   m.dataset.genre = genre;
 }
 
+/** Repères du matériel pour la pose clé `i` (le matériel bouge au fil du mouvement). */
+function autresDe(i: number): (tronc: Reperes) => Reperes {
+  const s = courant().pose, n = s.cles.length;
+  return (tronc) => reperesMateriel(s.materiel, tronc, n > 1 ? i / (n - 1) : 0);
+}
+
+/** Repères qu'une main ou un pied peut viser : ceux du tronc (ou le monde) et ceux du matériel. */
+function reperesVisables(base: readonly string[]): string[] {
+  const autres = Object.keys(reperesMateriel(courant().pose.materiel, resoudre(cleCourante()), 0));
+  return [...base, ...autres.filter((r) => !base.includes(r))];
+}
+
 /** Passe un membre des angles à la cible (ou inversement) sur toutes les poses clés. */
-function changerMode(membre: 'bras' | 'jambe', c: Cote, versCible: boolean, repere = 'thorax'): void {
+function changerMode(membre: 'bras' | 'jambe', c: Cote, versCible: boolean, repere = membre === 'bras' ? 'thorax' : 'monde'): void {
   const nom = (membre + c) as 'brasG' | 'brasD' | 'jambeG' | 'jambeD', bout = membre === 'bras' ? 'poignet' : 'cheville';
   const bouges: number[] = [];
   changerSujet((p) => ({
     ...p,
     cles: p.cles.map((k, i) => {
+      const autres = autresDe(i);
       const nouveau = membre === 'bras'
-        ? (versCible ? brasEnCible(k, c, repere) : brasEnAngles(k, c))
-        : (versCible ? jambeEnCible(k, c) : jambeEnAngles(k, c));
+        ? (versCible ? brasEnCible(k, c, repere, autres) : brasEnAngles(k, c, autres))
+        : (versCible ? jambeEnCible(k, c, repere, autres) : jambeEnAngles(k, c, autres));
       const apres = symetriser({ ...k, [nom]: nouveau });
-      if (V.len(V.sub(resoudre(k)[bout + c]!.o, resoudre(apres)[bout + c]!.o)) > 0.5) bouges.push(i + 1);
+      if (V.len(V.sub(resoudre(k, autres)[bout + c]!.o, resoudre(apres, autres)[bout + c]!.o)) > 0.5) bouges.push(i + 1);
       return apres;
     }),
   }));
@@ -397,10 +413,28 @@ function panneauBras(): HTMLElement[] {
       surCle('Rotation (externe)', [nom, 'epaule', 'rot'], L.epaule.rot)));
     out.push(groupe('Coude', surCle('Flexion', [nom, 'coude'], L.coude)));
   } else {
-    const rep = choix(REPERES_CENTRAUX.map((r) => [r, r] as const), b.cible.repere, (r) => changerMode('bras', c, true, r));
+    const rep = choix(reperesVisables(REPERES_CENTRAUX).map((r) => [r, r] as const), b.cible.repere, (r) => changerMode('bras', c, true, r));
+    const tient = el('input', { type: 'checkbox' });
+    tient.checked = b.cible.axe !== undefined;
+    tient.addEventListener('change', () => {
+      // Sur toutes les poses clés : la main tient la poignée du début à la fin, ou pas du tout.
+      changerSujet((p) => ({
+        ...p,
+        cles: p.cles.map((k) => {
+          const bras = k[nom as 'brasG'], cible = bras.cible;
+          if (cible === null) return k;
+          const sans = { repere: cible.repere, pos: cible.pos, pole: cible.pole };
+          return symetriser({ ...k, [nom]: { ...bras, cible: tient.checked ? { ...sans, axe: [1, 0, 0] } : sans } });
+        }),
+      }));
+      construirePanneau();
+    });
+    const surAxe = b.cible.axe === undefined ? [] : surVecteur(['Poignée le long de, X', 'Poignée le long de, Y', 'Poignée le long de, Z'], [nom, 'cible', 'axe'], [[-1, 1], [-1, 1], [-1, 1]], 0.05, 'cle');
     out.push(groupe('Cible de la main',
       el('label', { class: 'curseur' }, el('span', {}, 'Dans le repère'), rep),
+      el('label', { class: 'case' }, tient, 'La main tient une poignée (le centre du poing la vise, le poing s’aligne dessus)'),
       ...surVecteur(['Main, gauche-droite', 'Main, hauteur', 'Main, avant-arrière'], [nom, 'cible', 'pos'], [[-90, 90], [-90, 90], [-90, 90]], 0.5, 'cle'),
+      ...surAxe,
       ...surVecteur(['Coude vers, X', 'Coude vers, Y', 'Coude vers, Z'], [nom, 'cible', 'pole'], [[-1, 1], [-1, 1], [-1, 1]], 0.05, 'cle')));
   }
   out.push(groupe('Avant-bras et main',
@@ -442,8 +476,10 @@ function panneauJambes(): HTMLElement[] {
       surCle('Genou, flexion', [nom, 'genou'], L.genou),
       surCle('Cheville, flexion', [nom, 'cheville'], L.cheville)));
   } else {
-    out.push(groupe('Pied (dans l\'espace, en cm)',
-      ...surVecteur(['Gauche-droite', 'Hauteur de la cheville', 'Avant-arrière'], [nom, 'cible', 'pos'], [[-60, 60], [0, 120], [-80, 80]], 0.5, 'cle'),
+    const rep = choix(reperesVisables(['monde']).map((r) => [r, r] as const), j.cible.repere ?? 'monde', (r) => changerMode('jambe', c, true, r));
+    out.push(groupe('Pied (en cm, dans le repère choisi)',
+      el('label', { class: 'curseur' }, el('span', {}, 'Dans le repère'), rep),
+      ...surVecteur(['Gauche-droite', 'Hauteur de la cheville', 'Avant-arrière'], [nom, 'cible', 'pos'], [[-80, 80], [-60, 160], [-120, 120]], 0.5, 'cle'),
       surCle('Ouverture du pied', [nom, 'cible', 'tour'], [-45, 60]),
       surCle('Talon levé', [nom, 'cible', 'pointe'], [0, 60])));
     out.push(groupe('Genou vers',
@@ -452,49 +488,95 @@ function panneauJambes(): HTMLElement[] {
   return out;
 }
 
-const MODELES: Readonly<Record<string, { nom: string; pieces: readonly Piece[] }>> = {
-  barre: { nom: 'Barre sur le dos', pieces: [{ type: 'barre', repere: 'thorax', centre: [0, 23, -10.4] }] },
-  barreMains: { nom: 'Barre dans les mains', pieces: [{ type: 'barre', repere: 'monde', centre: [0, 100, 20] }] },
+const NOMS_PIECES: Readonly<Record<Piece['type'], string>> = {
+  barre: 'Barre', barreEz: 'Barre EZ', trapBar: 'Trap bar', haltere: 'Haltère', landmine: 'Landmine (T-bar)', roueAbdo: 'Roue abdominale',
+  banc: 'Banc', barreTraction: 'Barre de traction', barresParalleles: 'Barres parallèles', pupitre: 'Pupitre à curl',
+  bancLombaires: 'Banc à lombaires', ghr: 'Banc à ischios (GHR)', reverseHyper: 'Reverse hyper',
+  poulie: 'Poulie', visAVis: 'Vis-à-vis', tirageHorizontalPoulie: 'Tirage horizontal à la poulie', tirageVertical: 'Tirage vertical',
+  pecDeck: 'Pec deck', developpeMachine: 'Développé machine', tirageHorizontalMachine: 'Tirage horizontal machine',
+  presseCuisses: 'Presse à cuisses', hackSquat: 'Hack squat', smith: 'Smith machine',
+  legExtension: 'Leg extension', legCurlAssis: 'Leg curl assis', legCurlCouche: 'Leg curl couché',
+  molletsDebout: 'Mollets debout', molletsAssis: 'Mollets assis', elevationsMachine: 'Élévations latérales machine',
+  curlMachine: 'Curl ou extension machine', pulloverMachine: 'Pullover machine', kickbackMachine: 'Kickback fessiers',
+  abdAdducteurs: 'Abducteurs ou adducteurs', hipThrustMachine: 'Hip thrust machine', crunchMachine: 'Crunch machine',
+  assistee: 'Tractions et dips assistés',
+};
+
+/** Ce qu'on peut ajouter : deux montages courants, puis chaque pièce telle que la vitrine la place. */
+const AJOUTS: Readonly<Record<string, { nom: string; pieces: readonly Piece[] }>> = {
+  barreDos: { nom: 'Barre sur le dos', pieces: [{ type: 'barre', repere: 'thorax', centre: [0, 23, -10.4] }] },
   halteres: {
     nom: 'Deux haltères',
     pieces: [{ type: 'haltere', repere: 'poignetG', centre: [0, -4.8, 0] }, { type: 'haltere', repere: 'poignetD', centre: [0, -4.8, 0] }],
   },
-  haltere: { nom: 'Un haltère (main gauche)', pieces: [{ type: 'haltere', repere: 'poignetG', centre: [0, -4.8, 0] }] },
-  cable: { nom: 'Câble (main gauche)', pieces: [{ type: 'cable', de: ['monde', [30, 200, 40]], a: ['poignetG', [0, -5, 0]] }] },
+  ...Object.fromEntries((Object.keys(NOMS_PIECES) as Piece['type'][]).flatMap((type) => {
+    const p = SCENES.flatMap((s) => s.sujet.materiel).find((m) => m.type === type);
+    return p === undefined ? [] : [[type, { nom: NOMS_PIECES[type], pieces: [p] }]];
+  })),
 };
-const NOMS_PIECES: Readonly<Record<Piece['type'], string>> = { barre: 'Barre', haltere: 'Haltère', cable: 'Câble' };
+
+const NOMS_CHAMPS: Readonly<Record<string, string>> = {
+  repere: 'Repère', centre: 'Centre', pos: 'Au sol', tour: 'Orientation (degrés)', hauteur: 'Hauteur (cm)', dossier: 'Dossier (degrés)',
+  largeur: 'Largeur (cm)', ecart: 'Écart (cm)', variante: 'Variante', prise: 'Prise', course: 'Course', trajet: 'Trajet du centre',
+};
+const BORNES_CHAMPS: Readonly<Record<string, readonly [number, number]>> = {
+  tour: [-180, 180], hauteur: [0, 230], dossier: [-30, 90], largeur: [40, 160], ecart: [30, 300], longueur: [20, 150],
+};
+const VARIANTES: Readonly<Record<string, readonly (readonly [string, string])[]>> = {
+  developpeMachine: [['couche', 'Couché'], ['incline', 'Incliné'], ['epaules', 'Épaules']],
+  abdAdducteurs: [['abduction', 'Abducteurs'], ['adduction', 'Adducteurs']],
+  curlMachine: [['curl', 'Curl'], ['triceps', 'Triceps']],
+};
+const PRISES: readonly (readonly [string, string])[] = [['poignee', 'Poignée (une main)'], ['corde', 'Corde'], ['barre', 'Barre droite'], ['triangle', 'Triangle']];
+const etape = (j: number, n: number): string => (j === 0 ? 'départ' : j === n - 1 ? 'arrivée' : `étape ${j + 1}`);
+
+/** Les réglages d'une pièce : un curseur par nombre, un choix par option. */
+function champsPiece(m: Piece, i: number): HTMLElement[] {
+  const out: HTMLElement[] = [], BORNES: readonly (readonly [number, number])[] = [[-150, 150], [-60, 240], [-150, 150]];
+  const surSujet = (libelle: string, chemin: Chemin, bornes: readonly [number, number], pas: number): HTMLElement =>
+    curseur(libelle, lire(courant().pose, chemin) as number, bornes, pas, lireNombre(reference(), chemin), (v) => changerSujet((p) => fixer(p, chemin, v)));
+  const choixSur = (libelle: string, options: readonly (readonly [string, string])[], valeur: string, f: (v: string) => void): HTMLElement =>
+    el('label', { class: 'curseur' }, el('span', {}, libelle), choix(options, valeur, (v) => { f(v); construirePanneau(); }));
+  for (const [k, v] of Object.entries(m)) {
+    const chemin: Chemin = ['materiel', i, k], nom = NOMS_CHAMPS[k] ?? k;
+    if (k === 'type') continue;
+    if (k === 'repere') out.push(choixSur(nom, TOUS_REPERES.map((r) => [r, r] as const), v as string, (r) => changerSujet((p) => fixer(p, chemin, r))));
+    else if (k === 'variante') out.push(choixSur(nom, VARIANTES[m.type] ?? [], v as string, (r) => changerSujet((p) => fixer(p, chemin, r))));
+    else if (k === 'prise') {
+      const pr = v as { type: string; main?: string; longueur?: number };
+      out.push(choixSur(nom, PRISES, pr.type, (t) => changerSujet((p) => fixer(p, chemin,
+        t === 'poignee' ? { type: t, main: 'poignetG' } : t === 'barre' ? { type: t, longueur: 50 } : { type: t }))));
+      if (pr.type === 'poignee') out.push(choixSur('Main', [['poignetG', 'Gauche'], ['poignetD', 'Droite']], pr.main ?? 'poignetG', (r) => changerSujet((p) => fixer(p, [...chemin, 'main'], r))));
+      if (pr.type === 'barre') out.push(surSujet('Longueur de la barre (cm)', [...chemin, 'longueur'], BORNES_CHAMPS.longueur!, 1));
+    } else if (k === 'course') {
+      const vals = v as readonly number[];
+      vals.forEach((_, j) => out.push(surSujet(`Course, ${etape(j, vals.length)}`, [...chemin, j], [-180, 250], 0.5)));
+    } else if (k === 'trajet') {
+      const pts = v as readonly (readonly number[])[];
+      pts.forEach((_, j) => out.push(...surVecteur([`${etape(j, pts.length)}, X`, `${etape(j, pts.length)}, Y`, `${etape(j, pts.length)}, Z`], [...chemin, j], BORNES, 0.5, 'sujet')));
+    } else if (Array.isArray(v) && v.length === 3) out.push(...surVecteur([`${nom}, X`, `${nom}, Y`, `${nom}, Z`], chemin, BORNES, 0.5, 'sujet'));
+    else if (typeof v === 'number') out.push(surSujet(nom, chemin, BORNES_CHAMPS[k] ?? [-200, 200], 0.5));
+  }
+  return out;
+}
 
 function panneauMateriel(): HTMLElement[] {
   const out: HTMLElement[] = [];
-  const BORNES: readonly (readonly [number, number])[] = [[-100, 100], [-60, 220], [-100, 100]];
   courant().pose.materiel.forEach((m, i) => {
     const retirer = bouton('Retirer', () => {
       changerSujet((p) => ({ ...p, materiel: p.materiel.filter((_, j) => j !== i) }));
       construirePanneau();
     });
-    const repere = (chemin: Chemin, valeur: string): HTMLElement =>
-      el('label', { class: 'curseur' }, el('span', {}, 'Repère'),
-        choix(TOUS_REPERES.map((r) => [r, r] as const), valeur, (r) => { changerSujet((p) => fixer(p, chemin, r)); construirePanneau(); }));
-    if (m.type === 'cable') {
-      out.push(groupe(`${i + 1}. Câble`,
-        el('p', { class: 'aide' }, 'Départ (la poulie)'), repere(['materiel', i, 'de', 0], m.de[0]),
-        ...surVecteur(['X', 'Y', 'Z'], ['materiel', i, 'de', 1], BORNES, 0.5, 'sujet'),
-        el('p', { class: 'aide' }, 'Arrivée (la poignée)'), repere(['materiel', i, 'a', 0], m.a[0]),
-        ...surVecteur(['X', 'Y', 'Z'], ['materiel', i, 'a', 1], BORNES, 0.5, 'sujet'),
-        retirer));
-    } else {
-      out.push(groupe(`${i + 1}. ${NOMS_PIECES[m.type]}`, repere(['materiel', i, 'repere'], m.repere),
-        ...surVecteur(['Centre, X', 'Centre, Y', 'Centre, Z'], ['materiel', i, 'centre'], BORNES, 0.1, 'sujet'), retirer));
-    }
+    out.push(groupe(`${i + 1}. ${NOMS_PIECES[m.type]}`, ...champsPiece(m, i), retirer));
   });
-  const ajout = choix([['', 'Ajouter une pièce…'], ...Object.entries(MODELES).map(([k, v]) => [k, v.nom] as const)], '', (k) => {
-    const modele = MODELES[k];
+  const ajout = choix([['', 'Ajouter une pièce…'], ...Object.entries(AJOUTS).map(([k, v]) => [k, v.nom] as const)], '', (k) => {
+    const modele = AJOUTS[k];
     if (modele === undefined) return;
     changerSujet((p) => ({ ...p, materiel: [...p.materiel, ...modele.pieces] }));
     construirePanneau();
   });
   out.push(ajout);
-  out.push(el('p', { class: 'aide' }, `Le matériel est commun à toutes les poses clés. Il suit le repère qui le porte${NB}: une barre posée sur le thorax descend avec lui.`));
+  out.push(el('p', { class: 'aide' }, `Le matériel est commun à toutes les poses clés. Une pièce mobile suit sa course (une valeur par étape, du départ à l’arrivée)${NB}; une main ou un pied la vise par ses repères (poignées, plateau, rouleau…), à choisir dans «${NB}Cible de la main${NB}» ou «${NB}Pied${NB}».`));
   return out;
 }
 

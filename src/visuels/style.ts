@@ -30,6 +30,10 @@ export const STYLE = {
   metal: hex('#8a909b'),
   fonte: hex('#2b2f35'),
   moyeu: hex('#3d424a'),
+  /** Cadres des bancs, poulies et machines : en retrait du corps, sans se fondre dans le fond. */
+  cadre: hex('#363b43'),
+  /** Coussins (sellerie noire). */
+  coussin: hex('#24272c'),
   /** Force de l'éclairage : 0 = à plat, 1 = très contrasté. */
   relief: 0.7,
   /** Assombrissement des surfaces qui fuient le regard : creuse le sillon entre deux muscles. */

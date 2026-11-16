@@ -15,8 +15,8 @@ export const OS = {
   thorax: [0, 22, 0] as Vec3, // depuis les lombaires
   cou: [0, 27, 0] as Vec3, // depuis le thorax
   tete: [0, 6.5, 0.5] as Vec3, // depuis le cou
-  epaule: [20.2, 21, 0] as Vec3, // depuis le thorax
-  hanche: [9.6, -5, 0] as Vec3, // depuis le bassin
+  epaule: [19.4, 21, 0] as Vec3, // depuis le thorax
+  hanche: [10, -5, 0] as Vec3, // depuis le bassin
   bras: 30,
   avantBras: 26,
   cuisse: 43.5,
@@ -40,24 +40,41 @@ export interface AnglesRotule {
   readonly abd: number;
   readonly rot: number;
 }
-/** La main doit atteindre `pos` (dans le repère d'une partie du corps) ; le coude pointe vers `pole`. */
+/**
+ * La main doit atteindre `pos` (dans le repère d'une partie du corps, ou d'une
+ * pièce de matériel) ; le coude pointe vers `pole`.
+ *
+ * Sans `axe`, c'est le poignet qui va en `pos`. Avec `axe`, la main tient une
+ * poignée : c'est le centre du poing qui va en `pos`, et le poing tourne pour
+ * que la poignée le traverse le long de `axe` (dans le même repère). Des deux
+ * façons de la tenir, c'est celle qui tourne le moins l'avant-bras depuis
+ * `pronation` qui est prise (0 : sa position naturelle ; ±90 pour l'autre prise).
+ * La main reste ainsi au même endroit de la barre tout le long du mouvement.
+ */
 export interface CibleBras {
   readonly repere: string;
   readonly pos: Vec3;
   readonly pole: Vec3;
+  readonly axe?: Vec3;
 }
 /**
- * La cheville doit atteindre `pos` (dans l'espace) ; le genou pointe vers
- * `pole` ; le pied tourne de `tour` autour de la verticale. `pointe` : degrés
- * dont le talon se lève (0 = pied à plat ; sur la pointe, extension des
- * mollets) ; la hauteur de la cheville est alors à régler dans `pos`.
+ * La cheville doit atteindre `pos` (dans l'espace, ou dans le repère
+ * `repere` d'une pièce de matériel : plateau de presse, rouleau…) ; le genou
+ * pointe vers `pole` ; le pied tourne de `tour` autour de la verticale (de ce
+ * repère). `pointe` : degrés dont le talon se lève (0 = pied à plat ; sur la
+ * pointe, extension des mollets) ; la hauteur de la cheville est alors à
+ * régler dans `pos`.
  */
 export interface CibleJambe {
   readonly pos: Vec3;
   readonly pole: Vec3;
   readonly tour: number;
   readonly pointe: number;
+  readonly repere?: string;
 }
+
+/** Du poignet au centre du poing (là où passe une poignée), le long de la main, en cm. */
+export const PRISE = 4.8;
 export interface PoseBras {
   /** Haussement de l'épaule : [vers le haut, vers l'avant], en cm. */
   readonly clav: readonly [number, number];
@@ -120,15 +137,36 @@ function fusion<T>(base: T, ajout: Partiel<T> | undefined): T {
   return o as T;
 }
 
-/** Membre de l'autre côté, en miroir : seule une cible change (elle passe de l'autre côté). */
+/**
+ * Membre de l'autre côté, en miroir : seule une cible change (elle passe de
+ * l'autre côté ; un repère d'une paire, suffixé G ou D, devient son pendant).
+ */
+const repereMiroir = (r: string): string => (r.endsWith('G') ? r.slice(0, -1) + 'D' : r.endsWith('D') ? r.slice(0, -1) + 'G' : r);
 export const miroirBras = (p: PoseBras): PoseBras =>
   p.cible === null
     ? p
-    : { ...p, cible: { ...p.cible, pos: [-p.cible.pos[0], p.cible.pos[1], p.cible.pos[2]], pole: [-p.cible.pole[0], p.cible.pole[1], p.cible.pole[2]] } };
+    : {
+      ...p,
+      cible: {
+        ...p.cible,
+        repere: repereMiroir(p.cible.repere),
+        pos: [-p.cible.pos[0], p.cible.pos[1], p.cible.pos[2]],
+        pole: [-p.cible.pole[0], p.cible.pole[1], p.cible.pole[2]],
+        ...(p.cible.axe === undefined ? {} : { axe: [-p.cible.axe[0], p.cible.axe[1], p.cible.axe[2]] as Vec3 }),
+      },
+    };
 export const miroirJambe = (p: PoseJambe): PoseJambe =>
   p.cible === null
     ? p
-    : { ...p, cible: { ...p.cible, pos: [-p.cible.pos[0], p.cible.pos[1], p.cible.pos[2]], pole: [-p.cible.pole[0], p.cible.pole[1], p.cible.pole[2]] } };
+    : {
+      ...p,
+      cible: {
+        ...p.cible,
+        ...(p.cible.repere === undefined ? {} : { repere: repereMiroir(p.cible.repere) }),
+        pos: [-p.cible.pos[0], p.cible.pos[1], p.cible.pos[2]],
+        pole: [-p.cible.pole[0], p.cible.pole[1], p.cible.pole[2]],
+      },
+    };
 
 export interface DescriptionPose extends Partiel<Omit<Pose, 'brasG' | 'brasD' | 'jambeG' | 'jambeD'>> {
   /** Les deux bras, décrits pour le côté gauche (le droit est son miroir). */
@@ -285,8 +323,12 @@ export const REPERES_CENTRAUX = ['monde', 'bassin', 'lombaires', 'thorax', 'cou'
  * `fessier` (hanche, un quart du chemin seulement).
  * Les muscles qui coiffent ces articulations s'en servent pour savoir vers où
  * ils regardent.
+ *
+ * `materiel` : les repères des pièces de matériel (poignées, plateau,
+ * rouleau…), calculés une fois le tronc placé (une barre posée sur le dos suit
+ * le thorax) ; une main ou un pied peut ensuite les viser.
  */
-export function resoudre(p: Pose): Reperes {
+export function resoudre(p: Pose, materiel?: (tronc: Reperes) => Reperes): Reperes {
   const F: Record<string, Repere> = { monde: { o: [0, 0, 0], R: IDENTITE } };
   const b = p.bassin;
   const Rb = M.mul(M.mul(M.ry(b.tour), M.rx(b.bascule)), M.rz(b.penche));
@@ -300,30 +342,59 @@ export function resoudre(p: Pose): Reperes {
   suite('thorax', 'cou', OS.cou);
   suite('cou', 'tete', OS.tete);
   const th = F.thorax!;
+  if (materiel !== undefined) Object.assign(F, materiel(F));
 
   for (const [c, cote] of [['G', 1], ['D', -1]] as const) {
     // Bras
     const br = c === 'G' ? p.brasG : p.brasD;
     const S = V.add(th.o, M.vec(th.R, [OS.epaule[0] * cote, OS.epaule[1] + br.clav[0], OS.epaule[2] + br.clav[1]]));
-    let Ru: Mat3, coude: Vec3, Rf: Mat3, poignet: Vec3;
+    let Ru: Mat3, coude: Vec3, Rf: Mat3, poignet: Vec3, Rmain: Mat3 | null = null;
     if (br.cible !== null) {
       const rep = F[br.cible.repere];
       if (rep === undefined) throw new Error(`Repère inconnu pour la cible du bras : ${br.cible.repere}`);
-      const T = V.add(rep.o, M.vec(rep.R, br.cible.pos));
-      const k = deuxOs(S, T, OS.bras, OS.avantBras, M.vec(rep.R, br.cible.pole), -1, LIMITES.coude[1]);
-      Ru = k.R1; coude = k.J; Rf = k.R2; poignet = k.E;
+      const T = V.add(rep.o, M.vec(rep.R, br.cible.pos)), pole = M.vec(rep.R, br.cible.pole);
+      if (br.cible.axe === undefined) {
+        const k = deuxOs(S, T, OS.bras, OS.avantBras, pole, -1, LIMITES.coude[1]);
+        Ru = k.R1; coude = k.J; poignet = k.E;
+        Rf = M.mul(k.R2, M.ry(borne(br.pronation, LIMITES.pronation) * cote));
+      } else {
+        // Une poignée : l'avant-bras tourne, puis le poignet s'incline, jusqu'à ce
+        // qu'elle traverse le poing ; le poignet est ensuite placé pour que le
+        // centre du poing soit sur la poignée (quelques passes). Une poignée se
+        // tient dans un sens ou dans l'autre : on prend celui qui tourne le moins
+        // l'avant-bras par rapport à la pronation demandée (0 : sa position
+        // naturelle), sans quoi l'avant-bras se tordrait d'un demi-tour.
+        const A0 = M.vec(rep.R, br.cible.axe), voulu = borne(br.pronation, LIMITES.pronation) * cote * RAD;
+        const ecart = (x: number): number => Math.abs(Math.atan2(Math.sin(x - voulu), Math.cos(x - voulu)));
+        const tenir = (R2: Mat3): { Rf: Mat3; Rm: Mat3 } => {
+          let R = R2, a = M.vec(M.transposee(R), A0);
+          if (Math.hypot(a[0], a[2]) > 1e-6) {
+            const phi = Math.atan2(a[0], a[2]), autre = phi + Math.PI;
+            if (ecart(autre) < ecart(phi)) a = V.mul(a, -1);
+            R = M.mul(R, M.ry(Math.atan2(a[0], a[2]) / RAD));
+            a = [0, a[1], Math.hypot(a[0], a[2])];
+          }
+          return { Rf: R, Rm: M.mul(R, M.rx(clamp(Math.atan2(-a[1], a[2]) / RAD, -40, 40))) };
+        };
+        let k = deuxOs(S, T, OS.bras, OS.avantBras + PRISE, pole, -1, LIMITES.coude[1]), m = tenir(k.R2);
+        for (let passe = 0; passe < 3; passe++) {
+          k = deuxOs(S, V.sub(T, M.vec(m.Rm, [0, -PRISE, 0])), OS.bras, OS.avantBras, pole, -1, LIMITES.coude[1]);
+          m = tenir(k.R2);
+        }
+        Ru = k.R1; coude = k.J; poignet = k.E; Rf = m.Rf; Rmain = m.Rm;
+      }
     } else {
       Ru = M.mul(th.R, rotRotule(borneRotule(br.epaule, LIMITES.epaule), cote));
       coude = V.add(S, M.vec(Ru, [0, -OS.bras, 0]));
       Rf = M.mul(Ru, M.rx(-borne(br.coude, LIMITES.coude)));
       poignet = V.add(coude, M.vec(Rf, [0, -OS.avantBras, 0]));
+      Rf = M.mul(Rf, M.ry(borne(br.pronation, LIMITES.pronation) * cote));
     }
-    Rf = M.mul(Rf, M.ry(borne(br.pronation, LIMITES.pronation) * cote));
     F['epaule' + c] = { o: S, R: Ru };
     F['coude' + c] = { o: coude, R: Rf };
     F['poignet' + c] = {
       o: poignet,
-      R: M.mul(M.mul(Rf, M.rx(-borne(br.poignet.flex, LIMITES.poignet.flex))), M.rz(borne(br.poignet.dev, LIMITES.poignet.dev) * cote)),
+      R: Rmain ?? M.mul(M.mul(Rf, M.rx(-borne(br.poignet.flex, LIMITES.poignet.flex))), M.rz(borne(br.poignet.dev, LIMITES.poignet.dev) * cote)),
     };
     F['delto' + c] = { o: S, R: M.entre(th.R, Ru, 0.55) };
 
@@ -332,10 +403,13 @@ export function resoudre(p: Pose): Reperes {
     const H = V.add(b.pos, M.vec(Rb, [OS.hanche[0] * cote, OS.hanche[1], OS.hanche[2]]));
     let Rc: Mat3, genou: Vec3, Rj: Mat3, cheville: Vec3, Rp: Mat3;
     if (ja.cible !== null) {
-      const k = deuxOs(H, ja.cible.pos, OS.cuisse, OS.jambe, ja.cible.pole, 1, LIMITES.genou[1]);
+      const rp = F[ja.cible.repere ?? 'monde'];
+      if (rp === undefined) throw new Error(`Repère inconnu pour la cible de la jambe : ${ja.cible.repere}`);
+      const T = V.add(rp.o, M.vec(rp.R, ja.cible.pos));
+      const k = deuxOs(H, T, OS.cuisse, OS.jambe, M.vec(rp.R, ja.cible.pole), 1, LIMITES.genou[1]);
       Rc = k.R1; genou = k.J; Rj = k.R2; cheville = k.E;
-      // Le pied ne suit pas la jambe : il reste posé (à plat, ou sur la pointe).
-      Rp = M.mul(M.ry(ja.cible.tour * cote), M.rx(ja.cible.pointe));
+      // Le pied ne suit pas la jambe : il reste posé (à plat, ou sur la pointe), au sol ou sur la pièce.
+      Rp = M.mul(rp.R, M.mul(M.ry(ja.cible.tour * cote), M.rx(ja.cible.pointe)));
     } else {
       Rc = M.mul(Rb, rotRotule(borneRotule(ja.hanche, LIMITES.hanche), cote));
       genou = V.add(H, M.vec(Rc, [0, -OS.cuisse, 0]));

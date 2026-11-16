@@ -11,10 +11,10 @@ import type { Cadre } from './camera';
 import { geomMuscle, geomOs } from './corps';
 import type { Corps } from './corps';
 import { Maillage, ajouterBoule, ajouterCylindre, ajouterFuseau, ajouterPave } from './maillage';
-import { etendue, volumesMateriel } from './materiel';
+import { coursesMateriel, etendue, reperesMateriel, volumesMateriel } from './materiel';
 import type { Piece } from './materiel';
 import { poseAu, resoudre } from './squelette';
-import type { Pose } from './squelette';
+import type { Pose, Reperes } from './squelette';
 import { STYLE, tonMuscle } from './style';
 
 /** Un exercice posé : tout ce que le moteur doit savoir pour l'animer. */
@@ -45,18 +45,41 @@ export function avancement(phase: number): number {
   return doux(1 - (p - 0.62) / 0.38);
 }
 
+// Courses au départ, par sujet : calculées une fois (le sujet ne change pas d'une image à l'autre).
+const reposCalcules = new WeakMap<readonly Pose[], WeakMap<readonly Piece[], readonly number[]>>();
+
+/** Repères du corps et du matériel à l'instant `t` du mouvement. */
+export function reperesAu(sujet: Pick<PoseExercice, 'cles' | 'materiel'>, t: number): Reperes {
+  return resoudre(poseAu(sujet.cles, t), (tronc) => reperesMateriel(sujet.materiel, tronc, t));
+}
+
+/**
+ * Course de la charge de chaque pièce au départ du mouvement : la charge y
+ * est posée ; ailleurs, elle monte de l'écart.
+ */
+export function reposMateriel(sujet: Pick<PoseExercice, 'cles' | 'materiel'>): readonly number[] {
+  let parCles = reposCalcules.get(sujet.cles);
+  if (parCles === undefined) reposCalcules.set(sujet.cles, (parCles = new WeakMap()));
+  let repos = parCles.get(sujet.materiel);
+  if (repos === undefined) {
+    repos = coursesMateriel(sujet.materiel, reperesAu(sujet, 0), 0);
+    parCles.set(sujet.materiel, repos);
+  }
+  return repos;
+}
+
 /** Cadre d'un sujet : la place qu'il occupe pendant tout son mouvement. */
 export function mesurerSujet(corps: Corps, sujet: Pick<PoseExercice, 'cles' | 'materiel'>): Cadre {
   const pts: { p: Vec3; r: number }[] = [];
   for (const t of [0, 0.5, 1]) {
-    const F = resoudre(poseAu(sujet.cles, t));
+    const F = reperesAu(sujet, t);
     for (const os of corps.os) {
       const g = geomOs(os, F);
       for (const st of [g.st[0]!, g.st[g.st.length >> 1]!, g.st[g.st.length - 1]!]) {
         pts.push({ p: V.add(g.O, V.mul(g.A, st.u * g.L)), r: Math.max(st.a, st.b) + 3 });
       }
     }
-    for (const v of volumesMateriel(sujet.materiel, F)) pts.push(...etendue(v));
+    for (const v of volumesMateriel(sujet.materiel, F, t, reposMateriel(sujet))) pts.push(...etendue(v));
   }
   return mesurerCadre(pts);
 }
@@ -74,7 +97,7 @@ export function construireScene(
   t: number,
   coefficients: Readonly<Record<string, number>>,
 ): number {
-  const F = resoudre(poseAu(sujet.cles, t));
+  const F = reperesAu(sujet, t);
   mesh.vider();
   ajouterFuseau(mesh, {
     O: [AXE[0], -0.4, AXE[1]], X: [1, 0, 0], A: [0, 1, 0], Z: [0, 0, 1], L: 0.4,
@@ -94,9 +117,10 @@ export function construireScene(
     // Une pièce neutre (avant-bras, tibial, rotule…) a le ton d'un muscle au repos.
     ajouterFuseau(mesh, geomMuscle(m, F), tonMuscle(m.muscle === null ? undefined : coefficients[m.muscle]));
   }
-  for (const v of volumesMateriel(sujet.materiel, F)) {
+  for (const v of volumesMateriel(sujet.materiel, F, t, reposMateriel(sujet))) {
     if (v.forme === 'cylindre') ajouterCylindre(mesh, v.p0, v.p1, v.r, STYLE[v.ton]);
-    else ajouterPave(mesh, v.centre, v.dx, v.dy, v.dz, STYLE[v.ton]);
+    else if (v.forme === 'boule') ajouterBoule(mesh, v.centre, v.r, STYLE[v.ton]);
+    else ajouterPave(mesh, v.centre, v.dx, v.dy, v.dz, STYLE[v.ton], 1, v.arrondi);
   }
   return finSol;
 }

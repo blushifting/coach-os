@@ -120,8 +120,9 @@ export const OSSATURE: readonly SpecOs[] = [
   // Les cheveux : une calotte un peu plus large que le crâne, reculée. De face
   // elle dépasse à peine ; de profil et de dos elle dit où regarde la tête.
   { id: 'cheveux', joint: 'tete', base: 'haut', o: [0, 7, -1], L: 15.4, ton: 'cheveux', fixe: true, anneaux: ovoide(8.2, 9.6, 0.75) },
-  { id: 'bras', joint: 'epaule', pair: true, base: 'bas', o: [0, 0, 0], L: 30, ton: 'corps', mince: 0.92, bouts: [4.8, 4.2],
-    anneaux: [[0, 5.4, 5.6, 0, 0], [0.4, 5.7, 6.6, 0, 0.3], [0.8, 4.9, 5.3, 0, 0], [1, 4.5, 4.8, 0, 0]] },
+  { id: 'bras', joint: 'epaule', pair: true, base: 'bas', o: [0, 0, 0], L: 30, ton: 'corps', mince: 0.92, bouts: [3.6, 4.2],
+    // Tête du bras fine : ce sont les deltoïdes qui coiffent l'épaule, même bras levé.
+    anneaux: [[0, 4.4, 4.6, 0, 0], [0.4, 5.7, 6.6, 0, 0.3], [0.8, 4.9, 5.3, 0, 0], [1, 4.5, 4.8, 0, 0]] },
   { id: 'avantBras', joint: 'coude', pair: true, base: 'bas', o: [0, 0, 0], L: 26, ton: 'corps', mince: 0.92, bouts: [4.2, 2.9],
     anneaux: [[0, 4.6, 4.8, 0, 0], [0.22, 5.1, 5.5, 0, 0], [0.62, 3.9, 4.2, 0, 0], [1, 2.9, 3.4, 0, 0]] },
   { id: 'main', joint: 'poignet', pair: true, base: 'bas', o: [0, 0, 0], L: 18, ton: 'corps', fixe: true,
@@ -202,7 +203,7 @@ export const MUSCLES: readonly SpecMuscle[] = [
     profil: [[0, 4.5, 1.4], [0.5, 4.8, 2], [1, 2.2, 1.5]] },
   { id: 'dorsal', m: 'dos_largeur', de: ['lombaires', [7, 5, -7.8]], a: ['epaule', [-2.6, -7.5, -1.2]], n: ['thorax', [0.72, 0, -0.7]], arc: 2.2, creux: 2.6, pointes: [0.12, 0.2], autour: ['thorax'],
     // Décalé vers la colonne (largeur négative) : les deux dorsaux se rejoignent au milieu du dos.
-    profil: [[0, 3.6, 1.2, 0], [0.25, 7.2, 1.8, -2], [0.55, 9.5, 2.4, -2.6], [0.8, 7, 2.4, -1], [1, 2.8, 1.8, 0]] },
+    profil: [[0, 3.6, 1.2, 0], [0.25, 7.2, 1.8, -2], [0.55, 9.5, 2.4, -2.6], [0.8, 5.8, 2, -1.6], [1, 2.6, 1.5, 0]] },
   { id: 'lombaire', m: 'lombaires', de: ['bassin', [3.1, 5, -9.5]], a: ['thorax', [3.3, 2.5, -9.9]], n: ['lombaires', [0.1, 0, -1]], autour: ['ventre'],
     profil: [[0, 2.8, 1.4], [0.5, 3.4, 1.8], [1, 2.4, 1.2]] },
   // --- Épaule et bras ---
@@ -261,6 +262,47 @@ export const MUSCLES: readonly SpecMuscle[] = [
   { id: 'peronier', de: ['genou', [4.2, -5, -0.4]], a: ['genou', [2.8, -36, -0.6]], n: ['genou', [1, 0, -0.1]],
     profil: [[0, 1.4, 1.2], [0.4, 1.9, 1.6], [1, 1.1, 1]] },
 ];
+
+// -----------------------------------------------------------------------------
+// Proportions
+// -----------------------------------------------------------------------------
+/**
+ * Proportions de la silhouette, appliquées aux nombres de base ci-dessus : un
+ * mannequin qui va à tout le monde, ni trop « homme » ni « femme » (épaules un
+ * peu moins larges, hanches un peu plus larges, buste moins en V, haut du corps
+ * un peu moins épais). Choisi par Azur dans la vitrine.
+ */
+interface Proportions {
+  /** Par os : facteurs de largeur (`a`) et d'épaisseur (`b`), au début et à la fin du fuseau. */
+  readonly os: Readonly<Record<string, { readonly a: readonly [number, number]; readonly b: readonly [number, number] }>>;
+  /** Par repère : facteurs sur les attaches des muscles (X, Z), pour qu'elles restent à la surface du corps. */
+  readonly reperes: Readonly<Record<string, readonly [number, number]>>;
+  /** Par muscle : facteur sur sa section (l'épaisseur baisse plus que la largeur). */
+  readonly muscles: Readonly<Record<string, number>>;
+}
+
+const pareil = (k: number): { a: readonly [number, number]; b: readonly [number, number] } => ({ a: [k, k], b: [k, k] });
+
+const PROPORTIONS: Proportions = {
+  os: {
+    bassin: { a: [1.04, 1.03], b: [1.02, 1.01] },
+    ventre: { a: [1.01, 0.95], b: [1, 0.97] },
+    thorax: { a: [0.95, 0.93], b: [0.97, 0.96] },
+    cou: pareil(0.94),
+    bras: pareil(0.93),
+    avantBras: pareil(0.93),
+    cuisse: { a: [1.03, 1], b: [1.02, 1] },
+  },
+  reperes: {
+    thorax: [0.94, 0.97], lombaires: [0.98, 0.98], bassin: [1.04, 1.01],
+    epaule: [0.93, 0.93], delto: [0.93, 0.93], coude: [0.93, 0.93], hanche: [1.01, 1],
+  },
+  muscles: {
+    pectoral: 0.82, pectoralHaut: 0.82, abdo1: 0.9, abdo2: 0.9, abdo3: 0.9, abdo4: 0.9, dentele: 0.85,
+    trapeze: 0.8, hautDos: 0.9, sousEpineux: 0.9, dorsal: 0.88,
+    deltoAnt: 0.97, deltoLat: 0.97, deltoPost: 0.97, biceps: 0.85, tricepsLong: 0.87, tricepsLat: 0.87,
+  },
+};
 
 // -----------------------------------------------------------------------------
 // Préparation (une fois) et mise en place (à chaque image)
@@ -333,6 +375,8 @@ const suffixe = (cote: number): string => (cote > 0 ? 'G' : 'D');
 function preparerOs(spec: SpecOs, cote: 1 | -1, carrure: number, mainFermee: boolean): Os {
   const src = spec.ferme !== undefined && mainFermee ? { ...spec, ...spec.ferme } : spec;
   const k = (spec.fixe ? 1 : carrure) * (spec.mince ?? 1);
+  const fm = PROPORTIONS.os[spec.id] ?? pareil(1);
+  const ka = (u: number): number => fm.a[0] + (fm.a[1] - fm.a[0]) * u, kb = (u: number): number => fm.b[0] + (fm.b[1] - fm.b[0]) * u;
   const us = src.anneaux.map((r) => r[0]);
   const f = ([1, 2, 3, 4] as const).map((j) => courbe(us, src.anneaux.map((r) => r[j])));
   const base = BASES[spec.base], sfx = spec.pair ? suffixe(cote) : '';
@@ -344,16 +388,21 @@ function preparerOs(spec: SpecOs, cote: 1 | -1, carrure: number, mainFermee: boo
     bx: base.x, ba: base.a, bz: base.z,
     L: src.L,
     st: sections(Math.max(8, Math.ceil(src.L / 2)), (u) => ({
-      a: Math.max(0, f[0]!(u)) * k, b: Math.max(0, f[1]!(u)) * k, cx: f[2]!(u) * cote, cz: f[3]!(u), cr: 0,
+      a: Math.max(0, f[0]!(u)) * k * ka(u), b: Math.max(0, f[1]!(u)) * k * kb(u), cx: f[2]!(u) * cote, cz: f[3]!(u), cr: 0,
     })),
-    bouts: spec.bouts ? [spec.bouts[0] * carrure, spec.bouts[1] * carrure] : null,
+    bouts: spec.bouts ? [spec.bouts[0] * carrure * fm.a[0], spec.bouts[1] * carrure * fm.a[1]] : null,
   };
 }
 
 function preparerMuscle(spec: SpecMuscle, cote: 1 | -1, carrure: number): Omit<PieceMuscle, 'L0' | 'hotes'> {
   const sfx = suffixe(cote);
   const repere = (nom: string): string => (PAIRS.has(nom) ? nom + sfx : nom);
-  const lieu = ([rep, p]: Attache): Lieu => ({ rep: repere(rep), p: [p[0] * cote * carrure, p[1], p[2] * carrure] });
+  const lieu = ([rep, p]: Attache): Lieu => {
+    const [kx, kz] = PROPORTIONS.reperes[rep] ?? [1, 1];
+    return { rep: repere(rep), p: [p[0] * cote * carrure * kx, p[1], p[2] * carrure * kz] };
+  };
+  // Des proportions plus fines amincissent le muscle surtout en épaisseur.
+  const km = PROPORTIONS.muscles[spec.id] ?? 1, kma = carrure * Math.pow(km, 0.6), kmb = carrure * km;
   const us = spec.profil.map((r) => r[0]);
   const fa = courbe(us, spec.profil.map((r) => r[1]));
   const fb = courbe(us, spec.profil.map((r) => r[2]));
@@ -372,11 +421,11 @@ function preparerMuscle(spec: SpecMuscle, cote: 1 | -1, carrure: number): Omit<P
     st: sections(12, (u) => {
       const a = fa(u) * bout(u);
       return {
-        a: a * carrure,
-        b: fb(u) * bout(u) * carrure,
+        a: a * kma,
+        b: fb(u) * bout(u) * kmb,
         // Le miroir retourne la direction de la largeur : le décalage change de signe à droite.
-        cx: fx(u) * cote * carrure,
-        cz: (spec.arc ?? 0) * Math.sin(Math.PI * u),
+        cx: fx(u) * cote * kma,
+        cz: (spec.arc ?? 0) * km * Math.sin(Math.PI * u),
         cr: (spec.creux ?? 0) * (a / large) ** 2,
       };
     }),
@@ -486,7 +535,7 @@ export function construireCorps(carrure: number, mainFermee: boolean, repos: Pos
  */
 export function geomMuscle(m: PieceMuscle, F: Reperes): Fuseau {
   const l = ligne(m, F);
-  const g = clamp(m.L0 / l.L, 0.8, 1.5), ga = Math.pow(g, 0.3), gb = Math.pow(g, 0.6);
+  const g = clamp(m.L0 / l.L, 0.6, 1.5), ga = Math.pow(g, 0.3), gb = Math.pow(g, 0.6);
   const hotes = m.hotes.map((h) => ({ g: geomOs(h.os, F), seuil: h.seuil }));
   let uAvant = -1;
   return {

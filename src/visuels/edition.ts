@@ -199,9 +199,15 @@ function poleDe(S: Vec3, J: Vec3, E: Vec3, secours: Vec3): Vec3 {
 const brasDe = (p: Pose, c: Cote): PoseBras => (c === 'G' ? p.brasG : p.brasD);
 const jambeDe = (p: Pose, c: Cote): PoseJambe => (c === 'G' ? p.jambeG : p.jambeD);
 
+/**
+ * Repères du matériel, pour une pose dont un membre vise une pièce (poignée,
+ * plateau…) : à passer aux conversions ci-dessous.
+ */
+export type ReperesEnPlus = (tronc: Reperes) => Reperes;
+
 /** Le bras passe en cible (la main suit un point d'un repère), sans bouger. */
-export function brasEnCible(p: Pose, c: Cote, repere: string): PoseBras {
-  const F = resoudre(p), r = rep(F, repere);
+export function brasEnCible(p: Pose, c: Cote, repere: string, autres?: ReperesEnPlus): PoseBras {
+  const F = resoudre(p, autres), r = rep(F, repere);
   const S = rep(F, 'epaule' + c).o, J = rep(F, 'coude' + c).o, E = rep(F, 'poignet' + c).o;
   // Bras tendu : le coude n'indique rien ; on le fait pointer vers l'arrière.
   const secours = M.vec(rep(F, 'thorax').R, [0, -0.4, -1]);
@@ -212,8 +218,8 @@ export function brasEnCible(p: Pose, c: Cote, repere: string): PoseBras {
 }
 
 /** Le bras passe en angles, sans bouger (à la rotation du bras près si la cible la laissait libre). */
-export function brasEnAngles(p: Pose, c: Cote): PoseBras {
-  const F = resoudre(p), br = brasDe(p, c), cote = signe(c);
+export function brasEnAngles(p: Pose, c: Cote, autres?: ReperesEnPlus): PoseBras {
+  const F = resoudre(p, autres), br = brasDe(p, c), cote = signe(c);
   const Ru = rep(F, 'epaule' + c).R;
   const epaule = anglesRotule(M.mul(T(rep(F, 'thorax').R), Ru), cote, LIMITES.epaule);
   // Avant-bras : flexion du coude autour de l'axe X du bras, une fois la pronation ôtée.
@@ -222,21 +228,22 @@ export function brasEnAngles(p: Pose, c: Cote): PoseBras {
   return { ...br, epaule, coude, cible: null };
 }
 
-/** La jambe passe en cible (le pied reste où il est), sans bouger. */
-export function jambeEnCible(p: Pose, c: Cote): PoseJambe {
-  const F = resoudre(p), cote = signe(c);
+/** La jambe passe en cible (le pied reste où il est, dans l'espace ou sur une pièce), sans bouger. */
+export function jambeEnCible(p: Pose, c: Cote, repere = 'monde', autres?: ReperesEnPlus): PoseJambe {
+  const F = resoudre(p, autres), cote = signe(c), r = rep(F, repere), Rt = T(r.R);
   const H = rep(F, 'hanche' + c).o, J = rep(F, 'genou' + c).o, ch = rep(F, 'cheville' + c);
-  // Orientation du pied : tour autour de la verticale, puis talon levé (`pointe`).
-  const f = M.vec(ch.R, [0, 0, 1]);
+  // Orientation du pied, dans le repère : tour autour de sa verticale, puis talon levé (`pointe`).
+  const f = M.vec(Rt, M.vec(ch.R, [0, 0, 1]));
   const tour = (Math.atan2(f[0], f[2]) / RAD) * cote;
   const pointe = Math.atan2(-f[1], Math.hypot(f[0], f[2])) / RAD;
-  const secours: Vec3 = [f[0], 0, f[2]];
-  return { ...jambeDe(p, c), cible: { pos: ch.o, pole: poleDe(H, J, ch.o, secours), tour, pointe } };
+  const secours: Vec3 = M.vec(r.R, [f[0], 0, f[2]]);
+  const cible = { pos: M.vec(Rt, V.sub(ch.o, r.o)), pole: M.vec(Rt, poleDe(H, J, ch.o, secours)), tour, pointe };
+  return { ...jambeDe(p, c), cible: repere === 'monde' ? cible : { ...cible, repere } };
 }
 
 /** La jambe passe en angles, sans bouger. */
-export function jambeEnAngles(p: Pose, c: Cote): PoseJambe {
-  const F = resoudre(p), cote = signe(c);
+export function jambeEnAngles(p: Pose, c: Cote, autres?: ReperesEnPlus): PoseJambe {
+  const F = resoudre(p, autres), cote = signe(c);
   const Rc = rep(F, 'hanche' + c).R, Rj = rep(F, 'genou' + c).R;
   const hanche = anglesRotule(M.mul(T(rep(F, 'bassin').R), Rc), cote, LIMITES.hanche);
   const X = M.mul(T(Rc), Rj), Y = M.mul(T(Rj), rep(F, 'cheville' + c).R);

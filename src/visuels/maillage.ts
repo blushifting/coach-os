@@ -145,10 +145,15 @@ export function ajouterCylindre(mesh: Maillage, p0: Vec3, p1: Vec3, r: number, r
 }
 
 /**
- * Pavé (banc, coussin, plateau) : `centre`, puis ses trois demi-axes, chacun
- * donné comme un vecteur (direction × demi-longueur). Arêtes vives.
+ * Pavé (coussin, montant de machine, plaque) : `centre`, puis ses trois
+ * demi-axes, chacun donné comme un vecteur (direction × demi-longueur), deux à
+ * deux perpendiculaires. `arrondi` : rayon des arêtes en cm (0 = arêtes vives).
  */
-export function ajouterPave(mesh: Maillage, centre: Vec3, dx: Vec3, dy: Vec3, dz: Vec3, rgb: Couleur, relief = 1): void {
+export function ajouterPave(mesh: Maillage, centre: Vec3, dx: Vec3, dy: Vec3, dz: Vec3, rgb: Couleur, relief = 1, arrondi = 0): void {
+  if (arrondi > 0) {
+    ajouterPaveArrondi(mesh, centre, [dx, dy, dz], rgb, relief, arrondi);
+    return;
+  }
   const axes = [dx, dy, dz];
   for (let f = 0; f < 3; f++) {
     const u = axes[(f + 1) % 3]!, v = axes[(f + 2) % 3]!;
@@ -161,6 +166,54 @@ export function ajouterPave(mesh: Maillage, centre: Vec3, dx: Vec3, dy: Vec3, dz
       const dehors = V.dot(V.cross(u, v), w) > 0;
       if (dehors) { mesh.triangle(q[0]!, q[1]!, q[2]!); mesh.triangle(q[0]!, q[2]!, q[3]!); }
       else { mesh.triangle(q[0]!, q[2]!, q[1]!); mesh.triangle(q[0]!, q[3]!, q[2]!); }
+    }
+  }
+}
+
+/** Nombre de rangs pour tourner une demi-arête (de la face jusqu'à la diagonale). */
+const RANGS_ARRONDI = 3;
+
+const borneAbs = (x: number, m: number): number => Math.max(-m, Math.min(m, x));
+
+/**
+ * Pavé aux arêtes arrondies : un pavé plus petit, gonflé d'une boule de rayon
+ * `r`. Chaque face est une grille ; près de ses bords, les points tournent
+ * autour du pavé intérieur jusqu'à la diagonale, où la face voisine prend le
+ * relais : les normales sont continues d'une face à l'autre.
+ */
+function ajouterPaveArrondi(mesh: Maillage, centre: Vec3, axes: readonly [Vec3, Vec3, Vec3], rgb: Couleur, relief: number, arrondi: number): void {
+  const h = axes.map((a) => V.len(a)), e = axes.map((a, k) => V.mul(a, 1 / h[k]!));
+  const r = Math.min(arrondi, ...h), dedans = h.map((x) => x - r);
+  // Positions le long d'un côté de face : l'arête tourne par pas d'angle égaux, le milieu est plat.
+  const cotes = dedans.map((di) => {
+    const bord: number[] = [];
+    for (let k = 1; k <= RANGS_ARRONDI; k++) bord.push(di + r * Math.tan((k / RANGS_ARRONDI) * (Math.PI / 4)));
+    return [...bord.map((x) => -x).reverse(), -di, di, ...bord];
+  });
+  const vers = (l: readonly number[]): Vec3 => V.add(V.add(V.mul(e[0]!, l[0]!), V.mul(e[1]!, l[1]!)), V.mul(e[2]!, l[2]!));
+  for (let f = 0; f < 3; f++) {
+    const b = (f + 1) % 3, c = (f + 2) % 3, Lb = cotes[b]!, Lc = cotes[c]!, nc = Lc.length;
+    for (const s of [1, -1]) {
+      const base = mesh.ns;
+      for (const yb of Lb) {
+        for (const zc of Lc) {
+          const q = [0, 0, 0];
+          q[f] = s * h[f]!; q[b] = yb; q[c] = zc;
+          const coeur = q.map((x, k) => borneAbs(x, dedans[k]!));
+          const d = q.map((x, k) => x - coeur[k]!), l = Math.hypot(d[0]!, d[1]!, d[2]!);
+          const n = l > 1e-9 ? d.map((x) => x / l) : q.map((_, k) => (k === f ? s : 0));
+          mesh.sommet(V.add(centre, vers(coeur.map((x, k) => x + r * n[k]!))), vers(n), rgb, relief);
+        }
+      }
+      // La face regarde dehors si (e_b × e_c) va dans le sens de sa normale.
+      const dehors = V.dot(V.cross(e[b]!, e[c]!), V.mul(e[f]!, s)) > 0;
+      for (let i = 0; i < Lb.length - 1; i++) {
+        for (let j = 0; j < nc - 1; j++) {
+          const a0 = base + i * nc + j, a1 = a0 + nc, a2 = a1 + 1, a3 = a0 + 1;
+          if (dehors) { mesh.triangle(a0, a1, a2); mesh.triangle(a0, a2, a3); }
+          else { mesh.triangle(a0, a2, a1); mesh.triangle(a0, a3, a2); }
+        }
+      }
     }
   }
 }
