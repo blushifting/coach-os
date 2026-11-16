@@ -2,6 +2,8 @@
  * Registre des poses : une entrée par exercice posé, sous l'identifiant du
  * catalogue. Un fichier par exercice, à côté de celui-ci.
  *
+ * Écrit par l'atelier des visuels à chaque enregistrement.
+ *
  * Une pose non validée (`valide: false`) n'est vue que dans l'atelier : la
  * fiche de l'exercice garde ses photos tant qu'Azur ne l'a pas validée.
  */

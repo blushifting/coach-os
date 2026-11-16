@@ -304,7 +304,7 @@ describe('visuels — poses', () => {
   });
 
   it('sur la pointe des pieds, le pied bascule sans quitter sa cible', () => {
-    const cible = { pos: [10, 14, 0] as Vec3, pole: [0, 0, 1] as Vec3, tour: 0 };
+    const cible = { pos: [10, 14, 0] as Vec3, pole: [0, 0, 1] as Vec3, tour: 0, pointe: 0 };
     const plat = resoudre(pose({ jambe: { cible } }));
     const pointe = resoudre(pose({ jambe: { cible: { ...cible, pointe: 30 } } }));
     expect(pointe.chevilleG!.o).toEqual(plat.chevilleG!.o);

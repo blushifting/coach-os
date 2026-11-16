@@ -48,15 +48,15 @@ export interface CibleBras {
 }
 /**
  * La cheville doit atteindre `pos` (dans l'espace) ; le genou pointe vers
- * `pole` ; le pied tourne de `tour` autour de la verticale. Il est à plat,
- * sauf si `pointe` est donné : degrés dont le talon se lève (extension des
+ * `pole` ; le pied tourne de `tour` autour de la verticale. `pointe` : degrés
+ * dont le talon se lève (0 = pied à plat ; sur la pointe, extension des
  * mollets) ; la hauteur de la cheville est alors à régler dans `pos`.
  */
 export interface CibleJambe {
   readonly pos: Vec3;
   readonly pole: Vec3;
   readonly tour: number;
-  readonly pointe?: number;
+  readonly pointe: number;
 }
 export interface PoseBras {
   /** Haussement de l'épaule : [vers le haut, vers l'avant], en cm. */
@@ -89,8 +89,8 @@ export interface Pose {
 
 type Partiel<T> = T extends readonly unknown[] ? T : T extends object ? { readonly [K in keyof T]?: Partiel<T[K]> } : T;
 
-const TRONC0: AnglesTronc = { flex: 0, penche: 0, tour: 0 };
-const BRAS0: PoseBras = {
+export const TRONC0: AnglesTronc = { flex: 0, penche: 0, tour: 0 };
+export const BRAS0: PoseBras = {
   clav: [0, 0],
   epaule: { flex: 0, abd: 0, rot: 0 },
   coude: 0,
@@ -98,8 +98,9 @@ const BRAS0: PoseBras = {
   poignet: { flex: 0, dev: 0 },
   cible: null,
 };
-const JAMBE0: PoseJambe = { hanche: { flex: 0, abd: 0, rot: 0 }, genou: 0, cheville: 0, cible: null };
-const POSE0: Pose = {
+export const JAMBE0: PoseJambe = { hanche: { flex: 0, abd: 0, rot: 0 }, genou: 0, cheville: 0, cible: null };
+/** Pose neutre : tout à zéro, debout. `pose({...})` décrit ce qui en diffère. */
+export const POSE0: Pose = {
   bassin: { pos: [0, 98, 0], bascule: 0, tour: 0, penche: 0 },
   lombaires: TRONC0,
   thorax: TRONC0,
@@ -119,11 +120,12 @@ function fusion<T>(base: T, ajout: Partiel<T> | undefined): T {
   return o as T;
 }
 
-const miroirBras = (p: PoseBras): PoseBras =>
+/** Membre de l'autre côté, en miroir : seule une cible change (elle passe de l'autre côté). */
+export const miroirBras = (p: PoseBras): PoseBras =>
   p.cible === null
     ? p
     : { ...p, cible: { ...p.cible, pos: [-p.cible.pos[0], p.cible.pos[1], p.cible.pos[2]], pole: [-p.cible.pole[0], p.cible.pole[1], p.cible.pole[2]] } };
-const miroirJambe = (p: PoseJambe): PoseJambe =>
+export const miroirJambe = (p: PoseJambe): PoseJambe =>
   p.cible === null
     ? p
     : { ...p, cible: { ...p.cible, pos: [-p.cible.pos[0], p.cible.pos[1], p.cible.pos[2]], pole: [-p.cible.pole[0], p.cible.pole[1], p.cible.pole[2]] } };
@@ -181,6 +183,7 @@ export const piedAuSol = (ecart: number, tour: number, avance = 0): CibleJambe =
   pos: [ecart, OS.cheville, avance],
   pole: [Math.sin(tour * RAD), 0, Math.cos(tour * RAD)],
   tour,
+  pointe: 0,
 });
 
 // -----------------------------------------------------------------------------
@@ -332,7 +335,7 @@ export function resoudre(p: Pose): Reperes {
       const k = deuxOs(H, ja.cible.pos, OS.cuisse, OS.jambe, ja.cible.pole, 1, LIMITES.genou[1]);
       Rc = k.R1; genou = k.J; Rj = k.R2; cheville = k.E;
       // Le pied ne suit pas la jambe : il reste posé (à plat, ou sur la pointe).
-      Rp = M.mul(M.ry(ja.cible.tour * cote), M.rx(ja.cible.pointe ?? 0));
+      Rp = M.mul(M.ry(ja.cible.tour * cote), M.rx(ja.cible.pointe));
     } else {
       Rc = M.mul(Rb, rotRotule(borneRotule(ja.hanche, LIMITES.hanche), cote));
       genou = V.add(H, M.vec(Rc, [0, -OS.cuisse, 0]));

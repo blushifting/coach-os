@@ -11,40 +11,87 @@
     -->
     <style>
       body { margin: 0; background: #16110f; color: #e7e9ed; font: 14px/1.5 system-ui, sans-serif; }
-      main { max-width: 980px; margin: 0 auto; padding: 16px; }
-      h1 { font-size: 18px; margin: 0 0 12px; }
-      .barre { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-bottom: 12px; }
+      main { max-width: 1180px; margin: 0 auto; padding: 16px; }
+      h1 { font-size: 18px; margin: 0; }
+      h2 { font-size: 15px; margin: 16px 0 8px; color: #e7e9ed; }
+      .barre { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 10px; }
       .barre label { display: inline-flex; gap: 6px; align-items: center; color: #9aa0aa; }
-      select, button { font: inherit; color: #e7e9ed; background: #1c1f24; border: 1px solid #33383f; border-radius: 8px; padding: 6px 10px; }
-      button[aria-pressed='true'] { background: #33383f; }
+      select, button, input[type='number'] { font: inherit; color: #e7e9ed; background: #1c1f24; border: 1px solid #33383f; border-radius: 8px; padding: 6px 10px; }
+      select { max-width: 100%; }
+      button { cursor: pointer; }
+      button[aria-pressed='true'] { background: #33383f; border-color: #6c727c; }
+      button:disabled { opacity: 0.45; cursor: default; }
+      button.principal { background: #8f1f2c; border-color: #b62a3a; }
       input[type='range'] { accent-color: #b62a3a; }
-      #vue { display: block; width: 100%; max-width: 420px; aspect-ratio: 1; border-radius: 12px; border: 1px solid #262a30; touch-action: pan-y; cursor: ew-resize; }
-      #planche { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+      #etat { color: #9aa0aa; }
+      .colonnes { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+      @media (min-width: 900px) {
+        .colonnes { grid-template-columns: minmax(0, 440px) minmax(0, 1fr); align-items: start; }
+        .apercu { position: sticky; top: 12px; }
+        .reglages { max-height: calc(100vh - 90px); overflow-y: auto; padding-right: 6px; }
+      }
+      #vue { display: block; width: 100%; max-width: 440px; aspect-ratio: 1; border-radius: 12px; border: 1px solid #262a30; touch-action: pan-y; cursor: ew-resize; margin-bottom: 10px; }
+      #temps { flex: 1; min-width: 120px; }
+      #planche { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
       #planche figure { margin: 0; }
       #planche canvas { display: block; width: 100%; border-radius: 8px; }
       #planche figcaption { color: #6c727c; font-size: 12px; text-align: center; }
       /* En planche, la toile WebGL sert encore de source : on la sort du champ sans la masquer. */
       .hors-champ { position: absolute; left: -9999px; }
+      #message { min-height: 1.5em; margin: 4px 0; color: #9aa0aa; }
+      #message[data-genre='alerte'] { color: #e5a05b; }
+      details { border: 1px solid #262a30; border-radius: 10px; padding: 6px 12px; margin-bottom: 8px; background: #191513; }
+      summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+      fieldset { border: 1px solid #262a30; border-radius: 8px; margin: 8px 0; padding: 4px 10px 8px; }
+      legend { color: #9aa0aa; padding: 0 4px; }
+      .curseur { display: grid; grid-template-columns: minmax(0, 11em) minmax(0, 1fr) 5.5em 2.2em; gap: 8px; align-items: center; margin: 4px 0; }
+      .remettre { padding: 2px 0; width: 2.2em; line-height: 1.4; }
+      .remettre:disabled { opacity: 0.2; }
+      .a-confirmer { background: #6b4a1c !important; border-color: #e5a05b !important; }
+      .curseur span { color: #c3c7ce; }
+      .curseur input[type='number'] { padding: 3px 6px; width: 100%; box-sizing: border-box; }
+      .case { display: flex; gap: 8px; align-items: center; margin: 6px 0; }
+      .onglets { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+      .ligne { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 0; }
+      .aide { color: #9aa0aa; text-align: justify; hyphens: auto; }
+      .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+      .duo figure { margin: 0; }
+      .duo img, .duo canvas { display: block; width: 100%; border-radius: 8px; }
+      .duo figcaption { color: #6c727c; font-size: 12px; text-align: center; }
       [hidden] { display: none !important; }
     </style>
   </head>
   <body>
     <main>
-      <h1>Atelier des visuels</h1>
       <div class="barre">
-        <label>Sujet <select id="sujet"></select></label>
-        <label id="l-exemple">Muscles colorés <select id="exemple"></select></label>
-        <button id="b-boucle" aria-pressed="true">En boucle</button>
-        <button id="b-depart" aria-pressed="false">Départ</button>
-        <button id="b-arrivee" aria-pressed="false">Arrivée</button>
-        <button id="b-planche" aria-pressed="false">Planche</button>
+        <h1>Atelier des visuels</h1>
+        <select id="sujet" aria-label="Exercice"></select>
+        <select id="nouveau" aria-label="Nouvelle pose"></select>
+        <span id="etat"></span>
+        <button id="b-abandonner" hidden>Abandonner les modifications</button>
+        <button id="b-enregistrer" class="principal">Enregistrer</button>
       </div>
-      <div class="barre">
-        <label>Tour <input type="range" id="tour" min="-180" max="180" step="1" /><output id="o-tour"></output></label>
-        <label>Hauteur <input type="range" id="hauteur" min="-15" max="60" step="1" /><output id="o-hauteur"></output></label>
+      <div class="colonnes">
+        <section class="apercu">
+          <canvas id="vue"></canvas>
+          <div id="planche" hidden></div>
+          <div class="barre" id="cles"></div>
+          <div class="barre">
+            <button id="b-lecture">Pause</button>
+            <input type="range" id="temps" min="0" max="1" step="0.01" aria-label="Avancement du mouvement" />
+            <output id="o-temps"></output>
+          </div>
+          <div class="barre">
+            <label>Tour <input type="range" id="tour" min="-180" max="180" step="1" /><output id="o-tour"></output></label>
+            <label>Hauteur <input type="range" id="hauteur" min="-15" max="60" step="1" /><output id="o-hauteur"></output></label>
+            <button id="b-planche" aria-pressed="false">Planche</button>
+            <label id="l-exemple">Muscles colorés <select id="exemple"></select></label>
+          </div>
+          <p id="message" role="status"></p>
+          <div id="photos" hidden></div>
+        </section>
+        <section id="reglages" class="reglages"></section>
       </div>
-      <canvas id="vue"></canvas>
-      <div id="planche" hidden></div>
     </main>
     <script type="module" src="/src/visuels/dev/atelier.ts"></script>
   </body>

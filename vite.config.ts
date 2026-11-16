@@ -1,12 +1,54 @@
 import { defineConfig } from 'vite';
+import type { Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'node:path';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 
 const pkg = JSON.parse(
   readFileSync(path.resolve(__dirname, 'package.json'), 'utf8'),
 ) as { version: string };
+
+/**
+ * Atelier des visuels (`visuels.html`) : « Enregistrer » envoie ici les
+ * fichiers de pose déjà rédigés par la page (`src/visuels/edition.ts`), que ce
+ * greffon écrit dans `src/visuels/poses/`. Serveur de développement seulement ;
+ * il refuse tout autre dossier et tout nom qui n'est pas `<identifiant>.ts`.
+ */
+function atelierVisuels(): Plugin {
+  const dossier = path.resolve(__dirname, 'src/visuels/poses');
+  return {
+    name: 'kotsh-atelier-visuels',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use((req, res, suite) => {
+        if (req.method !== 'POST' || !req.url?.endsWith('/__atelier/enregistrer')) return suite();
+        let corps = '';
+        req.on('data', (morceau: Buffer) => { corps += morceau.toString('utf8'); });
+        req.on('end', () => {
+          const repondre = (code: number, message: string): void => {
+            res.statusCode = code;
+            res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+            res.end(message);
+          };
+          try {
+            const { fichiers } = JSON.parse(corps) as { fichiers: { nom: unknown; contenu: unknown }[] };
+            if (!Array.isArray(fichiers) || fichiers.length === 0) return repondre(400, 'Aucun fichier reçu.');
+            for (const f of fichiers) {
+              if (typeof f.nom !== 'string' || !/^[a-z0-9_]+\.ts$/.test(f.nom) || typeof f.contenu !== 'string') {
+                return repondre(400, `Fichier refusé : ${String(f.nom)}`);
+              }
+            }
+            for (const f of fichiers) writeFileSync(path.join(dossier, f.nom as string), f.contenu as string, 'utf8');
+            repondre(200, fichiers.map((f) => f.nom).join(', '));
+          } catch (e) {
+            repondre(500, e instanceof Error ? e.message : String(e));
+          }
+        });
+      });
+    },
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -25,6 +67,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    atelierVisuels(),
     VitePWA({
       // Conv #11d — passage à 'prompt' : on capture la dispo d'une nouvelle
       // version via `useRegisterSW` (cf. components/UpdatePrompt.tsx) et on
