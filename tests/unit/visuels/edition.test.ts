@@ -10,8 +10,9 @@ import { transform } from 'esbuild';
 import { describe, expect, it } from 'vitest';
 
 import { brasEnAngles, brasEnCible, decrirePose, egal, fichierPose, fichierRegistre, jambeEnAngles, jambeEnCible } from '@/visuels/edition';
-import type { Cote } from '@/visuels/edition';
+import type { Cote, ReperesEnPlus } from '@/visuels/edition';
 import { V } from '@/visuels/maths';
+import { reperesMateriel } from '@/visuels/materiel';
 import { POSES } from '@/visuels/poses';
 import { REPOS } from '@/visuels/poses/repos';
 import type { PoseExercice } from '@/visuels/scene';
@@ -20,7 +21,15 @@ import { pose, resoudre } from '@/visuels/squelette';
 import type { Pose } from '@/visuels/squelette';
 
 const POSES_CLES: readonly Pose[] = [REPOS, ...Object.values(POSES).flatMap((p) => p.cles)];
-const ecart = (a: Pose, b: Pose, nom: string): number => V.len(V.sub(resoudre(a)[nom]!.o, resoudre(b)[nom]!.o));
+/** Les poses clés du registre, chacune avec les repères de son matériel à cet instant (une main peut viser une barre). */
+const CLES_ET_MATERIEL: readonly { k: Pose; autres?: ReperesEnPlus }[] = [
+  { k: REPOS },
+  ...Object.values(POSES).flatMap((p) => p.cles.map((k, i) => ({
+    k, autres: (tronc: Parameters<ReperesEnPlus>[0]) => reperesMateriel(p.materiel, tronc, p.cles.length > 1 ? i / (p.cles.length - 1) : 0),
+  }))),
+];
+const ecart = (a: Pose, b: Pose, nom: string, autres?: ReperesEnPlus): number =>
+  V.len(V.sub(resoudre(a, autres)[nom]!.o, resoudre(b, autres)[nom]!.o));
 
 /** Exécute un fichier de pose écrit par l'atelier, comme le ferait le bundler. */
 async function relire(source: string): Promise<PoseExercice> {
@@ -75,11 +84,11 @@ describe('visuels — édition : angles ou cible', () => {
   const coudesPlies = pose({ bras: { epaule: { flex: 35, abd: 20, rot: 15 }, coude: 70, pronation: 30 }, jambe: { hanche: { flex: 40, abd: 10, rot: 5 }, genou: 60, cheville: 10 } });
 
   it('un bras passé en cible ne bouge pas', () => {
-    for (const k of [coudesPlies, ...POSES_CLES]) {
+    for (const { k, autres } of [{ k: coudesPlies }, ...CLES_ET_MATERIEL]) {
       for (const c of ['G', 'D'] as Cote[]) {
-        const apres = { ...k, ['bras' + c]: brasEnCible(k, c, 'thorax') } as Pose;
-        expect(ecart(k, apres, 'poignet' + c)).toBeLessThan(0.01);
-        expect(ecart(k, apres, 'coude' + c)).toBeLessThan(0.01);
+        const apres = { ...k, ['bras' + c]: brasEnCible(k, c, 'thorax', autres) } as Pose;
+        expect(ecart(k, apres, 'poignet' + c, autres)).toBeLessThan(0.01);
+        expect(ecart(k, apres, 'coude' + c, autres)).toBeLessThan(0.01);
       }
     }
   });
@@ -106,12 +115,12 @@ describe('visuels — édition : angles ou cible', () => {
   });
 
   it('une jambe passée en cible ou en angles ne bouge pas', () => {
-    for (const k of [coudesPlies, ...POSES_CLES]) {
+    for (const { k, autres } of [{ k: coudesPlies }, ...CLES_ET_MATERIEL]) {
       for (const c of ['G', 'D'] as Cote[]) {
-        for (const jambe of [jambeEnCible(k, c), jambeEnAngles(k, c)]) {
+        for (const jambe of [jambeEnCible(k, c, 'monde', autres), jambeEnAngles(k, c, autres)]) {
           const apres = { ...k, ['jambe' + c]: jambe } as Pose;
-          expect(ecart(k, apres, 'cheville' + c)).toBeLessThan(0.05);
-          expect(ecart(k, apres, 'genou' + c)).toBeLessThan(0.05);
+          expect(ecart(k, apres, 'cheville' + c, autres)).toBeLessThan(0.05);
+          expect(ecart(k, apres, 'genou' + c, autres)).toBeLessThan(0.05);
         }
       }
     }

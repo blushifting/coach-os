@@ -12,7 +12,7 @@ import { Maillage } from './maillage';
 import { REPOS } from './poses/repos';
 import { creerRendu } from './rendu';
 import type { Rendu } from './rendu';
-import { avancement, construireScene, mesurerSujet } from './scene';
+import { avancement, construireScene, mesurerSujet, periodeDe } from './scene';
 import type { PoseExercice } from './scene';
 import { STYLE } from './style';
 
@@ -85,7 +85,7 @@ export function animer(
 
   const image = (maintenant: number): void => {
     if (arrete) return;
-    if (!fixe) phase = (phase + (maintenant - avant) / STYLE.periode) % 1;
+    if (!fixe) phase = (phase + (maintenant - avant) / periodeDe(sujet)) % 1;
     avant = maintenant;
     if (!fixe || aRedessiner) {
       dessinerImage(rendu, mesh, corps, cadre, sujet, coefficients, { tour, hauteur: sujet.camera.hauteur, t: fixe ? 1 : avancement(phase) });

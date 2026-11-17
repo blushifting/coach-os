@@ -311,9 +311,28 @@ export interface Repere {
 export type Reperes = Readonly<Record<string, Repere>>;
 
 /** Repères qui existent en deux exemplaires : suffixe `G` (gauche) ou `D` (droite). */
-export const REPERES_PAIRS = ['epaule', 'coude', 'poignet', 'delto', 'hanche', 'genou', 'cheville', 'fessier', 'rotule'] as const;
+export const REPERES_PAIRS = ['omoplate', 'epaule', 'coude', 'cubitus', 'poignet', 'delto', 'hanche', 'genou', 'cheville', 'fessier', 'rotule'] as const;
 /** Repères du tronc, et le repère fixe du monde. */
 export const REPERES_CENTRAUX = ['monde', 'bassin', 'lombaires', 'thorax', 'cou', 'tete'] as const;
+
+/**
+ * Orientation à mi-chemin entre le tronc (A) et le bras (B), pour l'épaule :
+ * le balancement du bras (de combien et dans quel sens il s'écarte du corps)
+ * et sa rotation sur lui-même sont partagés séparément. Le plus court chemin
+ * d'une orientation à l'autre (`M.entre`) bascule d'un coup quand le bras
+ * levé au-dessus de la tête approche du demi-tour : les deltoïdes sautaient.
+ */
+function aMiChemin(A: Mat3, B: Mat3, t: number): Mat3 {
+  const R = M.mul(M.transposee(A), B), d = M.vec(R, [0, -1, 0]);
+  const cosA = clamp(-d[1], -1, 1), ang = Math.acos(cosA);
+  let k: Vec3 = V.cross([0, -1, 0], d);
+  // Bras le long du corps : pas de balancement. Tendu droit vers le haut : on balance vers l'avant.
+  k = V.len(k) > 1e-6 ? V.norm(k) : [1, 0, 0];
+  const balance = ang < 1e-6 ? IDENTITE : M.axe(k, ang);
+  const tors = M.mul(M.transposee(balance), R);
+  const phi = Math.atan2(tors[2]!, tors[0]!) / RAD;
+  return M.mul(A, M.mul(ang < 1e-6 ? IDENTITE : M.axe(k, ang * t), M.ry(phi * t)));
+}
 
 /**
  * Pose → repères de chaque partie du corps.
@@ -323,6 +342,11 @@ export const REPERES_CENTRAUX = ['monde', 'bassin', 'lombaires', 'thorax', 'cou'
  * `fessier` (hanche, un quart du chemin seulement).
  * Les muscles qui coiffent ces articulations s'en servent pour savoir vers où
  * ils regardent.
+ *
+ * Deux repères portent les attaches qui ne suivent pas l'os voisin :
+ * `omoplate` (le thorax, déplacé du haussement d'épaule `clav` : deltoïdes et
+ * trapèze montent avec l'épaule) et `cubitus` (l'avant-bras sans la
+ * pronation : le coude, où s'attache le triceps, ne tourne pas avec la main).
  *
  * `materiel` : les repères des pièces de matériel (poignées, plateau,
  * rouleau…), calculés une fois le tronc placé (une barre posée sur le dos suit
@@ -348,14 +372,14 @@ export function resoudre(p: Pose, materiel?: (tronc: Reperes) => Reperes): Reper
     // Bras
     const br = c === 'G' ? p.brasG : p.brasD;
     const S = V.add(th.o, M.vec(th.R, [OS.epaule[0] * cote, OS.epaule[1] + br.clav[0], OS.epaule[2] + br.clav[1]]));
-    let Ru: Mat3, coude: Vec3, Rf: Mat3, poignet: Vec3, Rmain: Mat3 | null = null;
+    let Ru: Mat3, coude: Vec3, Rf: Mat3, Rcub: Mat3, poignet: Vec3, Rmain: Mat3 | null = null;
     if (br.cible !== null) {
       const rep = F[br.cible.repere];
       if (rep === undefined) throw new Error(`Repère inconnu pour la cible du bras : ${br.cible.repere}`);
       const T = V.add(rep.o, M.vec(rep.R, br.cible.pos)), pole = M.vec(rep.R, br.cible.pole);
       if (br.cible.axe === undefined) {
         const k = deuxOs(S, T, OS.bras, OS.avantBras, pole, -1, LIMITES.coude[1]);
-        Ru = k.R1; coude = k.J; poignet = k.E;
+        Ru = k.R1; coude = k.J; poignet = k.E; Rcub = k.R2;
         Rf = M.mul(k.R2, M.ry(borne(br.pronation, LIMITES.pronation) * cote));
       } else {
         // Une poignée : l'avant-bras tourne, puis le poignet s'incline, jusqu'à ce
@@ -381,22 +405,25 @@ export function resoudre(p: Pose, materiel?: (tronc: Reperes) => Reperes): Reper
           k = deuxOs(S, V.sub(T, M.vec(m.Rm, [0, -PRISE, 0])), OS.bras, OS.avantBras, pole, -1, LIMITES.coude[1]);
           m = tenir(k.R2);
         }
-        Ru = k.R1; coude = k.J; poignet = k.E; Rf = m.Rf; Rmain = m.Rm;
+        Ru = k.R1; coude = k.J; poignet = k.E; Rcub = k.R2; Rf = m.Rf; Rmain = m.Rm;
       }
     } else {
       Ru = M.mul(th.R, rotRotule(borneRotule(br.epaule, LIMITES.epaule), cote));
       coude = V.add(S, M.vec(Ru, [0, -OS.bras, 0]));
       Rf = M.mul(Ru, M.rx(-borne(br.coude, LIMITES.coude)));
+      Rcub = Rf;
       poignet = V.add(coude, M.vec(Rf, [0, -OS.avantBras, 0]));
       Rf = M.mul(Rf, M.ry(borne(br.pronation, LIMITES.pronation) * cote));
     }
     F['epaule' + c] = { o: S, R: Ru };
     F['coude' + c] = { o: coude, R: Rf };
+    F['cubitus' + c] = { o: coude, R: Rcub };
     F['poignet' + c] = {
       o: poignet,
       R: Rmain ?? M.mul(M.mul(Rf, M.rx(-borne(br.poignet.flex, LIMITES.poignet.flex))), M.rz(borne(br.poignet.dev, LIMITES.poignet.dev) * cote)),
     };
-    F['delto' + c] = { o: S, R: M.entre(th.R, Ru, 0.55) };
+    F['delto' + c] = { o: S, R: aMiChemin(th.R, Ru, 0.55) };
+    F['omoplate' + c] = { o: V.add(th.o, M.vec(th.R, [0, br.clav[0], br.clav[1]])), R: th.R };
 
     // Jambe
     const ja = c === 'G' ? p.jambeG : p.jambeD;

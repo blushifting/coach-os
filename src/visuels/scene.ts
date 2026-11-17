@@ -9,7 +9,7 @@ import type { Vec3 } from './maths';
 import { AXE, SOL, mesurerCadre } from './camera';
 import type { Cadre } from './camera';
 import { geomMuscle, geomOs } from './corps';
-import type { Corps } from './corps';
+import type { Corps, PieceMuscle } from './corps';
 import { Maillage, ajouterBoule, ajouterCylindre, ajouterFuseau, ajouterPave } from './maillage';
 import { coursesMateriel, etendue, reperesMateriel, volumesMateriel } from './materiel';
 import type { Piece } from './materiel';
@@ -30,7 +30,37 @@ export interface PoseExercice {
   readonly materiel: readonly Piece[];
   /** Validée par Azur : tant que c'est faux, la fiche garde ses photos. */
   readonly valide: boolean;
+  /**
+   * Durée d'un cycle (aller et retour), en multiples de la durée ordinaire ;
+   * absente : 1. Un exercice qui fait deux répétitions par cycle (curl
+   * alterné : un bras à l'aller, l'autre au retour) en demande plus.
+   */
+  readonly duree?: number;
+  /**
+   * Exercice à un bras ou une jambe : le côté qui travaille (`G` ou `D`).
+   * Seuls ses muscles sont colorés ; absent, les deux côtés le sont.
+   */
+  readonly cote?: 'G' | 'D';
 }
+
+/**
+ * Coefficient de travail d'une pièce musculaire (1, 0,5, ou rien : ton d'un
+ * muscle au repos). Une pièce neutre (avant-bras, tibial, rotule…) n'en a
+ * pas. Un exercice à un seul côté (`cote`) ne colore que les pièces de ce
+ * côté (leur identifiant finit par G ou D).
+ */
+export function coefficientPiece(
+  m: Pick<PieceMuscle, 'id' | 'muscle'>,
+  cote: PoseExercice['cote'],
+  coefficients: Readonly<Record<string, number>>,
+): number | undefined {
+  if (m.muscle === null) return undefined;
+  if (cote !== undefined && m.id.endsWith(cote === 'G' ? 'D' : 'G')) return undefined;
+  return coefficients[m.muscle];
+}
+
+/** Durée d'un cycle de cet exercice, en millisecondes. */
+export const periodeDe = (sujet: Pick<PoseExercice, 'duree'>): number => STYLE.periode * (sujet.duree ?? 1);
 
 /**
  * Avancement du mouvement (0 = départ, 1 = arrivée) pour une phase du cycle
@@ -93,7 +123,7 @@ export function mesurerSujet(corps: Corps, sujet: Pick<PoseExercice, 'cles' | 'm
 export function construireScene(
   mesh: Maillage,
   corps: Corps,
-  sujet: Pick<PoseExercice, 'cles' | 'materiel'>,
+  sujet: Pick<PoseExercice, 'cles' | 'materiel' | 'cote'>,
   t: number,
   coefficients: Readonly<Record<string, number>>,
 ): number {
@@ -114,8 +144,7 @@ export function construireScene(
     }
   }
   for (const m of corps.muscles) {
-    // Une pièce neutre (avant-bras, tibial, rotule…) a le ton d'un muscle au repos.
-    ajouterFuseau(mesh, geomMuscle(m, F), tonMuscle(m.muscle === null ? undefined : coefficients[m.muscle]));
+    ajouterFuseau(mesh, geomMuscle(m, F), tonMuscle(coefficientPiece(m, sujet.cote, coefficients)));
   }
   for (const v of volumesMateriel(sujet.materiel, F, t, reposMateriel(sujet))) {
     if (v.forme === 'cylindre') ajouterCylindre(mesh, v.p0, v.p1, v.r, STYLE[v.ton]);

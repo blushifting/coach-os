@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kotsh — relecture des poses</title>
+    <!--
+      Page de travail du chantier « Visuels d'exercice » (étape V-5) : toutes les
+      animations d'une famille côte à côte, pour les relire et les valider.
+      Servie par le serveur de développement seulement
+      (http://localhost:5173/coach-os/relecture.html), absente du build.
+    -->
+    <style>
+      body { margin: 0; background: #16110f; color: #e7e9ed; font: 14px/1.5 system-ui, sans-serif; }
+      main { max-width: 1180px; margin: 0 auto; padding: 16px; }
+      h1 { font-size: 18px; margin: 0; }
+      a { color: #c3c7ce; }
+      .barre { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 12px; }
+      button, .bouton { font: inherit; font-size: 13px; color: #e7e9ed; background: #1c1f24; border: 1px solid #33383f; border-radius: 8px; padding: 5px 10px; cursor: pointer; text-decoration: none; }
+      button[aria-pressed='true'] { background: #33383f; border-color: #6c727c; }
+      button.bon[aria-pressed='true'] { background: #1f3a2a; border-color: #3f7a55; }
+      button:disabled { opacity: 0.5; cursor: default; }
+      .aide { color: #9aa0aa; margin: 0 0 12px; }
+      #grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+      figure { margin: 0; }
+      figure canvas { display: block; width: 100%; aspect-ratio: 1; border-radius: 12px; border: 1px solid #262a30; touch-action: pan-y; cursor: ew-resize; }
+      figcaption { color: #c3c7ce; font-size: 13px; padding: 4px 2px; }
+      figcaption small { display: block; color: #6c727c; }
+      .actions { display: flex; gap: 6px; margin-top: 4px; }
+      #message { color: #9aa0aa; min-height: 1.5em; }
+      /* La toile WebGL sert de source aux copies : sortie du champ, pas masquée. */
+      #source { position: absolute; left: -9999px; width: 420px; height: 420px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="barre">
+        <h1>Relecture des poses</h1>
+        <button id="b-lecture" aria-pressed="true">Mouvement</button>
+        <button id="b-tour" aria-pressed="false">Tourner tout seul</button>
+      </div>
+      <div class="barre" id="lots"></div>
+      <p class="aide" id="aide"></p>
+      <p id="message"></p>
+      <div id="grille"></div>
+      <canvas id="source"></canvas>
+    </main>
+    <script type="module" src="/src/visuels/dev/relecture.ts"></script>
+  </body>
+</html>

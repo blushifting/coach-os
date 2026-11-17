@@ -17,7 +17,7 @@ import type { Piece } from '@/visuels/materiel';
 import { SCENES } from '@/visuels/dev/vitrine-scenes';
 import { POSES, poseValidee } from '@/visuels/poses';
 import { REPOS } from '@/visuels/poses/repos';
-import { avancement, construireScene, mesurerSujet, reperesAu, reposMateriel } from '@/visuels/scene';
+import { avancement, coefficientPiece, construireScene, mesurerSujet, reperesAu, reposMateriel } from '@/visuels/scene';
 import type { PoseExercice } from '@/visuels/scene';
 import { LIMITES, OS, PRISE, deuxOs, pose, poseAu, resoudre } from '@/visuels/squelette';
 import type { Reperes } from '@/visuels/squelette';
@@ -114,7 +114,7 @@ describe('visuels — corps', () => {
     for (const sujet of Object.values(POSES)) {
       const c = construireCorps(1, sujet.mainFermee, REPOS);
       for (const t of [0, 0.25, 0.5, 0.75, 1]) {
-        const F = resoudre(poseAu(sujet.cles, t));
+        const F = reperesAu(sujet, t);
         for (const m of c.muscles) {
           const g = geomMuscle(m, F);
           for (const h of m.hotes) {
@@ -266,6 +266,16 @@ describe('visuels — poses', () => {
     }
   });
 
+  it('un exercice à un seul côté ne colore que les muscles de ce côté', () => {
+    const coef = { triceps: 1 };
+    const piece = (id: string) => corps.muscles.find((m) => m.id === id)!;
+    expect(coefficientPiece(piece('tricepsLatG'), 'G', coef)).toBe(1);
+    expect(coefficientPiece(piece('tricepsLatD'), 'G', coef)).toBeUndefined();
+    expect(coefficientPiece(piece('tricepsLatD'), undefined, coef)).toBe(1);
+    expect(coefficientPiece(piece('brachioRadialG'), 'G', coef)).toBeUndefined();
+    expect(POSES.kickback_db!.cote).toBe('G');
+  });
+
   it('une pose non validée laisse la fiche sur ses photos', () => {
     for (const p of Object.values(POSES)) expect(poseValidee(p.id) === null).toBe(!p.valide);
     expect(poseValidee('exercice_inexistant')).toBeNull();
@@ -273,9 +283,9 @@ describe('visuels — poses', () => {
 
   it('les pieds posés restent au sol pendant tout le mouvement', () => {
     for (const p of Object.values(POSES)) {
-      const depart = resoudre(poseAu(p.cles, 0));
+      const depart = reperesAu(p, 0);
       for (const t of [0.25, 0.5, 0.75, 1]) {
-        const F = resoudre(poseAu(p.cles, t));
+        const F = reperesAu(p, t);
         for (const c of ['G', 'D'] as const) {
           if ((c === 'G' ? p.cles[0]!.jambeG : p.cles[0]!.jambeD).cible === null) continue;
           expect(V.len(V.sub(F['cheville' + c]!.o, depart['cheville' + c]!.o)), `${p.id} à ${t}`).toBeLessThan(1e-6);
@@ -442,5 +452,92 @@ describe('visuels — contact avec le matériel', () => {
   it('dans chaque scène de la vitrine, mains et pieds restent sur ce qu\'ils visent', () => {
     const fautes = SCENES.map((s) => [s.nom, horsContact(s.sujet, 0.5)] as const).filter(([, f]) => f.length > 0);
     expect(fautes.map(([n, f]) => `${n} : ${f.slice(0, 3).join(' ; ')}`)).toEqual([]);
+  });
+
+  it('dans chaque pose du registre, le matériel ne traverse pas le corps', () => {
+    // Des points sur la surface de chaque cylindre et boule du matériel, à 41 instants, ne
+    // doivent pas s'enfoncer dans un os (la main, qui tient, n'est pas jugée). Une barre posée
+    // sur le dos peut l'effleurer : seul ce qui entre franchement compte.
+    const fautes: string[] = [];
+    for (const s of Object.values(POSES)) {
+      const c = construireCorps(1, s.mainFermee, REPOS);
+      for (let i = 0; i <= 40; i++) {
+        const t = i / 40, F = reperesAu(s, t);
+        const os = c.os.filter((o) => !o.id.startsWith('main')).map((o) => ({ id: o.id, g: geomOs(o, F) }));
+        for (const v of volumesMateriel(s.materiel, F, t, reposMateriel(s))) {
+          const pts: Vec3[] = [];
+          if (v.forme === 'cylindre') {
+            const ax = V.sub(v.p1, v.p0), a = V.norm(ax);
+            const u = V.norm(V.cross(a, Math.abs(a[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0])), w = V.cross(a, u);
+            for (const f of [0, 0.25, 0.5, 0.75, 1]) {
+              for (let k = 0; k < 12; k++) {
+                const ang = (k / 12) * 2 * Math.PI;
+                pts.push(V.add(V.add(V.add(v.p0, V.mul(ax, f)), V.mul(u, Math.cos(ang) * v.r)), V.mul(w, Math.sin(ang) * v.r)));
+              }
+            }
+          } else if (v.forme === 'boule') pts.push(v.centre);
+          for (const P of pts) {
+            for (const o of os) {
+              const d = profondeur(P, o.g);
+              if (d !== null && d.poids === 1 && d.q < 0.85) fautes.push(`${s.id} à ${t} : ${v.forme} dans ${o.id} (${d.q.toFixed(2)})`);
+            }
+          }
+        }
+      }
+    }
+    expect([...new Set(fautes)].slice(0, 5)).toEqual([]);
+  });
+
+  it('dans chaque pose du registre, mains et pieds restent sur ce qu\'ils visent', () => {
+    const fautes = Object.values(POSES).map((p) => [p.id, horsContact(p, 0.5)] as const).filter(([, f]) => f.length > 0);
+    expect(fautes.map(([n, f]) => `${n} : ${f.slice(0, 3).join(' ; ')}`)).toEqual([]);
+  });
+});
+
+describe('visuels — continuité des muscles', () => {
+  const lieu = (F: Reperes, l: { rep: string; p: Vec3 }): Vec3 => V.add(F[l.rep]!.o, M.vec(F[l.rep]!.R, l.p));
+
+  it('aucun muscle ne saute d\'une image à l\'autre, dans aucune pose du registre', () => {
+    // Un repère qui bascule d'un coup (l'épaule, bras levé au-dessus de la tête ; une main
+    // qui change de sens de prise) fait sauter les muscles qui s'y attachent.
+    const N = 120, fautes: string[] = [];
+    for (const s of Object.values(POSES)) {
+      const c = construireCorps(1, s.mainFermee, REPOS);
+      const milieux = (t: number): Vec3[] => {
+        const F = reperesAu(s, t);
+        return c.muscles.map((m) => {
+          const g = geomMuscle(m, F), st = g.st[g.st.length >> 1]!;
+          return V.add(V.add(V.add(g.O, V.mul(g.A, st.u * g.L)), V.mul(g.X, st.cx)), V.mul(g.Z, st.cz));
+        });
+      };
+      let avant = milieux(0);
+      for (let i = 1; i <= N; i++) {
+        const apres = milieux(i / N);
+        apres.forEach((p, k) => {
+          const d = V.len(V.sub(p, avant[k]!));
+          if (d > 2.5) fautes.push(`${s.id}, ${c.muscles[k]!.id} à ${(i / N).toFixed(3)} : ${d.toFixed(1)} cm`);
+        });
+        avant = apres;
+      }
+    }
+    expect(fautes.slice(0, 5)).toEqual([]);
+  });
+
+  it('au haussement d\'épaule, deltoïdes et trapèze montent avec l\'épaule, et le trapèze raccourcit', () => {
+    const bas = resoudre(pose({})), haut = resoudre(pose({ bras: { clav: [6, 0] } }));
+    const muscle = (id: string) => corps.muscles.find((x) => x.id === id)!;
+    for (const id of ['deltoLatG', 'deltoAntG', 'deltoPostG']) {
+      expect(lieu(haut, muscle(id).de)[1] - lieu(bas, muscle(id).de)[1], id).toBeCloseTo(6, 6);
+    }
+    const trap = muscle('trapezeG');
+    expect(lieu(haut, trap.a)[1] - lieu(bas, trap.a)[1]).toBeCloseTo(6, 6);
+    const longueur = (F: Reperes): number => V.len(V.sub(lieu(F, trap.a), lieu(F, trap.de)));
+    expect(longueur(haut)).toBeLessThan(longueur(bas));
+  });
+
+  it('le triceps s\'attache au cubitus : la pronation de la main ne le fait pas tourner', () => {
+    const tricepsLat = corps.muscles.find((x) => x.id === 'tricepsLatG')!;
+    const neutre = resoudre(pose({ bras: { coude: 90 } })), prono = resoudre(pose({ bras: { coude: 90, pronation: 80 } }));
+    expect(V.len(V.sub(lieu(prono, tricepsLat.a), lieu(neutre, tricepsLat.a)))).toBeLessThan(1e-9);
   });
 });

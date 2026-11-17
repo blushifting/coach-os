@@ -114,6 +114,8 @@ export function fichierPose(sujet: PoseExercice, nom: string): string {
     ...sujet.cles.map((k) => `    pose(${litteral(decrirePose(k), '    ', 'pose('.length)}),`),
     '  ],',
     `  valide: ${sujet.valide},`,
+    ...(sujet.duree === undefined ? [] : [`  duree: ${arrondi(sujet.duree)},`]),
+    ...(sujet.cote === undefined ? [] : [`  cote: '${sujet.cote}',`]),
     '};',
     '',
   ].join('\n');

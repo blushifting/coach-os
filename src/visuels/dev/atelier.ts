@@ -30,11 +30,10 @@ import { SCENES } from './vitrine-scenes';
 import { POSES } from '../poses';
 import { REPOS } from '../poses/repos';
 import { creerRendu } from '../rendu';
-import { avancement, mesurerSujet } from '../scene';
+import { avancement, mesurerSujet, periodeDe } from '../scene';
 import type { PoseExercice } from '../scene';
 import { LIMITES, REPERES_CENTRAUX, REPERES_PAIRS, miroirBras, miroirJambe, resoudre } from '../squelette';
 import type { Pose } from '../squelette';
-import { STYLE } from '../style';
 
 const NB = ' ';
 
@@ -989,7 +988,7 @@ let avant = performance.now();
 function image(maintenant: number): void {
   const anime = ui.lecture === 'boucle' && courant().pose.cles.length > 1;
   if (anime) {
-    phase = (phase + (maintenant - avant) / STYLE.periode) % 1;
+    phase = (phase + (maintenant - avant) / periodeDe(courant().pose)) % 1;
     majTemps();
   }
   avant = maintenant;

@@ -121,8 +121,9 @@ export const LANDMINE: Modele<Landmine> = {
     s.cyl([-4, 4, 0], [4, 4, 0], 3, 'moyeu');
     b.cyl([0, 0, -LONGUEUR_LANDMINE], [0, 0, 0], 1.4, 'metal');
     b.cyl([0, 0, 2], [0, 0, 22], 2.3, 'metal');
-    b.cyl([0, 0, 4], [0, 0, 8], 22, 'fonte');
-    b.cyl([0, 0, 8], [0, 0, 11], 16, 'fonte');
+    // Disques de 10 et 5 kg en fonte (33 et 23 cm) : de gros disques buteraient contre la poitrine bien avant la fin du tirage.
+    b.cyl([0, 0, 4], [0, 0, 8], 16.5, 'fonte');
+    b.cyl([0, 0, 8], [0, 0, 11], 11.5, 'fonte');
     // Poignée en V accrochée sous la barre : un crochet, une traverse, deux poignées.
     b.cyl([0, -1, -10], [0, -9, -10], 1.2, 'metal');
     b.cyl([-7, -9, -10], [7, -9, -10], 1.2, 'metal');

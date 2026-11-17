@@ -170,6 +170,12 @@ export interface SpecMuscle {
    * pris d'office) : il les contourne au lieu de les traverser quand il s'étire.
    */
   readonly autour?: readonly string[];
+  /**
+   * Combien il gonfle quand il raccourcit (1 par défaut). Le biceps raccourcit
+   * peu entre ses attaches alors que son ventre se ramasse nettement : sans
+   * renfort, on ne le verrait pas se contracter.
+   */
+  readonly gonfle?: number;
 }
 
 // Règle de pose : la ligne d'un muscle suit la surface du corps, si bien qu'une
@@ -195,11 +201,11 @@ export const MUSCLES: readonly SpecMuscle[] = [
   // Une nappe mince couchée sur la pente cou-épaule (que porte le thorax), de
   // la nuque à l'épaule, un peu vers l'arrière. Peu d'épaisseur : un relief,
   // pas un boudin.
-  { id: 'trapeze', m: 'trapezes_hauts', de: ['thorax', [5.8, 28.8, -3.8]], a: ['thorax', [16, 22.4, -2.6]], n: ['thorax', [0.45, 0.8, -0.4]], creux: 1.8, pointes: [0.14, 0.3],
+  { id: 'trapeze', m: 'trapezes_hauts', de: ['cou', [3.4, 5, -4.2]], a: ['omoplate', [16, 22.4, -2.6]], n: ['thorax', [0.45, 0.8, -0.4]], creux: 1.8, pointes: [0.14, 0.3],
     profil: [[0, 3.4, 1.2], [0.4, 5.2, 1.4], [1, 3, 1]] },
-  { id: 'hautDos', m: 'dos_epaisseur', de: ['thorax', [2.2, 15, -10.3]], a: ['thorax', [13.5, 20.5, -5.6]], n: ['thorax', [0.3, 0, -1]], arc: 1.2, creux: 0.6, pointes: [0.07, 0.2],
+  { id: 'hautDos', m: 'dos_epaisseur', de: ['thorax', [2.2, 15, -10.3]], a: ['omoplate', [13.5, 20.5, -5.6]], n: ['thorax', [0.3, 0, -1]], arc: 1.2, creux: 0.6, pointes: [0.07, 0.2],
     profil: [[0, 9, 1.4], [0.5, 7.2, 2], [1, 3.4, 1.5]] },
-  { id: 'sousEpineux', m: 'dos_epaisseur', de: ['thorax', [8.5, 12.5, -9.2]], a: ['epaule', [0.5, -4, -3.6]], n: ['thorax', [0.55, 0, -0.85]], arc: 1, creux: 0.6,
+  { id: 'sousEpineux', m: 'dos_epaisseur', de: ['omoplate', [8.5, 12.5, -9.2]], a: ['epaule', [0.5, -4, -3.6]], n: ['thorax', [0.55, 0, -0.85]], arc: 1, creux: 0.6,
     profil: [[0, 4.5, 1.4], [0.5, 4.8, 2], [1, 2.2, 1.5]] },
   { id: 'dorsal', m: 'dos_largeur', de: ['lombaires', [7, 5, -7.8]], a: ['epaule', [-2.6, -7.5, -1.2]], n: ['thorax', [0.72, 0, -0.7]], arc: 2.2, creux: 2.6, pointes: [0.12, 0.2], autour: ['thorax'],
     // Décalé vers la colonne (largeur négative) : les deux dorsaux se rejoignent au milieu du dos.
@@ -207,18 +213,24 @@ export const MUSCLES: readonly SpecMuscle[] = [
   { id: 'lombaire', m: 'lombaires', de: ['bassin', [3.1, 5, -9.5]], a: ['thorax', [3.3, 2.5, -9.9]], n: ['lombaires', [0.1, 0, -1]], autour: ['ventre'],
     profil: [[0, 2.8, 1.4], [0.5, 3.4, 1.8], [1, 2.4, 1.2]] },
   // --- Épaule et bras ---
-  { id: 'deltoAnt', m: 'deltos_anterieurs', de: ['thorax', [15, 23, 4.5]], a: ['epaule', [3.4, -14, 1.8]], n: ['delto', [0.45, 0.1, 1]], arc: 1.6, creux: 0.6,
+  { id: 'deltoAnt', m: 'deltos_anterieurs', de: ['omoplate', [15, 23, 4.5]], a: ['epaule', [3.4, -14, 1.8]], n: ['delto', [0.45, 0.1, 1]], arc: 1.6, creux: 0.6,
     profil: [[0, 3.6, 2], [0.4, 4.8, 3.2], [1, 1.8, 1.4]] },
-  { id: 'deltoLat', m: 'deltos_lateraux', de: ['thorax', [20.4, 24.8, 0]], a: ['epaule', [4.6, -15, 0]], n: ['delto', [1, 0.25, 0]], arc: 1.8, creux: 0.8,
+  { id: 'deltoLat', m: 'deltos_lateraux', de: ['omoplate', [20.4, 24.8, 0]], a: ['epaule', [4.6, -15, 0]], n: ['delto', [1, 0.25, 0]], arc: 1.8, creux: 0.8,
     profil: [[0, 4, 2], [0.4, 5.2, 3.4], [1, 1.9, 1.5]] },
-  { id: 'deltoPost', m: 'deltos_posterieurs', de: ['thorax', [15, 23, -5]], a: ['epaule', [3.2, -14, -2]], n: ['delto', [0.45, 0.1, -1]], arc: 1.6, creux: 0.6,
+  { id: 'deltoPost', m: 'deltos_posterieurs', de: ['omoplate', [15, 23, -5]], a: ['epaule', [3.2, -14, -2]], n: ['delto', [0.45, 0.1, -1]], arc: 1.6, creux: 0.6,
     profil: [[0, 3.6, 2], [0.4, 4.8, 3.2], [1, 1.8, 1.4]] },
   { id: 'biceps', m: 'biceps', de: ['epaule', [0.4, -5.5, 3.2]], a: ['coude', [0.3, -3.5, 2.6]], n: ['epaule', [0, 0, 1]], creux: 0.6,
-    profil: [[0, 2.6, 1.8], [0.45, 4.2, 3.5], [1, 1.8, 1.5]] },
-  { id: 'tricepsLong', m: 'triceps', de: ['epaule', [-1.2, -5, -3.4]], a: ['coude', [-0.5, 1.5, -3.4]], n: ['epaule', [-0.3, 0, -1]], creux: 0.5,
-    profil: [[0, 2.6, 1.8], [0.4, 3.8, 3.3], [1, 2, 1.5]] },
-  { id: 'tricepsLat', m: 'triceps', de: ['epaule', [3, -8.5, -2.4]], a: ['coude', [0.9, 1.5, -3.4]], n: ['epaule', [0.8, 0, -0.6]], creux: 0.5,
-    profil: [[0, 2.4, 1.6], [0.4, 3.6, 3], [1, 1.8, 1.4]] },
+    // Un ventre bombé qui gonfle franchement quand le coude plie, fin et mince vers le
+    // coude : bras plié, il passe sous les muscles de l'avant-bras sans dépasser.
+    arc: 0.8, gonfle: 3,
+    profil: [[0, 2.6, 1.9], [0.45, 4.3, 4], [0.8, 2.8, 2.4], [1, 1.2, 1]] },
+  // Les chefs du triceps se rejoignent en un seul tendon sur la pointe du coude : même
+  // attache, bouts effilés. Avec deux attaches distinctes et des bouts larges, ils
+  // s'écartaient de part et d'autre du coude dès qu'il pliait.
+  { id: 'tricepsLong', m: 'triceps', de: ['epaule', [-1.2, -5, -3.4]], a: ['cubitus', [0.2, 2.5, -3.2]], n: ['epaule', [-0.15, 0, -1]], creux: 0.5, pointes: [0.16, 0.28],
+    profil: [[0, 2.6, 1.8], [0.4, 3.8, 3.3], [0.8, 2.6, 2.3], [1, 1, 0.9]] },
+  { id: 'tricepsLat', m: 'triceps', de: ['epaule', [3, -8.5, -2.4]], a: ['cubitus', [0.2, 2.5, -3.2]], n: ['epaule', [0.35, 0, -1]], creux: 0.5, pointes: [0.16, 0.28],
+    profil: [[0, 2.4, 1.6], [0.4, 3.6, 3], [0.8, 2.4, 2.1], [1, 1, 0.9]] },
   { id: 'brachioRadial', de: ['epaule', [3.4, -23, 1.2]], a: ['coude', [2.4, -21, 1.6]], n: ['coude', [1, 0, 0.5]],
     profil: [[0, 1.4, 1.2], [0.4, 2.4, 2], [1, 1.2, 1]] },
   { id: 'avantBrasExt', de: ['coude', [2.2, -1.5, -0.6]], a: ['coude', [0.9, -24.5, -0.3]], n: ['coude', [1, 0, -0.25]], creux: 0.8,
@@ -363,6 +375,8 @@ export interface PieceMuscle {
   /** Longueur au repos : sert à savoir de combien le muscle est étiré ou raccourci. */
   readonly L0: number;
   readonly hotes: readonly Hote[];
+  /** Renfort du gonflement quand il raccourcit (voir `SpecMuscle.gonfle`). */
+  readonly gonfle: number;
 }
 export interface Corps {
   readonly os: readonly Os[];
@@ -415,6 +429,7 @@ function preparerMuscle(spec: SpecMuscle, cote: 1 | -1, carrure: number): Omit<P
   return {
     id: spec.id + sfx,
     muscle: spec.m ?? null,
+    gonfle: spec.gonfle ?? 1,
     de: lieu(spec.de),
     a: lieu(spec.a),
     n: { rep: repere(spec.n[0]), p: [spec.n[1][0] * cote, spec.n[1][1], spec.n[1][2]] },
@@ -509,8 +524,11 @@ export function construireCorps(carrure: number, mainFermee: boolean, repos: Pos
     for (const cote of [1, -1] as const) {
       const m = preparerMuscle(spec, cote, carrure), l = ligne(m, F), sfx = suffixe(cote);
       // Les os qu'il longe : ceux de ses deux attaches, et ceux nommés dans `autour`.
+      // Une attache sur l'omoplate longe le thorax ; sur le cubitus, l'avant-bras.
       const noms = new Set(spec.autour ?? []);
-      const longes = os.filter((o) => o.ton === 'corps' && (o.joint === m.de.rep || o.joint === m.a.rep || noms.has(o.id) || noms.has(o.id.slice(0, -1)) && o.id.endsWith(sfx)));
+      const osDe = (rep: string): string => rep.replace(/^omoplate[GD]$/, 'thorax').replace(/^cubitus([GD])$/, 'coude$1');
+      const de = osDe(m.de.rep), a = osDe(m.a.rep);
+      const longes = os.filter((o) => o.ton === 'corps' && (o.joint === de || o.joint === a || noms.has(o.id) || noms.has(o.id.slice(0, -1)) && o.id.endsWith(sfx)));
       const hotes = longes.map((o): Hote => {
         const g = geomOs(o, F);
         return { os: o, seuil: m.st.map((s) => Math.min(SEUIL, profondeur(centre(l, s), g)?.q ?? SEUIL)) };
@@ -535,7 +553,7 @@ export function construireCorps(carrure: number, mainFermee: boolean, repos: Pos
  */
 export function geomMuscle(m: PieceMuscle, F: Reperes): Fuseau {
   const l = ligne(m, F);
-  const g = clamp(m.L0 / l.L, 0.6, 1.5), ga = Math.pow(g, 0.3), gb = Math.pow(g, 0.6);
+  const g = clamp(Math.pow(m.L0 / l.L, m.gonfle), 0.6, 1.5), ga = Math.pow(g, 0.3), gb = Math.pow(g, 0.6);
   const hotes = m.hotes.map((h) => ({ g: geomOs(h.os, F), seuil: h.seuil }));
   let uAvant = -1;
   return {
