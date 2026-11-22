@@ -13,6 +13,32 @@ export const RAD = Math.PI / 180;
 export const TAU = Math.PI * 2;
 export const clamp = (x: number, a: number, b: number): number => Math.max(a, Math.min(b, x));
 
+/**
+ * Valeur à l'avancement `t` (0 à 1) d'une suite de valeurs réparties à intervalles
+ * égaux (une par pose clé). Courbe lisse qui passe par chaque valeur : pas de
+ * cassure de vitesse au passage d'une pose clé (le mouvement saccaderait), et pas
+ * de dépassement (une valeur qui monte puis reste ne redescend pas en chemin, un
+ * pied ne s'enfonce pas dans le sol). Avec deux valeurs, c'est une droite.
+ */
+export function interpoler(v: readonly number[], t: number): number {
+  const n = v.length;
+  if (n === 0) return 0;
+  if (n === 1) return v[0]!;
+  const x = clamp(t, 0, 1) * (n - 1), i = Math.min(n - 2, Math.floor(x)), u = x - i;
+  const pente = (k: number): number => v[k + 1]! - v[k]!;
+  const tangente = (k: number): number => {
+    if (k === 0) return pente(0);
+    if (k === n - 1) return pente(n - 2);
+    const d0 = pente(k - 1), d1 = pente(k);
+    if (d0 * d1 <= 0) return 0;
+    // Moyenne des pentes, bornée pour que la courbe reste monotone entre deux valeurs.
+    const m = (d0 + d1) / 2, lim = 3 * Math.min(Math.abs(d0), Math.abs(d1));
+    return Math.sign(m) * Math.min(Math.abs(m), lim);
+  };
+  const u2 = u * u, u3 = u2 * u;
+  return (2 * u3 - 3 * u2 + 1) * v[i]! + (u3 - 2 * u2 + u) * tangente(i) + (-2 * u3 + 3 * u2) * v[i + 1]! + (u3 - u2) * tangente(i + 1);
+}
+
 export const V = {
   add: (a: Vec3, b: Vec3): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]],
   sub: (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]],

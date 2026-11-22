@@ -4,7 +4,7 @@
  * d'un câble, interpolation de la course d'une pièce mobile.
  */
 
-import { IDENTITE, M, V, clamp } from '../maths';
+import { IDENTITE, M, V, clamp, interpoler } from '../maths';
 import type { Mat3, Vec3 } from '../maths';
 import { PRISE } from '../squelette';
 import type { Repere, Reperes } from '../squelette';
@@ -38,13 +38,11 @@ export interface Modele<P> {
   reperes?(p: P, tronc: Reperes, t: number): Record<string, Repere>;
 }
 
-/** Une valeur qui change au fil du mouvement : une par étape, la première au départ. Interpolée par morceaux. */
-export function auTemps(valeurs: readonly number[], t: number): number {
-  if (valeurs.length === 0) return 0;
-  if (valeurs.length === 1) return valeurs[0]!;
-  const x = clamp(t, 0, 1) * (valeurs.length - 1), i = Math.min(valeurs.length - 2, Math.floor(x));
-  return valeurs[i]! + (valeurs[i + 1]! - valeurs[i]!) * (x - i);
-}
+/**
+ * Une valeur qui change au fil du mouvement : une par étape, la première au départ.
+ * Même courbe que les poses clés du corps (`interpoler`), pour que mains et pieds restent dessus.
+ */
+export const auTemps = (valeurs: readonly number[], t: number): number => interpoler(valeurs, t);
 export function auTempsV(valeurs: readonly Vec3[], t: number): Vec3 {
   return [0, 1, 2].map((k) => auTemps(valeurs.map((v) => v[k]!), t)) as unknown as Vec3;
 }

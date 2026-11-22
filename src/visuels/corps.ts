@@ -132,8 +132,12 @@ export const OSSATURE: readonly SpecOs[] = [
     anneaux: [[0, 9.2, 9.4, 0, 0], [0.25, 9.4, 10.2, 0, 0.5], [0.6, 7.8, 8.6, 0, 0.7], [0.88, 5.9, 6.2, 0, 0.3], [1, 5.4, 5.6, 0, 0]] },
   { id: 'jambe', joint: 'genou', pair: true, base: 'bas', o: [0, 0, 0], L: 41.5, ton: 'corps', mince: 0.92, bouts: [5.2, 3.2],
     anneaux: [[0, 5.4, 5.6, 0, 0], [0.25, 6.2, 7, 0, -1.3], [0.55, 4.9, 5.4, 0, -0.7], [0.85, 3.4, 3.7, 0, 0], [1, 3.2, 3.4, 0, 0]] },
-  { id: 'pied', joint: 'cheville', pair: true, base: 'avant', o: [0, -4.6, -6.5], L: 26, ton: 'corps', fixe: true,
-    anneaux: [[0, 2.9, 2.8, 0, 0.6], [0.15, 3.9, 3.7, 0, 0.6], [0.45, 4.7, 3.5, 0, 0], [0.8, 4.9, 2.4, 0, -1], [1, 3.4, 1.6, 0, -1.6]] },
+  // Le pied, du talon à la base des orteils (semelle à plat, à 8 cm sous la cheville), puis
+  // les orteils, articulés : ils restent posés quand le talon se lève.
+  { id: 'pied', joint: 'cheville', pair: true, base: 'avant', o: [0, -4.4, -5], L: 19, ton: 'corps', fixe: true,
+    anneaux: [[0, 0.3, 0.3, 0, -1], [0.016, 1.3, 1.3, 0, -1], [0.04, 1.95, 1.95, 0, -1], [0.08, 2.45, 2.5, 0, -1], [0.14, 2.8, 2.75, 0, -0.9], [0.25, 3, 3.4, 0, 0], [0.45, 3.5, 3.3, 0, -0.1], [0.68, 4.3, 2.9, 0, -0.7], [0.9, 4.8, 2.5, 0, -1.1], [1, 4.8, 2.3, 0, -1.3]] },
+  { id: 'orteils', joint: 'orteils', pair: true, base: 'avant', o: [0, 2.2, -1], L: 8.5, ton: 'corps', fixe: true,
+    anneaux: [[0, 4.8, 2.1, 0, 0], [0.45, 4.6, 1.7, 0, -0.3], [0.78, 4, 1.4, 0, -0.6], [0.93, 3.2, 1.1, 0, -0.75], [1, 1.6, 0.6, 0, -0.85]] },
 ];
 
 // -----------------------------------------------------------------------------

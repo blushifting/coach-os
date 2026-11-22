@@ -4,7 +4,7 @@
  * la position et l'orientation de chaque partie du corps.
  */
 
-import { IDENTITE, M, RAD, V, clamp } from './maths';
+import { IDENTITE, M, RAD, V, clamp, interpoler } from './maths';
 import type { Mat3, Vec3 } from './maths';
 
 // -----------------------------------------------------------------------------
@@ -23,7 +23,31 @@ export const OS = {
   jambe: 41.5,
   /** Hauteur de la cheville au-dessus du sol, pied à plat. */
   cheville: 8,
+  /** Articulation des orteils, depuis la cheville : sous la tête des métatarsiens, au ras de la semelle (pivot de la pointe des pieds). */
+  orteils: [0, -8, 13] as Vec3,
 } as const;
+
+/**
+ * Pli des orteils pour un pied posé dont le talon est levé de `pointe` degrés :
+ * ils restent à plat sur l'appui (sur la pointe des pieds, au fond d'une fente).
+ * Au-delà de 70°, le pied bascule sur son dessus (pied arrière du squat bulgare) :
+ * les orteils se remettent peu à peu dans l'axe du pied.
+ */
+export function plieOrteils(pointe: number): number {
+  if (pointe <= 0) return 0;
+  if (pointe <= 70) return pointe;
+  return pointe >= 110 ? 0 : (70 * (110 - pointe)) / 40;
+}
+
+/**
+ * Cible d'un pied qui se lève sur la pointe sans glisser : la base des orteils
+ * reste en `appui` (au sol : y = 0), le talon levé de `pointe` degrés. `cote` : 1
+ * pour le pied gauche, −1 pour le droit (son `tour` s'ouvre de l'autre côté).
+ */
+export function surLaPointe(appui: Vec3, pointe: number, tour = 0, cote: 1 | -1 = 1): CibleJambe {
+  const b = M.vec(M.mul(M.ry(tour * cote), M.rx(pointe)), OS.orteils);
+  return { pos: V.sub(appui, b), pole: [Math.sin(tour * cote * RAD), 0, Math.cos(tour * RAD)], tour, pointe };
+}
 
 // -----------------------------------------------------------------------------
 // Pose
@@ -194,26 +218,27 @@ export function pose(d: DescriptionPose): Pose {
   };
 }
 
-function entreValeurs(a: unknown, b: unknown, t: number): unknown {
-  if (typeof a === 'number' && typeof b === 'number') return a + (b - a) * t;
-  if (Array.isArray(a) && Array.isArray(b)) return a.map((x, i) => entreValeurs(x, b[i], t));
-  if (a !== null && typeof a === 'object' && b !== null && typeof b === 'object') {
+/** Chaque nombre suit sa courbe à travers toutes les poses clés ; le reste est pris à la pose clé `i`. */
+function entreCles(vals: readonly unknown[], t: number, i: number): unknown {
+  if (vals.every((v) => typeof v === 'number')) return interpoler(vals as number[], t);
+  if (vals.every((v) => Array.isArray(v))) return (vals[0] as unknown[]).map((_, k) => entreCles(vals.map((v) => (v as unknown[])[k]), t, i));
+  if (vals.every((v) => v !== null && typeof v === 'object')) {
     const o: Record<string, unknown> = {};
-    for (const k of Object.keys(a)) o[k] = entreValeurs((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k], t);
+    for (const k of Object.keys(vals[0]!)) o[k] = entreCles(vals.map((v) => (v as Record<string, unknown>)[k]), t, i);
     return o;
   }
-  return a;
+  return vals[i];
 }
 
 /**
- * Pose à l'avancement `t` (0 = première pose clé, 1 = dernière). Entre deux
- * poses clés, chaque nombre est interpolé ; un membre doit garder le même mode
- * (angles ou cible) d'une pose clé à l'autre.
+ * Pose à l'avancement `t` (0 = première pose clé, 1 = dernière). Chaque nombre
+ * passe par sa valeur de chaque pose clé, sans à-coup (`interpoler`) ; un membre
+ * doit garder le même mode (angles ou cible) d'une pose clé à l'autre.
  */
 export function poseAu(cles: readonly Pose[], t: number): Pose {
   if (cles.length === 1) return cles[0]!;
-  const x = clamp(t, 0, 1) * (cles.length - 1), i = Math.min(cles.length - 2, Math.floor(x));
-  return entreValeurs(cles[i], cles[i + 1], x - i) as Pose;
+  const i = Math.min(cles.length - 2, Math.floor(clamp(t, 0, 1) * (cles.length - 1)));
+  return entreCles(cles, t, i) as Pose;
 }
 
 /** Cible d'un pied posé au sol : écart au centre, et angle d'ouverture du pied. */
@@ -230,10 +255,10 @@ export const piedAuSol = (ecart: number, tour: number, avance = 0): CibleJambe =
 type Bornes = readonly [number, number];
 export const LIMITES = {
   epaule: { flex: [-60, 180] as Bornes, abd: [-40, 180] as Bornes, rot: [-90, 90] as Bornes },
-  coude: [0, 150] as Bornes,
+  coude: [0, 160] as Bornes,
   pronation: [-90, 90] as Bornes,
   poignet: { flex: [-70, 80] as Bornes, dev: [-25, 35] as Bornes },
-  hanche: { flex: [-25, 125] as Bornes, abd: [-30, 55] as Bornes, rot: [-45, 45] as Bornes },
+  hanche: { flex: [-25, 140] as Bornes, abd: [-30, 55] as Bornes, rot: [-45, 45] as Bornes },
   genou: [0, 150] as Bornes,
   cheville: [-45, 25] as Bornes,
   lombaires: { flex: [-25, 50] as Bornes, penche: [-25, 25] as Bornes, tour: [-20, 20] as Bornes },
@@ -311,7 +336,7 @@ export interface Repere {
 export type Reperes = Readonly<Record<string, Repere>>;
 
 /** Repères qui existent en deux exemplaires : suffixe `G` (gauche) ou `D` (droite). */
-export const REPERES_PAIRS = ['omoplate', 'epaule', 'coude', 'cubitus', 'poignet', 'delto', 'hanche', 'genou', 'cheville', 'fessier', 'rotule'] as const;
+export const REPERES_PAIRS = ['omoplate', 'epaule', 'coude', 'cubitus', 'poignet', 'delto', 'hanche', 'genou', 'cheville', 'orteils', 'fessier', 'rotule'] as const;
 /** Repères du tronc, et le repère fixe du monde. */
 export const REPERES_CENTRAUX = ['monde', 'bassin', 'lombaires', 'thorax', 'cou', 'tete'] as const;
 
@@ -428,8 +453,9 @@ export function resoudre(p: Pose, materiel?: (tronc: Reperes) => Reperes): Reper
     // Jambe
     const ja = c === 'G' ? p.jambeG : p.jambeD;
     const H = V.add(b.pos, M.vec(Rb, [OS.hanche[0] * cote, OS.hanche[1], OS.hanche[2]]));
-    let Rc: Mat3, genou: Vec3, Rj: Mat3, cheville: Vec3, Rp: Mat3;
+    let Rc: Mat3, genou: Vec3, Rj: Mat3, cheville: Vec3, Rp: Mat3, orteils = 0;
     if (ja.cible !== null) {
+      orteils = plieOrteils(ja.cible.pointe);
       const rp = F[ja.cible.repere ?? 'monde'];
       if (rp === undefined) throw new Error(`Repère inconnu pour la cible de la jambe : ${ja.cible.repere}`);
       const T = V.add(rp.o, M.vec(rp.R, ja.cible.pos));
@@ -447,6 +473,7 @@ export function resoudre(p: Pose, materiel?: (tronc: Reperes) => Reperes): Reper
     F['hanche' + c] = { o: H, R: Rc };
     F['genou' + c] = { o: genou, R: Rj };
     F['cheville' + c] = { o: cheville, R: Rp };
+    F['orteils' + c] = { o: V.add(cheville, M.vec(Rp, OS.orteils)), R: M.mul(Rp, M.rx(-orteils)) };
     // La fesse tient au bassin : elle ne suit la cuisse que d'un quart.
     F['fessier' + c] = { o: H, R: M.entre(Rb, Rc, 0.25) };
     F['rotule' + c] = { o: genou, R: M.entre(Rc, Rj, 0.5) };

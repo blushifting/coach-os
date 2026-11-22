@@ -9,7 +9,7 @@ import { loadExercises } from '@/engine/catalog';
 import { MUSCLES as MUSCLES_SUIVIS } from '@/engine/models';
 import { cadrer, camera } from '@/visuels/camera';
 import { MUSCLES, OSSATURE, construireCorps, geomMuscle, geomOs, profondeur } from '@/visuels/corps';
-import { M, V } from '@/visuels/maths';
+import { M, V, interpoler } from '@/visuels/maths';
 import type { Vec3 } from '@/visuels/maths';
 import { Maillage, PAR_SOMMET, ajouterPave } from '@/visuels/maillage';
 import { MODELES, reperesMateriel, volumesMateriel } from '@/visuels/materiel';
@@ -19,7 +19,7 @@ import { POSES, poseValidee } from '@/visuels/poses';
 import { REPOS } from '@/visuels/poses/repos';
 import { avancement, coefficientPiece, construireScene, mesurerSujet, reperesAu, reposMateriel } from '@/visuels/scene';
 import type { PoseExercice } from '@/visuels/scene';
-import { LIMITES, OS, PRISE, deuxOs, pose, poseAu, resoudre } from '@/visuels/squelette';
+import { LIMITES, OS, PRISE, deuxOs, pose, poseAu, resoudre, surLaPointe } from '@/visuels/squelette';
 import type { Reperes } from '@/visuels/squelette';
 
 const corps = construireCorps(1, false, REPOS);
@@ -281,15 +281,20 @@ describe('visuels — poses', () => {
     expect(poseValidee('exercice_inexistant')).toBeNull();
   });
 
-  it('les pieds posés restent au sol pendant tout le mouvement', () => {
+  it('un pied posé ne bouge pas pendant tout le mouvement, et s\'il est à plat au sol, il y reste', () => {
+    // Un pied qui fait un pas (fentes, step-up) ou se lève sur la pointe change de cible d'une
+    // pose clé à l'autre : il n'est pas « posé ».
     for (const p of Object.values(POSES)) {
       const depart = reperesAu(p, 0);
-      for (const t of [0.25, 0.5, 0.75, 1]) {
-        const F = reperesAu(p, t);
-        for (const c of ['G', 'D'] as const) {
-          if ((c === 'G' ? p.cles[0]!.jambeG : p.cles[0]!.jambeD).cible === null) continue;
+      for (const c of ['G', 'D'] as const) {
+        const cibles = p.cles.map((k) => (c === 'G' ? k.jambeG : k.jambeD).cible);
+        const cible = cibles[0];
+        if (cible === null || cible === undefined || cibles.some((x) => JSON.stringify(x) !== JSON.stringify(cible))) continue;
+        const auSol = (cible.repere ?? 'monde') === 'monde' && cible.pointe === 0 && cible.pos[1] === OS.cheville;
+        for (const t of [0.25, 0.5, 0.75, 1]) {
+          const F = reperesAu(p, t);
           expect(V.len(V.sub(F['cheville' + c]!.o, depart['cheville' + c]!.o)), `${p.id} à ${t}`).toBeLessThan(1e-6);
-          expect(F['cheville' + c]!.o[1]).toBeCloseTo(OS.cheville, 6);
+          if (auSol) expect(F['cheville' + c]!.o[1]).toBeCloseTo(OS.cheville, 6);
         }
       }
     }
@@ -539,5 +544,63 @@ describe('visuels — continuité des muscles', () => {
     const tricepsLat = corps.muscles.find((x) => x.id === 'tricepsLatG')!;
     const neutre = resoudre(pose({ bras: { coude: 90 } })), prono = resoudre(pose({ bras: { coude: 90, pronation: 80 } }));
     expect(V.len(V.sub(lieu(prono, tricepsLat.a), lieu(neutre, tricepsLat.a)))).toBeLessThan(1e-9);
+  });
+});
+
+describe('visuels — fluidité', () => {
+  it('entre poses clés, la courbe passe par chaque valeur, sans dépasser, et reste droite à deux valeurs', () => {
+    expect(interpoler([10, 30], 0.25)).toBeCloseTo(15, 9);
+    const v = [8, 22, 8, 8];
+    for (let i = 0; i < v.length; i++) expect(interpoler(v, i / 3)).toBeCloseTo(v[i]!, 9);
+    // Un pied qui se repose ne s'enfonce pas dans le sol, et ne monte pas plus haut que son pas.
+    for (let t = 0; t <= 1; t += 0.01) {
+      expect(interpoler(v, t)).toBeGreaterThanOrEqual(8 - 1e-9);
+      expect(interpoler(v, t)).toBeLessThanOrEqual(22 + 1e-9);
+    }
+  });
+
+  it('aucune articulation ne change brusquement de vitesse en cours de mouvement', () => {
+    // Variation d'un pas au suivant, rapportée au pas le plus long de la pose, hors des bouts
+    // (le départ et l'arrivée sont adoucis par le tempo). Un bras presque tendu qui vise une
+    // barre suivant son propre trajet dépassait nettement ce seuil : le coude battait.
+    const N = 100, R = ['coudeG', 'coudeD', 'poignetG', 'poignetD', 'genouG', 'genouD', 'chevilleG', 'chevilleD'];
+    const fautes: string[] = [];
+    for (const s of Object.values(POSES)) {
+      const F = Array.from({ length: N + 1 }, (_, i) => reperesAu(s, i / N));
+      let pas = 1e-9;
+      for (const r of R) for (let i = 0; i < N; i++) pas = Math.max(pas, V.len(V.sub(F[i + 1]![r]!.o, F[i]![r]!.o)));
+      for (const r of R) {
+        for (let i = 2; i < N - 2; i++) {
+          const a = V.len(V.add(V.sub(F[i + 1]![r]!.o, F[i]![r]!.o), V.sub(F[i - 1]![r]!.o, F[i]![r]!.o))) / pas;
+          if (a > 0.2) fautes.push(`${s.id}, ${r} à ${i / N} : ${a.toFixed(2)}`);
+        }
+      }
+    }
+    expect(fautes.slice(0, 5)).toEqual([]);
+  });
+
+  it('une barre portée par les mains reste horizontale, centrée entre les poings', () => {
+    const s = POSES.deadlift_conv!;
+    for (const t of [0, 0.3, 0.7, 1]) {
+      const F = reperesAu(s, t);
+      const poing = (c: string): Vec3 => V.add(F['poignet' + c]!.o, M.vec(F['poignet' + c]!.R, [0, -PRISE, 0]));
+      const tige = volumesMateriel(s.materiel, F, t).find((v) => v.forme === 'cylindre')!;
+      if (tige.forme !== 'cylindre') throw new Error('tige attendue');
+      const milieu = V.mul(V.add(tige.p0, tige.p1), 0.5);
+      expect(V.len(V.sub(milieu, V.mul(V.add(poing('G'), poing('D')), 0.5)))).toBeLessThan(1e-6);
+      expect(Math.abs(tige.p0[1] - tige.p1[1])).toBeLessThan(1e-6);
+    }
+  });
+
+  it('sur la pointe des pieds, la base des orteils ne glisse pas et les orteils restent à plat', () => {
+    const appui: Vec3 = [8, 0, 13];
+    for (const pointe of [0, 20, 38, 60]) {
+      const F = resoudre(pose({ bassin: { pos: [0, 92, 0] }, jambe: { cible: surLaPointe(appui, pointe) } }));
+      const o = F.orteilsG!;
+      expect(o.o[0]).toBeCloseTo(appui[0], 2);
+      expect(o.o[1]).toBeCloseTo(OS.cheville + OS.orteils[1], 2);
+      expect(o.o[2]).toBeCloseTo(appui[2], 2);
+      expect(M.vec(o.R, [0, 0, 1])[1]).toBeCloseTo(0, 6);
+    }
   });
 });
