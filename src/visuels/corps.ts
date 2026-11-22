@@ -71,6 +71,12 @@ interface SpecOs {
   /** Une à gauche (décrite ici), une à droite (en miroir). */
   readonly pair?: boolean;
   readonly bouts?: readonly [number, number];
+  /**
+   * Centimètres dont le fuseau se prolonge sous son articulation, dans le morceau d'en dessous
+   * (tronc). Quand le dos se plie, ce bout bouche la fente qui s'ouvre du côté convexe entre deux
+   * morceaux ; droit, il reste caché dedans (sa section s'amincit un peu en descendant).
+   */
+  readonly recouvre?: number;
   readonly anneaux: readonly Anneau[];
   /** Variante main fermée sur une prise. */
   readonly ferme?: { readonly L: number; readonly anneaux: readonly Anneau[] };
@@ -107,12 +113,12 @@ function anneauxTete(): Anneau[] {
 export const OSSATURE: readonly SpecOs[] = [
   { id: 'bassin', joint: 'bassin', base: 'haut', o: [0, -12, 0], L: 18, ton: 'corps', mince: 0.97,
     anneaux: [[0, 7, 6, 0, -0.5], [0.17, 13.2, 9.6, 0, -0.8], [0.39, 16.4, 11, 0, -1], [0.67, 15.9, 10.6, 0, -0.6], [1, 14.6, 9.7, 0, 0]] },
-  { id: 'ventre', joint: 'lombaires', base: 'haut', o: [0, 0, 0], L: 22, ton: 'corps', mince: 0.97,
+  { id: 'ventre', joint: 'lombaires', base: 'haut', o: [0, 0, 0], L: 22, ton: 'corps', mince: 0.97, recouvre: 5,
     anneaux: [[0, 14.6, 9.7, 0, 0], [0.3, 13.8, 9.2, 0, 0.2], [0.65, 14, 9.4, 0, 0.5], [1, 15, 9.9, 0, 0.6]] },
   // Le haut du thorax monte en pente droite jusqu'au cou : c'est le corps qui
   // porte la pente cou-épaule. Le trapèze n'est qu'un relief posé dessus ; si
   // la pente ne tenait que par lui, il aurait l'air d'une épaulette.
-  { id: 'thorax', joint: 'thorax', base: 'haut', o: [0, 0, 0], L: 30.5, ton: 'corps', mince: 0.97,
+  { id: 'thorax', joint: 'thorax', base: 'haut', o: [0, 0, 0], L: 30.5, ton: 'corps', mince: 0.97, recouvre: 5,
     anneaux: [[0, 15, 9.9, 0, 0.6], [0.266, 17, 11.3, 0, 1], [0.495, 17.6, 11.8, 0, 0.8], [0.69, 16.2, 10.4, 0, 0.2], [0.8, 14.4, 9.2, 0, -0.6], [0.9, 10.6, 7.8, 0, -1], [1, 6.4, 6.2, 0, -0.5]] },
   { id: 'cou', joint: 'cou', base: 'haut', o: [0, -1, 0], L: 7.5, ton: 'corps', fixe: true,
     anneaux: [[0, 5.6, 5.8, 0, 0], [1, 5, 5.4, 0, 0.4]] },
@@ -408,16 +414,19 @@ function preparerOs(spec: SpecOs, cote: 1 | -1, carrure: number, mainFermee: boo
   const us = src.anneaux.map((r) => r[0]);
   const f = ([1, 2, 3, 4] as const).map((j) => courbe(us, src.anneaux.map((r) => r[j])));
   const base = BASES[spec.base], sfx = spec.pair ? suffixe(cote) : '';
+  const e = spec.recouvre ?? 0, L = src.L + e;
+  const o = V.sub(src.o, V.mul(base.a, e));
   return {
     id: spec.id + sfx,
     joint: spec.joint + sfx,
     ton: spec.ton,
-    o: [src.o[0] * cote, src.o[1], src.o[2]],
+    o: [o[0] * cote, o[1], o[2]],
     bx: base.x, ba: base.a, bz: base.z,
-    L: src.L,
-    st: sections(Math.max(8, Math.ceil(src.L / 2)), (u) => ({
-      a: Math.max(0, f[0]!(u)) * k * ka(u), b: Math.max(0, f[1]!(u)) * k * kb(u), cx: f[2]!(u) * cote, cz: f[3]!(u), cr: 0,
-    })),
+    L,
+    st: sections(Math.max(8, Math.ceil(L / 2)), (v) => {
+      const sous = e - v * L, u = Math.max(0, (v * L - e) / src.L), m = sous > 0 ? 1 - 0.06 * sous / e : 1;
+      return { a: Math.max(0, f[0]!(u)) * k * ka(u) * m, b: Math.max(0, f[1]!(u)) * k * kb(u) * m, cx: f[2]!(u) * cote, cz: f[3]!(u), cr: 0 };
+    }),
     bouts: spec.bouts ? [spec.bouts[0] * carrure * fm.a[0], spec.bouts[1] * carrure * fm.a[1]] : null,
   };
 }

@@ -54,6 +54,20 @@ const LOTS: readonly { nom: string; ids: readonly string[] }[] = [
       'dead_bug', 'glute_bridge_bw', 'glute_bridge', 'bodyweight_squat', 'sissy_squat',
     ],
   },
+  {
+    nom: 'Sur banc : allongé',
+    ids: [
+      'bench_bb', 'bench_bb_incl30', 'bench_bb_decl', 'bench_bb_close', 'bench_db', 'bench_db_incl30', 'bench_db_decl',
+      'db_fly_flat', 'db_pullover', 'french_press_ez', 'jm_press', 'sit_up_decline',
+    ],
+  },
+  {
+    nom: 'Sur banc : assis, appuyé, à genoux',
+    ids: [
+      'db_row', 'chest_supported_db_row', 'hip_thrust_bb', 'single_leg_hip_thrust', 'ohp_db_seated', 'arnold_press',
+      'incline_db_curl', 'spider_curl', 'concentration_curl', 'preacher_curl_bb', 'preacher_curl_db',
+    ],
+  },
 ];
 
 const NB = ' ';
