@@ -43,6 +43,17 @@ const LOTS: readonly { nom: string; ids: readonly string[] }[] = [
       'single_leg_rdl', 'good_morning', 'walking_lunge', 'reverse_lunge', 'step_up', 'bulgarian_split', 'calf_db_single',
     ],
   },
+  {
+    nom: 'Poids du corps : appuis et suspensions',
+    ids: ['pushup', 'pushup_loaded', 'dips_chest', 'dips_triceps', 'pullup', 'inverted_row', 'hanging_leg_raise', 'ab_wheel_rollout'],
+  },
+  {
+    nom: 'Au sol : abdos et bas du corps',
+    ids: [
+      'crunch_floor', 'sit_up', 'reverse_crunch', 'bicycle_crunch', 'oblique_crunch', 'russian_twist', 'lying_leg_raise',
+      'dead_bug', 'glute_bridge_bw', 'glute_bridge', 'bodyweight_squat', 'sissy_squat',
+    ],
+  },
 ];
 
 const NB = ' ';

@@ -18,7 +18,7 @@ export const front_squat: PoseExercice = {
       bassin: { pos: [0, 96.5, 0], bascule: 2 },
       bras: {
         pronation: -75,
-        poignet: { flex: -20, dev: 35 },
+        poignet: { flex: -35, dev: -20 },
         cible: { repere: 'thorax', pos: [21.5, 28, 8], pole: [0.25, 0, 1] },
       },
       jambe: { cible: { pos: [16, 8, 0], pole: [0.34, 0, 0.94], tour: 20, pointe: 0 } },
@@ -29,7 +29,7 @@ export const front_squat: PoseExercice = {
       cou: { flex: -6 },
       bras: {
         pronation: -75,
-        poignet: { flex: -20, dev: 35 },
+        poignet: { flex: -35, dev: -20 },
         cible: { repere: 'thorax', pos: [21.5, 28, 8], pole: [0.25, 0, 1] },
       },
       jambe: { cible: { pos: [16, 8, 0], pole: [0.34, 0, 0.94], tour: 20, pointe: 0 } },

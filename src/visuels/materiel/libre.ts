@@ -1,6 +1,6 @@
 /**
  * Poids libres et petits accessoires : barre, barre EZ, trap bar, haltère,
- * landmine (T-bar), roue abdominale.
+ * disque, landmine (T-bar), roue abdominale.
  *
  * Une barre tenue à deux mains n'est pas accrochée aux mains : elle suit son
  * propre trajet (`trajet`, des déplacements de son centre au fil du
@@ -33,6 +33,12 @@ export interface TrapBar { readonly type: 'trapBar'; readonly repere: string; re
  * dans ce repère (absent : Z).
  */
 export interface Haltere { readonly type: 'haltere'; readonly repere: string; readonly centre: Vec3; readonly axe?: Vec3 }
+/**
+ * Disque de fonte seul, porté par une partie du corps (pompes lestées : à plat sur le
+ * haut du dos, repère `thorax`). `axe` : direction de son axe dans ce repère (absent :
+ * Z) ; `rayon` en cm (10 kg : 16,5).
+ */
+export interface Disque { readonly type: 'disque'; readonly repere: string; readonly centre: Vec3; readonly rayon: number; readonly axe?: Vec3 }
 /**
  * Landmine (T-bar row) : barre articulée au sol en `pos`, qui part vers +Z.
  * `course` : son angle au-dessus du sol (degrés) au fil du mouvement. Repère
@@ -146,6 +152,15 @@ export const HALTERE: Modele<Haltere> = {
     h.cyl([0, 0, -5.5], [0, 0, 5.5], 1.2, 'metal');
     h.cyl([0, 0, 5.5], [0, 0, 10], 5.2, 'fonte');
     h.cyl([0, 0, -10], [0, 0, -5.5], 5.2, 'fonte');
+    return Number.NaN;
+  },
+};
+
+export const DISQUE: Modele<Disque> = {
+  dessiner({ out, F }, p) {
+    const d = traceur(out, dans(repereDe(F, p.repere), p.centre, versAxe(p.axe)));
+    d.cyl([0, 0, -1.5], [0, 0, 1.5], p.rayon, 'fonte');
+    d.cyl([0, 0, -1.8], [0, 0, 1.8], 3, 'moyeu');
     return Number.NaN;
   },
 };

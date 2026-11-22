@@ -27,8 +27,8 @@
 import { V } from './maths';
 import type { Vec3 } from './maths';
 import type { Repere, Reperes } from './squelette';
-import { BARRE, BARRE_EZ, HALTERE, LANDMINE, ROUE_ABDO, TRAP_BAR } from './materiel/libre';
-import type { Barre, BarreEz, Haltere, Landmine, RoueAbdo, TrapBar } from './materiel/libre';
+import { BARRE, BARRE_EZ, DISQUE, HALTERE, LANDMINE, ROUE_ABDO, TRAP_BAR } from './materiel/libre';
+import type { Barre, BarreEz, Disque, Haltere, Landmine, RoueAbdo, TrapBar } from './materiel/libre';
 import {
   ABD_ADDUCTEURS, ASSISTEE, CRUNCH_MACHINE, CURL_MACHINE, DEVELOPPE_MACHINE, ELEVATIONS_MACHINE, HACK_SQUAT, HIP_THRUST_MACHINE,
   KICKBACK_MACHINE, LEG_CURL_ASSIS, LEG_CURL_COUCHE, LEG_EXTENSION, MOLLETS_ASSIS, MOLLETS_DEBOUT, PEC_DECK, PRESSE_CUISSES,
@@ -49,7 +49,7 @@ export type { Prise, TonMateriel, Volume } from './materiel/outils';
 
 /** Une pièce de matériel. */
 export type Piece =
-  | Barre | BarreEz | TrapBar | Haltere | Landmine | RoueAbdo
+  | Barre | BarreEz | TrapBar | Haltere | Disque | Landmine | RoueAbdo
   | Banc | BarreTraction | BarresParalleles | Pupitre | BancLombaires | Ghr | ReverseHyper
   | Poulie | VisAVis | TirageHorizontalPoulie | TirageVertical
   | PecDeck | DeveloppeMachine | TirageHorizontalMachine | PresseCuisses | HackSquat | Smith
@@ -61,7 +61,7 @@ type ParType = { readonly [K in Piece['type']]: Modele<Extract<Piece, { type: K 
 
 /** Le modèle de chaque type de pièce. */
 export const MODELES: ParType = {
-  barre: BARRE, barreEz: BARRE_EZ, trapBar: TRAP_BAR, haltere: HALTERE, landmine: LANDMINE, roueAbdo: ROUE_ABDO,
+  barre: BARRE, barreEz: BARRE_EZ, trapBar: TRAP_BAR, haltere: HALTERE, disque: DISQUE, landmine: LANDMINE, roueAbdo: ROUE_ABDO,
   banc: BANC, barreTraction: BARRE_TRACTION, barresParalleles: BARRES_PARALLELES, pupitre: PUPITRE,
   bancLombaires: BANC_LOMBAIRES, ghr: GHR, reverseHyper: REVERSE_HYPER,
   poulie: POULIE, visAVis: VIS_A_VIS, tirageHorizontalPoulie: TIRAGE_HORIZONTAL_POULIE, tirageVertical: TIRAGE_VERTICAL,

@@ -33,7 +33,7 @@ export const walking_lunge: PoseExercice = {
       bassin: { pos: [0, 90, 34], bascule: 4 },
       bras: { epaule: { flex: 2, abd: 7 }, coude: 6 },
       jambeG: { cible: { pos: [11, 8, 66], pole: [0.14, 0, 0.99], tour: 8, pointe: 0 } },
-      jambeD: { cible: { pos: [-11.54, 12.29, 3.93], pole: [-0.14, 0, 0.99], tour: 8, pointe: 22 } },
+      jambeD: { cible: { pos: [-11.42, 12.46, 3.08], pole: [-0.14, 0, 0.99], tour: 8, pointe: 22 } },
     }),
     pose({
       bassin: { pos: [0, 58, 32], bascule: 6 },
@@ -41,7 +41,7 @@ export const walking_lunge: PoseExercice = {
       bras: { epaule: { flex: 2, abd: 7 }, coude: 6 },
       jambeG: { cible: { pos: [11, 8, 66], pole: [0.14, 0, 0.99], tour: 8, pointe: 0 } },
       jambeD: {
-        cible: { pos: [-12.86, 15.26, 13.32], pole: [-0.14, 0, 0.99], tour: 8, pointe: 60 },
+        cible: { pos: [-12.58, 16.41, 11.35], pole: [-0.14, 0, 0.99], tour: 8, pointe: 60 },
       },
     }),
   ],

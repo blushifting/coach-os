@@ -27,14 +27,16 @@ export const reverse_lunge: PoseExercice = {
       bassin: { pos: [0, 92, -12], bascule: 8 },
       bras: { epaule: { flex: 2, abd: 7 }, coude: 6 },
       jambeG: { cible: { pos: [11, 8, 0], pole: [0.14, 0, 0.99], tour: 8, pointe: 0 } },
-      jambeD: { cible: { pos: [-11, 24, -34], pole: [0.14, 0, 0.99], tour: 8, pointe: 30 } },
+      jambeD: {
+        cible: { pos: [-10.84, 24.31, -35.14], pole: [0.14, 0, 0.99], tour: 8, pointe: 30 },
+      },
     }),
     pose({
       bassin: { pos: [0, 80, -24], bascule: 8 },
       bras: { epaule: { flex: 2, abd: 7 }, coude: 6 },
       jambeG: { cible: { pos: [11, 8, 0], pole: [0.14, 0, 0.99], tour: 8, pointe: 0 } },
       jambeD: {
-        cible: { pos: [-12.49, 15.1, -54.21], pole: [-0.14, 0, 0.99], tour: 8, pointe: 50 },
+        cible: { pos: [-12.24, 15.92, -55.95], pole: [-0.14, 0, 0.99], tour: 8, pointe: 50 },
       },
     }),
     pose({
@@ -42,7 +44,7 @@ export const reverse_lunge: PoseExercice = {
       bras: { epaule: { flex: 2, abd: 7 }, coude: 6 },
       jambeG: { cible: { pos: [11, 8, 0], pole: [0.14, 0, 0.99], tour: 8, pointe: 0 } },
       jambeD: {
-        cible: { pos: [-12.86, 15.26, -51.58], pole: [-0.14, 0, 0.99], tour: 8, pointe: 60 },
+        cible: { pos: [-12.58, 16.41, -53.55], pole: [-0.14, 0, 0.99], tour: 8, pointe: 60 },
       },
     }),
   ],

@@ -29,13 +29,13 @@ export const step_up: PoseExercice = {
       bassin: { pos: [0, 102, 14], bascule: 12 },
       bras: { epaule: { flex: 2, abd: 7 }, coude: 6 },
       jambeG: { cible: { pos: [11, 52, 30], pole: [0.07, 0, 1], tour: 4, pointe: 0 } },
-      jambeD: { cible: { pos: [-12.49, 15.1, 10.69], pole: [-0.14, 0, 0.99], tour: 8, pointe: 50 } },
+      jambeD: { cible: { pos: [-12.24, 15.92, 8.95], pole: [-0.14, 0, 0.99], tour: 8, pointe: 50 } },
     }),
     pose({
       bassin: { pos: [0, 136, 26], bascule: 4 },
       bras: { epaule: { flex: 2, abd: 7 }, coude: 6 },
       jambeG: { cible: { pos: [11, 52, 30], pole: [0.07, 0, 1], tour: 4, pointe: 0 } },
-      jambeD: { cible: { pos: [-11, 66, 18], pole: [0.14, 0, 0.99], tour: 8, pointe: 10 } },
+      jambeD: { cible: { pos: [-10.94, 66.03, 17.6], pole: [0.14, 0, 0.99], tour: 8, pointe: 10 } },
     }),
     pose({
       bassin: { pos: [0, 141, 28], bascule: 2 },

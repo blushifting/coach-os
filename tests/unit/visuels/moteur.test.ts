@@ -545,6 +545,37 @@ describe('visuels — continuité des muscles', () => {
     const neutre = resoudre(pose({ bras: { coude: 90 } })), prono = resoudre(pose({ bras: { coude: 90, pronation: 80 } }));
     expect(V.len(V.sub(lieu(prono, tricepsLat.a), lieu(neutre, tricepsLat.a)))).toBeLessThan(1e-9);
   });
+
+  it('le poignet plie vers la paume et s\'incline vers le pouce, des deux côtés', () => {
+    // Bras le long du corps, paume contre la cuisse, pouce vers l'avant.
+    const doigts = (poignet: { flex?: number; dev?: number }, c: 'G' | 'D'): Vec3 =>
+      M.vec(resoudre(pose({ bras: { poignet } }))['poignet' + c]!.R, [0, -1, 0]);
+    for (const [c, dedans] of [['G', -1], ['D', 1]] as const) {
+      expect(doigts({ flex: 60 }, c)[0] * dedans, `flexion, côté ${c}`).toBeGreaterThan(0.8);
+      expect(doigts({ flex: -60 }, c)[0] * dedans, `extension, côté ${c}`).toBeLessThan(-0.8);
+      expect(doigts({ dev: 20 }, c)[2], `vers le pouce, côté ${c}`).toBeGreaterThan(0.3);
+    }
+    // Main à plat au sol sous un avant-bras vertical : 90° d'extension.
+    expect(doigts({ flex: -90 }, 'G')[0]).toBeCloseTo(1, 6);
+  });
+
+  it('une main posée à plat le reste tout le long du mouvement, dans chaque pose du registre', () => {
+    let vues = 0;
+    for (const s of Object.values(POSES)) {
+      for (const c of ['G', 'D'] as const) {
+        const plat = s.cles[0]![c === 'G' ? 'brasG' : 'brasD'].cible?.plat;
+        if (plat === undefined) continue;
+        vues++;
+        for (let i = 0; i <= 20; i++) {
+          const R = reperesAu(s, i / 20)['poignet' + c]!.R;
+          // La paume regarde −X (main gauche) ou +X (main droite) ; les doigts, −Y.
+          expect(V.dot(M.vec(R, [c === 'G' ? -1 : 1, 0, 0]), plat.normale), `${s.id}, paume ${c}`).toBeCloseTo(1, 6);
+          expect(M.vec(R, [0, -1, 0])[1], `${s.id}, doigts ${c}`).toBeCloseTo(0, 6);
+        }
+      }
+    }
+    expect(vues).toBeGreaterThan(0);
+  });
 });
 
 describe('visuels — fluidité', () => {

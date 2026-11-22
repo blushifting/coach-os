@@ -23,7 +23,7 @@ export const calf_db_single: PoseExercice = {
     pose({
       bassin: { pos: [0, 103.6, 6], bascule: 2 },
       bras: { epaule: { flex: 2, abd: 6 }, coude: 6 },
-      jambeG: { cible: { pos: [6.84, 14.31, 7.61], pole: [0.1, 0, 0.99], tour: 6, pointe: 38 } },
+      jambeG: { cible: { pos: [6.69, 14.8, 6.2], pole: [0.1, 0, 0.99], tour: 6, pointe: 38 } },
       jambeD: { hanche: { flex: 4 }, genou: 75, cheville: 20 },
     }),
   ],

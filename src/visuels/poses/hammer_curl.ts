@@ -26,7 +26,7 @@ export const hammer_curl: PoseExercice = {
     pose({
       bassin: { pos: [0, 97.4, 0], bascule: 2 },
       thorax: { flex: 2 },
-      bras: { epaule: { flex: 14, abd: 6 }, coude: 116, poignet: { flex: -8 } },
+      bras: { epaule: { flex: 14, abd: 6 }, coude: 116, poignet: { dev: -8 } },
       jambe: { cible: { pos: [11, 8, 0], pole: [0.17, 0, 0.98], tour: 10, pointe: 0 } },
     }),
   ],

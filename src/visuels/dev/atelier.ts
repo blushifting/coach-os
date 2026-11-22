@@ -488,7 +488,7 @@ function panneauJambes(): HTMLElement[] {
 }
 
 const NOMS_PIECES: Readonly<Record<Piece['type'], string>> = {
-  barre: 'Barre', barreEz: 'Barre EZ', trapBar: 'Trap bar', haltere: 'Haltère', landmine: 'Landmine (T-bar)', roueAbdo: 'Roue abdominale',
+  barre: 'Barre', barreEz: 'Barre EZ', trapBar: 'Trap bar', haltere: 'Haltère', disque: 'Disque', landmine: 'Landmine (T-bar)', roueAbdo: 'Roue abdominale',
   banc: 'Banc', barreTraction: 'Barre de traction', barresParalleles: 'Barres parallèles', pupitre: 'Pupitre à curl',
   bancLombaires: 'Banc à lombaires', ghr: 'Banc à ischios (GHR)', reverseHyper: 'Reverse hyper',
   poulie: 'Poulie', visAVis: 'Vis-à-vis', tirageHorizontalPoulie: 'Tirage horizontal à la poulie', tirageVertical: 'Tirage vertical',

@@ -23,8 +23,14 @@ export const OS = {
   jambe: 41.5,
   /** Hauteur de la cheville au-dessus du sol, pied à plat. */
   cheville: 8,
-  /** Articulation des orteils, depuis la cheville : sous la tête des métatarsiens, au ras de la semelle (pivot de la pointe des pieds). */
-  orteils: [0, -8, 13] as Vec3,
+  /**
+   * Articulation des orteils, depuis la cheville : au centre de la tête des métatarsiens,
+   * à `plante` cm au-dessus de la semelle. C'est autour d'elle que le pied roule quand le
+   * talon se lève (un pivot au ras de la semelle enfonçait le dessus des orteils dans le pied).
+   */
+  orteils: [0, -5.7, 13] as Vec3,
+  /** Rayon de la tête des métatarsiens : hauteur de l'articulation des orteils au-dessus du sol. */
+  plante: 2.3,
 } as const;
 
 /**
@@ -40,13 +46,14 @@ export function plieOrteils(pointe: number): number {
 }
 
 /**
- * Cible d'un pied qui se lève sur la pointe sans glisser : la base des orteils
- * reste en `appui` (au sol : y = 0), le talon levé de `pointe` degrés. `cote` : 1
- * pour le pied gauche, −1 pour le droit (son `tour` s'ouvre de l'autre côté).
+ * Cible d'un pied qui se lève sur la pointe sans glisser : la plante (sous la tête
+ * des métatarsiens) reste en `appui` (au sol : y = 0), le talon levé de `pointe`
+ * degrés ; le pied roule autour de l'articulation des orteils. `cote` : 1 pour le
+ * pied gauche, −1 pour le droit (son `tour` s'ouvre de l'autre côté).
  */
 export function surLaPointe(appui: Vec3, pointe: number, tour = 0, cote: 1 | -1 = 1): CibleJambe {
   const b = M.vec(M.mul(M.ry(tour * cote), M.rx(pointe)), OS.orteils);
-  return { pos: V.sub(appui, b), pole: [Math.sin(tour * cote * RAD), 0, Math.cos(tour * RAD)], tour, pointe };
+  return { pos: V.sub(V.add(appui, [0, OS.plante, 0]), b), pole: [Math.sin(tour * cote * RAD), 0, Math.cos(tour * RAD)], tour, pointe };
 }
 
 // -----------------------------------------------------------------------------
@@ -74,12 +81,18 @@ export interface AnglesRotule {
  * façons de la tenir, c'est celle qui tourne le moins l'avant-bras depuis
  * `pronation` qui est prise (0 : sa position naturelle ; ±90 pour l'autre prise).
  * La main reste ainsi au même endroit de la barre tout le long du mouvement.
+ *
+ * Avec `plat` (sans `axe`), la main est posée à plat, comme un pied : la paume
+ * regarde `normale` et les doigts `doigts` (dans le même repère) à chaque image,
+ * et c'est le poignet qui prend l'angle (pompes). Interpolée entre poses clés,
+ * l'orientation de la main ferait se soulever les doigts.
  */
 export interface CibleBras {
   readonly repere: string;
   readonly pos: Vec3;
   readonly pole: Vec3;
   readonly axe?: Vec3;
+  readonly plat?: { readonly normale: Vec3; readonly doigts: Vec3 };
 }
 /**
  * La cheville doit atteindre `pos` (dans l'espace, ou dans le repère
@@ -105,6 +118,12 @@ export interface PoseBras {
   readonly epaule: AnglesRotule;
   readonly coude: number;
   readonly pronation: number;
+  /**
+   * Poignet : `flex`, flexion (les doigts vers la paume ; négatif : extension, le dos
+   * de la main vers l'avant-bras) ; `dev`, inclinaison (vers le pouce ; négatif : vers
+   * l'auriculaire). Dans le repère de la main gauche, la paume regarde vers −X, les
+   * doigts vers −Y, le pouce vers +Z.
+   */
   readonly poignet: { readonly flex: number; readonly dev: number };
   /** Si présente, l'épaule et le coude sont calculés pour que la main l'atteigne. */
   readonly cible: CibleBras | null;
@@ -177,6 +196,12 @@ export const miroirBras = (p: PoseBras): PoseBras =>
         pos: [-p.cible.pos[0], p.cible.pos[1], p.cible.pos[2]],
         pole: [-p.cible.pole[0], p.cible.pole[1], p.cible.pole[2]],
         ...(p.cible.axe === undefined ? {} : { axe: [-p.cible.axe[0], p.cible.axe[1], p.cible.axe[2]] as Vec3 }),
+        ...(p.cible.plat === undefined ? {} : {
+          plat: {
+            normale: [-p.cible.plat.normale[0], p.cible.plat.normale[1], p.cible.plat.normale[2]] as Vec3,
+            doigts: [-p.cible.plat.doigts[0], p.cible.plat.doigts[1], p.cible.plat.doigts[2]] as Vec3,
+          },
+        }),
       },
     };
 export const miroirJambe = (p: PoseJambe): PoseJambe =>
@@ -257,7 +282,9 @@ export const LIMITES = {
   epaule: { flex: [-60, 180] as Bornes, abd: [-40, 180] as Bornes, rot: [-90, 90] as Bornes },
   coude: [0, 160] as Bornes,
   pronation: [-90, 90] as Bornes,
-  poignet: { flex: [-70, 80] as Bornes, dev: [-25, 35] as Bornes },
+  // Extension jusqu'à 90° (amplitude passive, citée de mémoire) : la main à plat au sol
+  // sous un avant-bras vertical (pompes, gainage).
+  poignet: { flex: [-90, 80] as Bornes, dev: [-35, 25] as Bornes },
   hanche: { flex: [-25, 140] as Bornes, abd: [-30, 55] as Bornes, rot: [-45, 45] as Bornes },
   genou: [0, 150] as Bornes,
   cheville: [-45, 25] as Bornes,
@@ -336,7 +363,7 @@ export interface Repere {
 export type Reperes = Readonly<Record<string, Repere>>;
 
 /** Repères qui existent en deux exemplaires : suffixe `G` (gauche) ou `D` (droite). */
-export const REPERES_PAIRS = ['omoplate', 'epaule', 'coude', 'cubitus', 'poignet', 'delto', 'hanche', 'genou', 'cheville', 'orteils', 'fessier', 'rotule'] as const;
+export const REPERES_PAIRS = ['omoplate', 'epaule', 'coude', 'cubitus', 'poignet', 'delto', 'hanche', 'genou', 'cheville', 'orteils', 'plante', 'fessier', 'rotule'] as const;
 /** Repères du tronc, et le repère fixe du monde. */
 export const REPERES_CENTRAUX = ['monde', 'bassin', 'lombaires', 'thorax', 'cou', 'tete'] as const;
 
@@ -406,6 +433,12 @@ export function resoudre(p: Pose, materiel?: (tronc: Reperes) => Reperes): Reper
         const k = deuxOs(S, T, OS.bras, OS.avantBras, pole, -1, LIMITES.coude[1]);
         Ru = k.R1; coude = k.J; poignet = k.E; Rcub = k.R2;
         Rf = M.mul(k.R2, M.ry(borne(br.pronation, LIMITES.pronation) * cote));
+        if (br.cible.plat !== undefined) {
+          // Main posée à plat : la paume (−X à gauche, +X à droite) et les doigts (−Y) sont imposés.
+          const X = V.norm(V.mul(M.vec(rep.R, br.cible.plat.normale), -cote));
+          const d = V.mul(M.vec(rep.R, br.cible.plat.doigts), -1), Y = V.norm(V.sub(d, V.mul(X, V.dot(X, d))));
+          Rmain = M.depuisColonnes(X, Y, V.cross(X, Y));
+        }
       } else {
         // Une poignée : l'avant-bras tourne, puis le poignet s'incline, jusqu'à ce
         // qu'elle traverse le poing ; le poignet est ensuite placé pour que le
@@ -445,7 +478,7 @@ export function resoudre(p: Pose, materiel?: (tronc: Reperes) => Reperes): Reper
     F['cubitus' + c] = { o: coude, R: Rcub };
     F['poignet' + c] = {
       o: poignet,
-      R: Rmain ?? M.mul(M.mul(Rf, M.rx(-borne(br.poignet.flex, LIMITES.poignet.flex))), M.rz(borne(br.poignet.dev, LIMITES.poignet.dev) * cote)),
+      R: Rmain ?? M.mul(M.mul(Rf, M.rx(-borne(br.poignet.dev, LIMITES.poignet.dev))), M.rz(-borne(br.poignet.flex, LIMITES.poignet.flex) * cote)),
     };
     F['delto' + c] = { o: S, R: aMiChemin(th.R, Ru, 0.55) };
     F['omoplate' + c] = { o: V.add(th.o, M.vec(th.R, [0, br.clav[0], br.clav[1]])), R: th.R };
@@ -474,6 +507,8 @@ export function resoudre(p: Pose, materiel?: (tronc: Reperes) => Reperes): Reper
     F['genou' + c] = { o: genou, R: Rj };
     F['cheville' + c] = { o: cheville, R: Rp };
     F['orteils' + c] = { o: V.add(cheville, M.vec(Rp, OS.orteils)), R: M.mul(Rp, M.rx(-orteils)) };
+    // À cheval sur la base des orteils, comme la rotule sur le genou.
+    F['plante' + c] = { o: F['orteils' + c]!.o, R: M.mul(Rp, M.rx(-orteils / 2)) };
     // La fesse tient au bassin : elle ne suit la cuisse que d'un quart.
     F['fessier' + c] = { o: H, R: M.entre(Rb, Rc, 0.25) };
     F['rotule' + c] = { o: genou, R: M.entre(Rc, Rj, 0.5) };

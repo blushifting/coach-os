@@ -132,11 +132,15 @@ export const OSSATURE: readonly SpecOs[] = [
     anneaux: [[0, 9.2, 9.4, 0, 0], [0.25, 9.4, 10.2, 0, 0.5], [0.6, 7.8, 8.6, 0, 0.7], [0.88, 5.9, 6.2, 0, 0.3], [1, 5.4, 5.6, 0, 0]] },
   { id: 'jambe', joint: 'genou', pair: true, base: 'bas', o: [0, 0, 0], L: 41.5, ton: 'corps', mince: 0.92, bouts: [5.2, 3.2],
     anneaux: [[0, 5.4, 5.6, 0, 0], [0.25, 6.2, 7, 0, -1.3], [0.55, 4.9, 5.4, 0, -0.7], [0.85, 3.4, 3.7, 0, 0], [1, 3.2, 3.4, 0, 0]] },
-  // Le pied, du talon à la base des orteils (semelle à plat, à 8 cm sous la cheville), puis
+  // Le pied, du talon à la base des orteils (semelle à plat, à 8 cm sous la cheville ; il s'arrête
+  // sur l'articulation des orteils, sinon son bout plonge dans le sol quand le talon se lève), puis
   // les orteils, articulés : ils restent posés quand le talon se lève.
-  { id: 'pied', joint: 'cheville', pair: true, base: 'avant', o: [0, -4.4, -5], L: 19, ton: 'corps', fixe: true,
+  { id: 'pied', joint: 'cheville', pair: true, base: 'avant', o: [0, -4.4, -5], L: 18, ton: 'corps', fixe: true,
     anneaux: [[0, 0.3, 0.3, 0, -1], [0.016, 1.3, 1.3, 0, -1], [0.04, 1.95, 1.95, 0, -1], [0.08, 2.45, 2.5, 0, -1], [0.14, 2.8, 2.75, 0, -0.9], [0.25, 3, 3.4, 0, 0], [0.45, 3.5, 3.3, 0, -0.1], [0.68, 4.3, 2.9, 0, -0.7], [0.9, 4.8, 2.5, 0, -1.1], [1, 4.8, 2.3, 0, -1.3]] },
-  { id: 'orteils', joint: 'orteils', pair: true, base: 'avant', o: [0, 2.2, -1], L: 8.5, ton: 'corps', fixe: true,
+  // La plante, sous la tête des métatarsiens : le pied roule autour d'elle quand le talon se
+  // lève. Tournée à mi-chemin du pied et des orteils, elle comble la pliure entre les deux.
+  { id: 'plante', joint: 'plante', pair: true, base: 'avant', o: [0, 0, -2.3], L: 4.6, ton: 'corps', fixe: true, anneaux: ovoide(4.8, 2.3, 1) },
+  { id: 'orteils', joint: 'orteils', pair: true, base: 'avant', o: [0, -0.1, -1], L: 8.5, ton: 'corps', fixe: true,
     anneaux: [[0, 4.8, 2.1, 0, 0], [0.45, 4.6, 1.7, 0, -0.3], [0.78, 4, 1.4, 0, -0.6], [0.93, 3.2, 1.1, 0, -0.75], [1, 1.6, 0.6, 0, -0.85]] },
 ];
 
@@ -193,9 +197,12 @@ export const MUSCLES: readonly SpecMuscle[] = [
   { id: 'pectoralHaut', m: 'pectoraux', de: ['thorax', [3.2, 20.4, 9.6]], a: ['epaule', [0.9, -5.5, 3.4]], n: ['thorax', [0.35, 0.3, 1]], arc: 1.6, pointes: [0.08, 0.2],
     profil: [[0, 2.6, 1.4], [0.4, 3.4, 2.2], [1, 2, 1.8]] },
   { id: 'abdo1', m: 'abdos', de: ['thorax', [3.2, 5.6, 11.1]], a: ['thorax', [3.2, 0.2, 10.7]], n: ['thorax', [0, 0, 1]], profil: PAVE, pointes: [0.3, 0.3] },
-  { id: 'abdo2', m: 'abdos', de: ['lombaires', [3.2, 21.6, 10]], a: ['lombaires', [3.2, 15, 9.6]], n: ['lombaires', [0, 0, 1]], profil: PAVE, pointes: [0.3, 0.3] },
+  // abdo2 part du thorax (juste sous abdo1) : quand le buste s'enroule, il se raccourcit au lieu
+  // de rentrer dans abdo1 (leurs faces avant sont 10 cm devant la charnière du tronc). Il gonfle
+  // peu, comme abdo4 : un grand droit qui se raccourcit ne fait pas de boules entre ses pavés.
+  { id: 'abdo2', m: 'abdos', de: ['thorax', [3.2, -0.4, 10]], a: ['lombaires', [3.2, 15, 9.6]], n: ['lombaires', [0, 0, 1]], profil: PAVE, pointes: [0.3, 0.3], gonfle: 0.3 },
   { id: 'abdo3', m: 'abdos', de: ['lombaires', [3.2, 14.6, 9.6]], a: ['lombaires', [3.2, 7.8, 9.4]], n: ['lombaires', [0, 0, 1]], profil: PAVE, pointes: [0.3, 0.3] },
-  { id: 'abdo4', m: 'abdos', de: ['lombaires', [3.1, 7.4, 9.4]], a: ['bassin', [2.1, -3.4, 9.6]], n: ['bassin', [0, 0, 1]],
+  { id: 'abdo4', m: 'abdos', de: ['lombaires', [3.1, 7.4, 9.4]], a: ['bassin', [2.1, -3.4, 9.6]], n: ['bassin', [0, 0, 1]], gonfle: 0.3,
     profil: [[0, 2.9, 1.1], [0.4, 2.8, 1.6], [1, 1.2, 0.9]] },
   { id: 'dentele', m: 'obliques', de: ['thorax', [15, 11, 4.2]], a: ['thorax', [13.4, 1.5, 6.6]], n: ['thorax', [0.9, 0, 0.45]], creux: 0.6, pointes: [0.12, 0.12],
     profil: [[0, 3, 1.2], [0.5, 4.2, 1.7], [1, 3.2, 1.2]] },
@@ -223,9 +230,12 @@ export const MUSCLES: readonly SpecMuscle[] = [
     profil: [[0, 4, 2], [0.4, 5.2, 3.4], [1, 1.9, 1.5]] },
   { id: 'deltoPost', m: 'deltos_posterieurs', de: ['omoplate', [15, 23, -5]], a: ['epaule', [3.2, -14, -2]], n: ['delto', [0.45, 0.1, -1]], arc: 1.6, creux: 0.6,
     profil: [[0, 3.6, 2], [0.4, 4.8, 3.2], [1, 1.8, 1.4]] },
-  { id: 'biceps', m: 'biceps', de: ['epaule', [0.4, -5.5, 3.2]], a: ['coude', [0.3, -3.5, 2.6]], n: ['epaule', [0, 0, 1]], creux: 0.6,
+  { id: 'biceps', m: 'biceps', de: ['epaule', [0.4, -5.5, 3.2]], a: ['cubitus', [-1.54, -3.5, 2.12]], n: ['epaule', [0, 0, 1]], creux: 0.6,
     // Un ventre bombé qui gonfle franchement quand le coude plie, fin et mince vers le
     // coude : bras plié, il passe sous les muscles de l'avant-bras sans dépasser.
+    // Attaché au cubitus (le pli du coude ne tourne pas avec la main), à mi-chemin des prises
+    // du curl et du curl marteau : attaché à l'avant-bras, il passait derrière le coude en
+    // pronation (traction) et traversait le bras.
     arc: 0.8, gonfle: 3,
     profil: [[0, 2.6, 1.9], [0.45, 4.3, 4], [0.8, 2.8, 2.4], [1, 1.2, 1]] },
   // Les chefs du triceps se rejoignent en un seul tendon sur la pointe du coude : même

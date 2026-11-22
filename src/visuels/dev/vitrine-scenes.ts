@@ -5,6 +5,7 @@
  */
 
 import type { Piece } from '../materiel';
+import { pushup_loaded } from '../poses/pushup_loaded';
 import type { PoseExercice } from '../scene';
 import { piedAuSol, pose } from '../squelette';
 import type { CibleBras, CibleJambe, DescriptionPose } from '../squelette';
@@ -83,6 +84,8 @@ export const SCENES: readonly Scene[] = [
     [{ type: 'roueAbdo', pos: [0, 0, 0], tour: 0, course: [-2, 56] }],
     deux({ jambe: { cible: pied([12, 6, -92], [0, -1, 0.3]) }, bras: { cible: tient('poignee', [10, 0, 0], [1, 0, 0], [0.3, -0.2, -1]) } },
       { bassin: { pos: [0, 50, -48], bascule: 70 } }, { bassin: { pos: [0, 36, -40], bascule: 85 } })),
+  // La pose de l'exercice lui-même : le disque n'a de sens que posé sur un dos à l'horizontale.
+  { nom: 'Pompes lestées', materiel: 'Disque de 10 kg sur le haut du dos', famille: 'libres', sujet: pushup_loaded },
 
   // --- Postes ---
   scene('postes', 'Traction', 'Barre de traction', 'pullup', [35, 10],
