@@ -1484,9 +1484,10 @@
     ],
     "uni": false,
     "muscles": {
-      "ischios": 1,
+      "ischios": 0.5,
       "fessiers": 1,
       "quadriceps": 1,
+      "lombaires": 0.5,
       "dos_epaisseur": 0.5,
       "trapezes_hauts": 0.5
     },
