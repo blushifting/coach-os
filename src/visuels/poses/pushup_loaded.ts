@@ -79,5 +79,5 @@ export const pushup_loaded: PoseExercice = {
       jambe: { cible: { pos: [11, 16.47, -83.09], pole: [0, -1, 0.07], tour: 0, pointe: 70 } },
     }),
   ],
-  valide: false,
+  valide: true,
 };
