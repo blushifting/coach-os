@@ -155,4 +155,5 @@ export const db_fly_flat: PoseExercice = {
     }),
   ],
   valide: true,
+  effort: 'retour',
 };

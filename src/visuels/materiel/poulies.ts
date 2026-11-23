@@ -47,10 +47,13 @@ function colonne(out: Volume[], base: Repere, hauteur: number, levee: number): v
   for (const x of [-18, 18]) t.poutre([x, 4, -6], [x, haut, -6], 6, 6);
   t.poutre([-21, haut, -6], [21, haut, -6], 6, 6, 'cadre', [0, 0, 1]);
   const tige = t.pile([0, 4, -6], 10, haut - 6, levee);
-  t.poutre([0, 8, 3], [0, haut - 6, 3], 5, 4);
+  // Rail du chariot, du socle à la traverse du haut, où il est fixé par une patte.
+  t.poutre([0, 3, 3], [0, haut, 3], 5, 4);
+  t.poutre([0, haut, 3], [0, haut, -6], 4, 4);
   t.pave([0, h, 7], [4.5, 0, 0], [0, 7, 0], [0, 0, 3.2], 'moyeu');
   t.roue([0, h, 12]);
   t.roue([0, haut - 8, -1.5], 3.2);
+  t.poutre([0, haut - 8, -1.5], [0, haut, -1.5], 2.2, 2.2);
   t.cable([tige, [0, haut - 8, -4.7], [0, haut - 8, 5.4], [0, h + 7, 5.4]]);
 }
 
@@ -74,7 +77,7 @@ export const VIS_A_VIS: Modele<VisAVis> = {
     const levee = leveeDe(course, repos) / 2;
     for (const b of bases) colonne(out, b, p.hauteur, levee);
     // Traverse haute entre les deux colonnes.
-    traceur(out, centre).poutre([-p.ecart / 2 + 6, HAUT_COLONNE + 3, -6], [p.ecart / 2 - 6, HAUT_COLONNE + 3, -6], 6, 6, 'cadre', [0, 0, 1]);
+    traceur(out, centre).poutre([-p.ecart / 2 - 6, HAUT_COLONNE + 3, -6], [p.ecart / 2 + 6, HAUT_COLONNE + 3, -6], 6, 6, 'cadre', [0, 0, 1]);
     return course;
   },
 };
@@ -96,7 +99,7 @@ export const TIRAGE_HORIZONTAL_POULIE: Modele<TirageHorizontalPoulie> = {
     for (const z of [-50, 10]) t.poutre([0, 3, z], [0, 35, z], 7, 7);
     const c = calePieds(p), cp = traceur(out, c);
     cp.pave([0, -1.5, 0], [20, 0, 0], [0, 1.5, 0], [0, 0, 16], 'cadre');
-    t.poutre([0, 3, 62], [0, 20, 54], 6, 6);
+    t.poutre([0, 3, 62], [0, 24.5, 52], 6, 6);
     return course;
   },
 };
@@ -139,6 +142,7 @@ export const TIRAGE_VERTICAL: Modele<TirageVertical> = {
     t.poutre([0, haut - 50, zt - 3], [0, haut - 4, zt - 40], 5, 5);
     t.roue([0, haut - 8, zt]);
     t.roue([0, haut - 8, avant]);
+    for (const z of [zt, avant]) t.poutre([0, haut - 8, z], [0, haut, z], 2.2, 2.2);
     t.cable([tige, [0, haut - 8, zt], [0, haut - 8, avant], [0, haut - 10.5, avant]]);
     return course;
   },

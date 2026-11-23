@@ -163,4 +163,5 @@ export const cable_pullover: PoseExercice = {
     }),
   ],
   valide: true,
+  effort: 'aller',
 };

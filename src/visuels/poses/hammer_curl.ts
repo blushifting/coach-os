@@ -31,4 +31,5 @@ export const hammer_curl: PoseExercice = {
     }),
   ],
   valide: true,
+  effort: 'aller',
 };

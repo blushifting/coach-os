@@ -41,6 +41,12 @@ export interface PoseExercice {
    * Seuls ses muscles sont colorés ; absent, les deux côtés le sont.
    */
   readonly cote?: 'G' | 'D';
+  /**
+   * La phase d'effort (celle où l'on pousse ou tire la charge), un peu plus lente
+   * que l'autre pour qu'on la reconnaisse : `aller` (du départ à l'arrivée) ou
+   * `retour`. Absente : aller et retour à la même vitesse.
+   */
+  readonly effort?: 'aller' | 'retour';
 }
 
 /**
@@ -64,15 +70,18 @@ export const periodeDe = (sujet: Pick<PoseExercice, 'duree'>): number => STYLE.p
 
 /**
  * Avancement du mouvement (0 = départ, 1 = arrivée) pour une phase du cycle
- * (0 à 1) : pause au départ, aller, pause à l'arrivée, retour.
+ * (0 à 1) : pause au départ, aller, pause à l'arrivée, retour (la phase d'effort,
+ * si l'exercice la nomme, un peu plus lente).
  */
-export function avancement(phase: number): number {
+export function avancement(phase: number, effort?: PoseExercice['effort']): number {
   const doux = (t: number): number => t * t * (3 - 2 * t);
   const p = ((phase % 1) + 1) % 1;
+  // Pauses de 0,12 au départ et à l'arrivée ; la phase d'effort prend 0,44 du cycle, l'autre 0,32.
+  const aller = effort === 'aller' ? 0.44 : effort === 'retour' ? 0.32 : 0.38, retour = 0.76 - aller;
   if (p < 0.12) return 0;
-  if (p < 0.5) return doux((p - 0.12) / 0.38);
-  if (p < 0.62) return 1;
-  return doux(1 - (p - 0.62) / 0.38);
+  if (p < 0.12 + aller) return doux((p - 0.12) / aller);
+  if (p < 0.24 + aller) return 1;
+  return doux(1 - (p - 0.24 - aller) / retour);
 }
 
 // Courses au départ, par sujet : calculées une fois (le sujet ne change pas d'une image à l'autre).

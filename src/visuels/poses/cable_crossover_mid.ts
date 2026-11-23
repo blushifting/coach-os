@@ -43,4 +43,5 @@ export const cable_crossover_mid: PoseExercice = {
     }),
   ],
   valide: true,
+  effort: 'aller',
 };

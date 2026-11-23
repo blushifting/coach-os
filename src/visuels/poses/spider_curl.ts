@@ -155,4 +155,5 @@ export const spider_curl: PoseExercice = {
     }),
   ],
   valide: true,
+  effort: 'aller',
 };

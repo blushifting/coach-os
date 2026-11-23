@@ -88,7 +88,7 @@ export function animer(
     if (!fixe) phase = (phase + (maintenant - avant) / periodeDe(sujet)) % 1;
     avant = maintenant;
     if (!fixe || aRedessiner) {
-      dessinerImage(rendu, mesh, corps, cadre, sujet, coefficients, { tour, hauteur: sujet.camera.hauteur, t: fixe ? 1 : avancement(phase) });
+      dessinerImage(rendu, mesh, corps, cadre, sujet, coefficients, { tour, hauteur: sujet.camera.hauteur, t: fixe ? 1 : avancement(phase, sujet.effort) });
       aRedessiner = false;
     }
     demande = requestAnimationFrame(image);

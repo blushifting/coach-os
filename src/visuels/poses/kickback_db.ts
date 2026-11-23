@@ -39,4 +39,5 @@ export const kickback_db: PoseExercice = {
   ],
   valide: true,
   cote: 'G',
+  effort: 'aller',
 };

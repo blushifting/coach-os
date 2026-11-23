@@ -150,4 +150,5 @@ export const cable_curl: PoseExercice = {
     }),
   ],
   valide: true,
+  effort: 'aller',
 };

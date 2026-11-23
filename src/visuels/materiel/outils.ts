@@ -192,6 +192,8 @@ export function tourCharge(t: Traceur, z: number, haut: number, plaques: number,
 export function cablePile(t: Traceur, tige: Vec3, haut: number, vers: readonly Vec3[]): void {
   const roue: Vec3 = [tige[0], haut - 9, tige[2]];
   t.roue(roue, 3.2);
+  // Chape qui pend de la traverse du haut et tient l'axe de la roue.
+  t.poutre(V.add(roue, [0, 0, 0]), [tige[0], haut, tige[2]], 2.2, 2.2);
   t.cable([tige, roue, ...vers]);
 }
 

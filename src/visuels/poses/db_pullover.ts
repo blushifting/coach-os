@@ -163,4 +163,5 @@ export const db_pullover: PoseExercice = {
     }),
   ],
   valide: true,
+  effort: 'retour',
 };

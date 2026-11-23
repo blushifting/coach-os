@@ -330,6 +330,19 @@ describe('visuels — poses', () => {
     expect(avancement(0.31)).toBeCloseTo(avancement(0.81), 6);
     expect(avancement(1.25)).toBeCloseTo(avancement(0.25), 9);
   });
+
+  it('la phase d\'effort est un peu plus lente que l\'autre, sans rien changer aux pauses', () => {
+    // Effort à l'aller : à mi-cycle de l'aller ordinaire, on est moins avancé ; l'arrivée tient toujours.
+    expect(avancement(0.31, 'aller')).toBeLessThan(avancement(0.31));
+    expect(avancement(0.62, 'aller')).toBe(1);
+    expect(avancement(0.99, 'aller')).toBeGreaterThan(0);
+    // Effort au retour : l'aller est plus rapide.
+    expect(avancement(0.31, 'retour')).toBeGreaterThan(avancement(0.31));
+    for (const effort of ['aller', 'retour'] as const) {
+      expect(avancement(0, effort)).toBe(0);
+      expect(avancement(0.999, effort)).toBeLessThan(0.01);
+    }
+  });
 });
 
 describe('visuels — matériel', () => {
@@ -358,7 +371,7 @@ describe('visuels — matériel', () => {
   });
 
   it('les pièces d\'une machine restent rigides : une poignée tourne autour de son pivot', () => {
-    const p: Piece[] = [{ type: 'pecDeck', pos: [0, 0, 0], tour: 30, course: [90, 0] }];
+    const p: Piece[] = [{ type: 'pecDeck', pos: [0, 0, 0], tour: 30, variante: 'butterfly', course: [90, 0] }];
     const rayon = (t: number): number => {
       const F = resoudre(pose({}), (tronc) => reperesMateriel(p, tronc, t));
       const o = M.vec(M.transposee(M.ry(30)), F.poigneeG!.o);
@@ -633,5 +646,65 @@ describe('visuels — fluidité', () => {
       expect(o.o[2]).toBeCloseTo(appui[2], 2);
       expect(M.vec(o.R, [0, 0, 1])[1]).toBeCloseTo(0, 6);
     }
+  });
+});
+
+describe('visuels — le matériel forme un tout', () => {
+  type Vol = ReturnType<typeof volumesMateriel>[number];
+  /** Points d'échantillon d'un volume : coins, milieux d'arêtes et de faces ; anneaux d'un cylindre. */
+  const echantillons = (v: Vol): Vec3[] => {
+    if (v.forme === 'boule') return [v.centre, ...([[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]] as Vec3[]).map((d) => V.add(v.centre, V.mul(d, v.r)))];
+    if (v.forme === 'pave') {
+      const out: Vec3[] = [];
+      for (const a of [-1, 0, 1]) for (const b of [-1, 0, 1]) for (const c of [-1, 0, 1]) out.push(V.add(V.add(V.add(v.centre, V.mul(v.dx, a)), V.mul(v.dy, b)), V.mul(v.dz, c)));
+      return out;
+    }
+    const ax = V.sub(v.p1, v.p0), a = V.norm(ax), u = V.norm(V.cross(a, Math.abs(a[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0])), w = V.cross(a, u), out: Vec3[] = [];
+    for (const f of [0, 0.25, 0.5, 0.75, 1]) {
+      const c = V.add(v.p0, V.mul(ax, f));
+      out.push(c);
+      for (let k = 0; k < 8; k++) out.push(V.add(V.add(c, V.mul(u, Math.cos((k / 8) * 2 * Math.PI) * v.r)), V.mul(w, Math.sin((k / 8) * 2 * Math.PI) * v.r)));
+    }
+    return out;
+  };
+  const dedans = (P: Vec3, v: Vol, tol: number): boolean => {
+    if (v.forme === 'boule') return V.len(V.sub(P, v.centre)) <= v.r + tol;
+    if (v.forme === 'pave') {
+      const r = V.sub(P, v.centre);
+      return [v.dx, v.dy, v.dz].every((d) => Math.abs(V.dot(r, d) / V.len(d)) <= V.len(d) + tol);
+    }
+    const ax = V.sub(v.p1, v.p0), L = V.len(ax), a = V.mul(ax, 1 / L), u = V.dot(V.sub(P, v.p0), a);
+    if (u < -tol || u > L + tol) return false;
+    return V.len(V.sub(V.sub(P, v.p0), V.mul(a, Math.max(0, Math.min(L, u))))) <= v.r + tol;
+  };
+  // Le matériel porté (barres libres, haltères, disques…) n'a pas à toucher le sol.
+  const PORTES = new Set<Piece['type']>(['barre', 'barreEz', 'trapBar', 'haltere', 'disque', 'landmine', 'roueAbdo']);
+  /**
+   * Morceaux d'une pièce de matériel : ses volumes reliés de proche en proche (à 6 mm près), sans passer par
+   * le sol. Rend le nombre de morceaux, et s'il y en a un qui ne touche pas le sol.
+   */
+  const morceaux = (s: PoseExercice, k: number, t: number): { n: number; enLAir: boolean } => {
+    const F = reperesAu(s, t), vols = volumesMateriel([s.materiel[k]!], F, t, [reposMateriel(s)[k]!]);
+    const pts = vols.map(echantillons), parent = vols.map((_, i) => i);
+    const racine = (i: number): number => (parent[i] === i ? i : (parent[i] = racine(parent[i]!)));
+    for (let i = 0; i < vols.length; i++) for (let j = i + 1; j < vols.length; j++) {
+      if (racine(i) !== racine(j) && (pts[i]!.some((p) => dedans(p, vols[j]!, 0.6)) || pts[j]!.some((p) => dedans(p, vols[i]!, 0.6)))) parent[racine(i)] = racine(j);
+    }
+    const groupes = new Set(vols.map((_, i) => racine(i)));
+    const auSol = new Set(vols.map((_, i) => i).filter((i) => pts[i]!.some((p) => p[1] <= 1)).map(racine));
+    return { n: groupes.size, enLAir: [...groupes].some((g) => !auSol.has(g)) };
+  };
+
+  it("chaque machine est d'un seul tenant et pose au sol : rien ne flotte, rien n'est simplement posé à côté", () => {
+    const sujets = [...SCENES.map((s) => s.sujet), ...Object.values(POSES)];
+    const fautes: string[] = [];
+    for (const s of sujets) s.materiel.forEach((p, k) => {
+      if (PORTES.has(p.type)) return;
+      for (const t of [0, 1]) {
+        const m = morceaux(s, k, t);
+        if (m.n > 1 || m.enLAir) fautes.push(`${s.id}, ${p.type} à ${t} : ${m.n} morceau(x)${m.enLAir ? ", dont un en l'air" : ''}`);
+      }
+    });
+    expect([...new Set(fautes)]).toEqual([]);
   });
 });

@@ -492,7 +492,7 @@ const NOMS_PIECES: Readonly<Record<Piece['type'], string>> = {
   banc: 'Banc', barreTraction: 'Barre de traction', barresParalleles: 'Barres parallèles', pupitre: 'Pupitre à curl',
   bancLombaires: 'Banc à lombaires', ghr: 'Banc à ischios (GHR)', reverseHyper: 'Reverse hyper',
   poulie: 'Poulie', visAVis: 'Vis-à-vis', tirageHorizontalPoulie: 'Tirage horizontal à la poulie', tirageVertical: 'Tirage vertical',
-  pecDeck: 'Pec deck', developpeMachine: 'Développé machine', tirageHorizontalMachine: 'Tirage horizontal machine',
+  pecDeck: 'Pec deck (butterfly ou inversé)', developpeMachine: 'Développé machine', tirageHorizontalMachine: 'Tirage horizontal machine',
   presseCuisses: 'Presse à cuisses', hackSquat: 'Hack squat', smith: 'Smith machine',
   legExtension: 'Leg extension', legCurlAssis: 'Leg curl assis', legCurlCouche: 'Leg curl couché',
   molletsDebout: 'Mollets debout', molletsAssis: 'Mollets assis', elevationsMachine: 'Élévations latérales machine',
@@ -524,7 +524,8 @@ const BORNES_CHAMPS: Readonly<Record<string, readonly [number, number]>> = {
 const VARIANTES: Readonly<Record<string, readonly (readonly [string, string])[]>> = {
   developpeMachine: [['couche', 'Couché'], ['incline', 'Incliné'], ['epaules', 'Épaules']],
   abdAdducteurs: [['abduction', 'Abducteurs'], ['adduction', 'Adducteurs']],
-  curlMachine: [['curl', 'Curl'], ['triceps', 'Triceps']],
+  curlMachine: [['curl', 'Curl (pupitre)'], ['triceps', 'Triceps'], ['ecarte', 'Curl bras écartés']],
+  pecDeck: [['butterfly', 'Butterfly'], ['inverse', 'Inversé']],
 };
 const PRISES: readonly (readonly [string, string])[] = [['poignee', 'Poignée (une main)'], ['corde', 'Corde'], ['barre', 'Barre droite'], ['triangle', 'Triangle'], ['sangle', 'Sangle de cheville']];
 const etape = (j: number, n: number): string => (j === 0 ? 'départ' : j === n - 1 ? 'arrivée' : `étape ${j + 1}`);
@@ -746,7 +747,7 @@ function majTemps(): void {
   $<HTMLInputElement>('temps').value = String(t);
   $('o-temps').textContent = `${Math.round(t * 100)}${NB}%`;
 }
-const tempsAffiche = (): number => (ui.lecture === 'boucle' ? avancement(phase) : ui.t);
+const tempsAffiche = (): number => (ui.lecture === 'boucle' ? avancement(phase, courant().pose.effort) : ui.t);
 
 function majVue(): void {
   $('b-planche').setAttribute('aria-pressed', String(ui.planche));
@@ -953,7 +954,7 @@ $('exemple').addEventListener('change', (e) => { ui.exemple = Number((e.target a
 $('b-planche').addEventListener('click', () => { ui.planche = !ui.planche; majVue(); sauverInterface(); });
 $('b-lecture').addEventListener('click', () => {
   if (ui.lecture === 'boucle') {
-    ui.t = avancement(phase);
+    ui.t = avancement(phase, courant().pose.effort);
     ui.lecture = 'pause';
   } else ui.lecture = 'boucle';
   majLecture();

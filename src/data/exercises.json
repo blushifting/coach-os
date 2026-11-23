@@ -975,7 +975,7 @@
   },
   {
     "id": "machine_shrug",
-    "nom_fr": "Shrug machine (smith ou hack)",
+    "nom_fr": "Shrug à la Smith",
     "synonymes": [],
     "pattern": "isolation",
     "type": "isolation",

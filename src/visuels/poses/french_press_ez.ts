@@ -133,4 +133,5 @@ export const french_press_ez: PoseExercice = {
     }),
   ],
   valide: true,
+  effort: 'retour',
 };

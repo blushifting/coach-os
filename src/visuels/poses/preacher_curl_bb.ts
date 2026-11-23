@@ -91,4 +91,5 @@ export const preacher_curl_bb: PoseExercice = {
     }),
   ],
   valide: true,
+  effort: 'aller',
 };

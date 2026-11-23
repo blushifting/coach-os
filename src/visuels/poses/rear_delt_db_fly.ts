@@ -46,4 +46,5 @@ export const rear_delt_db_fly: PoseExercice = {
     }),
   ],
   valide: true,
+  effort: 'aller',
 };

@@ -122,17 +122,19 @@ export const TRAP_BAR: Modele<TrapBar> = {
   reperes: offerts,
   dessiner({ out, F, t }, p) {
     const b = traceur(out, repereDessin(p, F, t));
-    const hex: Vec3[] = [[34, 0, 0], [18, 0, 26], [-18, 0, 26], [-34, 0, 0], [-18, 0, -26], [18, 0, -26]];
+    // Hexagone assez profond pour que les hanches passent dedans en fin de mouvement, et assez large
+    // pour que les bras descendent à l'extérieur des cuisses.
+    const hex: Vec3[] = [[42, 0, 0], [24, 0, 30], [-24, 0, 30], [-42, 0, 0], [-24, 0, -30], [24, 0, -30]];
     for (let i = 0; i < 6; i++) {
       b.cyl(hex[i]!, hex[(i + 1) % 6]!, 1.6, 'cadre');
       b.boule(hex[i]!, 1.6, 'cadre');
     }
     for (const s of [1, -1]) {
       // Poignées à l'intérieur, d'un côté à l'autre de l'hexagone.
-      b.cyl([s * 27, 0, -11.4], [s * 27, 0, 11.4], 1.4, 'metal');
-      b.cyl([s * 34, 0, 0], [s * 60, 0, 0], 2.3, 'metal');
-      b.cyl([s * 37, 0, 0], [s * 41, 0, 0], 20, 'fonte');
-      b.cyl([s * 41, 0, 0], [s * 44, 0, 0], 15, 'fonte');
+      b.cyl([s * 34, 0, -13.3], [s * 34, 0, 13.3], 1.4, 'metal');
+      b.cyl([s * 42, 0, 0], [s * 66, 0, 0], 2.3, 'metal');
+      b.cyl([s * 43, 0, 0], [s * 47, 0, 0], 20, 'fonte');
+      b.cyl([s * 47, 0, 0], [s * 50, 0, 0], 15, 'fonte');
     }
     return Number.NaN;
   },

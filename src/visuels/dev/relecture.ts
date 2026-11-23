@@ -82,6 +82,14 @@ const LOTS: readonly { nom: string; ids: readonly string[] }[] = [
       'cable_pull_through', 'cable_kickback',
     ],
   },
+  {
+    nom: 'Machines guidées : haut du corps',
+    ids: [
+      'smith_bench', 'chest_press_machine', 'chest_press_incl_machine', 'pec_deck', 'reverse_pec_deck', 'machine_shoulder_press',
+      'machine_lateral_raise', 'machine_shrug', 'seated_row_machine', 'pullover_machine', 'pullup_assisted', 'dips_assisted',
+      'bicep_curl_machine', 'preacher_curl_machine', 'tricep_extension_machine', 'crunch_machine',
+    ],
+  },
 ];
 
 const NB = ' ';
@@ -213,7 +221,7 @@ function image(maintenant: number): void {
     if (tourneSeul) c.tour = angleNormal(c.tour + dt * 0.02);
     const s = c.sujet;
     dessinerImage(rendu, mesh, corpsPour(s.mainFermee), cadreDe(s), s, musclesForces ?? catalogue.get(s.id)?.muscles ?? {}, {
-      tour: c.tour, hauteur: s.camera.hauteur, t: c.t ?? (params.get('t') !== null ? tFixe : avancement(temps / periodeDe(s))),
+      tour: c.tour, hauteur: s.camera.hauteur, t: c.t ?? (params.get('t') !== null ? tFixe : avancement(temps / periodeDe(s), s.effort)),
     });
     c.toile.width = source.width;
     c.toile.height = source.height;

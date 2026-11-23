@@ -173,4 +173,5 @@ export const concentration_curl: PoseExercice = {
   ],
   valide: true,
   cote: 'G',
+  effort: 'aller',
 };

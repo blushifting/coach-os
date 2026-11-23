@@ -116,6 +116,7 @@ export function fichierPose(sujet: PoseExercice, nom: string): string {
     `  valide: ${sujet.valide},`,
     ...(sujet.duree === undefined ? [] : [`  duree: ${arrondi(sujet.duree)},`]),
     ...(sujet.cote === undefined ? [] : [`  cote: '${sujet.cote}',`]),
+    ...(sujet.effort === undefined ? [] : [`  effort: '${sujet.effort}',`]),
     '};',
     '',
   ].join('\n');

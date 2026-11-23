@@ -49,4 +49,5 @@ export const overhead_db_extension: PoseExercice = {
     }),
   ],
   valide: true,
+  effort: 'aller',
 };

@@ -117,7 +117,7 @@ export const EXERCISE_SYNONYMES: Readonly<Record<string, readonly string[]>> = {
   db_shrug: ['shrugs haltères', 'db shrugs', 'dumbbell shrug'],
   cable_shrug: ['shrugs poulie', 'cable shrug'],
   machine_shrug: [
-    'shrugs machine', 'shrugs smith', 'smith shrug',
+    'shrug machine', 'shrugs machine', 'shrugs smith', 'smith shrug',
     'machine shrug', 'selection shrug',
   ],
   upright_row_db: ['rowing menton', 'tirage menton haltères', 'upright row'],

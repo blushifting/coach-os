@@ -92,4 +92,5 @@ export const preacher_curl_db: PoseExercice = {
     }),
   ],
   valide: true,
+  effort: 'aller',
 };

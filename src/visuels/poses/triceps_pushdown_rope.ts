@@ -30,4 +30,5 @@ export const triceps_pushdown_rope: PoseExercice = {
     }),
   ],
   valide: true,
+  effort: 'aller',
 };

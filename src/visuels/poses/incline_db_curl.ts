@@ -164,4 +164,5 @@ export const incline_db_curl: PoseExercice = {
     }),
   ],
   valide: true,
+  effort: 'aller',
 };

@@ -40,4 +40,5 @@ export const bb_curl: PoseExercice = {
     }),
   ],
   valide: true,
+  effort: 'aller',
 };

@@ -5,7 +5,20 @@
  */
 
 import type { Piece } from '../materiel';
+import { bicep_curl_machine } from '../poses/bicep_curl_machine';
+import { chest_press_incl_machine } from '../poses/chest_press_incl_machine';
+import { chest_press_machine } from '../poses/chest_press_machine';
+import { crunch_machine } from '../poses/crunch_machine';
+import { machine_lateral_raise } from '../poses/machine_lateral_raise';
+import { machine_shoulder_press } from '../poses/machine_shoulder_press';
+import { pec_deck } from '../poses/pec_deck';
+import { preacher_curl_machine } from '../poses/preacher_curl_machine';
+import { pullover_machine } from '../poses/pullover_machine';
+import { pullup_assisted } from '../poses/pullup_assisted';
 import { pushup_loaded } from '../poses/pushup_loaded';
+import { reverse_pec_deck } from '../poses/reverse_pec_deck';
+import { seated_row_machine } from '../poses/seated_row_machine';
+import { tricep_extension_machine } from '../poses/tricep_extension_machine';
 import type { PoseExercice } from '../scene';
 import { piedAuSol, pose } from '../squelette';
 import type { CibleBras, CibleJambe, DescriptionPose } from '../squelette';
@@ -53,6 +66,8 @@ const developpe = (haut: V3): DescriptionPose[] => [
   { bras: { cible: { repere: 'thorax', pos: [27, 14, 14], pole: [1, 0.1, -0.7] }, pronation: 90 } },
 ];
 const avec = (base: DescriptionPose, cles: DescriptionPose[]): DescriptionPose[] => cles.map((c) => fusionner(base, c));
+/** Une machine du haut du corps, montrée avec la pose de son exercice. */
+const pose9 = (nom: string, materiel: string, sujet: PoseExercice): Scene => ({ nom, materiel, famille: 'haut', sujet });
 
 export const SCENES: readonly Scene[] = [
   // --- Bancs et poids libres ---
@@ -74,7 +89,7 @@ export const SCENES: readonly Scene[] = [
       bras: { cible: tient('barre', [15, 0, 0], [1, 0, 0], [0, -1, 0.4]), pronation: -90 } }, {}, {})),
   scene('libres', 'Soulevé de terre trap bar', 'Trap bar', 'deadlift_trap_bar', [40, 12],
     [{ type: 'trapBar', repere: 'monde', centre: [0, 24, 0], trajet: [[0, 0, 0], [0, 38, 0], [0, 63, 0]] }],
-    deux({ jambe: { cible: piedAuSol(14, 8) }, bras: { cible: tient('barre', [27, 0, 0], [0, 0, 1], [0.3, 0, -1]) } },
+    deux({ jambe: { cible: piedAuSol(14, 8) }, bras: { cible: tient('barre', [34, 0, 0], [0, 0, 1], [0.3, 0, -1]) } },
       { bassin: { pos: [0, 50, -14], bascule: 58 }, cou: { flex: -20 } }, { bassin: { pos: [0, 97.5, 0] } })),
   scene('libres', 'Rowing T-bar', 'Landmine, poignée en V', 't_bar_row', [70, 14],
     [{ type: 'landmine', pos: [0, 0, -110], tour: 0, course: [32, 44] }],
@@ -135,42 +150,20 @@ export const SCENES: readonly Scene[] = [
     deux({ jambe: { cible: pied([14, 8, 44], [0, 0.4, 1]) }, bras: { cible: tient('barre', [40, 0, 0], [1, 0, 0], [1, -0.2, -0.2]) } },
       { bassin: { pos: [0, 62, -4], bascule: -6 } }, { bassin: { pos: [0, 62, -4], bascule: -14 } })),
 
-  // --- Machines, haut du corps ---
-  scene('haut', 'Pec deck', 'Bras pivotants, poignées, bras presque tendus', 'pec_deck', [35, 14],
-    [{ type: 'pecDeck', pos: [0, 0, 0], tour: 0, course: [85, 2] }],
-    deux({ bassin: { pos: [0, 65.5, -1], bascule: -4 }, jambe: { cible: pied([11, 8, 42], [0, 0.3, 1]) }, bras: { cible: tient('poigneeG', [0, 0, 0], [0, 1, 0], [0.2, -1, -0.4]) } }, {}, {})),
-  scene('haut', 'Développé machine', 'Leviers, poignées horizontales', 'chest_press_machine', [40, 14],
-    [{ type: 'developpeMachine', pos: [0, 0, 0], tour: 0, variante: 'couche', course: [0, 42] }],
-    deux({ bassin: { pos: [0, 62, -4], bascule: -4 }, jambe: { cible: pied([11, 8, 40], [0, 0.3, 1]) }, bras: { cible: tient('poigneeG', [0, 0, 0], [1, 0, 0], [1, -0.6, -0.4]) } }, {}, {})),
-  scene('haut', 'Développé incliné machine', 'Leviers, dossier incliné', 'chest_press_incl_machine', [45, 14],
-    [{ type: 'developpeMachine', pos: [0, 0, 0], tour: 0, variante: 'incline', course: [0, 36] }],
-    deux({ bassin: { pos: [0, 62, -6], bascule: -14 }, jambe: { cible: pied([11, 8, 40], [0, 0.3, 1]) }, bras: { cible: tient('poigneeG', [0, 0, 0], [1, 0, 0], [1, -0.6, -0.4]) } }, {}, {})),
-  scene('haut', 'Développé épaules machine', 'Leviers derrière le dos', 'machine_shoulder_press', [45, 14],
-    [{ type: 'developpeMachine', pos: [0, 0, 0], tour: 0, variante: 'epaules', course: [0, 40] }],
-    deux({ bassin: { pos: [0, 62, -6], bascule: -4 }, jambe: { cible: pied([11, 8, 40], [0, 0.3, 1]) }, bras: { cible: tient('poigneeG', [0, 0, 0], [1, 0, 0], [1, -0.5, 0]) } }, {}, {})),
-  scene('haut', 'Tirage horizontal machine', 'Appui contre la poitrine, leviers', 'seated_row_machine', [60, 14],
-    [{ type: 'tirageHorizontalMachine', pos: [0, 0, 0], tour: 0, course: [0, 30] }],
-    deux({ bassin: { pos: [0, 60, -2] }, thorax: { flex: 8 }, jambe: { cible: pied([11, 8, 30], [0, 0.3, 1]) }, bras: { cible: tient('poigneeG', [0, 0, 0], [0, 1, 0], [0.4, -1, -0.4]) } }, {}, {})),
-  scene('haut', 'Élévations latérales machine', 'Leviers dans l’axe des épaules, coussins contre les bras', 'machine_lateral_raise', [30, 14],
-    [{ type: 'elevationsMachine', pos: [0, 0, 0], tour: 0, course: [8, 82] }],
-    deux({ bassin: { pos: [0, 64, -6] }, jambe: { cible: pied([11, 8, 34], [0, 0.3, 1]) }, bras: { cible: tient('poigneeG', [0, 0, 0], [0, 1, 0], [0, -1, 0]) } }, {}, {})),
-  scene('haut', 'Curl machine', 'Pupitre large, coudes dans l’axe du levier', 'bicep_curl_machine', [60, 14],
-    [{ type: 'curlMachine', pos: [0, 0, 0], tour: 0, variante: 'curl', course: [-20, 100] }],
-    deux({ bassin: { pos: [0, 70, -22] }, thorax: { flex: 16 }, jambe: { cible: pied([11, 8, 14], [0, 0.3, 1]) }, bras: { cible: tient('barre', [14, 0, 0], [1, 0, 0], [0, 0, -1]), pronation: -90 } }, {}, {})),
-  scene('haut', 'Extension triceps machine', 'Pupitre, deux poignées verticales (prise neutre)', 'tricep_extension_machine', [60, 14],
-    [{ type: 'curlMachine', pos: [0, 0, 0], tour: 0, variante: 'triceps', course: [100, -15] }],
-    deux({ bassin: { pos: [0, 70, -22] }, thorax: { flex: 16 }, jambe: { cible: pied([11, 8, 14], [0, 0.3, 1]) }, bras: { cible: tient('barre', [12, 0, 0], [0, 1, 0], [0, 0, -1]) } }, {}, {})),
-  scene('haut', 'Pullover machine', 'Levier dans l’axe des épaules, bras presque tendus', 'pullover_machine', [60, 14],
-    [{ type: 'pulloverMachine', pos: [0, 0, 0], tour: 0, course: [130, -30] }],
-    deux({ bassin: { pos: [0, 64, -6] }, jambe: { cible: pied([11, 8, 36], [0, 0.3, 1]) }, bras: { cible: tient('barre', [16, 0, 0], [1, 0, 0], [1, 0, 0]) } }, {}, {})),
-  scene('haut', 'Crunch machine', 'Levier à la taille, rouleaux contre la poitrine, poignées', 'crunch_machine', [60, 14],
-    [{ type: 'crunchMachine', pos: [0, 0, 0], tour: 0, course: [0, 30] }],
-    deux({ bassin: { pos: [0, 62, -8] }, jambe: { cible: pied([11, 8, 34], [0, 0.3, 1]) }, bras: { cible: tient('poigneeG', [0, 0, 0], [0, 1, 0], [1, -0.5, -0.3]) } },
-      {}, { lombaires: { flex: 18 }, thorax: { flex: 12 } })),
-  scene('haut', 'Traction assistée', 'Plateau des genoux sur un chariot, poignées', 'pullup_assisted', [40, 10],
-    [{ type: 'assistee', pos: [0, 0, 0], tour: 0, course: [-12, 28] }],
-    deux({ jambe: { hanche: { flex: 0, abd: 0, rot: 0 }, genou: 92 }, bras: { cible: tient('barre', [30, 0, 0], [1, 0, 0], [1, 0, -0.2]) } },
-      { bassin: { pos: [0, 115.5, -2] } }, { bassin: { pos: [0, 154, -2] } })),
+  // --- Machines, haut du corps : les poses des exercices eux-mêmes ---
+  pose9('Pec deck', 'Bras pivotants, poignées, bras presque tendus', pec_deck),
+  pose9('Pec deck inversé', 'Le même, face à la colonne, poitrine contre le coussin', reverse_pec_deck),
+  pose9('Développé machine', 'Leviers qui partent du bas, poignées horizontales', chest_press_machine),
+  pose9('Développé incliné machine', 'Leviers qui partent du bas, dossier incliné', chest_press_incl_machine),
+  pose9('Développé épaules machine', 'Leviers derrière le dos', machine_shoulder_press),
+  pose9('Tirage horizontal machine', 'Appui contre la poitrine, leviers qui pivotent en bas', seated_row_machine),
+  pose9('Élévations latérales machine', 'Leviers dans l’axe des épaules, coussins contre les bras', machine_lateral_raise),
+  pose9('Curl machine, bras écartés', 'Coussins sous les bras, un levier par bras dans l’axe du coude', bicep_curl_machine),
+  pose9('Curl pupitre machine', 'Pupitre large, coudes dans l’axe du levier', preacher_curl_machine),
+  pose9('Extension triceps machine', 'Pupitre, deux poignées verticales (prise neutre)', tricep_extension_machine),
+  pose9('Pullover machine', 'Levier dans l’axe des épaules, bras presque tendus', pullover_machine),
+  pose9('Crunch machine', 'Cadre autour du buste, appuis sous les bras, poignées devant le visage', crunch_machine),
+  pose9('Traction assistée', 'Face à la pile, à genoux sur le plateau d’un chariot', pullup_assisted),
 
   // --- Machines, bas du corps ---
   scene('bas', 'Presse à cuisses', 'Assise, plaque verticale sur rails, jambes dans leur plan', 'leg_press_45', [70, 14],

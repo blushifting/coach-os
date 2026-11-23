@@ -98,4 +98,5 @@ export const cable_rear_delt_fly: PoseExercice = {
     }),
   ],
   valide: true,
+  effort: 'aller',
 };

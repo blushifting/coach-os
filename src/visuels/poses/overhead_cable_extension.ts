@@ -51,4 +51,5 @@ export const overhead_cable_extension: PoseExercice = {
     }),
   ],
   valide: true,
+  effort: 'aller',
 };
