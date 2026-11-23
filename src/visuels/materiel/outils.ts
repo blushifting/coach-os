@@ -6,7 +6,7 @@
 
 import { IDENTITE, M, V, clamp, interpoler } from '../maths';
 import type { Mat3, Vec3 } from '../maths';
-import { PRISE } from '../squelette';
+import { OS, PRISE } from '../squelette';
 import type { Repere, Reperes } from '../squelette';
 
 export type TonMateriel = 'metal' | 'fonte' | 'moyeu' | 'cadre' | 'coussin';
@@ -215,7 +215,9 @@ export type Prise =
   /** Barre droite, les deux mains dessus. */
   | { readonly type: 'barre'; readonly longueur: number }
   /** Triangle (prise serrée, paumes face à face), les deux mains dessus. */
-  | { readonly type: 'triangle' };
+  | { readonly type: 'triangle' }
+  /** Sangle de cheville : un bracelet autour du bas de la jambe `jambe` (repère du tibia). */
+  | { readonly type: 'sangle'; readonly jambe: 'genouG' | 'genouD' };
 
 /** Centre du poing (là où passe une poignée) et axe de la poignée, dans l'espace. */
 export function poing(F: Reperes, main: string): { g: Vec3; ax: Vec3 } {
@@ -239,27 +241,37 @@ export function prise(out: Volume[], F: Reperes, p: Prise, depart: Vec3): number
     m.cyl(b, a, 1.5, 'metal');
     m.cyl(a, attache, 0.8, 'metal');
     m.cyl(b, attache, 0.8, 'metal');
+  } else if (p.type === 'sangle') {
+    // Bracelet rembourré à 6 cm au-dessus de la cheville, anneau du côté du câble.
+    const j = repereDe(F, p.jambe), ax = M.vec(j.R, [0, 1, 0]), c = V.add(j.o, M.vec(j.R, [0, -(OS.jambe - 6), 0]));
+    const d = V.norm(V.sub(depart, c)), dp = V.norm(V.sub(d, V.mul(ax, V.dot(d, ax))));
+    m.cyl(V.sub(c, V.mul(ax, 2.6)), V.add(c, V.mul(ax, 2.6)), 4.8, 'coussin');
+    const anneau = V.add(c, V.mul(dp, 5.6));
+    m.boule(anneau, 1.1, 'metal');
+    attache = V.add(anneau, V.mul(d, 4));
+    m.cyl(anneau, attache, 0.6, 'metal');
   } else {
     const G = poing(F, 'poignetG').g, Dr = poing(F, 'poignetD').g, mil = V.mul(V.add(G, Dr), 0.5);
     const d = V.norm(V.sub(depart, mil)), demi = V.len(V.sub(G, Dr)) / 2;
     if (p.type === 'corde') {
       // Deux brins de 30 cm qui se rejoignent à l'attache : la corde s'ouvre quand les mains s'écartent.
+      // Chaque brin traverse le poing dans l'axe de la prise, et son nœud sort toujours du même
+      // côté du poing (choisi d'après le câble, il basculait d'un côté à l'autre en cours de mouvement).
       attache = V.add(mil, V.mul(d, Math.sqrt(Math.max(30 * 30 - demi * demi, 16))));
-      for (const g of [G, Dr]) {
-        const u = V.norm(V.sub(attache, g));
-        m.cyl(V.sub(g, V.mul(u, 5)), attache, 1.3, 'fonte');
-        m.boule(V.sub(g, V.mul(u, 6.5)), 2.3, 'fonte');
+      for (const main of ['poignetG', 'poignetD']) {
+        const { g, ax } = poing(F, main), a = V.mul(ax, -1);
+        m.cyl(g, attache, 1.3, 'fonte');
+        m.cyl(V.sub(g, V.mul(a, 5)), g, 1.3, 'fonte');
+        m.boule(V.sub(g, V.mul(a, 6.5)), 2.3, 'fonte');
       }
     } else if (p.type === 'triangle') {
-      // Deux poignées parallèles, réunies en pointe vers le câble.
+      // Deux poignées parallèles, en travers du câble (paumes face à face), réunies en pointe vers lui.
       attache = V.add(mil, V.mul(d, 16));
-      const u = V.norm(V.sub(G, Dr));
+      const u = V.norm(V.sub(G, Dr)), w = V.norm(V.cross(d, u));
       for (const g of [G, Dr]) {
-        const ax = V.norm(V.cross(u, V.cross(d, u)));
-        m.cyl(V.sub(g, V.mul(ax, 6)), V.add(g, V.mul(ax, 6)), 1.6, 'metal');
-        m.cyl(V.add(g, V.mul(ax, 6)), attache, 1, 'metal');
+        m.cyl(V.sub(g, V.mul(w, 6)), V.add(g, V.mul(w, 6)), 1.6, 'metal');
+        for (const s of [1, -1]) m.cyl(V.add(g, V.mul(w, 6 * s)), attache, 1, 'metal');
       }
-      m.cyl(V.sub(G, V.mul(V.norm(V.cross(u, V.cross(d, u))), 6)), V.sub(Dr, V.mul(V.norm(V.cross(u, V.cross(d, u))), 6)), 1, 'metal');
     } else {
       const u = V.norm(V.sub(G, Dr)), L = p.longueur / 2;
       m.cyl(V.sub(mil, V.mul(u, L)), V.add(mil, V.mul(u, L)), 1.3, 'metal');

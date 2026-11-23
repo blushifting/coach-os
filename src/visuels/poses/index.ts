@@ -24,6 +24,18 @@ import { bench_db_incl30 } from './bench_db_incl30';
 import { bicycle_crunch } from './bicycle_crunch';
 import { bodyweight_squat } from './bodyweight_squat';
 import { bulgarian_split } from './bulgarian_split';
+import { cable_crossover_mid } from './cable_crossover_mid';
+import { cable_crunch } from './cable_crunch';
+import { cable_curl } from './cable_curl';
+import { cable_front_raise } from './cable_front_raise';
+import { cable_kickback } from './cable_kickback';
+import { cable_lateral_raise } from './cable_lateral_raise';
+import { cable_pull_through } from './cable_pull_through';
+import { cable_pullover } from './cable_pullover';
+import { cable_rear_delt_fly } from './cable_rear_delt_fly';
+import { cable_row } from './cable_row';
+import { cable_shrug } from './cable_shrug';
+import { cable_wood_chop } from './cable_wood_chop';
 import { calf_db_single } from './calf_db_single';
 import { chest_supported_db_row } from './chest_supported_db_row';
 import { concentration_curl } from './concentration_curl';
@@ -41,6 +53,7 @@ import { deadlift_conv } from './deadlift_conv';
 import { deadlift_trap_bar } from './deadlift_trap_bar';
 import { dips_chest } from './dips_chest';
 import { dips_triceps } from './dips_triceps';
+import { face_pull } from './face_pull';
 import { french_press_ez } from './french_press_ez';
 import { front_squat } from './front_squat';
 import { glute_bridge } from './glute_bridge';
@@ -54,11 +67,14 @@ import { incline_db_curl } from './incline_db_curl';
 import { inverted_row } from './inverted_row';
 import { jm_press } from './jm_press';
 import { kickback_db } from './kickback_db';
+import { lat_pulldown } from './lat_pulldown';
 import { lying_leg_raise } from './lying_leg_raise';
 import { oblique_crunch } from './oblique_crunch';
 import { ohp_bb_standing } from './ohp_bb_standing';
 import { ohp_db_seated } from './ohp_db_seated';
+import { overhead_cable_extension } from './overhead_cable_extension';
 import { overhead_db_extension } from './overhead_db_extension';
+import { pallof_press } from './pallof_press';
 import { preacher_curl_bb } from './preacher_curl_bb';
 import { preacher_curl_db } from './preacher_curl_db';
 import { pullup } from './pullup';
@@ -79,6 +95,8 @@ import { spider_curl } from './spider_curl';
 import { squat_bb_high } from './squat_bb_high';
 import { step_up } from './step_up';
 import { t_bar_row } from './t_bar_row';
+import { triceps_pushdown_rope } from './triceps_pushdown_rope';
+import { upright_row_cable } from './upright_row_cable';
 import { upright_row_db } from './upright_row_db';
 import { walking_lunge } from './walking_lunge';
 
@@ -98,6 +116,18 @@ export const POSES: Readonly<Record<string, PoseExercice>> = {
   bicycle_crunch,
   bodyweight_squat,
   bulgarian_split,
+  cable_crossover_mid,
+  cable_crunch,
+  cable_curl,
+  cable_front_raise,
+  cable_kickback,
+  cable_lateral_raise,
+  cable_pull_through,
+  cable_pullover,
+  cable_rear_delt_fly,
+  cable_row,
+  cable_shrug,
+  cable_wood_chop,
   calf_db_single,
   chest_supported_db_row,
   concentration_curl,
@@ -115,6 +145,7 @@ export const POSES: Readonly<Record<string, PoseExercice>> = {
   deadlift_trap_bar,
   dips_chest,
   dips_triceps,
+  face_pull,
   french_press_ez,
   front_squat,
   glute_bridge,
@@ -128,11 +159,14 @@ export const POSES: Readonly<Record<string, PoseExercice>> = {
   inverted_row,
   jm_press,
   kickback_db,
+  lat_pulldown,
   lying_leg_raise,
   oblique_crunch,
   ohp_bb_standing,
   ohp_db_seated,
+  overhead_cable_extension,
   overhead_db_extension,
+  pallof_press,
   preacher_curl_bb,
   preacher_curl_db,
   pullup,
@@ -153,6 +187,8 @@ export const POSES: Readonly<Record<string, PoseExercice>> = {
   squat_bb_high,
   step_up,
   t_bar_row,
+  triceps_pushdown_rope,
+  upright_row_cable,
   upright_row_db,
   walking_lunge,
 };

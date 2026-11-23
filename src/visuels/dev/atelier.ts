@@ -516,7 +516,7 @@ const AJOUTS: Readonly<Record<string, { nom: string; pieces: readonly Piece[] }>
 
 const NOMS_CHAMPS: Readonly<Record<string, string>> = {
   repere: 'Repère', centre: 'Centre', pos: 'Au sol', tour: 'Orientation (degrés)', hauteur: 'Hauteur (cm)', dossier: 'Dossier (degrés)',
-  largeur: 'Largeur (cm)', ecart: 'Écart (cm)', variante: 'Variante', prise: 'Prise', course: 'Course', trajet: 'Trajet du centre',
+  largeur: 'Largeur (cm)', ecart: 'Écart (cm)', variante: 'Variante', prise: 'Prise', croise: 'Câbles croisés', course: 'Course', trajet: 'Trajet du centre',
 };
 const BORNES_CHAMPS: Readonly<Record<string, readonly [number, number]>> = {
   tour: [-180, 180], hauteur: [0, 230], dossier: [-30, 90], largeur: [40, 160], ecart: [30, 300], longueur: [20, 150],
@@ -526,7 +526,7 @@ const VARIANTES: Readonly<Record<string, readonly (readonly [string, string])[]>
   abdAdducteurs: [['abduction', 'Abducteurs'], ['adduction', 'Adducteurs']],
   curlMachine: [['curl', 'Curl'], ['triceps', 'Triceps']],
 };
-const PRISES: readonly (readonly [string, string])[] = [['poignee', 'Poignée (une main)'], ['corde', 'Corde'], ['barre', 'Barre droite'], ['triangle', 'Triangle']];
+const PRISES: readonly (readonly [string, string])[] = [['poignee', 'Poignée (une main)'], ['corde', 'Corde'], ['barre', 'Barre droite'], ['triangle', 'Triangle'], ['sangle', 'Sangle de cheville']];
 const etape = (j: number, n: number): string => (j === 0 ? 'départ' : j === n - 1 ? 'arrivée' : `étape ${j + 1}`);
 
 /** Les réglages d'une pièce : un curseur par nombre, un choix par option. */
@@ -540,11 +540,13 @@ function champsPiece(m: Piece, i: number): HTMLElement[] {
     const chemin: Chemin = ['materiel', i, k], nom = NOMS_CHAMPS[k] ?? k;
     if (k === 'type') continue;
     if (k === 'repere') out.push(choixSur(nom, TOUS_REPERES.map((r) => [r, r] as const), v as string, (r) => changerSujet((p) => fixer(p, chemin, r))));
+    else if (k === 'croise') out.push(choixSur(nom, [['non', 'Non'], ['oui', 'Oui']], v === true ? 'oui' : 'non', (r) => changerSujet((p) => fixer(p, chemin, r === 'oui'))));
     else if (k === 'variante') out.push(choixSur(nom, VARIANTES[m.type] ?? [], v as string, (r) => changerSujet((p) => fixer(p, chemin, r))));
     else if (k === 'prise') {
-      const pr = v as { type: string; main?: string; longueur?: number };
+      const pr = v as { type: string; main?: string; longueur?: number; jambe?: string };
       out.push(choixSur(nom, PRISES, pr.type, (t) => changerSujet((p) => fixer(p, chemin,
-        t === 'poignee' ? { type: t, main: 'poignetG' } : t === 'barre' ? { type: t, longueur: 50 } : { type: t }))));
+        t === 'poignee' ? { type: t, main: 'poignetG' } : t === 'barre' ? { type: t, longueur: 50 } : t === 'sangle' ? { type: t, jambe: 'genouG' } : { type: t }))));
+      if (pr.type === 'sangle') out.push(choixSur('Jambe', [['genouG', 'Gauche'], ['genouD', 'Droite']], pr.jambe ?? 'genouG', (r) => changerSujet((p) => fixer(p, [...chemin, 'jambe'], r))));
       if (pr.type === 'poignee') out.push(choixSur('Main', [['poignetG', 'Gauche'], ['poignetD', 'Droite']], pr.main ?? 'poignetG', (r) => changerSujet((p) => fixer(p, [...chemin, 'main'], r))));
       if (pr.type === 'barre') out.push(surSujet('Longueur de la barre (cm)', [...chemin, 'longueur'], BORNES_CHAMPS.longueur!, 1));
     } else if (k === 'course') {

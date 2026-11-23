@@ -18,9 +18,10 @@ export interface Poulie { readonly type: 'poulie'; readonly pos: Vec3; readonly 
 /**
  * Vis-à-vis : deux colonnes face à face, de part et d'autre de `pos` (à ±`ecart`/2
  * en X), poulies à `hauteur`. La main gauche tient la poignée de la colonne de
- * gauche (X positif), la droite celle de droite.
+ * gauche (X positif), la droite celle de droite ; `croise` : câbles croisés,
+ * la main gauche tient celle de droite (oiseau à la poulie).
  */
-export interface VisAVis { readonly type: 'visAVis'; readonly pos: Vec3; readonly tour: number; readonly ecart: number; readonly hauteur: number }
+export interface VisAVis { readonly type: 'visAVis'; readonly pos: Vec3; readonly tour: number; readonly ecart: number; readonly hauteur: number; readonly croise?: boolean }
 /**
  * Tirage horizontal à la poulie basse : banc bas, cale-pieds, colonne devant
  * (vers +Z). Repère offert : `plateau` (le cale-pieds ; Y sort de la semelle, Z vers les orteils).
@@ -65,7 +66,7 @@ export const VIS_A_VIS: Modele<VisAVis> = {
   dessiner({ out, F, repos }, p) {
     const centre = auSol(p.pos, p.tour), bases: Repere[] = [];
     let course = 0;
-    for (const [s, main] of [[1, 'poignetG'], [-1, 'poignetD']] as const) {
+    for (const [s, main] of p.croise === true ? ([[1, 'poignetD'], [-1, 'poignetG']] as const) : ([[1, 'poignetG'], [-1, 'poignetD']] as const)) {
       const base = dans(centre, [(s * p.ecart) / 2, 0, 0], M.ry(-90 * s));
       bases.push(base);
       course += prise(out, F, { type: 'poignee', main }, departColonne(base, p.hauteur));
@@ -109,7 +110,8 @@ function repereBarreTirage(p: TirageVertical, t: number): Repere {
 export const TIRAGE_VERTICAL: Modele<TirageVertical> = {
   reperes: (p, _F, t) => ({ barre: repereBarreTirage(p, t) }),
   dessiner({ out, t: temps, repos }, p) {
-    const sol = auSol(p.pos, p.tour), t = traceur(out, sol), haut = HAUT_TIRAGE, zt = -48, avant = AVANT_TIRAGE;
+    // La tour est devant l'utilisateur, au-delà de ses pieds : on s'assoit face à la pile, le dos dégagé.
+    const sol = auSol(p.pos, p.tour), t = traceur(out, sol), haut = HAUT_TIRAGE, zt = 74, avant = AVANT_TIRAGE;
     const rb = repereBarreTirage(p, temps), b = traceur(out, rb), depart = t.P([0, haut - 10.5, avant]);
     // Barre coudée : partie droite, bouts relevés vers le bas, mousses aux bouts.
     b.cyl([-43, 0, 0], [43, 0, 0], 1.3, 'metal');
@@ -125,7 +127,7 @@ export const TIRAGE_VERTICAL: Modele<TirageVertical> = {
     traceur(out, { o: [0, 0, 0], R: M.ry(0) }).cyl(attache, depart, 0.4, 'metal');
     const course = V.len(V.sub(attache, depart));
     // Socle et siège.
-    socle(t, zt, 42, 56, 48);
+    socle(t, -24, zt, 48, 56);
     siege(t, [0, 47.5, 0], 19, 17);
     // Rouleaux qui bloquent les cuisses, sur un bras qui monte entre les tibias.
     t.poutre([0, 3, 40], [0, 66, 26], 6, 5);
@@ -133,8 +135,8 @@ export const TIRAGE_VERTICAL: Modele<TirageVertical> = {
     for (const s of [1, -1]) t.rouleau([s * 3, 68.5, 24], [s * 21, 68.5, 24], 6);
     // Tour de charge, bras vers l'avant, renfort, poulies.
     const tige = tourCharge(t, zt, haut, 12, leveeDe(course, repos));
-    t.poutre([0, haut, zt], [0, haut, avant + 4], 8, 8, 'cadre', [1, 0, 0]);
-    t.poutre([0, haut - 50, zt + 3], [0, haut - 4, zt + 40], 5, 5);
+    t.poutre([0, haut, zt], [0, haut, avant - 4], 8, 8, 'cadre', [1, 0, 0]);
+    t.poutre([0, haut - 50, zt - 3], [0, haut - 4, zt - 40], 5, 5);
     t.roue([0, haut - 8, zt]);
     t.roue([0, haut - 8, avant]);
     t.cable([tige, [0, haut - 8, zt], [0, haut - 8, avant], [0, haut - 10.5, avant]]);

@@ -68,6 +68,20 @@ const LOTS: readonly { nom: string; ids: readonly string[] }[] = [
       'incline_db_curl', 'spider_curl', 'concentration_curl', 'preacher_curl_bb', 'preacher_curl_db',
     ],
   },
+  {
+    nom: 'Poulies : bras et épaules, debout',
+    ids: [
+      'cable_lateral_raise', 'cable_front_raise', 'upright_row_cable', 'cable_shrug', 'cable_curl', 'triceps_pushdown_rope',
+      'overhead_cable_extension', 'face_pull', 'cable_rear_delt_fly',
+    ],
+  },
+  {
+    nom: 'Poulies : pectoraux, dos, tronc et fessiers',
+    ids: [
+      'cable_crossover_mid', 'cable_pullover', 'lat_pulldown', 'cable_row', 'cable_crunch', 'cable_wood_chop', 'pallof_press',
+      'cable_pull_through', 'cable_kickback',
+    ],
+  },
 ];
 
 const NB = ' ';
