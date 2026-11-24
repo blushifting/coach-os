@@ -55,14 +55,23 @@ export interface Smith extends AuSol { readonly type: 'smith' }
  * Leg extension, leg curl assis et couché : le levier pivote dans l'axe des
  * genoux (seul le bas de la jambe bouge). `course` : flexion des genoux
  * (0 = jambes tendues, 90 = pliées). Repère : `rouleau` (Y le long du tibia
- * vers le genou, Z vers l'avant du tibia) ; cheville en [±10, 0, −9] pour
- * l'extension (rouleau devant le tibia), [±10, 0, 9] pour les curls (rouleau derrière).
+ * vers le genou, Z vers l'avant du tibia) ; cheville en [±10, −4, −9] pour
+ * l'extension (rouleau devant le tibia, 4 cm au-dessus du cou-de-pied), [±10, 0, 9]
+ * pour les curls (rouleau derrière).
  */
 export interface LegExtension extends AuSol { readonly type: 'legExtension' }
 export interface LegCurlAssis extends AuSol { readonly type: 'legCurlAssis' }
 /** Leg curl couché, sur le ventre, tête vers +Z. */
 export interface LegCurlCouche extends AuSol { readonly type: 'legCurlCouche' }
-/** Mollets debout : épaulières qui montent. `course` : cm d'élévation. Repères : `epaulieres` (poignées en [±20, 6, 18], axe Y), `marche` (fixe). */
+/**
+ * Leg curl debout, une jambe (la gauche) : debout sur une marche (le pied droit), buste penché de 35°
+ * sur un appui, poignées devant ; le devant de la cuisse gauche contre un coussin, juste au-dessus du
+ * genou ; le levier pivote dans l'axe de ce genou, le rouleau derrière la cheville. `course` : flexion
+ * du genou (0 = jambe dans le prolongement de la cuisse). Repères : `rouleau` (comme ci-dessus, centré
+ * sur la jambe gauche : cheville en [0, 0, 9]), `marche` (dessus de la marche, sous le pied droit).
+ */
+export interface LegCurlDebout extends AuSol { readonly type: 'legCurlDebout' }
+/** Mollets debout : épaulières qui montent. `course` : cm d'élévation. Repères : `epaulieres` (poignées en [±20, 11, 18], axe Y), `marche` (fixe ; dessus de la marche, qui s'étend de 12 cm derrière à 22 cm devant : tout le pied y repose). */
 export interface MolletsDebout extends AuSol { readonly type: 'molletsDebout' }
 /** Mollets assis : coussin sur les genoux, levier chargé. `course` : cm d'élévation. Repères : `genoux`, `marche` (fixe). */
 export interface MolletsAssis extends AuSol { readonly type: 'molletsAssis' }
@@ -107,7 +116,7 @@ export interface AbdAdducteurs extends AuSol { readonly type: 'abdAdducteurs'; r
  * Hip thrust à la machine : omoplates sur le dossier, rouleau sur les hanches ;
  * le corps pivote autour des épaules. `course` : bascule du buste (degrés, comme
  * celle du bassin : −60 = hanches basses, −95 = en pont). Le bassin est alors en
- * [0, 58 − 49·cos, −38 − 49·sin]. Repère : `coussin` (mains sur le rouleau, à ±22 cm, axe X).
+ * [0, 58 − 49·cos, −38 − 49·sin]. Repères : `coussin` (le rouleau), `poigneeG`/`D` (le long du levier : axe Y).
  */
 export interface HipThrustMachine extends AuSol { readonly type: 'hipThrustMachine' }
 /**
@@ -393,24 +402,23 @@ export const HACK_SQUAT: Modele<HackSquat> = {
     const pl = traceur(c.out, dans(auSol(p.pos, p.tour), PLATEAU_HACK.o, PLATEAU_HACK.R));
     pl.pave([0, -2, 0], [30, 0, 0], [0, 2, 0], [0, 0, 22], 'cadre');
     t.poutre([0, 0, 14], [0, 12, 14], 10, 10);
-    // Rails penchés vers l'arrière.
-    // Rails contre le dos du traîneau (il glisse dessus).
-    const bas: Vec3 = [0, 37, 0.9];
+    // Rails penchés vers l'arrière, contre le dos du traîneau (il glisse dessus).
+    const bas: Vec3 = [0, 36.15, -0.91];
     for (const s of [1, -1]) {
-      t.poutre([s * 27, bas[1], bas[2]], V.add([s * 27, bas[1], bas[2]], V.mul(U_HACK, 200)), 6, 6, 'cadre', [1, 0, 0]);
-      t.poutre([s * 27, 3, -88], V.add([s * 27, bas[1], bas[2]], V.mul(U_HACK, 190)), 7, 7);
+      t.poutre([s * 27, bas[1], bas[2]], V.add([s * 27, bas[1], bas[2]], V.mul(U_HACK, 150)), 6, 6, 'cadre', [1, 0, 0]);
+      t.poutre([s * 27, 3, -88], V.add([s * 27, bas[1], bas[2]], V.mul(U_HACK, 140)), 7, 7);
       t.poutre([s * 27, 3, bas[2]], [s * 27, bas[1], bas[2]], 6, 6);
     }
     // Traîneau : dossier, épaulières, poignées, disques derrière.
     const tr = traceur(c.out, traineauHack(p, c.t));
-    tr.coussin([0, 0, 0], [0, 32, 0], [0, 0, 3.5], 15);
-    tr.pave([0, 0, -6], [29, 0, 0], [0, 34, 0], [0, 0, 2.5], 'cadre');
+    tr.coussin([0, 0, -2], [0, 32, 0], [0, 0, 3.5], 20);
+    tr.pave([0, 0, -8], [29, 0, 0], [0, 34, 0], [0, 0, 2.5], 'cadre');
     for (const s of [1, -1]) {
       tr.coussin([s * 12, 34, 9], [0, 0, 9], [0, 3.5, 0], 6);
-      tr.poutre([s * 12, 30, -4], [s * 12, 30.5, 5], 4, 4);
-      tr.chemin([[s * 29, 6, -6], [s * 32, 6, 4], [s * 32, 0, 18]], 4);
+      tr.poutre([s * 12, 30, -6], [s * 12, 30.5, 5], 4, 4);
+      tr.chemin([[s * 29, 6, -8], [s * 32, 6, 2], [s * 32, 0, 18]], 4);
       poignee(tr, [s * 32, 6, 18], [0, 1, 0], 5);
-      tr.disques([s * 29, -14, -10], [s * 50, -14, -10], 22);
+      tr.disques([s * 29, -14, -12], [s * 50, -14, -12], 22);
     }
     return Number.NaN;
   },
@@ -466,7 +474,8 @@ function rouleauGenoux(base: Repere, pivot: Vec3, flex: number, couche: boolean,
   const dir: Vec3 = couche ? [0, Math.sin(a), -Math.cos(a)] : [0, -Math.sin(a), Math.cos(a)];
   const devant: Vec3 = couche ? [0, -Math.cos(a), -Math.sin(a)] : [0, Math.cos(a), Math.sin(a)];
   const cheville = V.add(pivot, V.mul(dir, TIBIA));
-  return dans(base, V.add(cheville, V.mul(devant, devantTibia ? ECART_ROULEAU : -ECART_ROULEAU)), M.depuisColonnes([1, 0, 0], V.mul(dir, -1), devant));
+  const o = devantTibia ? V.sub(V.add(cheville, V.mul(devant, ECART_ROULEAU)), V.mul(dir, 4)) : V.sub(cheville, V.mul(devant, ECART_ROULEAU));
+  return dans(base, o, M.depuisColonnes([1, 0, 0], V.mul(dir, -1), devant));
 }
 function levierGenoux(c: Contexte, t: Traceur, base: Repere, pivot: Vec3, flex: number, couche: boolean, devantTibia: boolean): void {
   const r = traceur(c.out, rouleauGenoux(base, pivot, flex, couche, devantTibia));
@@ -518,19 +527,67 @@ export const LEG_CURL_COUCHE: Modele<LegCurlCouche> = {
   ...machineGenoux(true, GENOU_COUCHE, false),
   dessiner(c, p) {
     const base = auSol(p.pos, p.tour), t = traceur(c.out, base), flex = auTemps(p.course, c.t);
-    socle(t, -60, 110, 56, 56);
-    // Coussin des cuisses (relevé aux hanches) et coussin du buste.
+    socle(t, -60, 80, 56, 56);
+    // Coussin des cuisses (relevé aux hanches) et coussin du buste, poignées de part et d'autre de la tête.
     t.coussin([0, 57, -16], [0, 1.5, 24], [0, 3.5, -0.2], 18);
-    t.coussin([0, 53, 58], [0, 0, 40], [0, 3.5, 0], 17);
+    t.coussin([0, 53, 46], [0, 0, 22], [0, 3.5, 0], 17);
     t.poutre([0, 0, -20], [0, 55, -20], 8, 8);
-    t.poutre([0, 0, 70], [0, 50, 70], 8, 8);
-    traverseAuSol(t, 24, 100);
+    t.poutre([0, 0, 50], [0, 50, 50], 8, 8);
+    traverseAuSol(t, 24, 74);
     for (const s of [1, -1]) {
-      t.poutre([s * 24, 0, 100], [s * 24, 45, 100], 4, 4);
-      poignee(t, [s * 24, 48, 100], [0, 1, 0], 5);
+      t.poutre([s * 24, 0, 74], [s * 24, 45, 74], 4, 4);
+      poignee(t, [s * 24, 48, 74], [0, 1, 0], 5);
     }
     levierGenoux(c, t, base, GENOU_COUCHE, flex, true, false);
     return cmDeLevier(flex);
+  },
+};
+
+/**
+ * Leg curl debout : le mannequin a le bassin en [0, 106.8, 0], penché de 35°, le pied droit sur la marche
+ * (dessus à 10 cm), la cuisse gauche 5° en avant de la verticale ; son genou gauche est sur l'axe du levier.
+ */
+const GENOU_DEBOUT: Vec3 = [10, 59.4, 0.9], CUISSE_DEBOUT = 5 * RAD;
+const HAUT_CUISSE: Vec3 = [0, Math.cos(CUISSE_DEBOUT), -Math.sin(CUISSE_DEBOUT)], DEVANT_CUISSE: Vec3 = [0, Math.sin(CUISSE_DEBOUT), Math.cos(CUISSE_DEBOUT)];
+function rouleauDebout(base: Repere, flex: number): Repere {
+  const a = CUISSE_DEBOUT - flex * RAD;
+  const dir: Vec3 = [0, -Math.cos(a), Math.sin(a)], devant: Vec3 = [0, Math.sin(a), Math.cos(a)];
+  const cheville = V.add(GENOU_DEBOUT, V.mul(dir, TIBIA));
+  return dans(base, V.sub(cheville, V.mul(devant, ECART_ROULEAU)), M.depuisColonnes([1, 0, 0], V.mul(dir, -1), devant));
+}
+const MARCHE_DEBOUT: Vec3 = [-12, 10, 2];
+export const LEG_CURL_DEBOUT: Modele<LegCurlDebout> = {
+  reperes: (p, _F, t) => ({ rouleau: rouleauDebout(auSol(p.pos, p.tour), auTemps(p.course, t)), marche: dans(auSol(p.pos, p.tour), MARCHE_DEBOUT) }),
+  dessiner(c, p) {
+    const base = auSol(p.pos, p.tour), t = traceur(c.out, base), flex = auTemps(p.course, c.t), G = GENOU_DEBOUT;
+    socle(t, -24, 80, 60, 60);
+    // Marche sous le pied droit : la jambe gauche pend à côté, le pied au-dessus du sol.
+    t.pave(V.sub(MARCHE_DEBOUT, [0, 5, 0]), [13, 0, 0], [0, 5, 0], [0, 0, 17], 'cadre');
+    // Appui de la poitrine (buste penché de 35°) sur la colonne de devant, poignées sous son bord avant.
+    const appui: Vec3 = [0, 128, 35], dessous = V.sub(appui, V.mul(FACE_KICK, 5));
+    t.coussin(appui, V.mul(BUSTE_KICK, 15), V.mul(FACE_KICK, 3.5), 17);
+    t.pave(dessous, [12, 0, 0], V.mul(FACE_KICK, 1), V.mul(BUSTE_KICK, 10), 'cadre');
+    const colonne = (y: number): Vec3 => [0, y, 66 - (4 * y) / 122];
+    t.poutre(colonne(0), colonne(122), 9, 9);
+    t.poutre(colonne(122), dessous, 7, 7);
+    t.poutre([-24, 111, 58], [24, 111, 58], 5, 5, 'cadre', [0, 0, 1]);
+    for (const s of [1, -1]) poignee(t, [s * 24, 117, 58], [0, 1, 0], 6);
+    // Coussin contre le devant de la cuisse gauche, juste au-dessus du genou, sur un bras qui part de la colonne.
+    const cuisse = V.add(V.add(G, V.mul(HAUT_CUISSE, 12)), V.mul(DEVANT_CUISSE, 11));
+    t.coussin(cuisse, V.mul(HAUT_CUISSE, 7), V.mul(DEVANT_CUISSE, 3.5), 8);
+    const dos = V.add(cuisse, V.mul(DEVANT_CUISSE, 3));
+    t.chemin([dos, [G[0], dos[1], 60], colonne(dos[1])], 4);
+    // Levier : montant à l'extérieur de la jambe gauche, axe dans celui du genou, bras jusqu'au rouleau.
+    const r = traceur(c.out, rouleauDebout(base, flex));
+    t.poutre([31, 0, G[2]], [31, G[1], G[2]], 7, 7);
+    t.poutre([31, 3, G[2]], [0, 3, G[2]], 6, 6, 'cadre', [0, 0, 1]);
+    t.cyl([18, G[1], G[2]], [33, G[1], G[2]], 3.2, 'metal');
+    traceur(c.out, { o: [0, 0, 0], R: M.ry(0) }).poutre(t.P([26, G[1], G[2]]), r.P([16, 0, 0]), 5, 5, 'cadre', V.sub(r.P([0, 0, 1]), r.P([0, 0, 0])));
+    r.cyl([-10, 0, 0], [18, 0, 0], 1.2, 'metal');
+    r.rouleau([-10, 0, 0], [10, 0, 0], 5);
+    const course = cmDeLevier(flex);
+    charge(t, c, course, 80, 160, []);
+    return course;
   },
 };
 
@@ -540,28 +597,29 @@ export const LEG_CURL_COUCHE: Modele<LegCurlCouche> = {
 
 export const MOLLETS_DEBOUT: Modele<MolletsDebout> = {
   reperes: (p, _F, t) => ({
-    epaulieres: dans(auSol(p.pos, p.tour), [0, 165 + auTemps(p.course, t), -4]),
-    marche: dans(auSol(p.pos, p.tour), [0, 12, 0]),
+    epaulieres: dans(auSol(p.pos, p.tour), [0, 166.5 + auTemps(p.course, t), -4]),
+    marche: dans(auSol(p.pos, p.tour), [0, 16, 0]),
   }),
   dessiner(c, p) {
-    const t = traceur(c.out, auSol(p.pos, p.tour)), e = auTemps(p.course, c.t), y = 165 + e;
-    socle(t, -66, 26, 60, 60);
-    t.pave([0, 6, 12], [26, 0, 0], [0, 6, 0], [0, 0, 12], 'cadre');
+    const t = traceur(c.out, auSol(p.pos, p.tour)), e = auTemps(p.course, c.t), y = 166.5 + e;
+    socle(t, -66, 38, 60, 60);
+    t.pave([0, 8, 5], [28, 0, 0], [0, 8, 0], [0, 0, 17], 'cadre');
     // Épaulières sur un chariot qui glisse le long de la colonne, poignées devant.
     t.poutre([0, 0, -34], [0, 212, -34], 9, 9);
     t.pave([0, y, -34], [7, 0, 0], [0, 12, 0], [0, 0, 7], 'moyeu');
-    t.poutre([0, y, -30], [0, y + 5, -10], 6, 6);
-    t.poutre([-20, y + 5, -10], [20, y + 5, -10], 5, 5, 'cadre', [0, 0, 1]);
+    // Traverse derrière la nuque, bras au-dessus des épaules jusqu'aux poignées, qui montent de leur bout.
+    t.poutre([0, y, -30], [0, y + 5, -16], 6, 6);
+    t.poutre([-20, y + 5, -16], [20, y + 5, -16], 5, 5, 'cadre', [0, 0, 1]);
     for (const s of [1, -1]) {
       t.coussin([s * 12, y + 4, -2], [0, 0, 9], [0, 3, 0], 5.5);
-      t.poutre([s * 20, y + 5, -10], [s * 20, y + 6, 14], 4, 4);
-      poignee(t, [s * 20, y + 6, 14], [0, 1, 0], 5);
+      t.poutre([s * 20, y + 5, -16], [s * 20, y + 5, 14], 4, 4);
+      poignee(t, [s * 20, y + 11, 14], [0, 1, 0], 5);
     }
     charge(t, c, e, -58, 200, [[0, y + 10, -34]]);
     return e;
   },
 };
-const GENOUX_ASSIS: Vec3 = [0, 72, 26], PIVOT_MOLLETS: Vec3 = [0, 30, -36];
+const GENOUX_ASSIS: Vec3 = [0, 75.5, 22], PIVOT_MOLLETS: Vec3 = [0, 12, -36];
 function coussinGenoux(p: MolletsAssis, t: number): Vec3 {
   const L = V.len(V.sub(GENOUX_ASSIS, PIVOT_MOLLETS));
   return autourX(PIVOT_MOLLETS, GENOUX_ASSIS, -(auTemps(p.course, t) / L) / RAD);
@@ -576,11 +634,14 @@ export const MOLLETS_ASSIS: Modele<MolletsAssis> = {
     socle(t, -44, 52, 56, 56);
     siege(t, [0, 48, -8], 17, 15);
     t.pave([0, 7, 38], [24, 0, 0], [0, 7, 0], [0, 0, 10], 'cadre');
-    // Levier : du pivot (derrière, bas) au coussin des genoux, disques sur le côté.
-    t.cyl([-10, PIVOT_MOLLETS[1], PIVOT_MOLLETS[2]], [10, PIVOT_MOLLETS[1], PIVOT_MOLLETS[2]], 3, 'metal');
-    t.poutre([0, 3, PIVOT_MOLLETS[2]], PIVOT_MOLLETS, 8, 8);
-    t.poutre(PIVOT_MOLLETS, [0, k[1] + 5, k[2]], 7, 6);
-    t.cyl([-20, k[1], k[2]], [20, k[1], k[2]], 1.2, 'metal');
+    // Levier, sur le côté gauche (sous le siège, il passait dans les fesses) : du pivot (derrière, au ras du
+    // sol) vers l'avant, puis il monte devant le siège jusqu'au coussin des genoux ; disques sur le côté.
+    const [, py, pz] = PIVOT_MOLLETS, x = 24, angle = -(auTemps(p.course, c.t) / V.len(V.sub(GENOUX_ASSIS, PIVOT_MOLLETS))) / RAD;
+    t.poutre([0, 3, pz], [x, 3, pz], 6, 6, 'cadre', [0, 0, 1]);
+    t.poutre([x, 3, pz], [x, py, pz], 7, 7);
+    t.cyl([x - 6, py, pz], [x + 6, py, pz], 3, 'metal');
+    t.chemin([[x, py, pz], autourX([x, py, pz], [x, py, GENOUX_ASSIS[2]], angle), [x, k[1], k[2]]], 6);
+    t.cyl([-20, k[1], k[2]], [x, k[1], k[2]], 1.2, 'metal');
     t.rouleau([-18, k[1], k[2]], [18, k[1], k[2]], 6);
     // Disques sur une corne en avant et en dessous du coussin, hors du chemin des bras.
     t.poutre([20, k[1], k[2]], [24, k[1] - 14, k[2] + 10], 4, 4);
@@ -791,7 +852,7 @@ export const KICKBACK_MACHINE: Modele<KickbackMachine> = {
     // Levier de la jambe gauche, du pivot (à la hanche) au plateau du pied.
     t.poutre([26, 0, HANCHE_KICK[2]], [26, HANCHE_KICK[1], HANCHE_KICK[2]], 7, 7);
     t.poutre([26, 3, HANCHE_KICK[2]], [0, 3, HANCHE_KICK[2]], 6, 6, 'cadre', [0, 0, 1]);
-    t.cyl([HANCHE_KICK[0] + 4, HANCHE_KICK[1], HANCHE_KICK[2]], [28, HANCHE_KICK[1], HANCHE_KICK[2]], 3, 'metal');
+    t.cyl([20, HANCHE_KICK[1], HANCHE_KICK[2]], [28, HANCHE_KICK[1], HANCHE_KICK[2]], 3, 'metal');
     const pl = traceur(c.out, plateauKick(p, c.t)), l = traceur(c.out, dans(auSol(p.pos, p.tour), HANCHE_KICK, M.rx(phi)));
     l.poutre([14, 0, 0], [14, -84, 0], 5, 5, 'cadre', [0, 0, 1]);
     l.poutre([14, -84, 0], [6, -84, 0], 4, 4);
@@ -802,7 +863,7 @@ export const KICKBACK_MACHINE: Modele<KickbackMachine> = {
   },
 };
 
-const ABD = { x: 10, y: 46, z: 2, r: 38 };
+const ABD = { x: 10, y: 46, z: -11, r: 41 };
 function etatAbd(p: AbdAdducteurs, t: number) {
   const a = auTemps(p.course, t), R = M.ry(a);
   const dir = M.vec(R, [0, 0, 1]), dehors = M.vec(R, [1, 0, 0]), signe = p.variante === 'abduction' ? 1 : -1;
@@ -819,18 +880,21 @@ export const ABD_ADDUCTEURS: Modele<AbdAdducteurs> = {
     siege(t, [0, 50, -2], 18, 18);
     dossier(t, [0, 52, -20], 18, 62, 17, [0, 62, -40]);
     t.poutre([0, 0, -40], [0, 64, -40], 7, 7);
-    poigneesSiege(t, 56, -6, 27);
+    poigneesSiege(t, 56, -12, 29);
     for (const s of [1, -1]) {
       const dir = sym(s, e.dir), P = sym(s, [ABD.x, ABD.y, ABD.z]);
-      t.cyl(V.sub(P, [0, 6, 0]), V.add(P, [0, 2, 0]), 3, 'metal');
-      const bout = V.add(P, V.mul(dir, ABD.r + 6));
-      t.poutre(P, bout, 5, 5, 'cadre', [0, 1, 0]);
-      // Coussin vertical contre le genou, repose-pied en bas.
-      const k = sym(s, e.coussin), pied = V.add(P, V.mul(dir, ABD.r));
-      t.chemin([pied, [k[0], P[1], k[2]], V.sub(k, [0, 8, 0])], 3.5);
-      t.coussin(k, V.mul(dir, 8), V.mul(sym(s, e.dehors), 2.5), 9);
-      t.poutre(bout, [bout[0], 12, bout[2]], 4, 4);
-      t.pave(sym(s, e.pied), [6, 0, 0], [0, 1.5, 0], [0, 0, 12], 'cadre');
+      t.cyl(V.sub(P, [0, 8, 0]), P, 3, 'metal');
+      // Bras sous la cuisse, jusque juste avant le genou (au-delà, il passait dans les tibias).
+      const dehors = sym(s, e.dehors), A = V.add(P, V.mul(dir, ABD.r - 16));
+      t.poutre(P, A, 5, 5, 'cadre', [0, 1, 0]);
+      // Coussin vertical contre le genou.
+      const k = sym(s, e.coussin);
+      t.chemin([A, [k[0], P[1], k[2]], V.sub(k, [0, 8, 0])], 3.5);
+      t.coussin(k, V.mul(dir, 8), V.mul(dehors, 2.5), 9);
+      // Repose-pied, porté par une potence qui descend à l'extérieur du tibia.
+      const pied = V.add(V.add(sym(s, e.pied), V.mul(dir, 7)), V.mul(dehors, 6)), Ad = V.add(A, V.mul(dehors, 12));
+      t.chemin([A, Ad, [Ad[0], 13, Ad[2]], [pied[0], 13, pied[2]]], 4);
+      t.pave(V.add(sym(s, e.pied), V.mul(dir, 7)), V.mul(dehors, 6), [0, 1.5, 0], V.mul(dir, 18), 'cadre');
     }
     const course = cmDeLevier(2 * e.a, 12);
     charge(t, c, course, -62, 150, []);
@@ -841,13 +905,18 @@ export const ABD_ADDUCTEURS: Modele<AbdAdducteurs> = {
 /**
  * Le corps pivote autour des épaules, posées (par les omoplates) sur le dossier :
  * le levier tourne dans cet axe, si bien que le rouleau décrit le même arc que
- * le bassin et ne le quitte pas. Le rouleau est à 49 cm le long du buste (la
- * longueur bassin-épaules) et 17 cm devant le bassin.
+ * le bassin et ne le quitte pas. Le rouleau est posé sur le bassin, juste au-dessus
+ * du pli de l'aine : à 46 cm des épaules le long du buste, 17,5 cm devant lui. Une
+ * poignée sur chaque levier, à côté du rouleau, le long du levier.
  */
-const EPAULES_HT: Vec3 = [0, 58, -38];
-const coussinHt = (p: HipThrustMachine, t: number): Vec3 => V.add(EPAULES_HT, M.vec(M.rx(auTemps(p.course, t)), [0, -49, 17]));
+const EPAULES_HT: Vec3 = [0, 58, -38], ROULEAU_HT: Vec3 = [0, -46, 17.5];
+const LEVIER_HT = V.norm(ROULEAU_HT), POIGNEE_HT: Vec3 = V.add([36, 0, 0], V.sub(ROULEAU_HT, V.mul(LEVIER_HT, 9)));
+const coussinHt = (p: HipThrustMachine, t: number): Vec3 => V.add(EPAULES_HT, M.vec(M.rx(auTemps(p.course, t)), ROULEAU_HT));
 export const HIP_THRUST_MACHINE: Modele<HipThrustMachine> = {
-  reperes: (p, _F, t) => ({ coussin: dans(auSol(p.pos, p.tour), coussinHt(p, t)) }),
+  reperes: (p, _F, t) => ({
+    coussin: dans(auSol(p.pos, p.tour), coussinHt(p, t)),
+    ...paire(dans(auSol(p.pos, p.tour), EPAULES_HT, M.rx(auTemps(p.course, t))), 'poignee', POIGNEE_HT, M.depuisColonnes([1, 0, 0], LEVIER_HT, V.cross([1, 0, 0], LEVIER_HT))),
+  }),
   dessiner(c, p) {
     const t = traceur(c.out, auSol(p.pos, p.tour)), k = coussinHt(p, c.t), E = EPAULES_HT;
     socle(t, -56, 60, 70, 60);
@@ -859,11 +928,13 @@ export const HIP_THRUST_MACHINE: Modele<HipThrustMachine> = {
     traverseAuSol(t, 34, E[2]);
     for (const s of [1, -1]) {
       t.poutre([s * 34, 0, E[2]], [s * 34, E[1], E[2]], 7, 7);
-      t.cyl([s * 28, E[1], E[2]], [s * 36, E[1], E[2]], 3.2, 'metal');
+      t.cyl([s * 30, E[1], E[2]], [s * 37, E[1], E[2]], 3.2, 'metal');
       t.poutre([s * 31, E[1], E[2]], [s * 31, k[1], k[2]], 5, 5, 'cadre', [1, 0, 0]);
     }
     t.cyl([-31, k[1], k[2]], [31, k[1], k[2]], 1.2, 'metal');
     t.rouleau([-26, k[1], k[2]], [26, k[1], k[2]], 6);
+    const l = traceur(c.out, dans(auSol(p.pos, p.tour), E, M.rx(auTemps(p.course, c.t))));
+    for (const s of [1, -1]) poignee(l, sym(s, POIGNEE_HT), LEVIER_HT, 6);
     // Disques sur une corne, à l'extérieur du levier droit.
     t.poutre([-31, k[1], k[2]], [-38, k[1], k[2]], 4, 4);
     t.disques([-38, k[1], k[2]], [-52, k[1], k[2]], 14);

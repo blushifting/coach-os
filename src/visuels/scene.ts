@@ -76,8 +76,9 @@ export const periodeDe = (sujet: Pick<PoseExercice, 'duree'>): number => STYLE.p
 export function avancement(phase: number, effort?: PoseExercice['effort']): number {
   const doux = (t: number): number => t * t * (3 - 2 * t);
   const p = ((phase % 1) + 1) % 1;
-  // Pauses de 0,12 au départ et à l'arrivée ; la phase d'effort prend 0,44 du cycle, l'autre 0,32.
-  const aller = effort === 'aller' ? 0.44 : effort === 'retour' ? 0.32 : 0.38, retour = 0.76 - aller;
+  // Pauses de 0,12 au départ et à l'arrivée ; la phase d'effort prend 0,46 du cycle, l'autre 0,30 : l'effort
+  // se reconnaît (une fois et demie plus lent) sans que le retour soit jeté.
+  const aller = effort === 'aller' ? 0.46 : effort === 'retour' ? 0.3 : 0.38, retour = 0.76 - aller;
   if (p < 0.12) return 0;
   if (p < 0.12 + aller) return doux((p - 0.12) / aller);
   if (p < 0.24 + aller) return 1;

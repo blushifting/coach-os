@@ -41,7 +41,7 @@ export const STYLE = {
   /** Épaisseur du trait autour des pièces, en fraction du côté de l'image. */
   trait: 0.0018,
   /** Durée d'un aller-retour du mouvement, en millisecondes. */
-  periode: 2800,
+  periode: 3600,
 } as const;
 
 /** Couleur d'un muscle d'après son coefficient dans le catalogue (1, 0,5, ou absent). */

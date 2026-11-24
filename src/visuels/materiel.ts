@@ -31,12 +31,12 @@ import { BARRE, BARRE_EZ, DISQUE, HALTERE, LANDMINE, ROUE_ABDO, TRAP_BAR } from 
 import type { Barre, BarreEz, Disque, Haltere, Landmine, RoueAbdo, TrapBar } from './materiel/libre';
 import {
   ABD_ADDUCTEURS, ASSISTEE, CRUNCH_MACHINE, CURL_MACHINE, DEVELOPPE_MACHINE, ELEVATIONS_MACHINE, HACK_SQUAT, HIP_THRUST_MACHINE,
-  KICKBACK_MACHINE, LEG_CURL_ASSIS, LEG_CURL_COUCHE, LEG_EXTENSION, MOLLETS_ASSIS, MOLLETS_DEBOUT, PEC_DECK, PRESSE_CUISSES,
+  KICKBACK_MACHINE, LEG_CURL_ASSIS, LEG_CURL_COUCHE, LEG_CURL_DEBOUT, LEG_EXTENSION, MOLLETS_ASSIS, MOLLETS_DEBOUT, PEC_DECK, PRESSE_CUISSES,
   PULLOVER_MACHINE, SMITH, TIRAGE_HORIZONTAL_MACHINE,
 } from './materiel/machines';
 import type {
   AbdAdducteurs, Assistee, CrunchMachine, CurlMachine, DeveloppeMachine, ElevationsMachine, HackSquat, HipThrustMachine,
-  KickbackMachine, LegCurlAssis, LegCurlCouche, LegExtension, MolletsAssis, MolletsDebout, PecDeck, PresseCuisses,
+  KickbackMachine, LegCurlAssis, LegCurlCouche, LegCurlDebout, LegExtension, MolletsAssis, MolletsDebout, PecDeck, PresseCuisses,
   PulloverMachine, Smith, TirageHorizontalMachine,
 } from './materiel/machines';
 import type { Modele, Volume } from './materiel/outils';
@@ -53,7 +53,7 @@ export type Piece =
   | Banc | BarreTraction | BarresParalleles | Pupitre | BancLombaires | Ghr | ReverseHyper
   | Poulie | VisAVis | TirageHorizontalPoulie | TirageVertical
   | PecDeck | DeveloppeMachine | TirageHorizontalMachine | PresseCuisses | HackSquat | Smith
-  | LegExtension | LegCurlAssis | LegCurlCouche | MolletsDebout | MolletsAssis
+  | LegExtension | LegCurlAssis | LegCurlCouche | LegCurlDebout | MolletsDebout | MolletsAssis
   | ElevationsMachine | CurlMachine | PulloverMachine | KickbackMachine | AbdAdducteurs | HipThrustMachine
   | CrunchMachine | Assistee;
 
@@ -67,7 +67,7 @@ export const MODELES: ParType = {
   poulie: POULIE, visAVis: VIS_A_VIS, tirageHorizontalPoulie: TIRAGE_HORIZONTAL_POULIE, tirageVertical: TIRAGE_VERTICAL,
   pecDeck: PEC_DECK, developpeMachine: DEVELOPPE_MACHINE, tirageHorizontalMachine: TIRAGE_HORIZONTAL_MACHINE,
   presseCuisses: PRESSE_CUISSES, hackSquat: HACK_SQUAT, smith: SMITH,
-  legExtension: LEG_EXTENSION, legCurlAssis: LEG_CURL_ASSIS, legCurlCouche: LEG_CURL_COUCHE,
+  legExtension: LEG_EXTENSION, legCurlAssis: LEG_CURL_ASSIS, legCurlCouche: LEG_CURL_COUCHE, legCurlDebout: LEG_CURL_DEBOUT,
   molletsDebout: MOLLETS_DEBOUT, molletsAssis: MOLLETS_ASSIS,
   elevationsMachine: ELEVATIONS_MACHINE, curlMachine: CURL_MACHINE, pulloverMachine: PULLOVER_MACHINE,
   kickbackMachine: KICKBACK_MACHINE, abdAdducteurs: ABD_ADDUCTEURS, hipThrustMachine: HIP_THRUST_MACHINE,

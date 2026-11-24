@@ -494,7 +494,7 @@ const NOMS_PIECES: Readonly<Record<Piece['type'], string>> = {
   poulie: 'Poulie', visAVis: 'Vis-à-vis', tirageHorizontalPoulie: 'Tirage horizontal à la poulie', tirageVertical: 'Tirage vertical',
   pecDeck: 'Pec deck (butterfly ou inversé)', developpeMachine: 'Développé machine', tirageHorizontalMachine: 'Tirage horizontal machine',
   presseCuisses: 'Presse à cuisses', hackSquat: 'Hack squat', smith: 'Smith machine',
-  legExtension: 'Leg extension', legCurlAssis: 'Leg curl assis', legCurlCouche: 'Leg curl couché',
+  legExtension: 'Leg extension', legCurlAssis: 'Leg curl assis', legCurlCouche: 'Leg curl couché', legCurlDebout: 'Leg curl debout',
   molletsDebout: 'Mollets debout', molletsAssis: 'Mollets assis', elevationsMachine: 'Élévations latérales machine',
   curlMachine: 'Curl ou extension machine', pulloverMachine: 'Pullover machine', kickbackMachine: 'Kickback fessiers',
   abdAdducteurs: 'Abducteurs ou adducteurs', hipThrustMachine: 'Hip thrust machine', crunchMachine: 'Crunch machine',

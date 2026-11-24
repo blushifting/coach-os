@@ -283,13 +283,16 @@ describe('visuels — poses', () => {
 
   it('un pied posé ne bouge pas pendant tout le mouvement, et s\'il est à plat au sol, il y reste', () => {
     // Un pied qui fait un pas (fentes, step-up) ou se lève sur la pointe change de cible d'une
-    // pose clé à l'autre : il n'est pas « posé ».
+    // pose clé à l'autre : il n'est pas « posé ». Un pied sur une pièce mobile (rouleau d'un leg
+    // curl, plateau d'un kickback) suit la pièce : il n'est pas posé non plus.
     for (const p of Object.values(POSES)) {
       const depart = reperesAu(p, 0);
       for (const c of ['G', 'D'] as const) {
         const cibles = p.cles.map((k) => (c === 'G' ? k.jambeG : k.jambeD).cible);
         const cible = cibles[0];
         if (cible === null || cible === undefined || cibles.some((x) => JSON.stringify(x) !== JSON.stringify(cible))) continue;
+        const repere = cible.repere ?? 'monde';
+        if ([0.25, 0.5, 0.75, 1].some((t) => V.len(V.sub(reperesAu(p, t)[repere]!.o, depart[repere]!.o)) > 1e-6)) continue;
         const auSol = (cible.repere ?? 'monde') === 'monde' && cible.pointe === 0 && cible.pos[1] === OS.cheville;
         for (const t of [0.25, 0.5, 0.75, 1]) {
           const F = reperesAu(p, t);

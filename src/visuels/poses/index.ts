@@ -11,6 +11,7 @@
 import type { PoseExercice } from '../scene';
 import { ab_wheel_rollout } from './ab_wheel_rollout';
 import { arnold_press } from './arnold_press';
+import { back_extension_45 } from './back_extension_45';
 import { bb_curl } from './bb_curl';
 import { bb_row } from './bb_row';
 import { bb_shrug } from './bb_shrug';
@@ -38,6 +39,9 @@ import { cable_row } from './cable_row';
 import { cable_shrug } from './cable_shrug';
 import { cable_wood_chop } from './cable_wood_chop';
 import { calf_db_single } from './calf_db_single';
+import { calf_seated_machine } from './calf_seated_machine';
+import { calf_smith } from './calf_smith';
+import { calf_standing_machine } from './calf_standing_machine';
 import { chest_press_incl_machine } from './chest_press_incl_machine';
 import { chest_press_machine } from './chest_press_machine';
 import { chest_supported_db_row } from './chest_supported_db_row';
@@ -61,18 +65,29 @@ import { dips_triceps } from './dips_triceps';
 import { face_pull } from './face_pull';
 import { french_press_ez } from './french_press_ez';
 import { front_squat } from './front_squat';
+import { ghr } from './ghr';
 import { glute_bridge } from './glute_bridge';
 import { glute_bridge_bw } from './glute_bridge_bw';
+import { glute_kickback_machine } from './glute_kickback_machine';
 import { goblet_squat } from './goblet_squat';
 import { good_morning } from './good_morning';
+import { hack_squat_machine } from './hack_squat_machine';
 import { hammer_curl } from './hammer_curl';
 import { hanging_leg_raise } from './hanging_leg_raise';
+import { hip_abductor_machine } from './hip_abductor_machine';
+import { hip_adductor_machine } from './hip_adductor_machine';
 import { hip_thrust_bb } from './hip_thrust_bb';
+import { hip_thrust_machine } from './hip_thrust_machine';
 import { incline_db_curl } from './incline_db_curl';
 import { inverted_row } from './inverted_row';
 import { jm_press } from './jm_press';
 import { kickback_db } from './kickback_db';
 import { lat_pulldown } from './lat_pulldown';
+import { leg_curl_lying } from './leg_curl_lying';
+import { leg_curl_seated } from './leg_curl_seated';
+import { leg_curl_standing } from './leg_curl_standing';
+import { leg_extension } from './leg_extension';
+import { leg_press_45 } from './leg_press_45';
 import { lying_leg_raise } from './lying_leg_raise';
 import { machine_lateral_raise } from './machine_lateral_raise';
 import { machine_shoulder_press } from './machine_shoulder_press';
@@ -96,6 +111,7 @@ import { rdl_bb } from './rdl_bb';
 import { rdl_db } from './rdl_db';
 import { rear_delt_db_fly } from './rear_delt_db_fly';
 import { reverse_crunch } from './reverse_crunch';
+import { reverse_hyper } from './reverse_hyper';
 import { reverse_lunge } from './reverse_lunge';
 import { reverse_pec_deck } from './reverse_pec_deck';
 import { russian_twist } from './russian_twist';
@@ -106,6 +122,7 @@ import { sissy_squat } from './sissy_squat';
 import { sit_up } from './sit_up';
 import { sit_up_decline } from './sit_up_decline';
 import { smith_bench } from './smith_bench';
+import { smith_squat } from './smith_squat';
 import { spider_curl } from './spider_curl';
 import { squat_bb_high } from './squat_bb_high';
 import { step_up } from './step_up';
@@ -119,6 +136,7 @@ import { walking_lunge } from './walking_lunge';
 export const POSES: Readonly<Record<string, PoseExercice>> = {
   ab_wheel_rollout,
   arnold_press,
+  back_extension_45,
   bb_curl,
   bb_row,
   bb_shrug,
@@ -146,6 +164,9 @@ export const POSES: Readonly<Record<string, PoseExercice>> = {
   cable_shrug,
   cable_wood_chop,
   calf_db_single,
+  calf_seated_machine,
+  calf_smith,
+  calf_standing_machine,
   chest_press_incl_machine,
   chest_press_machine,
   chest_supported_db_row,
@@ -169,18 +190,29 @@ export const POSES: Readonly<Record<string, PoseExercice>> = {
   face_pull,
   french_press_ez,
   front_squat,
+  ghr,
   glute_bridge,
   glute_bridge_bw,
+  glute_kickback_machine,
   goblet_squat,
   good_morning,
+  hack_squat_machine,
   hammer_curl,
   hanging_leg_raise,
+  hip_abductor_machine,
+  hip_adductor_machine,
   hip_thrust_bb,
+  hip_thrust_machine,
   incline_db_curl,
   inverted_row,
   jm_press,
   kickback_db,
   lat_pulldown,
+  leg_curl_lying,
+  leg_curl_seated,
+  leg_curl_standing,
+  leg_extension,
+  leg_press_45,
   lying_leg_raise,
   machine_lateral_raise,
   machine_shoulder_press,
@@ -204,6 +236,7 @@ export const POSES: Readonly<Record<string, PoseExercice>> = {
   rdl_db,
   rear_delt_db_fly,
   reverse_crunch,
+  reverse_hyper,
   reverse_lunge,
   reverse_pec_deck,
   russian_twist,
@@ -214,6 +247,7 @@ export const POSES: Readonly<Record<string, PoseExercice>> = {
   sit_up,
   sit_up_decline,
   smith_bench,
+  smith_squat,
   spider_curl,
   squat_bb_high,
   step_up,

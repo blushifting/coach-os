@@ -90,6 +90,14 @@ const LOTS: readonly { nom: string; ids: readonly string[] }[] = [
       'bicep_curl_machine', 'preacher_curl_machine', 'tricep_extension_machine', 'crunch_machine',
     ],
   },
+  {
+    nom: 'Machines guidées : bas du corps et postes',
+    ids: [
+      'smith_squat', 'hack_squat_machine', 'leg_press_45', 'leg_extension', 'leg_curl_lying', 'leg_curl_seated',
+      'leg_curl_standing', 'hip_thrust_machine', 'glute_kickback_machine', 'hip_abductor_machine', 'hip_adductor_machine',
+      'calf_standing_machine', 'calf_seated_machine', 'calf_smith', 'ghr', 'back_extension_45', 'reverse_hyper',
+    ],
+  },
 ];
 
 const NB = ' ';

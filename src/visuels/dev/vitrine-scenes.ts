@@ -9,6 +9,7 @@ import { bicep_curl_machine } from '../poses/bicep_curl_machine';
 import { chest_press_incl_machine } from '../poses/chest_press_incl_machine';
 import { chest_press_machine } from '../poses/chest_press_machine';
 import { crunch_machine } from '../poses/crunch_machine';
+import { leg_curl_standing } from '../poses/leg_curl_standing';
 import { machine_lateral_raise } from '../poses/machine_lateral_raise';
 import { machine_shoulder_press } from '../poses/machine_shoulder_press';
 import { pec_deck } from '../poses/pec_deck';
@@ -179,13 +180,14 @@ export const SCENES: readonly Scene[] = [
       { bassin: { pos: [0, 96.5, 0], bascule: 3 } }, { bassin: { pos: [0, 56, -16], bascule: 24 } })),
   scene('bas', 'Leg extension', 'Levier dans l’axe des genoux, rouleau devant les tibias', 'leg_extension', [70, 14],
     [{ type: 'legExtension', pos: [0, 0, 0], tour: 0, course: [90, 4] }],
-    deux({ bassin: { pos: [0, 67, -22.5] }, jambe: { cible: pied([10, 0, -9], [0, 0, 1], 'rouleau') }, bras: { cible: tient('monde', [25, 62, -12], [0, 0, 1], [1, 0, 0]) } }, {}, {})),
+    deux({ bassin: { pos: [0, 67, -22.5] }, jambe: { cible: pied([10, -4, -9], [0, 0, 1], 'rouleau') }, bras: { cible: tient('monde', [25, 62, -12], [0, 0, 1], [1, 0, 0]) } }, {}, {})),
   scene('bas', 'Leg curl assis', 'Rouleau sur les cuisses, rouleau derrière les chevilles', 'leg_curl_seated', [70, 14],
     [{ type: 'legCurlAssis', pos: [0, 0, 0], tour: 0, course: [4, 95] }],
     deux({ bassin: { pos: [0, 67, -22.5] }, jambe: { cible: pied([10, 0, 9], [0, 0, 1], 'rouleau') }, bras: { cible: tient('monde', [25, 62, -12], [0, 0, 1], [1, 0, 0]) } }, {}, {})),
   scene('bas', 'Leg curl couché', 'Banc coudé, levier dans l’axe des genoux', 'leg_curl_lying', [75, 16],
     [{ type: 'legCurlCouche', pos: [0, 0, 0], tour: 0, course: [4, 100] }],
     deux({ bassin: { pos: [0, 70, 2], bascule: 90 }, jambe: { cible: pied([10, 0, 9], [0, 0, 1], 'rouleau') }, bras: { cible: tient('monde', [24, 48, 100], [0, 1, 0], [1, 0, -0.5]) } }, {}, {})),
+  { nom: 'Leg curl debout', materiel: 'Marche, appui de la poitrine, coussin devant la cuisse, levier dans l’axe du genou', famille: 'bas', sujet: leg_curl_standing },
   scene('bas', 'Mollets debout', 'Épaulières, poignées, marche', 'calf_standing_machine', [70, 10],
     [{ type: 'molletsDebout', pos: [0, 0, 0], tour: 0, course: [0, 9] }],
     [

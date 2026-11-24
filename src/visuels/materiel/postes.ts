@@ -8,7 +8,7 @@
 import { M, RAD, V } from '../maths';
 import type { Vec3 } from '../maths';
 import type { Repere } from '../squelette';
-import { auSol, auTemps, dans, socle, siege, traceur } from './outils';
+import { auSol, auTemps, dans, poignee, socle, siege, traceur } from './outils';
 import type { Modele } from './outils';
 
 /**
@@ -31,7 +31,7 @@ export interface Ghr { readonly type: 'ghr'; readonly pos: Vec3; readonly tour: 
 /**
  * Reverse hyper : couché sur le ventre (tête vers +Z), les hanches au bord
  * arrière du plateau, les jambes pendent dans une sangle. `course` : angle du
- * balancier vers l'arrière (degrés). Repère offert : `chevilles` (la sangle).
+ * balancier vers l'arrière (degrés). Repère offert : `chevilles` (la sangle). Poignées verticales en [±24, 84, 88].
  */
 export interface ReverseHyper { readonly type: 'reverseHyper'; readonly pos: Vec3; readonly tour: number; readonly course: readonly number[] }
 
@@ -117,8 +117,8 @@ export const PUPITRE: Modele<Pupitre> = {
 
 /**
  * Banc à lombaires : le corps suit une ligne à 45° qui monte vers l'avant.
- * Chevilles à 8 cm du plateau, coussin devant le haut des cuisses, juste sous
- * le pli de la hanche (les hanches sont 85 cm plus haut que les chevilles).
+ * Chevilles à 8 cm du plateau, coussin devant les cuisses, sa bordure haute une
+ * dizaine de centimètres sous la hanche, qui plie librement (les hanches sont 85 cm plus haut que les chevilles).
  */
 const LIGNE_45: Vec3 = [0, Math.SQRT1_2, Math.SQRT1_2], DEVANT_45: Vec3 = [0, -Math.SQRT1_2, Math.SQRT1_2];
 const PLATEAU_45: Repere = { o: [0, 14, -40], R: M.depuisColonnes([1, 0, 0], LIGNE_45, DEVANT_45) };
@@ -129,7 +129,7 @@ export const BANC_LOMBAIRES: Modele<BancLombaires> = {
     const t = traceur(out, auSol(pos, tour));
     socle(t, -66, 52, 56, 56);
     // Coussin devant le haut des cuisses.
-    const coussin = V.add(V.add(CHEVILLES_45, V.mul(LIGNE_45, 72)), V.mul(DEVANT_45, 13));
+    const coussin = V.add(V.add(CHEVILLES_45, V.mul(LIGNE_45, 64)), V.mul(DEVANT_45, 13));
     t.coussin(coussin, V.mul(LIGNE_45, 13), V.mul(DEVANT_45, 4), 24);
     // Châssis sous la ligne du corps : du sol à l'arrière jusque sous le coussin, et un pied devant.
     const sous = V.add(coussin, V.mul(DEVANT_45, 5));
@@ -149,16 +149,18 @@ export const BANC_LOMBAIRES: Modele<BancLombaires> = {
 };
 
 /**
- * Banc à ischios (GHR) : à genoux, les tibias à l'horizontale sur leur appui,
- * les pieds contre la plaque, les chevilles bloquées par les rouleaux ; le gros
- * coussin rond est devant les genoux. Départ buste droit, arrivée buste à
- * l'horizontale par-dessus le coussin.
+ * Banc à ischios (GHR) : les pieds contre la plaque, les chevilles bloquées par
+ * les rouleaux, les tibias libres à l'horizontale. Le gros coussin rond est devant
+ * le bas des genoux, qui s'y appuient : c'est autour d'eux que le corps tourne, du
+ * buste penché vers l'avant (les cuisses inclinées sur le coussin) au buste droit.
+ * Le mannequin a le genou en [±10, 95, −2,5].
  */
 const PLATEAU_GHR: Repere = { o: [0, 95, -52], R: M.depuisColonnes([1, 0, 0], [0, 0, 1], [0, -1, 0]) };
+const COUSSIN_GHR: Vec3 = [0, 81, 8.5], RAYON_GHR = 12;
 export const GHR: Modele<Ghr> = {
   reperes: (p) => ({ plateau: dans(auSol(p.pos, p.tour), PLATEAU_GHR.o, PLATEAU_GHR.R) }),
   dessiner({ out }, { pos, tour }) {
-    const t = traceur(out, auSol(pos, tour));
+    const t = traceur(out, auSol(pos, tour)), [, cy, cz] = COUSSIN_GHR;
     socle(t, -66, 50, 60, 60);
     // Colonne arrière, plaque des pieds, rouleaux sur l'arrière des chevilles.
     t.poutre([0, 3, -58], [0, 112, -58], 8, 8);
@@ -166,22 +168,21 @@ export const GHR: Modele<Ghr> = {
     t.poutre([0, 110, -58], [0, 104, -40], 4, 4);
     t.cyl([-17, 104, -40], [17, 104, -40], 1, 'metal');
     for (const s of [1, -1]) t.rouleau([s * 3, 104, -40], [s * 16, 104, -40], 4.5);
-    // Appui des tibias, puis le coussin rond des genoux, sur une poutre au-dessus du socle.
-    t.poutre([0, 78, -58], [0, 78, 15], 7, 7, 'cadre', [1, 0, 0]);
-    t.coussin([0, 85.5, -23], [0, 0, 17], [0, 3.5, 0], 16);
-    t.poutre([0, 78, -23], [0, 82, -23], 6, 6);
-    t.poutre([0, 3, 15], [0, 89, 15], 9, 9);
-    t.cyl([-22, 101, 15], [22, 101, 15], 12, 'coussin');
+    // Poutre basse de la colonne au pied du coussin rond, qui monte sur son montant.
+    t.poutre([0, 72, -58], [0, 72, cz], 7, 7, 'cadre', [1, 0, 0]);
+    t.poutre([0, 3, cz], [0, cy - RAYON_GHR + 2, cz], 9, 9);
+    t.cyl([-22, cy, cz], [22, cy, cz], RAYON_GHR, 'coussin');
     return Number.NaN;
   },
 };
 
 /**
- * Reverse hyper : le balancier pivote juste sous le bord arrière du plateau,
- * presque dans l'axe des hanches ; sa sangle, à 71 cm du pivot, passe derrière
- * les chevilles : les jambes, tendues, la poussent sans la quitter.
+ * Reverse hyper : le balancier pivote dans l'axe des hanches (le corps couché a
+ * le bassin en [0, 114, 2]) ; ses deux bras passent à l'extérieur des cuisses,
+ * et sa sangle, à 82 cm du pivot, passe derrière les chevilles : les jambes,
+ * presque tendues, la poussent sans la quitter.
  */
-const PIVOT_RH: Vec3 = [0, 100, -8], RAYON_RH = 71;
+const PIVOT_RH: Vec3 = [0, 114, -3], RAYON_RH = 82;
 function repereSangle(p: ReverseHyper, t: number): Repere {
   const R = M.rx(auTemps(p.course, t));
   return dans(auSol(p.pos, p.tour), V.add(PIVOT_RH, M.vec(R, [0, -RAYON_RH, 0])), R);
@@ -191,25 +192,32 @@ export const REVERSE_HYPER: Modele<ReverseHyper> = {
   dessiner({ out, t }, p) {
     const s = traceur(out, auSol(p.pos, p.tour));
     socle(s, -70, 84, 70, 60);
-    // Plateau : on s'y couche sur le ventre, les hanches au bord arrière.
-    s.coussin([0, 101.5, 28], [0, 0, 34], [0, 3.5, 0], 21);
+    // Plateau : on s'y couche sur le ventre, les hanches juste au-delà du bord arrière.
+    s.coussin([0, 101.5, 33], [0, 0, 29], [0, 3.5, 0], 21);
     s.poutre([0, 3, 30], [0, 95, 30], 9, 9);
-    s.poutre([0, 95, -8], [0, 95, 64], 8, 6, 'cadre', [1, 0, 0]);
-    // Poignées courtes au bout du plateau.
-    s.poutre([-26, 93, 64], [26, 93, 64], 5, 5, 'cadre', [0, 0, 1]);
+    s.poutre([0, 95, 8], [0, 95, 64], 8, 6, 'cadre', [1, 0, 0]);
+    // Poignées verticales en avant et en contrebas du plateau : bras allongés vers l'avant, pas repliés.
+    s.poutre([0, 95, 64], [0, 74, 88], 6, 6);
+    s.poutre([-26, 74, 88], [26, 74, 88], 5, 5, 'cadre', [0, 0, 1]);
     for (const x of [-24, 24]) {
-      s.poutre([x, 93, 64], [x, 103, 66], 4, 4);
-      s.cyl([x, 103, 62], [x, 103, 72], 2, 'coussin');
+      s.poutre([x, 74, 88], [x, 77, 88], 4, 4);
+      poignee(s, [x, 84, 88], [0, 1, 0], 6);
     }
-    // Deux montants portent l'axe du balancier, qui pend entre eux.
-    for (const x of [-14, 14]) s.poutre([x, 3, PIVOT_RH[2]], [x, PIVOT_RH[1] + 3, PIVOT_RH[2]], 7, 7);
-    s.poutre([-14, 95, -8], [14, 95, -8], 6, 6, 'cadre', [0, 0, 1]);
-    s.cyl([-12, PIVOT_RH[1], PIVOT_RH[2]], [12, PIVOT_RH[1], PIVOT_RH[2]], 2.6, 'metal');
+    // Deux montants, à l'extérieur des cuisses, portent l'axe du balancier ; une traverse au sol les relie au socle.
+    const [, py, pz] = PIVOT_RH;
+    s.poutre([-31, 3, pz], [31, 3, pz], 6, 6, 'cadre', [0, 0, 1]);
+    for (const x of [-31, 31]) {
+      s.poutre([x, 3, pz], [x, py + 4, pz], 7, 7);
+      s.cyl([Math.sign(x) * 21, py, pz], [Math.sign(x) * 35, py, pz], 2.6, 'metal');
+    }
+    // Balancier : deux bras de part et d'autre des jambes, la sangle (un rouleau) en bas, les disques dessous.
     const b = traceur(out, dans(auSol(p.pos, p.tour), PIVOT_RH, M.rx(auTemps(p.course, t))));
-    b.poutre([0, 0, 0], [0, -RAYON_RH - 14, 0], 6, 6, 'cadre', [1, 0, 0]);
+    const bas = -RAYON_RH - 5;
+    b.chemin([[24, 0, 0], [24, bas, -4], [-24, bas, -4], [-24, 0, 0]], 5, 'cadre', [0, 0, 1]);
     b.cyl([-15, -RAYON_RH, 0], [15, -RAYON_RH, 0], 1, 'metal');
     b.rouleau([-14, -RAYON_RH, 0], [14, -RAYON_RH, 0], 4);
-    b.disques([0, -RAYON_RH - 14, 0], [0, -RAYON_RH - 14, -22], 15);
+    b.poutre([0, bas, -4], [0, bas - 8, -4], 5, 5);
+    b.disques([0, bas - 8, -4], [0, bas - 8, -22], 12);
     return Number.NaN;
   },
 };
