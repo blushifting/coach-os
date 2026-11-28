@@ -53,7 +53,6 @@ export interface Fuseau {
 // Ossature
 // -----------------------------------------------------------------------------
 type Anneau = readonly [u: number, a: number, b: number, cx: number, cz: number];
-export type TonOs = 'corps' | 'cheveux';
 
 interface SpecOs {
   readonly id: string;
@@ -63,7 +62,6 @@ interface SpecOs {
   readonly base: 'bas' | 'haut' | 'avant';
   readonly o: Vec3;
   readonly L: number;
-  readonly ton: TonOs;
   /** Part du rayon gardée, pour que les muscles dépassent. */
   readonly mince?: number;
   /** La carrure ne le change pas (tête, mains, pieds). */
@@ -111,42 +109,39 @@ function anneauxTete(): Anneau[] {
 }
 
 export const OSSATURE: readonly SpecOs[] = [
-  { id: 'bassin', joint: 'bassin', base: 'haut', o: [0, -12, 0], L: 18, ton: 'corps', mince: 0.97,
+  { id: 'bassin', joint: 'bassin', base: 'haut', o: [0, -12, 0], L: 18, mince: 0.97,
     anneaux: [[0, 7, 6, 0, -0.5], [0.17, 13.2, 9.6, 0, -0.8], [0.39, 16.4, 11, 0, -1], [0.67, 15.9, 10.6, 0, -0.6], [1, 14.6, 9.7, 0, 0]] },
-  { id: 'ventre', joint: 'lombaires', base: 'haut', o: [0, 0, 0], L: 22, ton: 'corps', mince: 0.97, recouvre: 5,
+  { id: 'ventre', joint: 'lombaires', base: 'haut', o: [0, 0, 0], L: 22, mince: 0.97, recouvre: 5,
     anneaux: [[0, 14.6, 9.7, 0, 0], [0.3, 13.8, 9.2, 0, 0.2], [0.65, 14, 9.4, 0, 0.5], [1, 15, 9.9, 0, 0.6]] },
   // Le haut du thorax monte en pente droite jusqu'au cou : c'est le corps qui
   // porte la pente cou-épaule. Le trapèze n'est qu'un relief posé dessus ; si
   // la pente ne tenait que par lui, il aurait l'air d'une épaulette.
-  { id: 'thorax', joint: 'thorax', base: 'haut', o: [0, 0, 0], L: 30.5, ton: 'corps', mince: 0.97, recouvre: 5,
+  { id: 'thorax', joint: 'thorax', base: 'haut', o: [0, 0, 0], L: 30.5, mince: 0.97, recouvre: 5,
     anneaux: [[0, 15, 9.9, 0, 0.6], [0.266, 17, 11.3, 0, 1], [0.495, 17.6, 11.8, 0, 0.8], [0.69, 16.2, 10.4, 0, 0.2], [0.8, 14.4, 9.2, 0, -0.6], [0.9, 10.6, 7.8, 0, -1], [1, 6.4, 6.2, 0, -0.5]] },
-  { id: 'cou', joint: 'cou', base: 'haut', o: [0, -1, 0], L: 7.5, ton: 'corps', fixe: true,
+  { id: 'cou', joint: 'cou', base: 'haut', o: [0, -1, 0], L: 7.5, fixe: true,
     anneaux: [[0, 5.6, 5.8, 0, 0], [1, 5, 5.4, 0, 0.4]] },
-  { id: 'tete', joint: 'tete', base: 'haut', o: [0, -1.2, 1], L: 22.6, ton: 'corps', fixe: true, anneaux: anneauxTete() },
-  // Les cheveux : une calotte un peu plus large que le crâne, reculée. De face
-  // elle dépasse à peine ; de profil et de dos elle dit où regarde la tête.
-  { id: 'cheveux', joint: 'tete', base: 'haut', o: [0, 7, -1], L: 15.4, ton: 'cheveux', fixe: true, anneaux: ovoide(8.2, 9.6, 0.75) },
-  { id: 'bras', joint: 'epaule', pair: true, base: 'bas', o: [0, 0, 0], L: 30, ton: 'corps', mince: 0.92, bouts: [3.6, 4.2],
+  { id: 'tete', joint: 'tete', base: 'haut', o: [0, -1.2, 1], L: 22.6, fixe: true, anneaux: anneauxTete() },
+  { id: 'bras', joint: 'epaule', pair: true, base: 'bas', o: [0, 0, 0], L: 30, mince: 0.92, bouts: [3.6, 4.2],
     // Tête du bras fine : ce sont les deltoïdes qui coiffent l'épaule, même bras levé.
     anneaux: [[0, 4.4, 4.6, 0, 0], [0.4, 5.7, 6.6, 0, 0.3], [0.8, 4.9, 5.3, 0, 0], [1, 4.5, 4.8, 0, 0]] },
-  { id: 'avantBras', joint: 'coude', pair: true, base: 'bas', o: [0, 0, 0], L: 26, ton: 'corps', mince: 0.92, bouts: [4.2, 2.9],
+  { id: 'avantBras', joint: 'coude', pair: true, base: 'bas', o: [0, 0, 0], L: 26, mince: 0.92, bouts: [4.2, 2.9],
     anneaux: [[0, 4.6, 4.8, 0, 0], [0.22, 5.1, 5.5, 0, 0], [0.62, 3.9, 4.2, 0, 0], [1, 2.9, 3.4, 0, 0]] },
-  { id: 'main', joint: 'poignet', pair: true, base: 'bas', o: [0, 0, 0], L: 18, ton: 'corps', fixe: true,
+  { id: 'main', joint: 'poignet', pair: true, base: 'bas', o: [0, 0, 0], L: 18, fixe: true,
     anneaux: [[0, 2.6, 3.2, 0, 0], [0.3, 2.1, 4.7, 0, 0], [0.75, 1.7, 4.2, 0, 0], [1, 0.9, 2.4, 0, 0]],
     ferme: { L: 10, anneaux: [[0, 2.8, 3.2, 0, 0], [0.3, 3.7, 4.7, 0, 0], [0.75, 3.7, 4.6, 0, 0], [1, 2.4, 3.4, 0, 0]] } },
-  { id: 'cuisse', joint: 'hanche', pair: true, base: 'bas', o: [0, 0, 0], L: 43.5, ton: 'corps', mince: 0.92, bouts: [7.6, 5.2],
+  { id: 'cuisse', joint: 'hanche', pair: true, base: 'bas', o: [0, 0, 0], L: 43.5, mince: 0.92, bouts: [7.6, 5.2],
     anneaux: [[0, 9.2, 9.4, 0, 0], [0.25, 9.4, 10.2, 0, 0.5], [0.6, 7.8, 8.6, 0, 0.7], [0.88, 5.9, 6.2, 0, 0.3], [1, 5.4, 5.6, 0, 0]] },
-  { id: 'jambe', joint: 'genou', pair: true, base: 'bas', o: [0, 0, 0], L: 41.5, ton: 'corps', mince: 0.92, bouts: [5.2, 3.2],
+  { id: 'jambe', joint: 'genou', pair: true, base: 'bas', o: [0, 0, 0], L: 41.5, mince: 0.92, bouts: [5.2, 3.2],
     anneaux: [[0, 5.4, 5.6, 0, 0], [0.25, 6.2, 7, 0, -1.3], [0.55, 4.9, 5.4, 0, -0.7], [0.85, 3.4, 3.7, 0, 0], [1, 3.2, 3.4, 0, 0]] },
   // Le pied, du talon à la base des orteils (semelle à plat, à 8 cm sous la cheville ; il s'arrête
   // sur l'articulation des orteils, sinon son bout plonge dans le sol quand le talon se lève), puis
   // les orteils, articulés : ils restent posés quand le talon se lève.
-  { id: 'pied', joint: 'cheville', pair: true, base: 'avant', o: [0, -4.4, -5], L: 18, ton: 'corps', fixe: true,
+  { id: 'pied', joint: 'cheville', pair: true, base: 'avant', o: [0, -4.4, -5], L: 18, fixe: true,
     anneaux: [[0, 0.3, 0.3, 0, -1], [0.016, 1.3, 1.3, 0, -1], [0.04, 1.95, 1.95, 0, -1], [0.08, 2.45, 2.5, 0, -1], [0.14, 2.8, 2.75, 0, -0.9], [0.25, 3, 3.4, 0, 0], [0.45, 3.5, 3.3, 0, -0.1], [0.68, 4.3, 2.9, 0, -0.7], [0.9, 4.8, 2.5, 0, -1.1], [1, 4.8, 2.3, 0, -1.3]] },
   // La plante, sous la tête des métatarsiens : le pied roule autour d'elle quand le talon se
   // lève. Tournée à mi-chemin du pied et des orteils, elle comble la pliure entre les deux.
-  { id: 'plante', joint: 'plante', pair: true, base: 'avant', o: [0, 0, -2.3], L: 4.6, ton: 'corps', fixe: true, anneaux: ovoide(4.8, 2.3, 1) },
-  { id: 'orteils', joint: 'orteils', pair: true, base: 'avant', o: [0, -0.1, -1], L: 8.5, ton: 'corps', fixe: true,
+  { id: 'plante', joint: 'plante', pair: true, base: 'avant', o: [0, 0, -2.3], L: 4.6, fixe: true, anneaux: ovoide(4.8, 2.3, 1) },
+  { id: 'orteils', joint: 'orteils', pair: true, base: 'avant', o: [0, -0.1, -1], L: 8.5, fixe: true,
     anneaux: [[0, 4.8, 2.1, 0, 0], [0.45, 4.6, 1.7, 0, -0.3], [0.78, 4, 1.4, 0, -0.6], [0.93, 3.2, 1.1, 0, -0.75], [1, 1.6, 0.6, 0, -0.85]] },
 ];
 
@@ -366,7 +361,6 @@ export function sections(N: number, f: (u: number) => Omit<Section, 'u'>): Secti
 export interface Os {
   readonly id: string;
   readonly joint: string;
-  readonly ton: TonOs;
   readonly o: Vec3;
   readonly bx: Vec3;
   readonly ba: Vec3;
@@ -419,7 +413,6 @@ function preparerOs(spec: SpecOs, cote: 1 | -1, carrure: number, mainFermee: boo
   return {
     id: spec.id + sfx,
     joint: spec.joint + sfx,
-    ton: spec.ton,
     o: [o[0] * cote, o[1], o[2]],
     bx: base.x, ba: base.a, bz: base.z,
     L,
@@ -551,7 +544,7 @@ export function construireCorps(carrure: number, mainFermee: boolean, repos: Pos
       const noms = new Set(spec.autour ?? []);
       const osDe = (rep: string): string => rep.replace(/^omoplate[GD]$/, 'thorax').replace(/^cubitus([GD])$/, 'coude$1');
       const de = osDe(m.de.rep), a = osDe(m.a.rep);
-      const longes = os.filter((o) => o.ton === 'corps' && (o.joint === de || o.joint === a || noms.has(o.id) || noms.has(o.id.slice(0, -1)) && o.id.endsWith(sfx)));
+      const longes = os.filter((o) => o.joint === de || o.joint === a || noms.has(o.id) || noms.has(o.id.slice(0, -1)) && o.id.endsWith(sfx));
       const hotes = longes.map((o): Hote => {
         const g = geomOs(o, F);
         return { os: o, seuil: m.st.map((s) => Math.min(SEUIL, profondeur(centre(l, s), g)?.q ?? SEUIL)) };

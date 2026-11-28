@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import type { Exercise, GymBrand } from '@/engine/models';
-import { photosFor } from '@/data/exercise-photos';
+import { apercuDisponible } from './apercu';
 import { displayExerciseName } from '@/lib/catalog-filter';
 import { cn } from '@/lib/cn';
-import { ExercisePhotoPopin } from './ExercisePhotoPopin';
+import { ExercisePreviewPopin } from './ExercisePreviewPopin';
 
 /**
  * Bouton « œil » réutilisable — Bloc F.
  *
- * Ouvre l'aperçu animé du mouvement (`ExercisePhotoPopin`). Pensé comme une
+ * Ouvre l'aperçu du mouvement (`ExercisePreviewPopin`). Pensé comme une
  * zone SŒUR à côté d'une carte/ligne cliquable (jamais imbriqué dans un autre
- * bouton). Ne rend rien si l'exo n'a pas de photo (`photosFor === null`).
+ * bouton). Ne rend rien si l'exercice n'a ni animation ni photo.
  *
  * Mutualise le motif déjà présent dans `VariantCellSheet` / `VariantPickerSheet`
  * pour pouvoir l'ajouter partout où on liste des exos à choisir.
@@ -23,7 +23,7 @@ interface ExerciseEyeButtonProps {
 
 export function ExerciseEyeButton({ exercise, brand, className }: ExerciseEyeButtonProps) {
   const [open, setOpen] = useState(false);
-  if (photosFor(exercise.id) === null) return null;
+  if (!apercuDisponible(exercise.id)) return null;
   const name = displayExerciseName(exercise, brand);
   return (
     <>
@@ -54,12 +54,7 @@ export function ExerciseEyeButton({ exercise, brand, className }: ExerciseEyeBut
         </svg>
       </button>
       {open && (
-        <ExercisePhotoPopin
-          exerciseId={exercise.id}
-          title={name}
-          open
-          onClose={() => setOpen(false)}
-        />
+        <ExercisePreviewPopin exercise={exercise} title={name} onClose={() => setOpen(false)} />
       )}
     </>
   );

@@ -40,8 +40,8 @@ import { useGymBrand } from '@/store/selectors';
 import { cn } from '@/lib/cn';
 import { muscleLabel } from '@/lib/progress';
 import { sessionDisplayName } from '@/lib/session-label';
-import { ExercisePhotoPopin } from '@/pages/catalogue/ExercisePhotoPopin';
-import { photosFor } from '@/data/exercise-photos';
+import { ExercisePreviewPopin } from '@/pages/catalogue/ExercisePreviewPopin';
+import { apercuDisponible } from '@/pages/catalogue/apercu';
 import { ChargeBadge } from '@/pages/catalogue/ChargeBadge';
 import { ExerciseEyeButton } from '@/pages/catalogue/ExerciseEyeButton';
 import { VariantPickerSheet } from '@/components/VariantPickerSheet';
@@ -100,7 +100,7 @@ export function Step5Preview({
   const [picker, setPicker] = useState<SlotPickerState | null>(null);
   const [expanded, setExpanded] = useState(true);
   const [pedagogyOpen, setPedagogyOpen] = useState(false);
-  const [preview, setPreview] = useState<{ id: string; title: string } | null>(null);
+  const [preview, setPreview] = useState<{ exercise: Exercise; title: string } | null>(null);
   const [addDay, setAddDay] = useState<number | null>(null);
   const [addQuery, setAddQuery] = useState('');
   const [editingDay, setEditingDay] = useState<number | null>(null);
@@ -287,17 +287,11 @@ export function Step5Preview({
 
               <ul className="flex flex-col gap-2">
                 {day.exercises.map((planned, pi) => {
-                  let exNomFr = planned.exercise_id;
-                  let charge: import('@/engine/models').ChargeType | null = null;
-                  let primaires: readonly string[] = [];
-                  try {
-                    const ex = catalog!.get(planned.exercise_id);
-                    exNomFr = displayExerciseName(ex, brand);
-                    charge = ex.charge;
-                    primaires = exercisePrimaires(ex);
-                  } catch {
-                    /* exo inconnu — on garde l'id brut */
-                  }
+                  const exo = catalog!.has(planned.exercise_id) ? catalog!.get(planned.exercise_id) : null;
+                  // Exercice inconnu : on garde l'identifiant brut.
+                  const exNomFr = exo !== null ? displayExerciseName(exo, brand) : planned.exercise_id;
+                  const charge = exo?.charge ?? null;
+                  const primaires: readonly string[] = exo !== null ? exercisePrimaires(exo) : [];
                   return (
                     <li key={`${di}-${pi}-${planned.exercise_id}`} data-testid={`slot-${di}-${pi}`}>
                       <div className="flex items-center gap-2.5 rounded-lg border border-anthracite-700 bg-anthracite-900 p-2">
@@ -319,12 +313,10 @@ export function Step5Preview({
                             </span>
                           </div>
                         </div>
-                        {photosFor(planned.exercise_id) !== null && (
+                        {exo !== null && apercuDisponible(exo.id) && (
                           <button
                             type="button"
-                            onClick={() =>
-                              setPreview({ id: planned.exercise_id, title: exNomFr })
-                            }
+                            onClick={() => setPreview({ exercise: exo, title: exNomFr })}
                             aria-label="Voir le mouvement"
                             data-testid={`btn-preview-${di}-${pi}`}
                             title="Voir le mouvement"
@@ -436,10 +428,9 @@ export function Step5Preview({
       </Sheet>
 
       {preview !== null && (
-        <ExercisePhotoPopin
-          exerciseId={preview.id}
+        <ExercisePreviewPopin
+          exercise={preview.exercise}
           title={preview.title}
-          open={true}
           onClose={() => setPreview(null)}
         />
       )}

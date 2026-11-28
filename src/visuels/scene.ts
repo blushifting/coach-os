@@ -145,7 +145,7 @@ export function construireScene(
   }, STYLE.sol, 0, 48);
   const finSol = mesh.ni;
   for (const os of corps.os) {
-    const g = geomOs(os, F), ton = STYLE[os.ton];
+    const g = geomOs(os, F), ton = STYLE.corps;
     ajouterFuseau(mesh, g, ton);
     if (g.bouts !== null) {
       const premier = g.st[0]!, dernier = g.st[g.st.length - 1]!;

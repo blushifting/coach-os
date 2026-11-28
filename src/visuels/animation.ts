@@ -71,11 +71,13 @@ export interface Animation {
  *   d'animations, on montre une image fixe, à l'arrivée du mouvement.
  * - Glisser le doigt de gauche à droite fait tourner la caméra autour du
  *   mannequin (un seul degré de liberté ; la hauteur du regard ne change pas).
+ *   `quandTourne` est prévenu la première fois que la figure tourne vraiment.
  */
 export function animer(
   toile: HTMLCanvasElement,
   sujet: PoseExercice,
   coefficients: Readonly<Record<string, number>>,
+  quandTourne?: () => void,
 ): Animation | null {
   const rendu = creerRendu(toile);
   if (rendu === null) return null;
@@ -96,6 +98,7 @@ export function animer(
   demande = requestAnimationFrame(image);
 
   let prise: { x: number; tour: number } | null = null;
+  let aPrevenir = quandTourne;
   const debut = (e: PointerEvent): void => {
     prise = { x: e.clientX, tour };
     toile.setPointerCapture(e.pointerId);
@@ -104,6 +107,11 @@ export function animer(
     if (prise === null) return;
     tour = angleNormal(prise.tour - (e.clientX - prise.x) * 0.9);
     aRedessiner = true;
+    // Un vrai geste, pas un simple toucher : une dizaine de degrés.
+    if (aPrevenir !== undefined && Math.abs(e.clientX - prise.x) > 12) {
+      aPrevenir();
+      aPrevenir = undefined;
+    }
   };
   const fin = (): void => {
     prise = null;

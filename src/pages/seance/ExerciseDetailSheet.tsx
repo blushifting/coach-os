@@ -3,16 +3,14 @@ import { Sheet } from '@/components/Sheet';
 import { Button } from '@/components/Button';
 import { ChargeMechanicNote } from '@/components/ChargeMechanicNote';
 import { ExerciseNoteField } from '@/components/ExerciseNoteField';
-import { AnatomicalSilhouette, type SilhouetteStatus } from '@/components/AnatomicalSilhouette';
 import type { Catalog } from '@/engine/catalog';
-import { exercisePrimaires, exerciseSynergistes, Pattern } from '@/engine/models';
+import { Pattern } from '@/engine/models';
 import {
   extypeLabel,
   patternLabel,
   tagLabel,
 } from '@/lib/catalog-filter';
 import { alternativeVariantsFor } from '@/lib/calibration';
-import { muscleLabel } from '@/lib/progress';
 import { formatRest } from '@/lib/session-runner';
 import { useCoachOsStore } from '@/store';
 import { useDemoMode } from '@/store/selectors';
@@ -37,8 +35,8 @@ interface ExerciseDetailSheetProps {
 /**
  * Fiche détaillée d'un exo (séance en cours OU plan en preview).
  *
- * Refonte alignée avec `CatalogueDetailSheet` (silhouette grande,
- * sections riches) + bouton "Remplacer cet exo" si `onReplace` est fourni.
+ * Alignée sur `CatalogueDetailSheet` (même haut de fiche, `ExerciseVisual`),
+ * plus un bouton « Remplacer cet exercice » si `onReplace` est fourni.
  * Le remplacement utilise `alternativeVariantsFor` en mode élargi par défaut
  * (toggle dans le picker pour restreindre aux variantes proches).
  */
@@ -82,17 +80,9 @@ export function ExerciseDetailSheet({
 
   if (exercise === null) return null;
 
-  const primaires = exercisePrimaires(exercise);
-  const synergistes = exerciseSynergistes(exercise);
   const tags = exercise.tags
     .map((t) => [t, tagLabel(t)] as const)
     .filter((entry): entry is readonly [string, string] => entry[1] !== null);
-
-  const highlights: Record<string, SilhouetteStatus> = {};
-  for (const [m, coef] of Object.entries(exercise.muscles)) {
-    if (coef >= 1.0) highlights[m] = 'highlight';
-    else if (coef >= 0.5) highlights[m] = 'synergist';
-  }
 
   async function handlePickReplacement(newExId: string) {
     if (onReplace === undefined) return;
@@ -112,16 +102,7 @@ export function ExerciseDetailSheet({
     <>
       <Sheet open={open} onClose={onClose} title={displayName}>
         <div className="flex flex-col gap-4" data-testid="exercise-detail-content">
-          <div className="flex justify-center">
-            <AnatomicalSilhouette
-              highlights={highlights}
-              view="both"
-              className="h-44 w-auto"
-              testId="exercise-detail-silhouette"
-            />
-          </div>
-
-          <ExerciseVisual exercise={exercise} />
+          <ExerciseVisual exercise={exercise} testIdPrefix="exercise-detail" silhouetteClassName="h-44 w-auto" />
 
           <ExerciseNoteField exerciseId={exercise.id} />
 
@@ -149,36 +130,6 @@ export function ExerciseDetailSheet({
 
           {/* Mécanique de charge (assisté/lesté/PdC). */}
           <ChargeMechanicNote charge={exercise.charge} />
-
-          {primaires.length > 0 && (
-            <SectionBlock label="Muscles principaux">
-              <div className="flex flex-wrap gap-1">
-                {primaires.map((m) => (
-                  <span
-                    key={m}
-                    className="rounded bg-sang-900/40 px-2 py-0.5 text-xs text-white"
-                  >
-                    {muscleLabel(m)}
-                  </span>
-                ))}
-              </div>
-            </SectionBlock>
-          )}
-
-          {synergistes.length > 0 && (
-            <SectionBlock label="Muscles secondaires">
-              <div className="flex flex-wrap gap-1">
-                {synergistes.map((m) => (
-                  <span
-                    key={m}
-                    className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white"
-                  >
-                    {muscleLabel(m)}
-                  </span>
-                ))}
-              </div>
-            </SectionBlock>
-          )}
 
           {/* « Reps hypertrophie/force » retirées (l'app gère les reps ;
               déjà absentes du catalogue depuis Conv #52). La section se réduit

@@ -5,8 +5,7 @@ import { ChargeMechanicNote } from '@/components/ChargeMechanicNote';
 import { Concept } from '@/components/Concept';
 import { Dialog } from '@/components/Dialog';
 import { ExerciseNoteField } from '@/components/ExerciseNoteField';
-import { AnatomicalSilhouette, type SilhouetteStatus } from '@/components/AnatomicalSilhouette';
-import { exercisePrimaires, exerciseSynergistes, Pattern } from '@/engine/models';
+import { Pattern } from '@/engine/models';
 import type { Exercise } from '@/engine/models';
 import { useEngine } from '@/hooks/useEngine';
 import {
@@ -17,7 +16,6 @@ import {
   tagLabel,
 } from '@/lib/catalog-filter';
 import { cn } from '@/lib/cn';
-import { muscleLabel } from '@/lib/progress';
 import { formatRest } from '@/lib/session-runner';
 import { useCoachOsStore } from '@/store';
 import { useDemoMode, useGymBrand } from '@/store/selectors';
@@ -39,9 +37,9 @@ interface CatalogueDetailSheetProps {
 /**
  * Sheet de détail Catalogue — Conv #10d.
  *
- * Refonte : silhouette grande face+dos centrée en haut, descriptif riche
- * dessous (muscles primaires/synergistes, matériel, repos / reps recommandées,
- * difficulté, variantes tag).
+ * En haut, l'animation du mouvement et les muscles travaillés (`ExerciseVisual`,
+ * repli sur la silhouette et les photos) ; dessous, la note, le Plafond, la
+ * fourchette, les réglages de charge, le repos et les variantes.
  */
 export function CatalogueDetailSheet({
   open,
@@ -85,31 +83,14 @@ export function CatalogueDetailSheet({
   if (exercise === null) return null;
   const displayName = displayExerciseName(exercise, brand ?? undefined);
 
-  const primaires = exercisePrimaires(exercise);
-  const synergistes = exerciseSynergistes(exercise);
   const tags = exercise.tags
     .map((t) => [t, tagLabel(t)] as const)
     .filter((entry): entry is readonly [string, string] => entry[1] !== null);
 
-  const highlights: Record<string, SilhouetteStatus> = {};
-  for (const [m, coef] of Object.entries(exercise.muscles)) {
-    if (coef >= 1.0) highlights[m] = 'highlight';
-    else if (coef >= 0.5) highlights[m] = 'synergist';
-  }
-
   return (
     <Sheet open={open} onClose={onClose} title={displayName}>
       <div className="flex flex-col gap-4" data-testid="catalogue-detail-content">
-        <div className="flex justify-center">
-          <AnatomicalSilhouette
-            highlights={highlights}
-            view="both"
-            className="h-56 w-auto"
-            testId="catalogue-detail-silhouette"
-          />
-        </div>
-
-        <ExerciseVisual exercise={exercise} />
+        <ExerciseVisual exercise={exercise} testIdPrefix="catalogue" silhouetteClassName="h-56 w-auto" />
 
         <ExerciseNoteField exerciseId={exercise.id} />
 
@@ -235,36 +216,6 @@ export function CatalogueDetailSheet({
           exercise={exercise}
           onClose={() => setOverrideOpen(false)}
         />
-
-        {primaires.length > 0 && (
-          <Section label="Muscles principaux">
-            <div className="flex flex-wrap gap-1" data-testid="catalogue-muscles-primaires">
-              {primaires.map((m) => (
-                <span
-                  key={m}
-                  className="rounded bg-sang-900/40 px-2 py-0.5 text-xs text-white"
-                >
-                  {muscleLabel(m)}
-                </span>
-              ))}
-            </div>
-          </Section>
-        )}
-
-        {synergistes.length > 0 && (
-          <Section label="Muscles secondaires">
-            <div className="flex flex-wrap gap-1" data-testid="catalogue-muscles-synergistes">
-              {synergistes.map((m) => (
-                <span
-                  key={m}
-                  className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white"
-                >
-                  {muscleLabel(m)}
-                </span>
-              ))}
-            </div>
-          </Section>
-        )}
 
         <Section label="Repos conseillé">
           <p

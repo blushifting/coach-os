@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Sheet } from '@/components/Sheet';
 import { Button } from '@/components/Button';
 import type { Exercise, GymBrand } from '@/engine/models';
-import { ExercisePhotoPopin } from '@/pages/catalogue/ExercisePhotoPopin';
+import { ExercisePreviewPopin } from '@/pages/catalogue/ExercisePreviewPopin';
 import { ExerciseNameStack } from '@/pages/catalogue/ExerciseNameStack';
-import { photosFor } from '@/data/exercise-photos';
+import { apercuDisponible } from '@/pages/catalogue/apercu';
 import { displayExerciseName, equipLabel } from '@/lib/catalog-filter';
 import { useGymBrand } from '@/store/selectors';
 
@@ -66,7 +66,7 @@ export function VariantPickerSheet({
         ) : (
           <ul className="max-h-[60vh] overflow-y-auto" data-testid="variant-picker-list">
             {alternatives.map((alt) => {
-              const hasPhoto = photosFor(alt.id) !== null;
+              const aUnApercu = apercuDisponible(alt.id);
               return (
                 <li key={alt.id} className="mb-2 flex items-stretch gap-2 last:mb-0">
                   <button
@@ -83,7 +83,7 @@ export function VariantPickerSheet({
                         : 'Poids du corps'}
                     </div>
                   </button>
-                  {hasPhoto && (
+                  {aUnApercu && (
                     <button
                       type="button"
                       onClick={() => setPreviewExo(alt)}
@@ -111,10 +111,9 @@ export function VariantPickerSheet({
         </div>
       </Sheet>
       {previewExo && (
-        <ExercisePhotoPopin
-          exerciseId={previewExo.id}
+        <ExercisePreviewPopin
+          exercise={previewExo}
           title={displayExerciseName(previewExo, brand)}
-          open={true}
           onClose={() => setPreviewExo(null)}
         />
       )}

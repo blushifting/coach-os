@@ -20,7 +20,6 @@ export const STYLE = {
   sol: hex('#1e2126'),
   /** Le corps, là où aucun muscle ne passe (tête, mains, pieds, articulations). */
   corps: hex('#4b5059'),
-  cheveux: hex('#2b2f35'),
   /** Muscle au repos : un cran plus clair que le corps, pour se lire en relief. */
   muscle: hex('#5a606a'),
   /** Muscle travaillé, coefficient 1 dans le catalogue. */
@@ -49,3 +48,6 @@ export function tonMuscle(coefficient: number | undefined): Couleur {
   if (coefficient === undefined || coefficient <= 0) return STYLE.muscle;
   return coefficient >= 1 ? STYLE.principal : STYLE.secondaire;
 }
+
+/** Une couleur du rendu, écrite pour le CSS (pastilles de légende de la fiche). */
+export const cssCouleur = (c: Couleur): string => `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
