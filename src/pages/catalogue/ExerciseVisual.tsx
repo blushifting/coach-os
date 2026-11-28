@@ -2,13 +2,14 @@
  * Haut de la fiche d'un exercice (catalogue et séance) : à quoi ressemble le
  * mouvement et ce qu'il fait travailler.
  *
- * - Le mannequin, sans cadre, qui fait le mouvement (pose validée) ou qui se
- *   tient immobile au repos (exercice créé par l'utilisateur) : ses muscles
- *   colorés montrent ce qui travaille, et la fiche a la même mise en page.
- *   Dessous, « Principaux » et « Secondaires », côte à côte, lui servent de
- *   légende (pastille de la couleur du mannequin) et nomment ce qui est caché
- *   de l'autre côté de la figure.
- * - Sans WebGL : la silhouette des muscles et les photos.
+ * - Pose validée : le mannequin, sans cadre, qui fait le mouvement ; ses
+ *   muscles colorés montrent ce qui travaille. Dessous, « Principaux » et
+ *   « Secondaires », côte à côte, lui servent de légende (pastille de la
+ *   couleur du mannequin) et nomment ce qui est caché de l'autre côté.
+ * - Exercice créé par l'utilisateur (pas de mouvement) : la silhouette 2D,
+ *   face et dos, à la même place. Un mannequin qu'on fait tourner laisserait
+ *   croire qu'il manque le mouvement ; la silhouette dit d'un coup d'œil que
+ *   c'est un exercice à soi. Sans WebGL, même repli (plus les photos).
  */
 
 import { useState, type ReactNode } from 'react';
@@ -18,7 +19,6 @@ import { exercisePrimaires, exerciseSynergistes } from '@/engine/models';
 import type { Exercise } from '@/engine/models';
 import { muscleLabel } from '@/lib/progress';
 import { poseValidee } from '@/visuels/poses';
-import { mannequinAuRepos } from '@/visuels/poses/repos';
 import { cssCouleur, STYLE } from '@/visuels/style';
 import { ExercisePhoto } from './ExercisePhoto';
 
@@ -29,8 +29,9 @@ interface ExerciseVisualProps {
 }
 
 export function ExerciseVisual({ exercise, testIdPrefix }: ExerciseVisualProps) {
+  const pose = poseValidee(exercise.id);
   const [indisponible, setIndisponible] = useState(false);
-  const anime = !indisponible;
+  const anime = pose !== null && !indisponible;
 
   const highlights: Record<string, SilhouetteStatus> = {};
   if (!anime) {
@@ -44,9 +45,9 @@ export function ExerciseVisual({ exercise, testIdPrefix }: ExerciseVisualProps) 
 
   return (
     <>
-      {anime ? (
+      {pose !== null && anime ? (
         <ExerciseAnimation
-          pose={poseValidee(exercise.id) ?? mannequinAuRepos(exercise.id)}
+          pose={pose}
           muscles={exercise.muscles}
           onIndisponible={() => setIndisponible(true)}
         />
@@ -56,7 +57,7 @@ export function ExerciseVisual({ exercise, testIdPrefix }: ExerciseVisualProps) 
             <AnatomicalSilhouette
               highlights={highlights}
               view="both"
-              className="h-48 w-auto"
+              className="h-56 w-auto"
               testId={`${testIdPrefix}-silhouette`}
             />
           </div>

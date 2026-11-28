@@ -208,11 +208,6 @@ export function CatalogueDetailSheet({
             className="mt-2 border-t border-anthracite-700 pt-3"
             data-testid="catalogue-detail-custom-actions"
           >
-            <p className="mb-2 text-justify text-[11px] leading-snug text-anthracite-400">
-              Cet exercice a été ajouté par toi. Tu peux le retirer du
-              catalogue — tes séances passées resteront, mais l'exercice
-              s'affichera sous son code.
-            </p>
             <Button
               variant="ghost"
               size="sm"

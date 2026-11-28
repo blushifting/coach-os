@@ -4,7 +4,6 @@
  * que dans cette pose gonfle, plus long il s'affine).
  */
 
-import type { PoseExercice } from '../scene';
 import { piedAuSol, pose } from '../squelette';
 
 export const REPOS = pose({
@@ -12,12 +11,3 @@ export const REPOS = pose({
   bras: { epaule: { flex: 2, abd: 12, rot: 0 }, coude: 8 },
   jambe: { cible: piedAuSol(9.5, 8) },
 });
-
-/**
- * Le mannequin immobile, au repos, pour un exercice qui n'a pas de mouvement
- * (exercice créé par l'utilisateur) : ses muscles colorés tiennent la place de
- * l'animation, et la fiche garde la même mise en page.
- */
-export function mannequinAuRepos(exerciseId: string): PoseExercice {
-  return { id: exerciseId, camera: { tour: 25, hauteur: 8 }, mainFermee: false, cles: [REPOS], materiel: [], valide: true };
-}

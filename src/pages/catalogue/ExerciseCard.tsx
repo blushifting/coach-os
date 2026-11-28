@@ -46,45 +46,42 @@ export function ExerciseCard({
         type="button"
         onClick={onClick}
         data-testid={`exercise-card-${exercise.id}`}
-        className="flex min-w-0 flex-1 items-start gap-3 p-3 text-left transition active:bg-anthracite-700"
+        className="flex min-w-0 flex-1 items-center gap-3 p-3 text-left transition active:bg-anthracite-700"
       >
-      <MiniSilhouette exercise={exercise} />
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <div className="flex items-start justify-between gap-2">
-          <ExerciseNameStack exercise={exercise} size="sm" className="flex-1" multiligne />
-          <div className="flex shrink-0 items-center gap-1.5">
-            {/* Plafond mis en évidence : chip distinct à droite
-                du nom, fond sang plein + font-display tabulaire pour
-                ressortir à côté des étiquettes de muscles. */}
-            {e1rm !== null && e1rm > 0 && (
-              <span
-                data-testid={`card-e1rm-${exercise.id}`}
-                className="rounded-md bg-gradient-to-b from-sang-600 to-sang-800 px-2 py-0.5 font-display text-xs leading-none tabular-nums text-white shadow-glow-sang"
-                title="Ton Plafond mesuré (1 rep)"
-              >
-                {e1rm.toFixed(0)} {kgUnitLabelShort(exercise.charge)}
+        <MiniSilhouette exercise={exercise} />
+        {/* Le nom prend toute la largeur ; les muscles dessous, le tout centré
+            en hauteur sur la silhouette (pas de vide sous une seule ligne). */}
+        <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5">
+          <ExerciseNameStack exercise={exercise} size="sm" multiligne />
+          {/* Les muscles travaillés, comme dans la fiche : principaux en
+              surbrillance, secondaires en gris. */}
+          <div className="flex flex-wrap items-center gap-1" data-testid={`card-muscles-${exercise.id}`}>
+            {primaires.map((m) => (
+              <span key={m} className="rounded bg-sang-800 px-1.5 py-0.5 text-[10px] text-white">
+                {muscleLabel(m)}
               </span>
-            )}
-            {/* Picto catégorie en évidence avec couleur de fond
-                distincte. Remplace l'ancien PatternIcon (peu évocateur). */}
-            <ChargeBadge charge={exercise.charge} size={28} />
+            ))}
+            {synergistes.map((m) => (
+              <span key={m} className="rounded bg-anthracite-700 px-1.5 py-0.5 text-[10px] text-anthracite-200">
+                {muscleLabel(m)}
+              </span>
+            ))}
           </div>
         </div>
-        {/* Les muscles travaillés, comme dans la fiche : principaux en
-            surbrillance, secondaires en gris. */}
-        <div className="flex flex-wrap items-center gap-1" data-testid={`card-muscles-${exercise.id}`}>
-          {primaires.map((m) => (
-            <span key={m} className="rounded bg-sang-800 px-1.5 py-0.5 text-[10px] text-white">
-              {muscleLabel(m)}
+        {/* Pictogramme de charge et Plafond, l'un sous l'autre, centrés en
+            hauteur dans leur colonne. */}
+        <div className="flex shrink-0 flex-col items-center justify-center gap-1.5">
+          <ChargeBadge charge={exercise.charge} size={28} />
+          {e1rm !== null && e1rm > 0 && (
+            <span
+              data-testid={`card-e1rm-${exercise.id}`}
+              className="rounded-md bg-gradient-to-b from-sang-600 to-sang-800 px-2 py-0.5 font-display text-xs leading-none tabular-nums text-white shadow-glow-sang"
+              title="Ton Plafond mesuré (1 rep)"
+            >
+              {e1rm.toFixed(0)} {kgUnitLabelShort(exercise.charge)}
             </span>
-          ))}
-          {synergistes.map((m) => (
-            <span key={m} className="rounded bg-anthracite-700 px-1.5 py-0.5 text-[10px] text-anthracite-200">
-              {muscleLabel(m)}
-            </span>
-          ))}
+          )}
         </div>
-      </div>
       </button>
       {onToggleFavorite ? (
         <button
