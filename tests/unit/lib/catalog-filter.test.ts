@@ -16,12 +16,10 @@ import {
   EXTYPE_LABEL_FR,
   PATTERN_LABEL_FR,
   applyFilters,
-  buildDescription,
   chargeLabel,
   extypeLabel,
   hasActiveFilters,
   patternLabel,
-  tagLabel,
 } from '@/lib/catalog-filter';
 
 // =============================================================================
@@ -81,12 +79,6 @@ describe('labels FR', () => {
     }
   });
 
-  it('tagLabel retourne null pour tags inconnus, label FR pour connus', () => {
-    expect(tagLabel('lengthened_bias')).toBe('Étirement');
-    expect(tagLabel('pause_3s')).toBe('Pause 3s');
-    expect(tagLabel('tag_inexistant_xyz')).toBe(null);
-  });
-
   it("aucun label FR n'est en anglais", () => {
     const forbidden = /compound|isolation_en|push|pull|hinge|squat|barbell|dumbbell|machine|cable|bodyweight/i;
     // On vérifie que les labels exposés à l'UI ne contiennent pas les mots anglais bruts.
@@ -94,67 +86,6 @@ describe('labels FR', () => {
     for (const v of Object.values(EXTYPE_LABEL_FR)) {
       expect(v).not.toMatch(forbidden);
     }
-  });
-});
-
-// =============================================================================
-// 2. buildDescription
-// =============================================================================
-
-describe('buildDescription', () => {
-  it('utilise la note manuelle si elle existe (audit ciblé)', () => {
-    const e = ex({
-      id: 'foo',
-      note: 'Variante avec pause de 3 secondes en position basse.',
-    });
-    expect(buildDescription(e)).toBe(
-      'Variante avec pause de 3 secondes en position basse.',
-    );
-  });
-
-  it('ignore une note vide ou whitespace-only', () => {
-    const e = ex({ id: 'foo', note: '   ' });
-    expect(buildDescription(e)).not.toBe('   ');
-    expect(buildDescription(e)).toContain('Polyarticulaire');
-  });
-
-  it('génère "Polyarticulaire — poussée horizontale. Cible les pectoraux."', () => {
-    const e = ex({
-      id: 'bench',
-      pattern: Pattern.PUSH_H,
-      type: ExType.COMPOUND,
-      muscles: { pectoraux: 1.0, triceps: 0.5 },
-    });
-    const d = buildDescription(e);
-    expect(d).toContain('Polyarticulaire');
-    expect(d.toLowerCase()).toContain('poussée horizontale');
-    expect(d.toLowerCase()).toContain('pectoraux');
-    // triceps en synergiste → pas dans la cible
-    expect(d.toLowerCase()).not.toContain('triceps');
-  });
-
-  it('joint plusieurs muscles primaires avec virgule + "et"', () => {
-    const e = ex({
-      id: 'squat',
-      pattern: Pattern.SQUAT,
-      type: ExType.COMPOUND,
-      muscles: { quadriceps: 1.0, fessiers: 1.0, ischios: 1.0 },
-    });
-    const d = buildDescription(e);
-    // Conv #14c-8 : `ischios` → "Ischio-jambiers" (toLowercase = "ischio-jambiers").
-    expect(d.toLowerCase()).toMatch(/quadriceps.*fessiers.*et.*ischio-jambiers/);
-  });
-
-  it('isolation sans primaire → pas de "Cible"', () => {
-    const e = ex({
-      id: 'iso',
-      type: ExType.ISOLATION,
-      pattern: Pattern.ISOLATION,
-      muscles: { biceps: 0.5 }, // pas de primaire
-    });
-    const d = buildDescription(e);
-    expect(d).toContain('Isolation');
-    expect(d).not.toContain('Cible');
   });
 });
 

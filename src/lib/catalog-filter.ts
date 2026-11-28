@@ -16,7 +16,6 @@ import { ChargeType, ExType, GymBrand, Pattern } from '@/engine/models';
 import type { Exercise } from '@/engine/models';
 import { exercisePrimaires } from '@/engine/models';
 import { BRAND_NAMES } from '@/data/exercise-brand-names';
-import { muscleLabel } from './progress';
 
 // =============================================================================
 // Labels FR — vocabulaire UI (cf. 08_ux_decisions §2)
@@ -47,32 +46,6 @@ export const CHARGE_LABEL_FR: Record<ChargeType, string> = {
   [ChargeType.BODYWEIGHT]: 'Poids du corps',
   [ChargeType.BODYWEIGHT_LOADED]: 'Lesté',
   [ChargeType.BODYWEIGHT_ASSISTED]: 'Assisté',
-};
-
-/** Tags reconnus à afficher dans l'UI. Tags absents = pas de chip. */
-export const TAG_LABEL_FR: Record<string, string> = {
-  lengthened_bias: 'Étirement',
-  pause_3s: 'Pause 3s',
-  pause_2s: 'Pause 2s',
-  pec_haut: 'Haut des pectoraux',
-  pec_bas: 'Bas des pectoraux',
-  incline_30: 'Incliné 30°',
-  incline_45: 'Incliné 45°',
-  decline: 'Décliné',
-  long_head_biceps: 'Long chef du biceps',
-  long_head_triceps: 'Long chef du triceps',
-  hammer_grip: 'Prise marteau',
-  wide_grip: 'Prise large',
-  close_grip: 'Prise serrée',
-  reverse_grip: 'Prise inversée',
-  neutral_grip: 'Prise neutre',
-  underhand: 'Prise supination',
-  unilateral: 'Unilatéral',
-  knee_friendly: 'Doux pour les genoux',
-  lower_back_friendly: 'Doux pour le dos',
-  beginner_friendly: 'Adapté débutant',
-  advanced: 'Avancé',
-  technique_complex: 'Technique exigeante',
 };
 
 export function extypeLabel(t: ExType): string {
@@ -140,10 +113,6 @@ export function displayExerciseName(
   return brandMap[exercise.id] ?? exercise.nom_fr;
 }
 
-export function tagLabel(tag: string): string | null {
-  return TAG_LABEL_FR[tag] ?? null;
-}
-
 /** Code équipement (cf. `EQUIPMENT_CHIPS`) → libellé FR humain pour la fiche exo. */
 export const EQUIP_LABEL_FR: Record<string, string> = {
   bb_oly: 'Barre olympique',
@@ -183,41 +152,6 @@ export function equipLabel(code: string): string {
   return EQUIP_LABEL_FR[code] ?? code;
 }
 
-// =============================================================================
-// Description courte (1-2 phrases)
-// =============================================================================
-
-/**
- * Génère un descriptif court FR de l'exo (1-2 phrases) à partir des champs
- * structurés. Si `ex.note` est non vide, on le préfère (audit manuel sur les
- * exos ambigus). Sinon on construit "{Polyarticulaire/Isolation} {pattern}.
- * Cible {muscles}." en s'appuyant sur les muscles primaires.
- */
-export function buildDescription(ex: Exercise): string {
-  if (ex.note && ex.note.trim() !== '') {
-    return ex.note.trim();
-  }
-  const typ = extypeLabel(ex.type);
-  // Point 1 — le pattern « isolation » est redondant avec le type « Isolation » :
-  // on ne l'ajoute pas (sinon « Isolation — isolation. »).
-  const patPart =
-    ex.pattern === Pattern.ISOLATION ? '' : ` — ${patternLabel(ex.pattern).toLowerCase()}`;
-  // Formulation « Muscles ciblés : … » (liste après deux-points) :
-  // aucun article devant les muscles, donc robuste aux libellés singuliers
-  // comme « Grand dorsal » (un « Cible les grand dorsal » serait fautif). On
-  // toLowercase les labels pour les fondre dans la phrase.
-  const primaires = exercisePrimaires(ex).map((m) => muscleLabel(m).toLowerCase());
-  const cible =
-    primaires.length === 0 ? '' : ` Muscles ciblés : ${joinFr(primaires)}.`;
-  return `${typ}${patPart}.${cible}`.trim();
-}
-
-function joinFr(items: readonly string[]): string {
-  if (items.length === 0) return '';
-  if (items.length === 1) return items[0]!;
-  if (items.length === 2) return `${items[0]} et ${items[1]}`;
-  return `${items.slice(0, -1).join(', ')} et ${items[items.length - 1]}`;
-}
 
 // =============================================================================
 // Filtres

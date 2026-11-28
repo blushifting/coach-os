@@ -1,22 +1,17 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { Sheet } from '@/components/Sheet';
 import { Button } from '@/components/Button';
 import { ChargeMechanicNote } from '@/components/ChargeMechanicNote';
 import { Concept } from '@/components/Concept';
 import { Dialog } from '@/components/Dialog';
 import { ExerciseNoteField } from '@/components/ExerciseNoteField';
-import { Pattern } from '@/engine/models';
 import type { Exercise } from '@/engine/models';
 import { useEngine } from '@/hooks/useEngine';
 import {
   displayExerciseName,
-  extypeLabel,
   kgUnitLabel,
-  patternLabel,
-  tagLabel,
 } from '@/lib/catalog-filter';
 import { cn } from '@/lib/cn';
-import { formatRest } from '@/lib/session-runner';
 import { useCoachOsStore } from '@/store';
 import { useDemoMode, useGymBrand } from '@/store/selectors';
 import { ManualE1rmSheet } from '@/pages/seance/ManualE1rmSheet';
@@ -38,8 +33,9 @@ interface CatalogueDetailSheetProps {
  * Sheet de détail Catalogue — Conv #10d.
  *
  * En haut, l'animation du mouvement et les muscles travaillés (`ExerciseVisual`,
- * repli sur la silhouette et les photos) ; dessous, la note, le Plafond, la
- * fourchette, les réglages de charge, le repos et les variantes.
+ * repli sur la silhouette et les photos sans WebGL) ; dessous, la note, le Plafond, la
+ * fourchette et les réglages de charge. Pictogramme de charge, sous-titre
+ * (nom générique d'une machine de marque) et étoile des favoris dans l'en-tête.
  */
 export function CatalogueDetailSheet({
   open,
@@ -83,53 +79,39 @@ export function CatalogueDetailSheet({
   if (exercise === null) return null;
   const displayName = displayExerciseName(exercise, brand ?? undefined);
 
-  const tags = exercise.tags
-    .map((t) => [t, tagLabel(t)] as const)
-    .filter((entry): entry is readonly [string, string] => entry[1] !== null);
-
   return (
-    <Sheet open={open} onClose={onClose} title={displayName}>
-      <div className="flex flex-col gap-4" data-testid="catalogue-detail-content">
-        <ExerciseVisual exercise={exercise} testIdPrefix="catalogue" silhouetteClassName="h-56 w-auto" />
-
-        <ExerciseNoteField exerciseId={exercise.id} />
-
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <ChargeBadge charge={exercise.charge} size={32} />
-          <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
-            {extypeLabel(exercise.type)}
-          </span>
-          {/* Point 1 — pattern « isolation » = redondant avec le type « Isolation » : on masque. */}
-          {exercise.pattern !== Pattern.ISOLATION && (
-            <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
-              {patternLabel(exercise.pattern)}
-            </span>
-          )}
-        </div>
-
-        {/* Bascule favori. Désactivée en démo (pas
-            d'écriture DB). */}
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title={displayName}
+      subtitle={displayName !== exercise.nom_fr ? exercise.nom_fr : undefined}
+      leading={<ChargeBadge charge={exercise.charge} size={32} />}
+      actions={
+        // Bascule favori, même étoile que les cartes du catalogue. Désactivée
+        // en démo (pas d'écriture en base).
         <button
           type="button"
           onClick={() => void engine.toggleFavorite(exercise.id)}
           disabled={demoActive}
           aria-pressed={isFavorite}
+          aria-label={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+          title={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
           data-testid={`catalogue-detail-fav-${exercise.id}`}
           className={cn(
-            'mx-auto flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm transition disabled:opacity-50',
-            isFavorite
-              ? 'border-amber-400/40 bg-amber-400/10 text-amber-300'
-              : 'border-anthracite-700 text-anthracite-200 hover:border-anthracite-500',
+            'flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition disabled:opacity-50',
+            isFavorite ? 'text-amber-400 hover:bg-amber-400/10' : 'text-anthracite-400 hover:bg-anthracite-800 hover:text-anthracite-200',
           )}
         >
-          <FavoriteStar filled={isFavorite} size={18} />
-          {isFavorite ? 'Dans tes favoris' : 'Ajouter aux favoris'}
+          <FavoriteStar filled={isFavorite} size={22} />
         </button>
+      }
+    >
+      <div className="flex flex-col gap-4" data-testid="catalogue-detail-content">
+        <ExerciseVisual exercise={exercise} testIdPrefix="catalogue" />
 
-        {/* Description auto retirée (redondante : « polyarticulaire/
-            isolation » = badge ci-dessus, « Muscles ciblés » = sections
-            Muscles ci-dessous). On garde seulement une vraie note d'exo
-            (exos custom + rares notes catalogue). */}
+        <ExerciseNoteField exerciseId={exercise.id} />
+
+        {/* Une vraie note d'exercice (exercices créés, rares notes du catalogue). */}
         {exercise.note && exercise.note.trim() !== '' && (
           <p
             className="text-justify text-sm leading-relaxed text-anthracite-100"
@@ -217,31 +199,6 @@ export function CatalogueDetailSheet({
           onClose={() => setOverrideOpen(false)}
         />
 
-        <Section label="Repos conseillé">
-          <p
-            className="flex justify-between text-xs text-anthracite-100"
-            data-testid="catalogue-recommandations"
-          >
-            <span className="text-anthracite-300">Entre séries</span>
-            <span className="tabular-nums">{formatRest(exercise.repos_s)}</span>
-          </p>
-        </Section>
-
-        {tags.length > 0 && (
-          <Section label="Variantes">
-            <div className="flex flex-wrap gap-1" data-testid="catalogue-tags">
-              {tags.map(([key, label]) => (
-                <span
-                  key={key}
-                  className="rounded border border-anthracite-700 px-2 py-0.5 text-xs text-anthracite-300"
-                >
-                  {label}
-                </span>
-              ))}
-            </div>
-          </Section>
-        )}
-
         {/* Bouton "Supprimer cet exo" pour les customs
             uniquement. Les exos du catalogue par défaut ne sont jamais
             supprimables (ils font partie du socle, on n'a pas envie de les
@@ -323,20 +280,5 @@ export function CatalogueDetailSheet({
         onCancel={() => setConfirmReset(false)}
       />
     </Sheet>
-  );
-}
-
-function Section({
-  label,
-  children,
-}: {
-  readonly label: string;
-  readonly children: ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="text-xs uppercase tracking-wide text-anthracite-300">{label}</span>
-      {children}
-    </div>
   );
 }

@@ -29,6 +29,8 @@ interface ExerciseNameStackProps {
    * persistée dans `state.profile.gym_brand`).
    */
   readonly brandOverride?: GymBrand;
+  /** Le nom passe sur deux lignes au lieu d'être coupé (cartes du catalogue). */
+  readonly multiligne?: boolean;
 }
 
 const TITLE_SIZE_CLS: Record<'xs' | 'sm' | 'base' | 'lg', string> = {
@@ -50,6 +52,7 @@ export function ExerciseNameStack({
   size = 'sm',
   className,
   brandOverride,
+  multiligne = false,
 }: ExerciseNameStackProps) {
   const storeBrand = useGymBrand();
   const brand = brandOverride ?? storeBrand ?? undefined;
@@ -61,7 +64,7 @@ export function ExerciseNameStack({
       data-branded={isBranded ? '1' : '0'}
     >
       <span
-        className={`truncate font-medium text-white ${TITLE_SIZE_CLS[size]} ${isBranded ? 'font-display tracking-tight' : ''}`}
+        className={`${multiligne ? 'line-clamp-2' : 'truncate'} font-medium text-white ${TITLE_SIZE_CLS[size]} ${isBranded ? 'font-display tracking-tight' : ''}`}
       >
         {displayed}
       </span>

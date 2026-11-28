@@ -97,13 +97,20 @@ function ovoide(A: number, B: number, p: number, n = 12): Anneau[] {
 }
 function anneauxTete(): Anneau[] {
   const r: Anneau[] = [];
-  for (let i = 0; i <= 14; i++) {
-    const u = i / 14;
-    const f = u < 0.55
-      ? 0.54 + 0.46 * Math.pow(Math.sin((Math.PI / 2) * u / 0.55), 0.85)
-      : Math.sqrt(Math.max(0, 1 - ((u - 0.55) / 0.45) ** 2));
-    const cz = u < 0.3 ? 1.1 * (1 - u / 0.3) : -0.5 * Math.min(1, (u - 0.3) / 0.4);
-    r.push([u, 7.9 * f, 9.6 * f, 0, cz]);
+  const cz = (u: number): number => (u < 0.3 ? 1.1 * (1 - u / 0.3) : -0.5 * Math.min(1, (u - 0.3) / 0.4));
+  // Du menton au plus large du crâne.
+  for (let i = 0; i <= 8; i++) {
+    const u = 0.55 * i / 8;
+    const f = 0.54 + 0.46 * Math.pow(Math.sin((Math.PI / 2) * u / 0.55), 0.85);
+    r.push([u, 7.9 * f, 9.6 * f, 0, cz(u)]);
+  }
+  // La calotte : des anneaux à pas d'angle égal, donc serrés près du sommet.
+  // À pas égal le long de l'axe, le dernier anneau passait d'un coup d'un rayon
+  // de 4,7 cm à zéro : une pointe, visible depuis que les cheveux sont partis.
+  for (let j = 1; j <= 10; j++) {
+    const a = (Math.PI / 2) * j / 10;
+    const u = 0.55 + 0.45 * Math.sin(a), f = Math.cos(a);
+    r.push([u, 7.9 * f, 9.6 * f, 0, cz(u)]);
   }
   return r;
 }

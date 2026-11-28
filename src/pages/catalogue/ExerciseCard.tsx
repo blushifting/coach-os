@@ -1,10 +1,6 @@
-import { exercisePrimaires } from '@/engine/models';
+import { exercisePrimaires, exerciseSynergistes } from '@/engine/models';
 import type { Exercise } from '@/engine/models';
-import {
-  buildDescription,
-  extypeLabel,
-  kgUnitLabelShort,
-} from '@/lib/catalog-filter';
+import { kgUnitLabelShort } from '@/lib/catalog-filter';
 import { cn } from '@/lib/cn';
 import { muscleLabel } from '@/lib/progress';
 import { ChargeBadge } from './ChargeBadge';
@@ -34,8 +30,7 @@ export function ExerciseCard({
   onToggleFavorite,
 }: ExerciseCardProps) {
   const primaires = exercisePrimaires(exercise);
-  const description = buildDescription(exercise);
-  const isLengthened = exercise.tags.includes('lengthened_bias');
+  const synergistes = exerciseSynergistes(exercise);
 
   // Carte = deux zones SŒURS non imbriquées (cf.
   // `VariantCellSheet.VariantRow`) : la zone principale ouvre la fiche, la
@@ -56,11 +51,11 @@ export function ExerciseCard({
       <MiniSilhouette exercise={exercise} />
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="flex items-start justify-between gap-2">
-          <ExerciseNameStack exercise={exercise} size="sm" className="flex-1" />
+          <ExerciseNameStack exercise={exercise} size="sm" className="flex-1" multiligne />
           <div className="flex shrink-0 items-center gap-1.5">
             {/* Plafond mis en évidence : chip distinct à droite
                 du nom, fond sang plein + font-display tabulaire pour
-                ressortir vs les tags neutres (polyarticulaire, barre…). */}
+                ressortir à côté des étiquettes de muscles. */}
             {e1rm !== null && e1rm > 0 && (
               <span
                 data-testid={`card-e1rm-${exercise.id}`}
@@ -75,34 +70,19 @@ export function ExerciseCard({
             <ChargeBadge charge={exercise.charge} size={28} />
           </div>
         </div>
-        <p className="line-clamp-2 text-xs leading-snug text-anthracite-400">
-          {description}
-        </p>
-        <div className="flex flex-wrap items-center gap-1">
-          <span className="rounded bg-anthracite-700 px-1.5 py-0.5 text-[10px] text-white">
-            {extypeLabel(exercise.type)}
-          </span>
-          {isLengthened && (
-            <span
-              className="rounded bg-sang-900/40 px-1.5 py-0.5 text-[10px] text-white"
-              data-testid="card-tag-lengthened"
-            >
-              Étirement
-            </span>
-          )}
-          {primaires.slice(0, 2).map((m) => (
-            <span
-              key={m}
-              className="rounded border border-anthracite-700 px-1.5 py-0.5 text-[10px] text-anthracite-300"
-            >
+        {/* Les muscles travaillés, comme dans la fiche : principaux en
+            surbrillance, secondaires en gris. */}
+        <div className="flex flex-wrap items-center gap-1" data-testid={`card-muscles-${exercise.id}`}>
+          {primaires.map((m) => (
+            <span key={m} className="rounded bg-sang-800 px-1.5 py-0.5 text-[10px] text-white">
               {muscleLabel(m)}
             </span>
           ))}
-          {primaires.length > 2 && (
-            <span className="text-[10px] text-anthracite-300">
-              +{primaires.length - 2}
+          {synergistes.map((m) => (
+            <span key={m} className="rounded bg-anthracite-700 px-1.5 py-0.5 text-[10px] text-anthracite-200">
+              {muscleLabel(m)}
             </span>
-          )}
+          ))}
         </div>
       </div>
       </button>

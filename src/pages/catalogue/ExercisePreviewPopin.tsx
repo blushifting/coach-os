@@ -79,7 +79,6 @@ export function ExercisePreviewPopin({ exercise, title, onClose }: ExercisePrevi
             pose={pose}
             muscles={exercise.muscles}
             onIndisponible={() => setIndisponible(true)}
-            className="rounded-none border-0"
           />
         ) : photos !== null ? (
           <Photos startUrl={photos.startUrl} endUrl={photos.endUrl} />

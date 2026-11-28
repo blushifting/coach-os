@@ -35,7 +35,9 @@ export function Concept({ topic, children, label, className }: ConceptProps) {
         // Soulignement pointillé en violet : grille sémantique, l'aide
         // contextuelle (ici « mot défini » tappable) = violet. Pleine opacité
         // pour rester lisible sur anthracite sous du texte atténué.
-        'inline border-b border-dotted border-violet-400 text-inherit underline-offset-2 transition-colors hover:border-violet-300 hover:text-white',
+        // `[text-transform:inherit]` : un bouton ne suit pas la casse de son
+        // parent ; dans un titre en capitales, « TON Plafond » devenait bancal.
+        'inline border-b border-dotted border-violet-400 text-inherit underline-offset-2 transition-colors [text-transform:inherit] hover:border-violet-300 hover:text-white',
         className,
       )}
     >

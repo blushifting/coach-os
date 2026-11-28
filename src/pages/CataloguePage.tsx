@@ -54,7 +54,7 @@ const CHARGE_BANDS: readonly {
  *
  * Liste filtrable des ~113 exos. Recherche fuzzy (id / nom_fr / synonymes) +
  * filtres (muscle / pattern / équipement / type / tag étirement). Card → sheet
- * de détail avec descriptif 1-2 phrases (cf. `buildDescription`).
+ * de détail (`CatalogueDetailSheet`).
  */
 export default function CataloguePage() {
   const catalog = useCoachOsStore((s) => s.catalog);

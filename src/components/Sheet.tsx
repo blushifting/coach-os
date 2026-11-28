@@ -11,6 +11,12 @@ interface SheetProps {
   readonly open: boolean;
   readonly onClose: () => void;
   readonly title?: string;
+  /** Sous-titre atténué sous le titre (nom générique d'une machine de marque). */
+  readonly subtitle?: string;
+  /** Avant le titre (pictogramme). */
+  readonly leading?: ReactNode;
+  /** Entre le titre et la croix (bouton favori). */
+  readonly actions?: ReactNode;
   readonly children: ReactNode;
 }
 
@@ -24,13 +30,13 @@ interface SheetProps {
  *     bordure haute sang-700/30 pour matérialiser la séparation,
  *     ombre extérieure haute pour décoller du fond
  *
- * Hauteur plafonnée à 90 dvh : le panneau est un `flex-col`
+ * Hauteur plafonnée à 94 dvh (le haut de l'écran, logo compris, reste visible) : le panneau est un `flex-col`
  * dont le header (titre + croix) reste figé en haut (`shrink-0`) tandis que le
  * corps défile en interne (`overflow-y-auto`). Sans ça, une fiche longue (exo
  * détaillé, a fortiori photo dépliée) poussait le titre et sa croix au-dessus
  * de l'écran → impossible à fermer.
  */
-export function Sheet({ open, onClose, title, children }: SheetProps) {
+export function Sheet({ open, onClose, title, subtitle, leading, actions, children }: SheetProps) {
   // État « closing » : quand `open` repasse à false, on garde le volet
   // monté le temps de l'animation de sortie (slide-down + fade), puis on
   // démonte. `rendered` reste vrai pendant cette fenêtre.
@@ -84,7 +90,7 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
         className={cn(
           // Surface translucide + blur fort = effet "glass"
           // Flex-col + max-h pour header figé / corps scrollable.
-          'flex max-h-[90dvh] w-full flex-col rounded-t-3xl border-t border-sang-700/30 bg-anthracite-900/85 backdrop-blur-xl',
+          'flex max-h-[94dvh] w-full flex-col rounded-t-3xl border-t border-sang-700/30 bg-anthracite-900/85 backdrop-blur-xl',
           'shadow-[0_-12px_32px_-8px_rgba(0,0,0,0.6)]',
           // Bloc C 1.16 — le volet glisse depuis le bas ; 1.17 — et redescend
           // à la fermeture (motion-safe).
@@ -94,14 +100,19 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
         // visible restant pour garder le header (croix) accessible.
         style={
           keyboardInset
-            ? { maxHeight: `calc(90dvh - ${keyboardInset}px)` }
+            ? { maxHeight: `calc(94dvh - ${keyboardInset}px)` }
             : undefined
         }
         onClick={(e) => e.stopPropagation()}
       >
         {title && (
-          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-anthracite-800/70 px-6 pb-3 pt-6">
-            <h3 className="text-base font-semibold text-white">{title}</h3>
+          <div className="flex shrink-0 items-center gap-3 border-b border-anthracite-800/70 px-6 pb-3 pt-5">
+            {leading}
+            <div className="min-w-0 flex-1">
+              <h3 className="text-base font-semibold text-white">{title}</h3>
+              {subtitle && <p className="text-xs italic text-anthracite-400">{subtitle}</p>}
+            </div>
+            {actions}
             <button
               type="button"
               onClick={onClose}

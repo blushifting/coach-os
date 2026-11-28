@@ -14,6 +14,8 @@ export function ExerciseNoteField({ exerciseId }: { readonly exerciseId: string 
   const demoActive = useDemoMode();
   const saved = useCoachOsStore((s) => s.userState?.exercise_notes[exerciseId] ?? '');
   const [draft, setDraft] = useState(saved);
+  // Vierge et hors saisie : une seule ligne, pour ne pas allonger la fiche.
+  const [saisie, setSaisie] = useState(false);
   const draftRef = useRef(draft);
   draftRef.current = draft;
 
@@ -48,12 +50,16 @@ export function ExerciseNoteField({ exerciseId }: { readonly exerciseId: string 
         data-testid={`exercise-note-${exerciseId}`}
         value={draft}
         disabled={demoActive}
-        rows={3}
+        rows={saisie || draft.trim() !== '' ? 3 : 1}
         maxLength={500}
         placeholder="Réglages de la machine, placement, consignes…"
         onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-        className="w-full resize-none rounded-lg border border-anthracite-700 bg-anthracite-900 px-3 py-2 text-sm leading-relaxed text-white outline-none placeholder:text-anthracite-500 focus:border-sang-700/60 disabled:opacity-60"
+        onFocus={() => setSaisie(true)}
+        onBlur={() => {
+          setSaisie(false);
+          commit();
+        }}
+        className="w-full resize-none rounded-lg border border-anthracite-700 bg-anthracite-900 px-3 py-1.5 text-sm leading-relaxed text-white outline-none placeholder:text-anthracite-500 focus:border-sang-700/60 disabled:opacity-60"
       />
     </label>
   );

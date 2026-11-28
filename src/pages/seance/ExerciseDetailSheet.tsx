@@ -1,17 +1,10 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState } from 'react';
 import { Sheet } from '@/components/Sheet';
 import { Button } from '@/components/Button';
 import { ChargeMechanicNote } from '@/components/ChargeMechanicNote';
 import { ExerciseNoteField } from '@/components/ExerciseNoteField';
 import type { Catalog } from '@/engine/catalog';
-import { Pattern } from '@/engine/models';
-import {
-  extypeLabel,
-  patternLabel,
-  tagLabel,
-} from '@/lib/catalog-filter';
 import { alternativeVariantsFor } from '@/lib/calibration';
-import { formatRest } from '@/lib/session-runner';
 import { useCoachOsStore } from '@/store';
 import { useDemoMode } from '@/store/selectors';
 import { ChargeBadge } from '@/pages/catalogue/ChargeBadge';
@@ -80,10 +73,6 @@ export function ExerciseDetailSheet({
 
   if (exercise === null) return null;
 
-  const tags = exercise.tags
-    .map((t) => [t, tagLabel(t)] as const)
-    .filter((entry): entry is readonly [string, string] => entry[1] !== null);
-
   async function handlePickReplacement(newExId: string) {
     if (onReplace === undefined) return;
     setReplacing(true);
@@ -100,28 +89,19 @@ export function ExerciseDetailSheet({
 
   return (
     <>
-      <Sheet open={open} onClose={onClose} title={displayName}>
+      <Sheet
+        open={open}
+        onClose={onClose}
+        title={displayName}
+        subtitle={displayName !== exercise.nom_fr ? exercise.nom_fr : undefined}
+        leading={<ChargeBadge charge={exercise.charge} size={32} />}
+      >
         <div className="flex flex-col gap-4" data-testid="exercise-detail-content">
-          <ExerciseVisual exercise={exercise} testIdPrefix="exercise-detail" silhouetteClassName="h-44 w-auto" />
+          <ExerciseVisual exercise={exercise} testIdPrefix="exercise-detail" />
 
           <ExerciseNoteField exerciseId={exercise.id} />
 
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <ChargeBadge charge={exercise.charge} size={32} />
-            <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
-              {extypeLabel(exercise.type)}
-            </span>
-            {/* Point 1 — pattern « isolation » = redondant avec le type « Isolation » : on masque. */}
-            {exercise.pattern !== Pattern.ISOLATION && (
-              <span className="rounded bg-anthracite-700 px-2 py-0.5 text-xs text-white">
-                {patternLabel(exercise.pattern)}
-              </span>
-            )}
-          </div>
-
-          {/* Description auto retirée (redondante avec le badge type/
-              pattern ci-dessus et les sections Muscles ci-dessous). On garde
-              seulement une vraie note d'exo si elle existe. */}
+          {/* Une vraie note d'exercice (exercices créés, rares notes du catalogue). */}
           {exercise.note && exercise.note.trim() !== '' && (
             <p className="text-sm leading-relaxed text-anthracite-100">
               {exercise.note.trim()}
@@ -130,31 +110,6 @@ export function ExerciseDetailSheet({
 
           {/* Mécanique de charge (assisté/lesté/PdC). */}
           <ChargeMechanicNote charge={exercise.charge} />
-
-          {/* « Reps hypertrophie/force » retirées (l'app gère les reps ;
-              déjà absentes du catalogue depuis Conv #52). La section se réduit
-              au repos conseillé, alignée sur la fiche Catalogue. */}
-          <SectionBlock label="Repos conseillé">
-            <p className="flex justify-between text-xs text-anthracite-100">
-              <span className="text-anthracite-300">Entre séries</span>
-              <span className="tabular-nums">{formatRest(exercise.repos_s)}</span>
-            </p>
-          </SectionBlock>
-
-          {tags.length > 0 && (
-            <SectionBlock label="Variantes">
-              <div className="flex flex-wrap gap-1">
-                {tags.map(([key, label]) => (
-                  <span
-                    key={key}
-                    className="rounded border border-anthracite-700 px-2 py-0.5 text-xs text-anthracite-300"
-                  >
-                    {label}
-                  </span>
-                ))}
-              </div>
-            </SectionBlock>
-          )}
 
           {onReplace !== undefined && (
             <Button
@@ -184,20 +139,5 @@ export function ExerciseDetailSheet({
         />
       )}
     </>
-  );
-}
-
-function SectionBlock({
-  label,
-  children,
-}: {
-  readonly label: string;
-  readonly children: ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="text-xs uppercase tracking-wide text-anthracite-300">{label}</span>
-      {children}
-    </div>
   );
 }

@@ -2,12 +2,13 @@
  * Haut de la fiche d'un exercice (catalogue et séance) : à quoi ressemble le
  * mouvement et ce qu'il fait travailler.
  *
- * - Pose validée et WebGL présent : l'animation, pleine largeur. Elle montre
- *   d'un coup le mouvement et les muscles colorés ; les listes de muscles juste
- *   dessous lui servent de légende (pastille de la couleur du mannequin) et
- *   nomment ce qui est caché de l'autre côté de la figure.
- * - Sinon (exercice créé par l'utilisateur, téléphone sans WebGL) : la
- *   silhouette des muscles et les photos, comme avant les animations.
+ * - Le mannequin, sans cadre, qui fait le mouvement (pose validée) ou qui se
+ *   tient immobile au repos (exercice créé par l'utilisateur) : ses muscles
+ *   colorés montrent ce qui travaille, et la fiche a la même mise en page.
+ *   Dessous, « Principaux » et « Secondaires », côte à côte, lui servent de
+ *   légende (pastille de la couleur du mannequin) et nomment ce qui est caché
+ *   de l'autre côté de la figure.
+ * - Sans WebGL : la silhouette des muscles et les photos.
  */
 
 import { useState, type ReactNode } from 'react';
@@ -17,6 +18,7 @@ import { exercisePrimaires, exerciseSynergistes } from '@/engine/models';
 import type { Exercise } from '@/engine/models';
 import { muscleLabel } from '@/lib/progress';
 import { poseValidee } from '@/visuels/poses';
+import { mannequinAuRepos } from '@/visuels/poses/repos';
 import { cssCouleur, STYLE } from '@/visuels/style';
 import { ExercisePhoto } from './ExercisePhoto';
 
@@ -24,14 +26,11 @@ interface ExerciseVisualProps {
   readonly exercise: Exercise;
   /** Préfixe des `data-testid` : `catalogue` ou `exercise-detail`. */
   readonly testIdPrefix: string;
-  /** Hauteur de la silhouette, quand il n'y a pas d'animation. */
-  readonly silhouetteClassName: string;
 }
 
-export function ExerciseVisual({ exercise, testIdPrefix, silhouetteClassName }: ExerciseVisualProps) {
-  const pose = poseValidee(exercise.id);
+export function ExerciseVisual({ exercise, testIdPrefix }: ExerciseVisualProps) {
   const [indisponible, setIndisponible] = useState(false);
-  const anime = pose !== null && !indisponible;
+  const anime = !indisponible;
 
   const highlights: Record<string, SilhouetteStatus> = {};
   if (!anime) {
@@ -45,15 +44,19 @@ export function ExerciseVisual({ exercise, testIdPrefix, silhouetteClassName }: 
 
   return (
     <>
-      {pose !== null && anime ? (
-        <ExerciseAnimation pose={pose} muscles={exercise.muscles} onIndisponible={() => setIndisponible(true)} />
+      {anime ? (
+        <ExerciseAnimation
+          pose={poseValidee(exercise.id) ?? mannequinAuRepos(exercise.id)}
+          muscles={exercise.muscles}
+          onIndisponible={() => setIndisponible(true)}
+        />
       ) : (
         <>
           <div className="flex justify-center">
             <AnatomicalSilhouette
               highlights={highlights}
               view="both"
-              className={silhouetteClassName}
+              className="h-48 w-auto"
               testId={`${testIdPrefix}-silhouette`}
             />
           </div>
@@ -61,23 +64,27 @@ export function ExerciseVisual({ exercise, testIdPrefix, silhouetteClassName }: 
         </>
       )}
 
-      {primaires.length > 0 && (
-        <Muscles
-          label="Muscles principaux"
-          pastille={anime ? cssCouleur(STYLE.principal) : null}
-          muscles={primaires}
-          chipClassName="bg-sang-900/40"
-          testId={`${testIdPrefix}-muscles-primaires`}
-        />
-      )}
-      {synergistes.length > 0 && (
-        <Muscles
-          label="Muscles secondaires"
-          pastille={anime ? cssCouleur(STYLE.secondaire) : null}
-          muscles={synergistes}
-          chipClassName="bg-anthracite-700"
-          testId={`${testIdPrefix}-muscles-synergistes`}
-        />
+      {(primaires.length > 0 || synergistes.length > 0) && (
+        <div className="grid grid-cols-2 gap-3">
+          {primaires.length > 0 && (
+            <Muscles
+              label="Principaux"
+              pastille={anime ? cssCouleur(STYLE.principal) : null}
+              muscles={primaires}
+              chipClassName="bg-sang-900/40"
+              testId={`${testIdPrefix}-muscles-primaires`}
+            />
+          )}
+          {synergistes.length > 0 && (
+            <Muscles
+              label="Secondaires"
+              pastille={anime ? cssCouleur(STYLE.secondaire) : null}
+              muscles={synergistes}
+              chipClassName="bg-anthracite-700"
+              testId={`${testIdPrefix}-muscles-synergistes`}
+            />
+          )}
+        </div>
       )}
     </>
   );
@@ -91,14 +98,14 @@ function Muscles({
   testId,
 }: {
   readonly label: string;
-  /** Couleur du mannequin pour ce rôle, ou `null` sans animation. */
+  /** Couleur du mannequin pour ce rôle, ou `null` sans mannequin. */
   readonly pastille: string | null;
   readonly muscles: readonly string[];
   readonly chipClassName: string;
   readonly testId: string;
 }): ReactNode {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex min-w-0 flex-col gap-1">
       <span className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-anthracite-300">
         {pastille !== null && (
           <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: pastille }} />

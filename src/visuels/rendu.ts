@@ -66,12 +66,13 @@ export interface Rendu {
 
 /**
  * Prépare WebGL sur une toile. Rend `null` si WebGL n'est pas disponible :
- * l'appelant se replie alors sur la photo.
+ * l'appelant se replie alors sur la photo. `transparent` : pas de fond, la
+ * figure flotte sur ce qu'il y a derrière la toile (la fiche d'exercice).
  */
-export function creerRendu(toile: HTMLCanvasElement): Rendu | null {
+export function creerRendu(toile: HTMLCanvasElement, transparent = false): Rendu | null {
   let gl: WebGLRenderingContext | null = null;
   try {
-    gl = toile.getContext('webgl', { antialias: true, alpha: false });
+    gl = toile.getContext('webgl', { antialias: true, alpha: transparent });
   } catch {
     gl = null;
   }
@@ -117,7 +118,8 @@ export function creerRendu(toile: HTMLCanvasElement): Rendu | null {
         toile.height = cote;
       }
       g.viewport(0, 0, cote, cote);
-      g.clearColor(o.fond[0] / 255, o.fond[1] / 255, o.fond[2] / 255, 1);
+      if (transparent) g.clearColor(0, 0, 0, 0);
+      else g.clearColor(o.fond[0] / 255, o.fond[1] / 255, o.fond[2] / 255, 1);
       g.clear(g.COLOR_BUFFER_BIT | g.DEPTH_BUFFER_BIT);
       g.bufferData(g.ARRAY_BUFFER, mesh.s.subarray(0, mesh.ns * PAR_SOMMET), g.DYNAMIC_DRAW);
       g.bufferData(g.ELEMENT_ARRAY_BUFFER, mesh.i.subarray(0, mesh.ni), g.DYNAMIC_DRAW);
